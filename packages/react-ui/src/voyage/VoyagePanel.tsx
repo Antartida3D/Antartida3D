@@ -2,6 +2,8 @@ import { lazy, Suspense, useEffect, useRef, useState, type KeyboardEvent } from 
 import {
   SIGHTINGS,
   expeditionAt,
+  findTransport,
+  formatIsoDate,
   quizScore,
   FAUNA_COUNT,
   PLACES_COUNT,
@@ -34,7 +36,7 @@ const VehiclePreview = lazy(() => import('./VehiclePreview.tsx').then((m) => ({ 
 const sourceConsulted = (code: VoyageSourceCode) => (VOYAGE_SOURCES[code] as VoyageSource).consulted;
 
 /** Separate page with every source of the expedition, numbered as the facts cite them. */
-function SourcesPage({ focus, onClose }: { focus: VoyageSourceCode; onClose: () => void }) {
+function SourcesPage({ focus, notice, onClose }: { focus: VoyageSourceCode; notice?: string; onClose: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   useFocusReturn(true, ref, `[data-source="${focus}"] a`);
   return (
@@ -55,13 +57,14 @@ function SourcesPage({ focus, onClose }: { focus: VoyageSourceCode; onClose: () 
           <h2 id="sources-title">Fuentes</h2>
           <button type="button" className="btn" onClick={onClose}>Volver al viaje</button>
         </div>
-        <p className="gdesc">Cada dato del viaje lleva un número entre corchetes. Acá está de dónde sale. Consultadas el {VOYAGE_SOURCES_CONSULTED}, salvo las que dan otra fecha.</p>
+        <p className="gdesc">Cada dato del viaje lleva un número entre corchetes. Acá está de dónde sale. Consultadas el {formatIsoDate(VOYAGE_SOURCES_CONSULTED)}, salvo las que dan otra fecha.</p>
+        {notice && <p className="gdesc">{notice}</p>}
         <ol className="vsrclist">
           {VOYAGE_SOURCE_CODES.map((code) => (
             <li key={code} data-source={code} className={code === focus ? 'on' : undefined}>
               <strong>{VOYAGE_SOURCES[code].org}</strong>
               <span>{VOYAGE_SOURCES[code].title}</span>
-              {sourceConsulted(code) && <span>Consultada el {sourceConsulted(code)}.</span>}
+              {sourceConsulted(code) && <span>Consultada el {formatIsoDate(sourceConsulted(code)!)}.</span>}
               <a href={VOYAGE_SOURCES[code].url} target="_blank" rel="noopener noreferrer">Abrir la fuente</a>
             </li>
           ))}
@@ -193,6 +196,7 @@ function MilestoneCard({ voyage, animated, onExit, onSource }: {
   useFocusReturn(true, ref, '.btn.primary');
   const { milestone } = voyageStops(state.kind)[state.card];
   const { notes, question } = expeditionAt(milestone.id, state.transport);
+  const notice = findTransport(state.transport).notice;
   const chosen = voyage.answers[milestone.id];
   const answered = chosen !== undefined;
   const score = quizScore(state.transport, voyage.answers);
@@ -213,6 +217,7 @@ function MilestoneCard({ voyage, animated, onExit, onSource }: {
         <Fact fact={milestone.essential} onSource={onSource} />
         {more && milestone.more.map((f) => <Fact key={f.text} fact={f} onSource={onSource} />)}
       </ul>
+      {state.card === 0 && notice && <p className="vsmall">{notice}</p>}
       {notes.length > 0 && (
         <div className="vexp" role="group" aria-label="Cómo funciona la expedición">
           {question && (
@@ -438,7 +443,7 @@ export function VoyagePanel({ voyage, transport, animated, webgl, reduced, onExi
   return (
     <>
       {stage}
-      {sources && <SourcesPage focus={sources} onClose={() => setSources(null)} />}
+      {sources && <SourcesPage focus={sources} notice={state ? findTransport(state.transport).notice : undefined} onClose={() => setSources(null)} />}
     </>
   );
 }

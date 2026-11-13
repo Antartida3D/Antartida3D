@@ -55,7 +55,8 @@ export const VOYAGE_SOURCES = {
   O45: { org: 'Fuerza Aérea Argentina', title: '«51° Aniversario de la Base Marambio: más de medio siglo de soberanía en el Continente Antártico» (31-10-2020)', url: 'https://www.argentina.gob.ar/noticias/51deg-aniversario-de-la-base-marambio-mas-de-medio-siglo-de-soberania-en-el-continente' },
   // The page shows no date; its metadata says 25-11-2019.
   O46: { org: 'Armada Argentina', title: '«Cruzando el Pasaje de Drake a bordo del rompehielos ARA "Almirante Irízar"» (25-11-2019, según los metadatos de la página)', url: 'https://www.argentina.gob.ar/noticias/cruzando-el-pasaje-de-drake-bordo-del-rompehielos-ara-almirante-irizar', consulted: '2026-11-12' },
-  P1: { org: 'Emilio Urruty (autor), Fundación Marambio (transcripción)', title: '«Poncho. La legendaria vida de un perro polar argentino», 2009', url: 'https://www.marambio.aq/poncho.html', consulted: '2026-11-12' },
+  // The book as a PDF of 25 pages: a fact of the book links to its page with `pages` (see VoyageFact). A secondary source.
+  P1: { org: 'Emilio Urruty (autor), Fundación Marambio (transcripción)', title: 'Libro de Urruty: «Poncho. La legendaria vida de un perro polar argentino», 2009 (PDF; fuente secundaria)', url: 'https://www.marambio.aq/pdf/poncho.pdf', consulted: '2026-11-12' },
   P2: { org: 'Carlos Alberto Montenegro (autor), Fundación Marambio (publicación)', title: '«El perro polar argentino»', url: 'https://www.marambio.aq/perropolar.html', consulted: '2026-11-12' },
   P3: { org: 'SCAR (Scientific Committee on Antarctic Research), servido por el Australian Antarctic Data Centre', title: 'Composite Gazetteer of Antarctica (topónimos y coordenadas)', url: 'https://placenames.aq/', consulted: '2026-11-12' },
   I1: { org: 'Secretaría del Tratado Antártico', title: 'Tratado Antártico (1959), art. VI', url: 'https://documents.ats.aq/keydocs/vol_1/vol1_2_AT_Antarctic_Treaty_e.pdf' },
@@ -85,6 +86,8 @@ export interface VoyageFact {
   text: string;
   kind: VoyageDataKind;
   sources: readonly VoyageSourceCode[];
+  /** Page of the source (a PDF) where the fact is, by source code: its citation links straight to that page. */
+  pages?: Partial<Record<VoyageSourceCode, number>>;
 }
 
 export type TransportId = 'irizar' | 'hercules' | 'puerto-argentino' | 'poncho';
@@ -118,6 +121,8 @@ export interface Transport {
   cruiseKmh: number;
   /** Model drawn for a vehicle of the trip when it is not the transport's own (the id of the transport by default). */
   models?: Partial<Record<VehicleKind, string>>;
+  /** One short warning for the whole trip, shown once: on its first card and on the sources page. */
+  notice?: string;
   facts: readonly VoyageFact[];
 }
 

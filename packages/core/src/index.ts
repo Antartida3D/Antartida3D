@@ -1,5 +1,6 @@
 export * from './content/points.ts';
 export * from './content/sea.ts';
+export * from './content/dates.ts';
 export * from './content/ushuaia.ts';
 export * from './content/poncho.ts';
 export * from './content/poncho-route.ts';

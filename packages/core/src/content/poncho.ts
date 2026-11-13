@@ -1,11 +1,19 @@
 /**
- * Content of the expedition of Poncho (issue #9): the life of the Argentine polar sled dog told as a
- * trip over the Antarctic map, with the same shape as the trip «Desde Ushuaia» (content/ushuaia.ts):
- * the dog team is one more transport (`kind: 'dogs'`) whose trip has legs (sled on the ice, ship on the sea) and whose stops are milestones.
- * Texts come from docs/expediciones/poncho.md; source codes point to VOYAGE_SOURCES.
+ * Content of the expedition of Poncho (issue #9): the life of the Argentine polar sled dog told as a short
+ * story over the Antarctic map, with the same shape as the trip «Desde Ushuaia» (content/ushuaia.ts): the dog
+ * team is one more transport (`kind: 'dogs'`) whose trip has legs (sled on the ice, ship on the sea) and whose
+ * stops are milestones.
+ *
+ * Each card tells a moment in two or three short sentences, close to the dog (`essential`); the data behind it,
+ * each with its source, are in «Saber más» (`more`). The book (source P1, a secondary source) is cited with the page
+ * of its PDF where the fact is (`pages`): its citation links to that page.
+ * Source codes point to VOYAGE_SOURCES.
  */
 import type { ExpeditionStop, Milestone, Transport, VoyageFact, VoyageSourceCode } from './ushuaia.ts';
-import { BELGRANO_AREA, BELGRANO_RETURN, DUSE_BAY, ESPERANZA, FOCA_NUNATAKS, SAN_MARTIN, SANTA_FE_PEAK, SOUTH_POLE, USHUAIA } from './poncho-route.ts';
+import { BELGRANO_AREA, BELGRANO_RETURN, DUSE_BAY, ESPERANZA, FOCA_NUNATAKS, SAN_MARTIN, SANTA_FE_PEAK, USHUAIA } from './poncho-route.ts';
+
+/** The only warning of the trip: shown once, on the first card and on the sources page. */
+export const PONCHO_NOTICE = 'El recorrido y los modelos son una ilustración, no una ruta real.';
 
 /** The team: Poncho in front, the sled and the pack behind. */
 export const PONCHO_TRANSPORT: Transport = {
@@ -17,292 +25,233 @@ export const PONCHO_TRANSPORT: Transport = {
   // Own estimate: the book says a team covered 40 to 50 km in more than six hours on level ground.
   cruiseKmh: 7,
   models: { ship: 'poncho-ship' },
+  notice: PONCHO_NOTICE,
   facts: [
-    { text: 'Poncho nació el 10 de abril de 1961 en la Base Esperanza y fue perro-guía de trineo durante años de expediciones.', kind: 'real', sources: ['P1'] },
+    { text: 'Poncho nació el 10 de abril de 1961 en la Base Esperanza.', kind: 'real', sources: ['P1'], pages: { P1: 4 } },
+    { text: 'Desde 1963 fue siempre perro-guía: el perro que va al frente del trineo y marca el camino.', kind: 'real', sources: ['P1'], pages: { P1: 4 } },
   ],
 };
 
+/** A fact of the book: its page is the one of the PDF where it is. `others` are other sources that back it up. */
+const book = (page: number, text: string, ...others: VoyageSourceCode[]): VoyageFact => ({
+  text,
+  kind: 'real',
+  sources: ['P1', ...others],
+  pages: { P1: page },
+});
+/** A fact that only another source tells. */
 const real = (text: string, ...sources: VoyageSourceCode[]): VoyageFact => ({ text, kind: 'real', sources });
-const illustrative = (text: string): VoyageFact => ({ text, kind: 'illustrative', sources: [] });
 
-/** In trip order, which is also the order of the story (the `year` never goes down). The first one opens at departure. */
+/**
+ * Only for the place of the stop where the icebreaker takes Poncho away (the trip does not say where along the
+ * sea it is): a point of the Drake Passage, between Duse Bay and Ushuaia. The stop opens at the point of its leg nearest to it.
+ */
+const DRAKE_PASSAGE = [-62.5, -59.5] as const;
+
+/**
+ * In trip order, which is also the order of the story (the `year` never goes down). The first one opens at departure
+ * and the last one on arrival. `segment` is the leg of the route where it opens (see poncho-route.ts): 0 sled on the
+ * Peninsula, 1 ship to Belgrano, 2 sled at Belgrano and the Pole, 3 ship back, 4 sled at Esperanza, 5 ship to Ushuaia.
+ * No two stops share a place within a leg.
+ */
 export const PONCHO_MILESTONES: readonly Milestone[] = [
-  {
-    id: 'raza',
-    year: 1951,
-    title: 'Un perro hecho para la Antártida',
-    anchor: ESPERANZA,
-    segment: 0,
-    kinds: ['dogs'],
-    essential: real('Desde 1951 los perros polares argentinos tiraron de los trineos en las patrullas del Ejército. Eran una raza en formación, con cruzas de Malamute, Groenlandés y Husky.', 'P1', 'P2'),
-    more: [
-      real('Según el libro, la raza estaba «en formación»; un artículo de la Fundación Marambio dice que inicia sus actividades en 1951, el año en que se fundó la Base San Martín (21 de marzo de 1951).', 'P1', 'P2', 'O2'),
-      illustrative('El punto del mapa es ilustrativo: la raza no nació en un solo lugar, y se parte desde la Base Esperanza porque allí nació Poncho.'),
-    ],
-  },
   {
     id: 'nacimiento',
     year: 1961,
+    segment: 0,
     title: 'Nace Poncho',
     anchor: ESPERANZA,
-    segment: 0,
     kinds: ['dogs'],
-    essential: real('Poncho nació el 10 de abril de 1961 en la Base Esperanza, en la Antártida. Sus padres también eran perros de trineo del Ejército.', 'P1'),
+    essential: book(5, 'Poncho nace el 10 de abril de 1961 en la Base Esperanza, en la Antártida. Es el cachorro más juguetón de la camada y quiere ir siempre adelante. Los hombres de la base lo cuidan desde el primer día.'),
     more: [
-      real('Tenía pelaje blanco cremoso con manchas grises y una «máscara» en la cara.', 'P1'),
+      book(5, 'Tenía el pelaje blanco cremoso con manchas grises y una «máscara» inconfundible en la cara.'),
+      book(4, 'Sus padres se llamaban Coca y Flecha.'),
+      book(6, 'Era un perro polar argentino: una raza que el Ejército creó cruzando perros Malamute de Alaska, Groenlandeses y Husky.'),
+      book(7, 'La raza empezó a formarse hacia 1951, cuando unos treinta suboficiales veterinarios del Ejército eligieron y cruzaron perros de forma sistemática.', 'P2'),
+      book(8, 'A los seis meses de edad Poncho ocupó un lugar entre las yuntas (las parejas de perros) que tiraban de los trineos.'),
       real('Esperanza es una base permanente argentina, fundada el 17 de diciembre de 1952.', 'O2'),
-    ],
-  },
-  {
-    id: 'instruccion',
-    year: 1961,
-    title: 'Aprende a tirar del trineo',
-    anchor: ESPERANZA,
-    segment: 0,
-    kinds: ['dogs'],
-    essential: real('En 1961, su primer año, Poncho aprendió a trabajar en equipo. Aprendió las voces de mando: «Auk» para ir a la derecha y «Quierr» para ir a la izquierda.', 'P1'),
-    more: [
-      real('A los seis meses lo ataron por primera vez a un trineo, en la tercera yunta (la tercera pareja de perros).', 'P1'),
-      real('Su primera instrucción incluyó recorrer una línea de postes «en zigzag».', 'P1'),
-    ],
-  },
-  {
-    id: 'grietas',
-    year: 1962,
-    title: 'El olfato que encuentra grietas',
-    anchor: FOCA_NUNATAKS,
-    segment: 0,
-    kinds: ['dogs'],
-    essential: illustrative('Escena ilustrativa, tomada del relato de un libro: en 1962 Poncho iba olfateando el suelo y avisaba al conductor cuando había una grieta oculta bajo la nieve.'),
-    more: [
-      real('Las grietas ocultas bajo la nieve son uno de los mayores peligros del hielo. Según el libro, los perros-guía las detectaban «según se dice» por el olfato, y así los trineos las evitaban. Es la descripción del autor de una conducta típica del perro-guía, no una medición, y no hay otra fuente.', 'P1'),
-      illustrative('El punto del mapa es ilustrativo: el relato no dice dónde ocurrió. Se dibuja en los nunataks Foca, un lugar del camino de 1962.'),
     ],
   },
   {
     id: 'expedicion-invernal-1962',
     year: 1962,
-    title: 'La Expedición Terrestre Invernal',
-    anchor: SAN_MARTIN,
     segment: 0,
+    title: 'El olfato de Poncho',
+    anchor: FOCA_NUNATAKS,
     kinds: ['dogs'],
-    essential: real('En pleno invierno de 1962 una expedición del Ejército fue de la Base Esperanza a la Base San Martín con trineos de perros y tractores. Poncho empezó como un perro más de la yunta y, al volver, a fines de octubre, ya era perro-guía: el que va adelante y marca el camino.', 'P1'),
+    essential: book(12, 'Es pleno invierno de 1962 y Poncho marcha con la expedición hacia el sur. Va con la cabeza baja, olfateando la nieve. De pronto se detiene y mira hacia atrás, hacia el conductor.'),
     more: [
-      real('Salió el 14 de junio de 1962 y llegó a San Martín el 25 de agosto.', 'P1'),
-      real('El libro dice que las dos bases están a unos 800 km en línea recta y que el viaje de ida y vuelta pasó los 2.000 km.', 'P1'),
-      real('San Martín se fundó el 21 de marzo de 1951 y estuvo desactivada entre febrero de 1960 y marzo de 1976: en 1962 estaba desocupada.', 'O2', 'P1'),
+      book(9, 'La Expedición Terrestre Invernal Antártica salió de la Base Esperanza el 14 de junio de 1962, con trineos de perros y tractores. Iba hasta la Base San Martín.'),
+      book(9, 'La primera escala fue la Base Matienzo, sobre uno de los nunataks Foca. «Nunatak» viene del inuktitut y significa «pico solitario»: una roca rodeada de hielo.'),
+      book(9, 'Las dos bases están a unos 800 km en línea recta: ida y vuelta, el viaje pasó los 2.000 km.'),
+      book(6, 'Las grietas ocultas bajo la nieve eran el peligro más traicionero: algunas eran tan anchas y hondas que podían tragarse un trineo entero. Según se dice, ciertos perros las detectaban con el olfato.'),
     ],
   },
   {
-    id: 'refugio-san-nicolas',
-    year: 1963,
-    title: 'Materiales para un refugio',
-    anchor: SAN_MARTIN,
+    id: 'poncho-perro-guia',
+    year: 1962,
     segment: 0,
-    place: ESPERANZA,
+    title: 'Poncho va al frente',
+    anchor: SAN_MARTIN,
     kinds: ['dogs'],
-    essential: real('Desde 1963 Poncho fue siempre perro-guía. Ese año encabezó el transporte de materiales para construir el refugio San Nicolás.', 'P1'),
+    essential: book(12, 'Poncho tiene un año y medio. En el regreso desde la Base San Martín, su instructor lo pone en el puesto Número 1 del tiro. Desde entonces Poncho es perro-guía.'),
     more: [
-      real('La cronología del libro enumera otras patrullas de 1963 y estima más de 1.500 km recorridos ese año: es una cifra del libro, sin otra fuente.', 'P1'),
-      illustrative('La posición en el mapa es ilustrativa y aproximada: el refugio estaba en la zona de la Base Esperanza, pero no hay una coordenada verificada.'),
+      book(10, 'Los trineos de perros llegaron a San Martín el 25 de agosto de 1962, después de subir hasta los 1.842 metros sobre el nivel del mar. Los expedicionarios descansaron allí un mes.'),
+      real('La Base San Martín se fundó el 21 de marzo de 1951 y estuvo desactivada entre febrero de 1960 y marzo de 1976: en 1962 estaba desocupada.', 'O2'),
+      book(12, 'Su instructor tardó solo diez días, salteados a lo largo de un mes, en enseñarle lo fundamental.'),
+      book(12, 'Al volver a Esperanza, a fines de octubre de 1962, Poncho ya era el perro-guía que sería durante el resto de su vida.'),
     ],
   },
   {
-    id: 'traslado-belgrano',
+    id: 'rumbo-a-belgrano',
     year: 1964,
-    title: 'Rumbo a Belgrano',
-    anchor: BELGRANO_AREA,
     segment: 1,
+    title: 'En rompehielos hacia Belgrano',
+    anchor: ESPERANZA,
     kinds: ['dogs'],
-    essential: real('En diciembre de 1964 Poncho fue trasladado a la Base General Belgrano, mucho más al sur, sobre la barrera de hielo. Se preparaba la primera marcha terrestre argentina al Polo Sur.', 'P1'),
+    essential: book(14, 'En diciembre de 1964 Poncho es trasladado a la Base General Belgrano, mucho más al sur, junto con otros perros. Estos viajes se hacían con ayuda de un rompehielos. Se prepara la primera marcha argentina por tierra hasta el Polo Sur.'),
     more: [
-      real('Estos traslados se hacían con ayuda del rompehielos.', 'P1'),
-      real('La barrera de hielos Filchner está cerca de los 79° S y los 40° O (es un punto aproximado de una entidad muy grande, no un punto exacto).', 'P3'),
-      illustrative('La posición ilustrativa de la Base Belgrano en el mapa es aproximada: no hay una coordenada verificada y se dibuja sobre la barrera de hielos Filchner.'),
+      book(14, 'Muchos de los perros elegidos habían trabajado bien en la Expedición Invernal de 1962.'),
+      book(14, 'La Base Belgrano estaba sobre la barrera de hielos Filchner.'),
+      book(14, 'La marcha al Polo se llamó «Operación 90» por los 90 grados de latitud sur, que es donde está el Polo.'),
     ],
   },
   {
-    id: 'ae-205',
+    id: 'rescate-ae-205',
     year: 1965,
-    title: 'El rescate del avión AE-205',
-    anchor: BELGRANO_AREA,
     segment: 2,
+    title: 'Al rescate de un avión',
+    anchor: BELGRANO_AREA,
     kinds: ['dogs'],
-    essential: real('A fines de septiembre de 1965 un pequeño avión, el «AE-205», tuvo que aterrizar de emergencia por una nevada tan blanca que no dejaba ver el horizonte. Los cuatro tripulantes sobrevivieron: una patrulla de dos hombres y siete perros, con Poncho al frente, los encontró al cuarto día.', 'P1'),
+    essential: book(18, 'Un avión pequeño ha aterrizado de emergencia en el hielo, y el mal tiempo impide buscarlo por aire. Poncho sale al rescate al frente de siete perros y dos hombres. Al cuarto día, apenas huele el avión, acelera el paso.'),
     more: [
-      real('En 1968 Poncho volvió al lugar para ayudar a recuperar partes del avión.', 'P1'),
-      real('El libro ubica el accidente al sudeste de la Base General Belgrano. No lo confirma ninguna fuente oficial que hayamos encontrado.', 'P1'),
-      illustrative('La posición en el mapa es ilustrativa y aproximada: no hay una coordenada verificada del lugar del accidente.'),
+      book(17, 'El avión era un Cessna 185B llamado «AE-205». A fines de septiembre de 1965 aterrizó de emergencia por un «blanqueo»: un momento en que todo se pone blanco y el horizonte desaparece. Los cuatro tripulantes sobrevivieron.'),
+      book(18, 'La patrulla viajó tres jornadas entre grietas y ventiscas, con temperaturas por debajo de los 30 grados bajo cero.'),
+      book(18, 'Los sobrevivientes estaban en una zona llena de grietas: una de ellas se había tragado los víveres que un avión DC-3 les había lanzado el día anterior.'),
+      book(18, 'En 1968 Poncho volvió al lugar para ayudar a recuperar las partes del avión.'),
     ],
   },
   {
-    id: 'operacion-90-patrulla-82',
+    id: 'patrulla-paralelo-82',
     year: 1965,
+    segment: 2,
     title: 'La patrulla «Paralelo 82»',
     anchor: SANTA_FE_PEAK,
-    segment: 2,
     kinds: ['dogs'],
-    essential: real('En 1965 el Ejército Argentino organizó la «Operación 90», una expedición terrestre al Polo Sur. Poncho no fue hasta el Polo: guió una patrulla de trineos de perros, la «Paralelo 82», que exploró por delante del grupo motorizado y llegó más allá de los 83° de latitud sur.', 'P1', 'O12'),
+    essential: book(15, 'Poncho guía a la patrulla «Paralelo 82», de trineos de perros. Va por delante de los tractores que buscan el Polo Sur, para avisar de los peligros. Cuando los tractores siguen sin ellos, la patrulla explora las montañas del pico Santa Fe.'),
     more: [
-      real('La expedición salió de la Base Belgrano el 26 de octubre de 1965.', 'O12'),
-      real('Según el libro, el grupo motorizado se separó de la patrulla de perros el 18 de noviembre de 1965. La patrulla hizo tareas de cartografía y geología.', 'P1'),
-      real('El libro afirma que fueron «los primeros perros y los primeros hombres en recorrer esa región del planeta en trineo». Es una frase del libro: no está verificada en otra fuente.', 'P1'),
+      real('La expedición al Polo salió de la Base Belgrano el 26 de octubre de 1965.', 'O12'),
+      book(15, 'El 18 de noviembre el grupo de tractores se separó de la patrulla de perros. La patrulla hizo tareas de cartografía y geología, y llegó más allá de los 83 grados de latitud sur.'),
+      book(16, 'Frente al pico Santa Fe el trineo de Poncho desapareció tras un filo de nieve, al borde de un barranco de unos 200 metros. Poncho esperaba tranquilo, comiendo nieve, hasta que le dieron la orden y tiró hacia arriba.'),
       real('El pico Santa Fe está a unos 82°03′ S y 41°20′ O.', 'P3'),
-      illustrative('El camino es ilustrativo: el pin marca el pico Santa Fe, cerca de donde exploró la patrulla. El libro no da la posición exacta de los 83° S.'),
-    ],
-  },
-  {
-    id: 'polo-sur',
-    year: 1965,
-    title: 'El Polo Sur, alcanzado por el grupo motorizado',
-    anchor: SANTA_FE_PEAK,
-    segment: 2,
-    place: SOUTH_POLE,
-    kinds: ['dogs'],
-    essential: real('El 10 de diciembre de 1965 el grupo de tractores de la Operación 90 llegó al Polo Sur, después de 66 días de marcha. Poncho no estuvo allí: su patrulla se había separado antes y siguió explorando.', 'O12', 'P1'),
-    more: [
-      real('El grupo regresó a la Base Belgrano el 31 de diciembre de 1965.', 'O12'),
-      real('El libro dice que el grupo motorizado recorrió casi 3.000 km.', 'P1'),
-      illustrative('El pin ilustrativo está en el Polo Sur geográfico (90° S), que es contexto: el trineo de Poncho no llegó hasta allí.'),
-    ],
-  },
-  {
-    id: 'barranco',
-    year: 1965,
-    title: 'El barranco frente al pico Santa Fe',
-    anchor: SANTA_FE_PEAK,
-    segment: 2,
-    kinds: ['dogs'],
-    essential: illustrative('Escena ilustrativa, tomada del relato de un libro: el trineo de Poncho desapareció tras un filo de nieve, donde había un barranco de unos 200 metros. Con una orden tranquila, Poncho tiró hacia arriba y los hombres sacaron el trineo.'),
-    more: [
-      real('Según el libro, los hombres quedaron aferrados a unas rocas mientras Poncho, sentado, comía nieve. Es una anécdota del autor, sin otra fuente ni fecha exacta.', 'P1'),
     ],
   },
   {
     id: 'paracaidas',
     year: 1966,
+    segment: 2,
     title: 'Poncho paracaidista',
     anchor: BELGRANO_RETURN,
-    segment: 2,
     kinds: ['dogs'],
-    essential: real('En el verano de 1966, en un ejercicio de rescate, Poncho saltó en paracaídas desde un helicóptero del rompehielos San Martín, junto con otros dos perros y dos oficiales.', 'P1'),
+    essential: book(18, 'En el verano de 1966 Poncho sube a un helicóptero con otros dos perros, Pato y Bucky. Se siente raro y un poco asustado. Es un ejercicio de rescate: los tres perros van a saltar con paracaídas.'),
     more: [
-      real('El salto fue parte del entrenamiento para rescates en el hielo. Según el libro, ocurrió a unos 30 km al sur de la Base Belgrano.', 'P1'),
-      illustrative('La posición en el mapa es ilustrativa y aproximada: no hay una coordenada verificada de la Base Belgrano.'),
+      book(18, 'Junto con los perros se lanzaron un trineo desarmable, víveres y elementos de supervivencia. Dos oficiales saltaron antes desde otro helicóptero.'),
+      book(18, 'El helicóptero era uno de los dos S-55 del rompehielos «General San Martín». Nunca antes se había hecho algo así en la Antártida argentina.'),
     ],
   },
   {
-    id: 'filchner',
-    year: 1966,
-    title: 'Hacia la barrera de hielos Filchner',
-    anchor: BELGRANO_RETURN,
-    segment: 2,
-    kinds: ['dogs'],
-    essential: real('En 1966 Poncho participó en una patrulla de reconocimiento y, en noviembre, en la expedición a la barrera de hielos Filchner. Los perros viajaron como pasajeros en trineos arrastrados por tractores y, cuando el terreno se volvía peligroso por las grietas, los bajaban para que trabajaran adelante, como guías.', 'P1'),
-    more: [
-      real('El libro dice que en esa campaña los hombres de Belgrano recorrieron casi 7.000 km. La cifra no está verificada en otra fuente.', 'P1'),
-      real('La barrera de hielos Filchner está cerca de los 79° S y los 40° O (punto aproximado de la entidad).', 'P3'),
-      illustrative('La posición en el mapa es ilustrativa y aproximada: caleta Jardinero, lugar que nombra el libro, no tiene una coordenada verificada.'),
-    ],
-  },
-  {
-    id: 'duse',
+    id: 'brujula-perdida',
     year: 1967,
-    title: 'La brújula perdida en la bahía Duse',
-    anchor: DUSE_BAY,
     segment: 4,
+    title: 'La brújula perdida',
+    anchor: DUSE_BAY,
     kinds: ['dogs'],
-    essential: illustrative('Escena ilustrativa, tomada del relato de un libro: en agosto de 1967 una ventisca sorprendió a una patrulla que volvía a Esperanza y la brújula se perdió en la nieve. Sin instrumentos y sin ver nada, la patrulla siguió a Poncho, que la llevó hasta las luces de la base.'),
+    essential: book(20, 'Una ventisca fuerte azota a la patrulla de Poncho, a unos doce kilómetros de Esperanza. El trineo vuelca y la brújula se hunde en la nieve, y nadie ve nada. Sin brújula, los hombres solo pueden seguir a Poncho.'),
     more: [
-      real('No hay otra fuente de este episodio: es el relato del libro.', 'P1'),
-      real('La bahía Duse está en el extremo de la Península Antártica, cerca de la Base Esperanza, a unos 63°30′ S y 57°20′ O (otros catálogos la ubican algo más al sur).', 'P3'),
+      book(19, 'Ocurrió un día de agosto de 1967, cuando la patrulla volvía a Esperanza cruzando la bahía Duse sobre mar congelado.'),
+      book(20, 'Los vehículos a motor se frenaron en una cuesta de nieve blanda llamada «Cuesta de los Afligidos». El trineo de Poncho volvió a buscar a los hombres que habían quedado a pie.'),
+      book(20, 'El oficial a cargo clavó tres cañas con banderolas donde habían volcado, para volver a buscar la brújula.'),
+    ],
+  },
+  {
+    id: 'adios-a-la-antartida',
+    year: 1973,
+    segment: 5,
+    title: 'Poncho deja la Antártida',
+    anchor: DRAKE_PASSAGE,
+    kinds: ['dogs'],
+    essential: book(5, 'En 1973 Poncho deja la Antártida, donde nació. Lo llevan en el rompehielos «San Martín» hasta Ushuaia. Ya es un perro veterano, relevado de las tareas pesadas.'),
+    more: [
+      book(21, 'En el legajo de Poncho se anotaba cada vez más seguido «No trabajó»: ya no corría a la par de los perros jóvenes y se cansaba en las patrullas largas.'),
+      book(21, 'Que dejara la Antártida fue una excepción, en mérito a su prestigio.'),
     ],
   },
   {
     id: 'ushuaia',
-    year: 1973,
-    title: 'Un retiro en Ushuaia',
-    anchor: DUSE_BAY,
-    segment: 5,
-    place: USHUAIA,
-    kinds: ['dogs'],
-    essential: real('En 1973, ya veterano, Poncho dejó la Antártida a bordo del rompehielos San Martín y llegó a Ushuaia. Lo recibió una familia de la ciudad que tenía un hotel llamado «Antártida».', 'P1'),
-    more: [
-      real('En 1976 sufrió un accidente y, aunque un veterinario aconsejó sacrificarlo, la familia se negó.', 'P1'),
-      real('En 1977 y 1978 volvió a tirar de un trineo, esta vez con niños fueguinos, y participó en desfiles.', 'P1'),
-      illustrative('La posición ilustrativa de Ushuaia en el mapa es aproximada y está a definir: no hay un punto verificado para el hotel, que según el libro ya no existe.'),
-    ],
-  },
-  {
-    id: 'muerte',
     year: 1978,
-    title: 'El final de Poncho',
-    anchor: DUSE_BAY,
     segment: 5,
-    place: USHUAIA,
+    title: 'Un final tranquilo en Ushuaia',
+    anchor: USHUAIA,
     kinds: ['dogs'],
-    essential: real('En la primavera de 1978 Poncho murió en Ushuaia, con casi 18 años.', 'P1'),
+    essential: book(22, 'Poncho vive años tranquilos en Ushuaia, como un perro retirado. Llega a vivir casi 18 años, mucho más que otros perros grandes. Una mañana de primavera de 1978 ya no despierta.'),
     more: [
-      real('Se intentó conservar su cuerpo, pero la taxidermia no prosperó.', 'P1'),
-      illustrative('La posición ilustrativa de Ushuaia en el mapa es aproximada y está a definir.'),
-    ],
-  },
-  {
-    id: 'protocolo-madrid',
-    year: 1991,
-    title: 'Los perros dejan la Antártida',
-    anchor: DUSE_BAY,
-    segment: 5,
-    kinds: ['dogs'],
-    essential: real('En 1991 los países del Tratado Antártico aprobaron el Protocolo de Madrid, que protege el ambiente de la Antártida. Una de sus normas pide no tener animales que no son de allí, como los perros: la Argentina los retiró de sus bases y esa raza ya no existe en la Antártida.', 'I2', 'P1'),
-    more: [
-      real('Según el libro, los perros polares fueron a destacamentos de Gendarmería en Mendoza, Neuquén y Ushuaia.', 'P1'),
-      illustrative('El punto del mapa es ilustrativo: el retiro se hizo base por base y se muestra cerca de Esperanza, donde empezó la historia.'),
+      book(21, 'En Ushuaia lo recibió un viejo compañero de patrulla, que había dejado el Ejército y tenía un hotel llamado «Antártida». Poncho llevaba a los niños a pasear en un trineo improvisado, por las calles.'),
+      book(22, 'En 1976 sufrió un accidente y un veterinario aconsejó sacrificarlo, pero la familia se negó.'),
+      book(5, 'En 1977 y 1978 tiró de un trineo con niños fueguinos en desfiles y exhibiciones.'),
+      book(22, 'Se intentó conservar su cuerpo, pero la taxidermia no prosperó.'),
     ],
   },
 ];
 
 /** What the team tells at each milestone, by milestone id: a question for kids and adults, answered in the card. */
 export const PONCHO_EXPEDITION: Readonly<Record<string, ExpeditionStop>> = {
-  instruccion: {
-    notes: [],
+  nacimiento: {
+    notes: [
+      { fact: book(9, 'Con «Auk» el perro gira a la derecha y con «Quierr», a la izquierda. Su instructor lo practicó con Poncho atado a una cincha en su propia cintura, y después hicieron slalom entre postes durante una semana.') },
+    ],
     question: {
       prompt: '¿Qué voz de mando le indica a la yunta ir a la derecha?',
       options: ['«Quierr»', '«Auk»', '«Alto»'],
       answer: 1,
     },
   },
-  grietas: {
+  'expedicion-invernal-1962': {
     notes: [
-      { fact: real('Según el libro, el perro-guía olfateaba el suelo y avisaba al conductor cuando había una grieta: así los trineos de perros la evitaban.', 'P1') },
+      { fact: book(12, 'Poncho caminaba en zigzag para rodear lo que había descubierto. Los hombres clavaban sus bastones y piquetas en la nieve, y casi siempre encontraban una grieta ancha y honda.') },
     ],
     question: {
-      prompt: 'Según el relato, ¿qué hacía Poncho al detectar una grieta?',
-      options: ['Saltaba por encima y seguía', 'Avisaba al conductor', 'Se echaba a dormir'],
-      answer: 1,
+      prompt: '¿Qué quería decirles Poncho cuando miró hacia atrás?',
+      options: ['Que había una grieta escondida bajo la nieve', 'Que tenía hambre', 'Que venía una tormenta'],
+      answer: 0,
     },
   },
-  'operacion-90-patrulla-82': {
-    notes: [],
+  'patrulla-paralelo-82': {
+    notes: [
+      { fact: book(17, 'Poncho no llegó al Polo Sur. Lo alcanzó el grupo de tractores el 10 de diciembre de 1965, después de 66 días de marcha.', 'O12') },
+    ],
     question: {
       prompt: '¿Poncho llegó al Polo Sur?',
-      options: ['Sí, fue el primer perro en llegar', 'No: su patrulla exploró por delante del grupo motorizado', 'No: nunca salió de Esperanza'],
+      options: ['Sí, fue el primer perro en llegar', 'No: su patrulla exploró por delante de los tractores', 'No: nunca salió de Esperanza'],
       answer: 1,
     },
   },
   paracaidas: {
-    notes: [],
+    notes: [
+      { fact: book(19, 'Los perros aterrizaron sobre el hielo, a unos 30 km al sur de la Base Belgrano. En minutos armaron el trineo y salieron con Poncho al frente a rescatar a una patrulla perdida. Volvieron a la base esa misma noche.') },
+    ],
     question: {
-      prompt: '¿Desde dónde saltó Poncho en paracaídas?',
-      options: ['Un avión Hércules', 'Un globo', 'Un helicóptero'],
-      answer: 2,
+      prompt: '¿Qué hizo Poncho al llegar al hielo con su paracaídas?',
+      options: ['Se echó a dormir', 'Tiró del trineo para rescatar a una patrulla perdida', 'Volvió a la base en helicóptero'],
+      answer: 1,
     },
   },
-  duse: {
-    notes: [],
+  'brujula-perdida': {
+    notes: [
+      { fact: book(20, 'Después de dos horas de andar a ciegas, ya de noche, los hombres vieron las luces de la base: Poncho los había llevado hasta Esperanza. Tres días después, cuando pasó el temporal, recuperaron la brújula y los vehículos.') },
+    ],
     question: {
-      prompt: 'Según el relato, cuando se perdió la brújula, ¿cómo volvió la patrulla a la base?',
-      options: ['Siguiendo a Poncho', 'Siguiendo las estrellas', 'Esperando a que pasara la ventisca'],
+      prompt: '¿Qué vio la patrulla después de dos horas de andar a ciegas?',
+      options: ['Las luces de la Base Esperanza', 'Un helicóptero', 'La luna'],
       answer: 0,
     },
   },

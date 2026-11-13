@@ -1,13 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { PONCHO_EXPEDITION, PONCHO_MILESTONES, voyageStops } from '../src/index.ts';
+import { PONCHO_EXPEDITION, PONCHO_MILESTONES, PONCHO_TRANSPORT, VOYAGE_SOURCES, voyageStops } from '../src/index.ts';
 
-const allFacts = PONCHO_MILESTONES.flatMap((m) => [m.essential, ...m.more]);
+const allFacts = [
+  ...PONCHO_TRANSPORT.facts,
+  ...PONCHO_MILESTONES.flatMap((m) => [m.essential, ...m.more]),
+  ...Object.values(PONCHO_EXPEDITION).flatMap((stop) => stop.notes.map((n) => n.fact)),
+];
+const sentences = (text: string) => text.match(/[.!?](?=\s|$)/g)?.length ?? 0;
 const allTexts = [
-  ...PONCHO_MILESTONES.flatMap((m) => [m.title, ...allFacts.filter((f) => f === m.essential || m.more.includes(f)).map((f) => f.text)]),
-  ...Object.values(PONCHO_EXPEDITION).flatMap((stop) => [
-    ...stop.notes.map((n) => n.fact.text),
-    ...(stop.question ? [stop.question.prompt, ...stop.question.options] : []),
-  ]),
+  ...PONCHO_MILESTONES.map((m) => m.title),
+  ...allFacts.map((f) => f.text),
+  ...Object.values(PONCHO_EXPEDITION).flatMap((stop) => (stop.question ? [stop.question.prompt, ...stop.question.options] : [])),
 ];
 
 describe('content of the expedition of Poncho', () => {
@@ -54,5 +57,52 @@ describe('content of the expedition of Poncho', () => {
     for (const text of allTexts) {
       expect(text, text).not.toMatch(/Círculo Polar|1956|Dusse|paracaidistas de la Segunda/);
     }
+  });
+
+  // The story was rewritten as a short tale of 9 or 10 stops, each in its own place of the route (it had 17 stops
+  // that opened in a row in the same place); the data with their sources went to «Saber más».
+  it('tells the story in 9 or 10 stops', () => {
+    expect(PONCHO_MILESTONES.length).toBeGreaterThanOrEqual(9);
+    expect(PONCHO_MILESTONES.length).toBeLessThanOrEqual(10);
+  });
+
+  it('opens each stop on a leg of the route, and no two stops in the same place of one leg', () => {
+    const places = PONCHO_MILESTONES.map((m) => {
+      expect(Number.isInteger(m.segment), m.id).toBe(true);
+      expect(m.segment!, m.id).toBeGreaterThanOrEqual(0);
+      expect(m.segment!, m.id).toBeLessThanOrEqual(5);
+      return `${m.segment}:${JSON.stringify(m.place ?? m.anchor)}`;
+    });
+    expect(new Set(places).size).toBe(places.length);
+  });
+
+  it('tells each stop in two or three short sentences', () => {
+    for (const m of PONCHO_MILESTONES) {
+      expect(sentences(m.essential.text), m.id).toBeGreaterThanOrEqual(2);
+      expect(sentences(m.essential.text), m.id).toBeLessThanOrEqual(3);
+    }
+  });
+
+  it('cites the page of the book for every real fact of it', () => {
+    for (const fact of allFacts) {
+      if (fact.kind === 'real' && fact.sources.includes('P1')) {
+        const page = fact.pages?.P1;
+        expect(page, fact.text).toBeDefined();
+        expect(Number.isInteger(page), fact.text).toBe(true);
+        expect(page!, fact.text).toBeGreaterThanOrEqual(1);
+        expect(page!, fact.text).toBeLessThanOrEqual(25);
+      }
+      for (const code of Object.keys(fact.pages ?? {})) expect(fact.sources, fact.text).toContain(code);
+    }
+  });
+
+  it('links the book to its PDF, a document that has pages', () => {
+    expect(VOYAGE_SOURCES.P1.url).toBe('https://www.marambio.aq/pdf/poncho.pdf');
+  });
+
+  it('does not say in every card that it is approximate or illustrative: the trip says it once', () => {
+    for (const text of allTexts) expect(text, text).not.toMatch(/aproximad|ilustrativ|a definir|según el libro/i);
+    expect(PONCHO_TRANSPORT.notice).toBe('El recorrido y los modelos son una ilustración, no una ruta real.');
+    expect(allFacts.every((f) => f.kind === 'real')).toBe(true);
   });
 });

@@ -56,6 +56,8 @@ export const VOYAGE_SOURCES = {
   // The page shows no date; its metadata says 25-11-2019.
   O46: { org: 'Armada Argentina', title: '«Cruzando el Pasaje de Drake a bordo del rompehielos ARA "Almirante Irízar"» (25-11-2019, según los metadatos de la página)', url: 'https://www.argentina.gob.ar/noticias/cruzando-el-pasaje-de-drake-bordo-del-rompehielos-ara-almirante-irizar', consulted: '2026-11-12' },
   P1: { org: 'Emilio Urruty (autor), Fundación Marambio (transcripción)', title: '«Poncho. La legendaria vida de un perro polar argentino», 2009', url: 'https://www.marambio.aq/poncho.html', consulted: '2026-11-12' },
+  P2: { org: 'Carlos Alberto Montenegro (autor), Fundación Marambio (publicación)', title: '«El perro polar argentino»', url: 'https://www.marambio.aq/perropolar.html', consulted: '2026-11-12' },
+  P3: { org: 'SCAR (Scientific Committee on Antarctic Research), servido por el Australian Antarctic Data Centre', title: 'Composite Gazetteer of Antarctica (topónimos y coordenadas)', url: 'https://placenames.aq/', consulted: '2026-11-12' },
   I1: { org: 'Secretaría del Tratado Antártico', title: 'Tratado Antártico (1959), art. VI', url: 'https://documents.ats.aq/keydocs/vol_1/vol1_2_AT_Antarctic_Treaty_e.pdf' },
   I2: { org: 'Secretaría del Tratado Antártico', title: 'Protocolo al Tratado Antártico sobre Protección del Medio Ambiente (Protocolo de Madrid)', url: 'https://www.ats.aq/s/protocol.html' },
   I3: { org: 'Secretaría del Tratado Antártico', title: 'Anexo III del Protocolo de Madrid: eliminación y tratamiento de residuos', url: 'https://documents.ats.aq/recatt/Att010_s.pdf' },
@@ -167,6 +169,8 @@ export interface Milestone {
   place?: readonly [lon: number, lat: number];
   /** Transports that pass by it. */
   kinds: readonly TransportKind[];
+  /** Year of the story it tells, when the trip is a life told in order (the trip of Poncho). */
+  year?: number;
   /** Explorar: the essential, one or two sentences. */
   essential: VoyageFact;
   /** Profundizar: «Saber más». */

@@ -25,7 +25,8 @@ export const VOXEL_MIN_COLORS = 2;
 
 /** One unit is the length of the vehicle. */
 const MODELS: Record<TransportId, readonly Box[]> = {
-  // The team of Poncho: dog, sled and pack, in ponchoModels.ts.
+  // Poncho's team, his dog and the icebreaker with dogs on board, in ponchoModels.ts.
+  ...PONCHO_MODELS,
   poncho: PONCHO_MODELS.poncho,
   // Icebreaker: superstructure on the forward half, hangar and flight deck aft, red hull.
   irizar: [

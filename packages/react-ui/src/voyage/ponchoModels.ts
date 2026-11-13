@@ -32,6 +32,21 @@ const SLED_LOAD = 0x6f7f8c;
 const SLED_LOAD_STRAP = 0xc8472a;
 const GANGLINE = 0x3b3a3a;
 
+// Old icebreaker with dogs on deck: a generic ship of another era, an illustration (colors
+// approximate, not any real vessel). Dark hull, light superstructure, buff funnel with a red band.
+const SHIP_HULL = 0x2f3b46;
+const SHIP_BOOT_TOPPING = 0x8a2f22;
+const SHIP_DECK = 0x7a5f40;
+const SHIP_SUPERSTRUCTURE = 0xe9e4d4;
+const SHIP_WINDOW = 0x1f2a36;
+const SHIP_PORTHOLE = 0xd8b45a;
+const SHIP_FUNNEL = 0xd9b45a;
+const SHIP_FUNNEL_BAND = 0xc8472a;
+const SHIP_FUNNEL_TOP = 0x1f2a36;
+const SHIP_RIGGING = 0x4a4744;
+const SHIP_CRATE = 0x9b7b4f;
+const SHIP_CRATE_STRAP = 0x5e4630;
+
 interface DogPalette {
   coat: number;
   shade: number;
@@ -144,6 +159,9 @@ function tugLines(): Box[] {
   return lines;
 }
 
+/** Top of the ship's deck: dogs stand on it. */
+const DECK_TOP = 0.09;
+
 const poncho: Box[] = [
   ...dogAt(PONCHO_PALETTE, LEAD_SCALE, LEAD_X, 0),
   ...TEAM_PAIRS.flatMap(([x, left, right]) => [
@@ -154,8 +172,69 @@ const poncho: Box[] = [
   ...nansenSled(),
 ];
 
+/** Dogs lying or standing on the ship's deck: [x, z, scale, palette]. Poncho is the one at the bow. */
+const SHIP_DOGS: readonly (readonly [number, number, number, DogPalette])[] = [
+  [0.37, 0, 0.1, PONCHO_PALETTE],
+  [-0.1, 0.06, 0.085, packPalette(PACK_GREY, PACK_GREY_SHADE, PACK_GREY_PATCH)],
+  [-0.1, -0.06, 0.085, packPalette(PACK_TAN, PACK_TAN_SHADE, PACK_TAN_PATCH)],
+  [-0.2, 0.06, 0.085, packPalette(PACK_DARK, PACK_DARK_SHADE, PACK_DARK_PATCH)],
+  [-0.2, -0.06, 0.085, packPalette(PACK_GREY, PACK_GREY_SHADE, PACK_GREY_PATCH)],
+  [-0.29, 0.06, 0.085, packPalette(PACK_TAN, PACK_TAN_SHADE, PACK_TAN_PATCH)],
+];
+
+/** How many dogs travel on the ship's deck. */
+export const PONCHO_SHIP_DOG_COUNT = SHIP_DOGS.length;
+
+/** Old-style icebreaker: raked bow, small forward bridge, tall central funnel, aft crane, cargo and dogs. */
+function ponchoShip(): Box[] {
+  const hull: Box[] = [
+    [-0.03, 0.04, 0, 0.86, 0.08, 0.2, SHIP_HULL],
+    [0.43, 0.045, 0, 0.08, 0.07, 0.15, SHIP_HULL],
+    [0.485, 0.06, 0, 0.03, 0.05, 0.08, SHIP_HULL],
+    [-0.47, 0.04, 0, 0.06, 0.08, 0.17, SHIP_HULL],
+    [-0.03, 0.01, 0, 0.87, 0.02, 0.204, SHIP_BOOT_TOPPING],
+    [-0.03, 0.085, 0, 0.84, 0.01, 0.19, SHIP_DECK],
+    [-0.03, 0.1, 0.095, 0.8, 0.02, 0.01, SHIP_HULL],
+    [-0.03, 0.1, -0.095, 0.8, 0.02, 0.01, SHIP_HULL],
+  ];
+  const portholes: Box[] = [-0.2, -0.1, 0.1, 0.2].flatMap((x): Box[] => [
+    [x, 0.05, 0.1, 0.014, 0.014, 0.006, SHIP_PORTHOLE],
+    [x, 0.05, -0.1, 0.014, 0.014, 0.006, SHIP_PORTHOLE],
+  ]);
+  const bridge: Box[] = [
+    [0.22, 0.13, 0, 0.16, 0.08, 0.14, SHIP_SUPERSTRUCTURE],
+    [0.23, 0.19, 0, 0.1, 0.04, 0.12, SHIP_SUPERSTRUCTURE],
+    [0.23, 0.215, 0, 0.11, 0.01, 0.13, SHIP_DECK],
+    // Bridge windows: front and both sides.
+    [0.281, 0.195, 0, 0.006, 0.02, 0.1, SHIP_WINDOW],
+    [0.23, 0.195, 0.061, 0.07, 0.02, 0.004, SHIP_WINDOW],
+    [0.23, 0.195, -0.061, 0.07, 0.02, 0.004, SHIP_WINDOW],
+    // Mast with a yard.
+    [0.24, 0.27, 0, 0.012, 0.1, 0.012, SHIP_RIGGING],
+    [0.24, 0.29, 0, 0.01, 0.01, 0.08, SHIP_RIGGING],
+  ];
+  const funnel: Box[] = [
+    [0, 0.18, 0, 0.1, 0.18, 0.1, SHIP_FUNNEL],
+    [0, 0.235, 0, 0.104, 0.04, 0.104, SHIP_FUNNEL_BAND],
+    [0, 0.28, 0, 0.104, 0.02, 0.104, SHIP_FUNNEL_TOP],
+  ];
+  const cargo: Box[] = [
+    [-0.37, 0.15, 0, 0.02, 0.12, 0.02, SHIP_RIGGING],
+    [-0.42, 0.21, 0, 0.12, 0.012, 0.012, SHIP_RIGGING],
+    [-0.15, 0.11, 0, 0.08, 0.04, 0.05, SHIP_CRATE],
+    [-0.15, 0.133, 0, 0.02, 0.006, 0.052, SHIP_CRATE_STRAP],
+    [-0.25, 0.11, 0, 0.08, 0.04, 0.05, SHIP_CRATE],
+    [-0.25, 0.133, 0, 0.02, 0.006, 0.052, SHIP_CRATE_STRAP],
+  ];
+  const dogs = SHIP_DOGS.flatMap(([x, z, scale, palette]) =>
+    dogAt(palette, scale, x, z).map(([cx, cy, cz, sx, sy, sz, color]): Box => [cx, cy + DECK_TOP, cz, sx, sy, sz, color]),
+  );
+  return [...hull, ...portholes, ...bridge, ...funnel, ...cargo, ...dogs];
+}
+
 /** Poncho's models: the whole team in one draw call and Poncho alone for cards and previews. */
 export const PONCHO_MODELS: Readonly<Record<string, readonly Box[]>> = {
   poncho,
   'poncho-dog': dogLocal(PONCHO_PALETTE),
+  'poncho-ship': ponchoShip(),
 };

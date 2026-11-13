@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { PONCHO_MODELS } from '../src/voyage/ponchoModels.ts';
+import { PONCHO_MODELS, PONCHO_SHIP_DOG_COUNT } from '../src/voyage/ponchoModels.ts';
 import { SCENE_MODELS } from '../src/voyage/sightingModels.ts';
-import { VOXEL_MIN_COLORS } from '../src/voyage/vehicles.ts';
+import { VEHICLE_MODELS, VOXEL_MIN_BOXES, VOXEL_MIN_COLORS } from '../src/voyage/vehicles.ts';
 
 describe('Poncho voxel models', () => {
   it('are registered in the scene models', () => {
@@ -38,5 +38,35 @@ describe('Poncho voxel models', () => {
   it('Poncho leads the team: the furthest box toward +x belongs to the front', () => {
     const maxX = Math.max(...PONCHO_MODELS.poncho.map((b) => b[0] + b[3] / 2));
     expect(maxX).toBeGreaterThan(0.45);
+  });
+
+  describe('poncho-ship', () => {
+    const ship = PONCHO_MODELS['poncho-ship'];
+
+    it('is registered in the scene models and has the minimum detail', () => {
+      expect(SCENE_MODELS['poncho-ship']).toBe(ship);
+      expect(ship.length).toBeGreaterThanOrEqual(VOXEL_MIN_BOXES);
+    });
+
+    it('points its bow to +x and fits in one unit of length', () => {
+      const maxX = Math.max(...ship.map((b) => b[0] + b[3] / 2));
+      const minX = Math.min(...ship.map((b) => b[0] - b[3] / 2));
+      expect(maxX).toBeGreaterThan(0.45);
+      expect(maxX).toBeLessThanOrEqual(0.5 + 1e-9);
+      expect(minX).toBeGreaterThanOrEqual(-0.5 - 1e-9);
+    });
+
+    it('carries between 5 and 8 dogs, each made of the Poncho dog boxes', () => {
+      expect(PONCHO_SHIP_DOG_COUNT).toBeGreaterThanOrEqual(5);
+      expect(PONCHO_SHIP_DOG_COUNT).toBeLessThanOrEqual(8);
+      expect(ship.length).toBeGreaterThanOrEqual(PONCHO_SHIP_DOG_COUNT * PONCHO_MODELS['poncho-dog'].length + VOXEL_MIN_BOXES);
+    });
+
+    it('is a different ship than the Irizar', () => {
+      const irizar = VEHICLE_MODELS.irizar;
+      expect(ship.length).not.toBe(irizar.length);
+      const tallest = (boxes: readonly (readonly number[])[]) => Math.max(...boxes.map((b) => b[1] + b[4] / 2));
+      expect(tallest(ship)).not.toBeCloseTo(tallest(irizar), 3);
+    });
   });
 });

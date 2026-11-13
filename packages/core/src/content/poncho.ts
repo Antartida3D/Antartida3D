@@ -16,8 +16,7 @@ export const PONCHO_TRANSPORT: Transport = {
   pitch: 'Un perro polar argentino guía el trineo por el hielo.',
   // Own estimate: the book says a team covered 40 to 50 km in more than six hours on level ground.
   cruiseKmh: 7,
-  // TODO(#79): the icebreaker with dogs on board, a model of its own; until then the leg by sea draws a generic ship.
-  models: { ship: 'irizar' },
+  models: { ship: 'poncho-ship' },
   facts: [
     { text: 'Poncho nació el 10 de abril de 1961 en la Base Esperanza y fue perro-guía de trineo durante años de expediciones.', kind: 'real', sources: ['P1'] },
   ],

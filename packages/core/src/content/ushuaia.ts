@@ -88,8 +88,24 @@ export interface VoyageFact {
 }
 
 export type TransportId = 'irizar' | 'hercules' | 'puerto-argentino' | 'poncho';
-/** `sled` is the team of Poncho on the Antarctic ice (content/poncho.ts). */
-export type TransportKind = 'ship' | 'plane' | 'sled';
+/** What is drawn on the map at a moment of a trip. */
+export type VehicleKind = 'ship' | 'plane' | 'sled';
+
+/**
+ * Family of trip: the path, the stops and the pace. A ship or a plane makes a trip of one leg with its own vehicle;
+ * `dogs` is the trip of the sled dogs (content/poncho.ts), which changes vehicle along the way (sled on the ice,
+ * ship on the sea).
+ */
+export type TransportKind = 'ship' | 'plane' | 'dogs';
+
+/** A leg of a trip: one vehicle along one route, ending where the next leg starts. */
+export interface TripSegment {
+  vehicle: VehicleKind;
+  /** The route as [lon, lat] waypoints. */
+  waypoints: readonly (readonly [number, number])[];
+  /** Seconds of steady advance along the leg. Not a real duration. */
+  seconds: number;
+}
 
 export interface Transport {
   id: TransportId;
@@ -100,6 +116,8 @@ export interface Transport {
   pitch: string;
   /** Cruise speed in km/h, for the estimated hours of the trip. Not a measured speed of any one trip. */
   cruiseKmh: number;
+  /** Model drawn for a vehicle of the trip when it is not the transport's own (the id of the transport by default). */
+  models?: Partial<Record<VehicleKind, string>>;
   facts: readonly VoyageFact[];
 }
 
@@ -169,6 +187,8 @@ export interface Milestone {
   place?: readonly [lon: number, lat: number];
   /** Transports that pass by it. */
   kinds: readonly TransportKind[];
+  /** Leg of the trip where it opens, when the path passes the same place on another leg. */
+  segment?: number;
   /** Year of the story it tells, when the trip is a life told in order (the trip of Poncho). */
   year?: number;
   /** Explorar: the essential, one or two sentences. */

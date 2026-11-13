@@ -247,9 +247,9 @@ function MilestoneCard({ voyage, animated, onExit, onSource }: {
         </p>
       )}
       {last && voyageSightings(state.kind).length > 0 && <Notebook voyage={voyage} animated={animated} />}
-      {last && <p className="anno">{state.kind === 'sled' ? 'Podés volver a recorrer su historia cuando quieras.' : 'Si te quedó curiosidad por otro medio, volvé a hacer la expedición.'}</p>}
+      {last && <p className="anno">{state.kind === 'dogs' ? 'Podés volver a recorrer su historia cuando quieras.' : 'Si te quedó curiosidad por otro medio, volvé a hacer la expedición.'}</p>}
       <div className="row vactions">
-        <button type="button" className="btn primary" onClick={next}>{last ? 'Terminar el viaje' : state.kind === 'sled' && state.card === 0 ? 'Partir' : 'Continuar'}</button>
+        <button type="button" className="btn primary" onClick={next}>{last ? 'Terminar el viaje' : state.kind === 'dogs' && state.card === 0 ? 'Partir' : 'Continuar'}</button>
         <button type="button" className="btn ghost" aria-expanded={more} onClick={() => setMore((m) => !m)}>
           {more ? 'Ver menos' : 'Saber más'}
         </button>
@@ -276,7 +276,7 @@ function formatTripHours(hours: number): string {
 /** Distance and time travelled so far. Always an estimate, and the text says so. */
 function tripLine({ transport, kind, t, reached }: VoyageState): string {
   // A life of 17 years is not measured in hours, nor in km of a line the map only draws: it goes by milestones.
-  if (kind === 'sled') return `${reached} de ${voyageStops(kind).length} hitos de su historia`;
+  if (kind === 'dogs') return `${reached} de ${voyageStops(kind).length} hitos de su historia`;
   const { km, totalKm, hours } = voyageProgress(transport, t);
   return `Estimación: ≈ ${WHOLE.format(km)} de ${WHOLE.format(totalKm)} km · ≈ ${formatTripHours(hours)} ${kind === 'plane' ? 'de vuelo' : 'de navegación'}`;
 }

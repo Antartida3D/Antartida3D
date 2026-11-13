@@ -1,5 +1,5 @@
 import { BufferAttribute, BufferGeometry, Color, MeshBasicMaterial } from 'three';
-import type { TransportId } from '@antartida/core';
+import { findTransport, type TransportId, type VehicleKind } from '@antartida/core';
 import { PONCHO_MODELS } from './ponchoModels.ts';
 
 /** [centerX, centerY, centerZ, sizeX, sizeY, sizeZ, color]. The bow or nose points to +x, y is up. */
@@ -110,7 +110,10 @@ const FACES: readonly { corners: readonly (readonly [number, number, number])[];
 export const VEHICLE_MODELS: Readonly<Record<string, readonly Box[]>> = MODELS;
 
 /** Voxel-style vehicle. */
-export const buildVehicleGeometry = (id: TransportId) => buildBoxGeometry(MODELS[id]);
+/** Id of the model drawn for a vehicle of a trip: the one the transport names for it, or its own. */
+export const vehicleModel = (transport: TransportId, vehicle: VehicleKind): string => findTransport(transport).models?.[vehicle] ?? transport;
+
+export const buildVehicleGeometry = (id: string) => buildBoxGeometry(VEHICLE_MODELS[id]);
 
 /**
  * Voxel-style model: every box merged into one geometry with vertex colors, so each model is a

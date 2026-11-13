@@ -1,8 +1,8 @@
 import {
   EXPEDITION, MILESTONES, SIGHTINGS, TRANSPORTS,
-  type Milestone, type Sighting, type Transport, type TransportId, type TransportKind, type VoyageFact, type VoyageQuestion,
+  type Milestone, type Sighting, type Transport, type TransportId, type TransportKind, type VehicleKind, type VoyageFact, type VoyageQuestion,
 } from './content/ushuaia.ts';
-import { PONCHO_EXPEDITION, PONCHO_MILESTONES, PONCHO_ROUTE_WAYPOINTS, PONCHO_TRANSPORT } from './content/poncho.ts';
+import { PONCHO_EXPEDITION, PONCHO_MILESTONES, PONCHO_SEGMENTS, PONCHO_TRANSPORT } from './content/poncho.ts';
 import { FLIGHT_GROUND_M } from './flight-ground.ts';
 import { FLIGHT_GROUND_STEP, flightAt } from './flight-path.ts';
 import { fuegiaWorldHeight } from './fuegia.ts';
@@ -98,15 +98,68 @@ export function flightClearance(t: number, mesh?: TerrainMesh): number {
 export const SHIP_HEAD_START = 1.3;
 const SHIP_START = SHIP_HEAD_START / ROUTE_LENGTH;
 
-/** The team of Poncho follows its own route over the ice, drawn with the same curve as the sea route. */
-const PONCHO_CURVE = buildCurve(PONCHO_ROUTE_WAYPOINTS.map(([lon, lat]) => project(lon, lat)));
-
-/** Position in map space at fraction `t` of the trip (0 = departure, 1 = arrival: Ushuaia to Marambio, or Esperanza to San Martín for the sled). */
-export function voyageAt(kind: TransportKind, t: number): Point {
-  if (kind === 'plane') return flightAt(clamp01(t));
-  if (kind === 'sled') return PONCHO_CURVE.at(clamp01(t));
-  return routeAt(SHIP_START + clamp01(t) * (1 - SHIP_START));
+/** A leg of a trip as the engine walks it: a vehicle along a path, for some seconds of steady advance. */
+export interface TripLeg {
+  vehicle: VehicleKind;
+  /** Position in map space at fraction `u` (0..1) of the leg. */
+  at: (u: number) => Point;
+  seconds: number;
 }
+
+export interface Trip {
+  /** Seconds of steady advance along the whole trip. */
+  seconds: number;
+  legCount: number;
+  /** Position in map space at fraction `t` of the trip. A leg takes the share of the trip that its seconds are of the total. */
+  at: (t: number) => Point;
+  /** Vehicle of the leg that `t` falls in. */
+  vehicleAt: (t: number) => VehicleKind;
+  /** Fractions of the trip where a leg starts and ends. */
+  legRange: (leg: number) => readonly [from: number, to: number];
+}
+
+/** Joins legs into one trip. The end of a leg must be the start of the next one: the vehicle changes at a port, it does not jump. */
+export function buildTrip(legs: readonly TripLeg[]): Trip {
+  const seconds = legs.reduce((sum, leg) => sum + leg.seconds, 0);
+  const starts = legs.map((_, i) => legs.slice(0, i).reduce((sum, leg) => sum + leg.seconds, 0) / seconds);
+  const locate = (t: number) => {
+    const at = clamp01(t);
+    let i = legs.length - 1;
+    while (i > 0 && at < starts[i]) i--;
+    const span = legs[i].seconds / seconds;
+    return { i, u: clamp01((at - starts[i]) / span) };
+  };
+  return {
+    seconds,
+    legCount: legs.length,
+    at: (t) => {
+      const { i, u } = locate(t);
+      return legs[i].at(u);
+    },
+    vehicleAt: (t) => legs[locate(t).i].vehicle,
+    legRange: (leg) => [starts[leg], leg + 1 < legs.length ? starts[leg + 1] : 1],
+  };
+}
+
+/** The ship leaves Ushuaia a little into the sea route (see SHIP_HEAD_START); the plane flies the great circle. */
+const TRIPS: Record<TransportKind, Trip> = {
+  ship: buildTrip([{ vehicle: 'ship', seconds: 48, at: (u) => routeAt(SHIP_START + u * (1 - SHIP_START)) }]),
+  plane: buildTrip([{ vehicle: 'plane', seconds: 30, at: flightAt }]),
+  // The dogs: one curve per leg, drawn with the same curve as the sea route.
+  dogs: buildTrip(
+    PONCHO_SEGMENTS.map((leg) => ({
+      vehicle: leg.vehicle,
+      seconds: leg.seconds,
+      at: buildCurve(leg.waypoints.map(([lon, lat]) => project(lon, lat))).at,
+    })),
+  ),
+};
+
+/** Position in map space at fraction `t` of the trip (0 = departure, 1 = arrival: Ushuaia to Marambio, or the story of the dogs). */
+export const voyageAt = (kind: TransportKind, t: number): Point => TRIPS[kind].at(t);
+
+/** What is drawn at fraction `t` of the trip: a trip of the dogs changes vehicle with its legs. */
+export const vehicleAt = (kind: TransportKind, t: number): VehicleKind => TRIPS[kind].vehicleAt(t);
 
 const PATH_SAMPLES = 400;
 const pathLength = (kind: TransportKind) => {
@@ -118,7 +171,7 @@ const pathLength = (kind: TransportKind) => {
   }
   return total;
 };
-const LENGTHS: Record<TransportKind, number> = { ship: pathLength('ship'), plane: pathLength('plane'), sled: pathLength('sled') };
+const LENGTHS: Record<TransportKind, number> = { ship: pathLength('ship'), plane: pathLength('plane'), dogs: pathLength('dogs') };
 
 /** Length of the whole trip in map units. */
 export const voyageLength = (kind: TransportKind) => LENGTHS[kind];
@@ -142,7 +195,7 @@ const pathKm = (kind: TransportKind) => {
   }
   return km;
 };
-const KM: Record<TransportKind, readonly number[]> = { ship: pathKm('ship'), plane: pathKm('plane'), sled: pathKm('sled') };
+const KM: Record<TransportKind, readonly number[]> = { ship: pathKm('ship'), plane: pathKm('plane'), dogs: pathKm('dogs') };
 
 export interface VoyageProgress {
   /** Km travelled along the drawn path. */
@@ -187,13 +240,19 @@ function buildStops(kind: TransportKind): VoyageStop[] {
   const samples = Array.from({ length: STOP_SAMPLES + 1 }, (_, i) => voyageAt(kind, i / STOP_SAMPLES));
   const stops = [...MILESTONES, ...PONCHO_MILESTONES].filter((m) => m.kinds.includes(kind)).map((milestone) => {
     const { anchor } = milestone;
+    // A milestone of a leg looks for its place only along that leg.
+    const [from, to] = milestone.segment === undefined ? [0, 1] : TRIPS[kind].legRange(milestone.segment);
+    const lo = Math.floor(from * STOP_SAMPLES);
+    const hi = Math.ceil(to * STOP_SAMPLES);
     let index: number;
     if ('lat' in anchor) {
-      index = samples.findIndex((p) => unproject(p.x, p.y).lat <= anchor.lat);
-      if (index < 0) index = STOP_SAMPLES;
+      index = samples.findIndex((p, i) => i >= lo && i <= hi && unproject(p.x, p.y).lat <= anchor.lat);
+      if (index < 0) index = hi;
     } else {
       const target = project(anchor[0], anchor[1]);
-      index = samples.reduce((best, p, i) => (Math.hypot(p.x - target.x, p.y - target.y) < Math.hypot(samples[best].x - target.x, samples[best].y - target.y) ? i : best), 0);
+      const gap = (i: number) => Math.hypot(samples[i].x - target.x, samples[i].y - target.y);
+      index = lo;
+      for (let i = lo + 1; i <= hi; i++) if (gap(i) < gap(index)) index = i;
     }
     const pin = milestone.place ? project(milestone.place[0], milestone.place[1]) : samples[index];
     return { milestone, t: index / STOP_SAMPLES, pin: { x: pin.x, y: pin.y } };
@@ -201,7 +260,7 @@ function buildStops(kind: TransportKind): VoyageStop[] {
   return stops;
 }
 
-const STOPS: Record<TransportKind, VoyageStop[]> = { ship: buildStops('ship'), plane: buildStops('plane'), sled: buildStops('sled') };
+const STOPS: Record<TransportKind, VoyageStop[]> = { ship: buildStops('ship'), plane: buildStops('plane'), dogs: buildStops('dogs') };
 
 /** Milestones a transport passes, in trip order, with the fraction where each one opens. */
 export function voyageStops(kind: TransportKind): readonly VoyageStop[] {
@@ -283,7 +342,7 @@ export function quizScore(transport: TransportId, answers: Readonly<Record<strin
 }
 
 /** Seconds the whole trip takes while the user keeps advancing. Not a real duration. */
-export const VOYAGE_SECONDS: Record<TransportKind, number> = { ship: 48, plane: 30, sled: 60 };
+export const VOYAGE_SECONDS: Record<TransportKind, number> = { ship: TRIPS.ship.seconds, plane: TRIPS.plane.seconds, dogs: TRIPS.dogs.seconds };
 
 /**
  * Speed multipliers of "advance". Pressing again right after the previous press shifts up one

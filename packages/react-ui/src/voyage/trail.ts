@@ -1,5 +1,5 @@
 import { BufferAttribute, BufferGeometry, DoubleSide, MeshBasicMaterial } from 'three';
-import type { TransportKind } from '@antartida/core';
+import type { VehicleKind } from '@antartida/core';
 
 /** One ribbon behind the vehicle. Offsets and widths are in vehicle lengths, from its tail to the end of the trail. */
 interface Strip {
@@ -17,7 +17,7 @@ interface TrailShape {
 }
 
 /** ILLUSTRATIVE shapes: a ship's wake (churned water and the two arms of the V), a plane's contrails and the two runner tracks of a sled. */
-export const TRAILS: Record<TransportKind, TrailShape> = {
+export const TRAILS: Record<VehicleKind, TrailShape> = {
   ship: {
     start: 0.42,
     length: 5,
@@ -51,7 +51,7 @@ export const TRAIL_STEPS = 28;
 export const trailMaterial = new MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, side: DoubleSide });
 
 /** Ribbons with a fixed fade towards the end; the positions are rewritten on every frame. */
-export function buildTrailGeometry(kind: TransportKind): BufferGeometry {
+export function buildTrailGeometry(kind: VehicleKind): BufferGeometry {
   const { strips } = TRAILS[kind];
   const row = TRAIL_STEPS + 1;
   const colors = new Float32Array(strips.length * row * 2 * 4);
@@ -78,7 +78,7 @@ export function buildTrailGeometry(kind: TransportKind): BufferGeometry {
  */
 export function updateTrail(
   geometry: BufferGeometry,
-  kind: TransportKind,
+  kind: VehicleKind,
   size: number,
   at: (lengthsBehind: number) => { x: number; y: number; z: number; heading: number },
 ): void {

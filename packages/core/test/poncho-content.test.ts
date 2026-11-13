@@ -30,7 +30,7 @@ describe('content of the expedition of Poncho', () => {
   });
 
   it('opens the stops in the order of the story along the route', () => {
-    const stops = voyageStops('sled');
+    const stops = voyageStops('dogs');
     expect(stops.map((s) => s.milestone.year)).toEqual(PONCHO_MILESTONES.map((m) => m.year));
     for (let i = 1; i < stops.length; i++) expect(stops[i].t).toBeGreaterThanOrEqual(stops[i - 1].t);
   });

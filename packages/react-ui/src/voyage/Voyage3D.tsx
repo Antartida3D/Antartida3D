@@ -15,6 +15,7 @@ import {
   heightAt,
   sightingsInView,
   stormAt,
+  vehicleAt,
   voyageAt,
   voyageHeading,
   voyageLength,
@@ -23,9 +24,10 @@ import {
   worldHeight,
   type TransportId,
   type TransportKind,
+  type VehicleKind,
 } from '@antartida/core';
 import { buildPinGeometry, pinMaterial } from './pins.ts';
-import { buildVehicleGeometry, vehicleMaterial } from './vehicles.ts';
+import { buildVehicleGeometry, vehicleMaterial, vehicleModel } from './vehicles.ts';
 import { Sighting3D } from './Sighting3D.tsx';
 import { buildTrailGeometry, trailMaterial, updateTrail } from './trail.ts';
 import { NARROW_PX, type VoyageBus } from './useVoyage.ts';
@@ -81,16 +83,16 @@ function clearanceAt(t: number): number {
 }
 
 /** Whether the relief is loaded: before that every height is 0, and a team on a peak would be drawn on the sea. */
-function reliefReady(): boolean {
+function reliefReady(kind: TransportKind): boolean {
   return [0, 0.25, 0.5, 0.75, 1].some((t) => {
-    const p = voyageAt('sled', t);
+    const p = voyageAt(kind, t);
     return heightAt(p.x, p.y) > 0;
   });
 }
 
 /** World height of the ground under the sled's path at `t` (0 while the relief loads and on the sea). */
-function sledGround(t: number): number {
-  const p = voyageAt('sled', t);
+function sledGround(kind: TransportKind, t: number): number {
+  const p = voyageAt(kind, t);
   return Math.max(0, worldHeight(heightAt(p.x, p.y)));
 }
 
@@ -99,8 +101,9 @@ function sledGround(t: number): number {
  * farther the camera is, to stay readable; a ship sits slightly into the water.
  */
 export function heightOf(kind: TransportKind, t: number, size: number): number {
-  if (kind === 'ship') return -size * 0.02;
-  if (kind === 'sled') return sledRideHeight(sledGround(t), size);
+  const vehicle = vehicleAt(kind, t);
+  if (vehicle === 'ship') return -size * 0.02;
+  if (vehicle === 'sled') return sledRideHeight(sledGround(kind, t), size);
   return Math.max(clearanceAt(t), Math.sin(Math.PI * Math.min(1, Math.max(0, t))) ** 0.6 * size * 0.9) + size * 0.07;
 }
 
@@ -129,6 +132,8 @@ export function Voyage3D({ bus, reduced, overlay }: {
   const group = useRef<Group>(null);
   const trailMesh = useRef<Mesh>(null);
   const [transport, setTransport] = useState<TransportId | null>(bus.state?.transport ?? null);
+  // What is drawn now: a trip of the dogs changes it with its legs.
+  const [vehicle, setVehicle] = useState<VehicleKind | null>(bus.state ? vehicleAt(bus.state.kind, bus.state.t) : null);
   const drawn = useRef({ t: -1, transport: null as TransportId | null });
   // Far place the camera is at, and whether it is on its way back to the vehicle.
   const visit = useRef({ id: null as string | null, returning: false });
@@ -144,6 +149,7 @@ export function Voyage3D({ bus, reduced, overlay }: {
     const onChange = () => {
       setTransport(bus.state?.transport ?? null);
       const s = bus.state;
+      setVehicle(s ? vehicleAt(s.kind, s.t) : null);
       // They stay on the map while a milestone card is open.
       const visible = s ? sightingsInView(s.kind, s.t).map((v) => v.sighting.id) : [];
       // A card open beside an animal goes away with it.
@@ -169,7 +175,7 @@ export function Voyage3D({ bus, reduced, overlay }: {
   }, [camera, viewport, invalidate]);
 
   const kind = transport ? findTransport(transport).kind : null;
-  const geometry = useMemo(() => (transport ? buildVehicleGeometry(transport) : null), [transport]);
+  const geometry = useMemo(() => (transport && vehicle ? buildVehicleGeometry(vehicleModel(transport, vehicle)) : null), [transport, vehicle]);
   useEffect(() => () => geometry?.dispose(), [geometry]);
 
   const route = useMemo(() => {
@@ -184,7 +190,7 @@ export function Voyage3D({ bus, reduced, overlay }: {
   }, [kind]);
   useEffect(() => () => route?.geometry.dispose(), [route]);
 
-  const trail = useMemo(() => (kind ? buildTrailGeometry(kind) : null), [kind]);
+  const trail = useMemo(() => (vehicle ? buildTrailGeometry(vehicle) : null), [vehicle]);
   useEffect(() => () => trail?.dispose(), [trail]);
 
   // One pin per milestone ahead of the departure, so the user sees them coming.
@@ -199,8 +205,9 @@ export function Voyage3D({ bus, reduced, overlay }: {
     if (!s) storm.current = { inside: false, distance: null };
     if (!s || !g) return;
     const p = voyageAt(s.kind, s.t);
+    const veh = vehicleAt(s.kind, s.t);
     const distance = camera.position.distanceTo(g.position);
-    const size = s.kind === 'sled'
+    const size = veh === 'sled'
       ? Math.max(SLED_MIN_SIZE, distance * SLED_SIZE_PER_DISTANCE)
       : Math.max(MIN_SIZE, distance * SIZE_PER_DISTANCE);
     let height = heightOf(s.kind, s.t, size);
@@ -208,8 +215,8 @@ export function Voyage3D({ bus, reduced, overlay }: {
     const dt = Math.min(MAX_FRAME, delta);
     // The team settles on the ground: the first frame snaps, later ones ease, so a late relief does not make it jump.
     let trotLift = 0;
-    if (s.kind === 'sled') {
-      const ready = reliefReady();
+    if (veh === 'sled') {
+      const ready = reliefReady(s.kind);
       const wanted = ready ? height : (sled.current.height ?? height);
       sled.current.height = sled.current.height === null || !ready ? wanted : easeToward(sled.current.height, wanted, dt, SLED_SETTLE_RATE);
       height = sled.current.height;
@@ -222,21 +229,21 @@ export function Voyage3D({ bus, reduced, overlay }: {
 
     // Nose up while climbing, down while descending; a ship stays level.
     let pitch = 0;
-    if (s.kind === 'plane') {
-      const rise = heightOf('plane', s.t + PITCH_SPAN, size) - heightOf('plane', s.t - PITCH_SPAN, size);
+    if (veh === 'plane') {
+      const rise = heightOf(s.kind, s.t + PITCH_SPAN, size) - heightOf(s.kind, s.t - PITCH_SPAN, size);
       pitch = Math.min(MAX_PITCH, Math.max(-MAX_PITCH, Math.atan2(rise, 2 * PITCH_SPAN * length))) * (bus.back ? -1 : 1);
     }
-    if (s.kind === 'sled') {
+    if (veh === 'sled') {
       // Follows the slope between the ground behind and ahead of the team, half a length each way.
       const half = (0.5 * size) / length;
-      const slope = sledPitch(sledGround(Math.max(0, s.t - half)), sledGround(Math.min(1, s.t + half)), size);
+      const slope = sledPitch(sledGround(s.kind, Math.max(0, s.t - half)), sledGround(s.kind, Math.min(1, s.t + half)), size);
       pitch = Math.min(SLED_MAX_PITCH, Math.max(-SLED_MAX_PITCH, slope)) * (bus.back ? -1 : 1);
     }
     // A gentle sway, so the vehicle is alive even when the trip is paused.
     const time = reduced ? 0 : performance.now() / 1000;
-    const sway = s.kind === 'sled'
+    const sway = veh === 'sled'
       ? { roll: 0, pitch: 0, lift: 0 } // the team does not sway: it trots (trotLift)
-      : s.kind === 'plane'
+      : veh === 'plane'
       ? { roll: Math.sin(time * 0.9) * 0.05, pitch: Math.sin(time * 0.7) * 0.015, lift: Math.sin(time * 1.4) * 0.035 }
       : { roll: Math.sin(time * 1.1) * 0.04, pitch: Math.sin(time * 0.8) * 0.025, lift: Math.sin(time * 1.3) * 0.012 };
     // In the storm the waves throw the ship about; the deeper in, the more.
@@ -244,13 +251,13 @@ export function Voyage3D({ bus, reduced, overlay }: {
     // Bow up and down over each wave; the hull rises with it and rolls out of step.
     const wave = time * 2.1;
     // The plane flies over the storm, in calm air.
-    if (s.kind === 'ship') {
+    if (veh === 'ship') {
       sway.pitch += rough * Math.sin(wave) * 0.24;
       sway.roll += rough * Math.sin(wave * 0.63 + 1) * 0.22;
       sway.lift += rough * Math.sin(wave - 0.9) * 0.1;
     }
     // Spray bursts when the bow comes down into the water.
-    const burst = s.kind === 'ship' ? rough * Math.max(0, -Math.sin(wave + 0.5)) ** 2 : 0;
+    const burst = veh === 'ship' ? rough * Math.max(0, -Math.sin(wave + 0.5)) ** 2 : 0;
     spray.current.forEach((drop, i) => {
       if (!drop) return;
       const [x, z] = SPRAY[i];
@@ -277,11 +284,12 @@ export function Voyage3D({ bus, reduced, overlay }: {
 
     if (trailMesh.current) trailMesh.current.visible = !bus.back;
     if (trail && !bus.back) {
-      updateTrail(trail, s.kind, size, (lengthsBehind) => {
+      updateTrail(trail, vehicle ?? veh, size, (lengthsBehind) => {
         const t = Math.max(0, s.t - (lengthsBehind * size) / length);
         const q = voyageAt(s.kind, t);
         // A ship's wake lies on the water, a plane's contrails at its height, the sled's tracks on the snow.
-        const y = s.kind === 'ship' ? 0.05 : s.kind === 'sled' ? sledGround(t) + TRACK_LIFT : heightOf('plane', t, size);
+        const behind = vehicleAt(s.kind, t);
+        const y = behind === 'ship' ? 0.05 : behind === 'sled' ? sledGround(s.kind, t) + TRACK_LIFT : heightOf(s.kind, t, size);
         return { x: q.x - 500, y, z: q.y - 500, heading: voyageHeading(s.kind, t) };
       });
     }
@@ -290,7 +298,7 @@ export function Voyage3D({ bus, reduced, overlay }: {
     if (controls) {
       // Entering the storm, the camera comes down under the clouds; leaving it, it goes back up.
       // Only for a ship: the plane is above the clouds, and the camera stays up there with it.
-      const inside = s.kind === 'ship' && rough > 0;
+      const inside = veh === 'ship' && rough > 0;
       if (inside !== storm.current.inside) {
         if (inside && camera.position.y > STORM_CAMERA_HEIGHT) {
           storm.current.distance = controls.distance;
@@ -305,8 +313,8 @@ export function Voyage3D({ bus, reduced, overlay }: {
       if (departing) {
         // At the vehicle, so the camera does not jump to it when the trip starts moving.
         // The sled starts over its ground, which the relief may place well above the sea.
-        const offset = s.kind === 'sled' ? SLED_DEPARTURE_OFFSET : DEPARTURE_OFFSET;
-        const base = s.kind === 'sled' ? sledGround(0) : 0;
+        const offset = veh === 'sled' ? SLED_DEPARTURE_OFFSET : DEPARTURE_OFFSET;
+        const base = veh === 'sled' ? sledGround(s.kind, 0) : 0;
         void controls.setLookAt(p.x - 500 + offset.x, base + offset.y, p.y - 500 + offset.z, p.x - 500, base, p.y - 500, !reduced);
       } else {
         const open = bus.open ? voyageSightings(s.kind).find((v) => v.sighting.id === bus.open) : undefined;
@@ -361,7 +369,7 @@ export function Voyage3D({ bus, reduced, overlay }: {
       {trail && <mesh ref={trailMesh} geometry={trail} material={trailMaterial} frustumCulled={false} />}
       <group ref={group}>
         <mesh geometry={geometry} material={vehicleMaterial} />
-        {kind === 'ship' && SPRAY.map((_, i) => (
+        {vehicle === 'ship' && SPRAY.map((_, i) => (
           <mesh key={i} ref={(m) => void (spray.current[i] = m)} geometry={sprayGeometry} material={sprayMaterial} scale={0} />
         ))}
       </group>

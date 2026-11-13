@@ -1,10 +1,10 @@
 /**
  * Content of the expedition of Poncho (issue #9): the life of the Argentine polar sled dog told as a
  * trip over the Antarctic map, with the same shape as the trip «Desde Ushuaia» (content/ushuaia.ts):
- * the dog's team is one more transport (`kind: 'sled'`) and its stops are milestones.
+ * the dog team is one more transport (`kind: 'dogs'`) whose trip has legs (sled on the ice, ship on the sea) and whose stops are milestones.
  * Texts come from docs/expediciones/poncho.md; source codes point to VOYAGE_SOURCES.
  */
-import type { ExpeditionStop, Milestone, Transport, VoyageFact, VoyageSourceCode } from './ushuaia.ts';
+import type { ExpeditionStop, Milestone, Transport, TripSegment, VoyageFact, VoyageSourceCode } from './ushuaia.ts';
 
 /**
  * Route of the team as [lon, lat] waypoints, in the order of the story: Base Esperanza (where Poncho was
@@ -30,26 +30,26 @@ const DUSE_BAY = [-57.33, -63.5] as const;
 const USHUAIA = [-68.3, -54.81] as const;
 const SOUTH_POLE = [0, -90] as const;
 
-/** The ILLUSTRATIVE route of the team: see the waypoints above. */
-export const PONCHO_ROUTE_WAYPOINTS: readonly (readonly [number, number])[] = [
-  ESPERANZA,
-  FOCA_NUNATAKS,
-  SAN_MARTIN,
-  BELGRANO_AREA,
-  SANTA_FE_PEAK,
-  BELGRANO_RETURN,
-  DUSE_BAY,
+/** The legs of the trip of the team, in the order of the story. For now a single leg on the sled: see the waypoints above. */
+export const PONCHO_SEGMENTS: readonly TripSegment[] = [
+  {
+    vehicle: 'sled',
+    seconds: 60,
+    waypoints: [ESPERANZA, FOCA_NUNATAKS, SAN_MARTIN, BELGRANO_AREA, SANTA_FE_PEAK, BELGRANO_RETURN, DUSE_BAY],
+  },
 ];
 
 /** The team: Poncho in front, the sled and the pack behind. */
 export const PONCHO_TRANSPORT: Transport = {
   id: 'poncho',
-  kind: 'sled',
+  kind: 'dogs',
   name: 'Poncho y su jauría',
   type: 'Trineo de perros',
   pitch: 'Un perro polar argentino guía el trineo por el hielo.',
   // Own estimate: the book says a team covered 40 to 50 km in more than six hours on level ground.
   cruiseKmh: 7,
+  // TODO(#79): the icebreaker with dogs on board, a model of its own; until then the leg by sea draws a generic ship.
+  models: { ship: 'irizar' },
   facts: [
     { text: 'Poncho nació el 10 de abril de 1961 en la Base Esperanza y fue perro-guía de trineo durante años de expediciones.', kind: 'real', sources: ['P1'] },
   ],
@@ -65,7 +65,7 @@ export const PONCHO_MILESTONES: readonly Milestone[] = [
     year: 1951,
     title: 'Un perro hecho para la Antártida',
     anchor: ESPERANZA,
-    kinds: ['sled'],
+    kinds: ['dogs'],
     essential: real('Desde 1951 los perros polares argentinos tiraron de los trineos en las patrullas del Ejército. Eran una raza en formación, con cruzas de Malamute, Groenlandés y Husky.', 'P1', 'P2'),
     more: [
       real('Según el libro, la raza estaba «en formación»; un artículo de la Fundación Marambio dice que inicia sus actividades en 1951, el año en que se fundó la Base San Martín (21 de marzo de 1951).', 'P1', 'P2', 'O2'),
@@ -77,7 +77,7 @@ export const PONCHO_MILESTONES: readonly Milestone[] = [
     year: 1961,
     title: 'Nace Poncho',
     anchor: ESPERANZA,
-    kinds: ['sled'],
+    kinds: ['dogs'],
     essential: real('Poncho nació el 10 de abril de 1961 en la Base Esperanza, en la Antártida. Sus padres también eran perros de trineo del Ejército.', 'P1'),
     more: [
       real('Tenía pelaje blanco cremoso con manchas grises y una «máscara» en la cara.', 'P1'),
@@ -89,7 +89,7 @@ export const PONCHO_MILESTONES: readonly Milestone[] = [
     year: 1961,
     title: 'Aprende a tirar del trineo',
     anchor: ESPERANZA,
-    kinds: ['sled'],
+    kinds: ['dogs'],
     essential: real('En 1961, su primer año, Poncho aprendió a trabajar en equipo. Aprendió las voces de mando: «Auk» para ir a la derecha y «Quierr» para ir a la izquierda.', 'P1'),
     more: [
       real('A los seis meses lo ataron por primera vez a un trineo, en la tercera yunta (la tercera pareja de perros).', 'P1'),
@@ -101,7 +101,7 @@ export const PONCHO_MILESTONES: readonly Milestone[] = [
     year: 1962,
     title: 'El olfato que encuentra grietas',
     anchor: FOCA_NUNATAKS,
-    kinds: ['sled'],
+    kinds: ['dogs'],
     essential: illustrative('Escena ilustrativa, tomada del relato de un libro: en 1962 Poncho iba olfateando el suelo y avisaba al conductor cuando había una grieta oculta bajo la nieve.'),
     more: [
       real('Las grietas ocultas bajo la nieve son uno de los mayores peligros del hielo. Según el libro, los perros-guía las detectaban «según se dice» por el olfato, y así los trineos las evitaban. Es la descripción del autor de una conducta típica del perro-guía, no una medición, y no hay otra fuente.', 'P1'),
@@ -113,7 +113,7 @@ export const PONCHO_MILESTONES: readonly Milestone[] = [
     year: 1962,
     title: 'La Expedición Terrestre Invernal',
     anchor: SAN_MARTIN,
-    kinds: ['sled'],
+    kinds: ['dogs'],
     essential: real('En pleno invierno de 1962 una expedición del Ejército fue de la Base Esperanza a la Base San Martín con trineos de perros y tractores. Poncho empezó como un perro más de la yunta y, al volver, a fines de octubre, ya era perro-guía: el que va adelante y marca el camino.', 'P1'),
     more: [
       real('Salió el 14 de junio de 1962 y llegó a San Martín el 25 de agosto.', 'P1'),
@@ -127,7 +127,7 @@ export const PONCHO_MILESTONES: readonly Milestone[] = [
     title: 'Materiales para un refugio',
     anchor: SAN_MARTIN,
     place: ESPERANZA,
-    kinds: ['sled'],
+    kinds: ['dogs'],
     essential: real('Desde 1963 Poncho fue siempre perro-guía. Ese año encabezó el transporte de materiales para construir el refugio San Nicolás.', 'P1'),
     more: [
       real('La cronología del libro enumera otras patrullas de 1963 y estima más de 1.500 km recorridos ese año: es una cifra del libro, sin otra fuente.', 'P1'),
@@ -139,7 +139,7 @@ export const PONCHO_MILESTONES: readonly Milestone[] = [
     year: 1964,
     title: 'Rumbo a Belgrano',
     anchor: BELGRANO_AREA,
-    kinds: ['sled'],
+    kinds: ['dogs'],
     essential: real('En diciembre de 1964 Poncho fue trasladado a la Base General Belgrano, mucho más al sur, sobre la barrera de hielo. Se preparaba la primera marcha terrestre argentina al Polo Sur.', 'P1'),
     more: [
       real('Estos traslados se hacían con ayuda del rompehielos.', 'P1'),
@@ -152,7 +152,7 @@ export const PONCHO_MILESTONES: readonly Milestone[] = [
     year: 1965,
     title: 'El rescate del avión AE-205',
     anchor: BELGRANO_AREA,
-    kinds: ['sled'],
+    kinds: ['dogs'],
     essential: real('A fines de septiembre de 1965 un pequeño avión, el «AE-205», tuvo que aterrizar de emergencia por una nevada tan blanca que no dejaba ver el horizonte. Los cuatro tripulantes sobrevivieron: una patrulla de dos hombres y siete perros, con Poncho al frente, los encontró al cuarto día.', 'P1'),
     more: [
       real('En 1968 Poncho volvió al lugar para ayudar a recuperar partes del avión.', 'P1'),
@@ -165,7 +165,7 @@ export const PONCHO_MILESTONES: readonly Milestone[] = [
     year: 1965,
     title: 'La patrulla «Paralelo 82»',
     anchor: SANTA_FE_PEAK,
-    kinds: ['sled'],
+    kinds: ['dogs'],
     essential: real('En 1965 el Ejército Argentino organizó la «Operación 90», una expedición terrestre al Polo Sur. Poncho no fue hasta el Polo: guió una patrulla de trineos de perros, la «Paralelo 82», que exploró por delante del grupo motorizado y llegó más allá de los 83° de latitud sur.', 'P1', 'O12'),
     more: [
       real('La expedición salió de la Base Belgrano el 26 de octubre de 1965.', 'O12'),
@@ -181,7 +181,7 @@ export const PONCHO_MILESTONES: readonly Milestone[] = [
     title: 'El Polo Sur, alcanzado por el grupo motorizado',
     anchor: SANTA_FE_PEAK,
     place: SOUTH_POLE,
-    kinds: ['sled'],
+    kinds: ['dogs'],
     essential: real('El 10 de diciembre de 1965 el grupo de tractores de la Operación 90 llegó al Polo Sur, después de 66 días de marcha. Poncho no estuvo allí: su patrulla se había separado antes y siguió explorando.', 'O12', 'P1'),
     more: [
       real('El grupo regresó a la Base Belgrano el 31 de diciembre de 1965.', 'O12'),
@@ -194,7 +194,7 @@ export const PONCHO_MILESTONES: readonly Milestone[] = [
     year: 1965,
     title: 'El barranco frente al pico Santa Fe',
     anchor: SANTA_FE_PEAK,
-    kinds: ['sled'],
+    kinds: ['dogs'],
     essential: illustrative('Escena ilustrativa, tomada del relato de un libro: el trineo de Poncho desapareció tras un filo de nieve, donde había un barranco de unos 200 metros. Con una orden tranquila, Poncho tiró hacia arriba y los hombres sacaron el trineo.'),
     more: [
       real('Según el libro, los hombres quedaron aferrados a unas rocas mientras Poncho, sentado, comía nieve. Es una anécdota del autor, sin otra fuente ni fecha exacta.', 'P1'),
@@ -205,7 +205,7 @@ export const PONCHO_MILESTONES: readonly Milestone[] = [
     year: 1966,
     title: 'Poncho paracaidista',
     anchor: BELGRANO_RETURN,
-    kinds: ['sled'],
+    kinds: ['dogs'],
     essential: real('En el verano de 1966, en un ejercicio de rescate, Poncho saltó en paracaídas desde un helicóptero del rompehielos San Martín, junto con otros dos perros y dos oficiales.', 'P1'),
     more: [
       real('El salto fue parte del entrenamiento para rescates en el hielo. Según el libro, ocurrió a unos 30 km al sur de la Base Belgrano.', 'P1'),
@@ -217,7 +217,7 @@ export const PONCHO_MILESTONES: readonly Milestone[] = [
     year: 1966,
     title: 'Hacia la barrera de hielos Filchner',
     anchor: BELGRANO_RETURN,
-    kinds: ['sled'],
+    kinds: ['dogs'],
     essential: real('En 1966 Poncho participó en una patrulla de reconocimiento y, en noviembre, en la expedición a la barrera de hielos Filchner. Los perros viajaron como pasajeros en trineos arrastrados por tractores y, cuando el terreno se volvía peligroso por las grietas, los bajaban para que trabajaran adelante, como guías.', 'P1'),
     more: [
       real('El libro dice que en esa campaña los hombres de Belgrano recorrieron casi 7.000 km. La cifra no está verificada en otra fuente.', 'P1'),
@@ -230,7 +230,7 @@ export const PONCHO_MILESTONES: readonly Milestone[] = [
     year: 1967,
     title: 'La brújula perdida en la bahía Duse',
     anchor: DUSE_BAY,
-    kinds: ['sled'],
+    kinds: ['dogs'],
     essential: illustrative('Escena ilustrativa, tomada del relato de un libro: en agosto de 1967 una ventisca sorprendió a una patrulla que volvía a Esperanza y la brújula se perdió en la nieve. Sin instrumentos y sin ver nada, la patrulla siguió a Poncho, que la llevó hasta las luces de la base.'),
     more: [
       real('No hay otra fuente de este episodio: es el relato del libro.', 'P1'),
@@ -243,7 +243,7 @@ export const PONCHO_MILESTONES: readonly Milestone[] = [
     title: 'Un retiro en Ushuaia',
     anchor: DUSE_BAY,
     place: USHUAIA,
-    kinds: ['sled'],
+    kinds: ['dogs'],
     essential: real('En 1973, ya veterano, Poncho dejó la Antártida a bordo del rompehielos San Martín y llegó a Ushuaia. Lo recibió una familia de la ciudad que tenía un hotel llamado «Antártida».', 'P1'),
     more: [
       real('En 1976 sufrió un accidente y, aunque un veterinario aconsejó sacrificarlo, la familia se negó.', 'P1'),
@@ -257,7 +257,7 @@ export const PONCHO_MILESTONES: readonly Milestone[] = [
     title: 'El final de Poncho',
     anchor: DUSE_BAY,
     place: USHUAIA,
-    kinds: ['sled'],
+    kinds: ['dogs'],
     essential: real('En la primavera de 1978 Poncho murió en Ushuaia, con casi 18 años.', 'P1'),
     more: [
       real('Se intentó conservar su cuerpo, pero la taxidermia no prosperó.', 'P1'),
@@ -269,7 +269,7 @@ export const PONCHO_MILESTONES: readonly Milestone[] = [
     year: 1991,
     title: 'Los perros dejan la Antártida',
     anchor: DUSE_BAY,
-    kinds: ['sled'],
+    kinds: ['dogs'],
     essential: real('En 1991 los países del Tratado Antártico aprobaron el Protocolo de Madrid, que protege el ambiente de la Antártida. Una de sus normas pide no tener animales que no son de allí, como los perros: la Argentina los retiró de sus bases y esa raza ya no existe en la Antártida.', 'I2', 'P1'),
     more: [
       real('Según el libro, los perros polares fueron a destacamentos de Gendarmería en Mendoza, Neuquén y Ushuaia.', 'P1'),

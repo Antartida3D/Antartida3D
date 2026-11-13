@@ -4,6 +4,12 @@ import { useFrame, useThree } from '@react-three/fiber';
 import type { CameraControls } from '@react-three/drei';
 import {
   DRAKE_STORM,
+  SLED_MAX_PITCH,
+  easeToward,
+  sledPitch,
+  sledRideHeight,
+  sledTrot,
+  trotRate,
   findTransport,
   flightClearance,
   heightAt,
@@ -27,6 +33,9 @@ import { NARROW_PX, type VoyageBus } from './useVoyage.ts';
 /** Vehicle length as a fraction of the camera distance: a 120 m ship is invisible on a 4000 km map. */
 const SIZE_PER_DISTANCE = 0.075;
 const MIN_SIZE = 0.5;
+/** The sled team is small next to a ship and the camera is close: it needs less to be read, and a lower floor not to cover the peninsula. */
+const SLED_SIZE_PER_DISTANCE = 0.09;
+const SLED_MIN_SIZE = 0.4;
 /** Height of a milestone pin as a fraction of its distance to the camera. */
 const PIN_PER_DISTANCE = 0.042;
 const MIN_PIN = 0.2;
@@ -35,6 +44,12 @@ const ROUTE_SAMPLES = 240;
 const PANEL_SHIFT = 0.14;
 /** Camera offset from the vehicle at departure: close and low, to see the Beagle Channel. */
 const DEPARTURE_OFFSET = new Vector3(3, 9, 12);
+/** Sled: close and a bit raised, to see the team with the peninsula behind it. Height is over the ground at the start. */
+const SLED_DEPARTURE_OFFSET = new Vector3(1.5, 4, 7);
+/** How fast the team settles on the ground (per second): it neither sinks nor jumps while the relief loads. */
+const SLED_SETTLE_RATE = 10;
+/** Longest frame the trot advances, in seconds. */
+const MAX_FRAME = 0.1;
 
 /** In the storm the camera comes down to this world height: under the clouds, so they do not cover the vehicle. */
 const STORM_CAMERA_HEIGHT = DRAKE_STORM.cloudBase - 2;
@@ -65,18 +80,35 @@ function clearanceAt(t: number): number {
   return clearanceTable[i] + (clearanceTable[i + 1] - clearanceTable[i]) * (at - i);
 }
 
+/** Whether the relief is loaded: before that every height is 0, and a team on a peak would be drawn on the sea. */
+function reliefReady(): boolean {
+  return [0, 0.25, 0.5, 0.75, 1].some((t) => {
+    const p = voyageAt('sled', t);
+    return heightAt(p.x, p.y) > 0;
+  });
+}
+
+/** World height of the ground under the sled's path at `t` (0 while the relief loads and on the sea). */
+function sledGround(t: number): number {
+  const p = voyageAt('sled', t);
+  return Math.max(0, worldHeight(heightAt(p.x, p.y)));
+}
+
 /**
  * World height of the vehicle at `t`. A plane flies over the relief under its path, and higher the
  * farther the camera is, to stay readable; a ship sits slightly into the water.
  */
 export function heightOf(kind: TransportKind, t: number, size: number): number {
   if (kind === 'ship') return -size * 0.02;
+  if (kind === 'sled') return sledRideHeight(sledGround(t), size);
   return Math.max(clearanceAt(t), Math.sin(Math.PI * Math.min(1, Math.max(0, t))) ** 0.6 * size * 0.9) + size * 0.07;
 }
 
 /** Trip fraction used to measure the slope of the flight for the plane's pitch. */
 const PITCH_SPAN = 0.004;
 const MAX_PITCH = 0.4;
+/** Clearance of the sled's tracks over the snow, in map units: enough not to fight the terrain surface. */
+const TRACK_LIFT = 0.03;
 
 /** A place farther than this from the vehicle, in map units, is out of view: the camera goes to it while its card is open. */
 const VISIT_DISTANCE = 6;
@@ -101,6 +133,8 @@ export function Voyage3D({ bus, reduced, overlay }: {
   // Far place the camera is at, and whether it is on its way back to the vehicle.
   const visit = useRef({ id: null as string | null, returning: false });
   const spray = useRef<(Mesh | null)[]>([]);
+  // Sled: settled height over the ground, the phase of the trot and the frame count to know the pace.
+  const sled = useRef({ height: null as number | null, phase: 0 });
   // Whether the vehicle is in the storm, and the camera distance to go back to when it leaves.
   const storm = useRef({ inside: false, distance: null as number | null });
   // Ids of the animals in view and of the ones already spotted, joined: React re-renders only when they change.
@@ -159,16 +193,32 @@ export function Voyage3D({ bus, reduced, overlay }: {
   const pinGeometry = useMemo(buildPinGeometry, []);
   useEffect(() => () => Object.values(pinGeometry).forEach((g) => g.dispose()), [pinGeometry]);
 
-  useFrame(({ camera }) => {
+  useFrame(({ camera }, delta) => {
     const s = bus.state;
     const g = group.current;
     if (!s) storm.current = { inside: false, distance: null };
     if (!s || !g) return;
     const p = voyageAt(s.kind, s.t);
-    const size = Math.max(MIN_SIZE, camera.position.distanceTo(g.position) * SIZE_PER_DISTANCE);
-    const height = heightOf(s.kind, s.t, size);
-    const heading = voyageHeading(s.kind, s.t) + (bus.back ? Math.PI : 0);
+    const distance = camera.position.distanceTo(g.position);
+    const size = s.kind === 'sled'
+      ? Math.max(SLED_MIN_SIZE, distance * SLED_SIZE_PER_DISTANCE)
+      : Math.max(MIN_SIZE, distance * SIZE_PER_DISTANCE);
+    let height = heightOf(s.kind, s.t, size);
     const length = voyageLength(s.kind);
+    const dt = Math.min(MAX_FRAME, delta);
+    // The team settles on the ground: the first frame snaps, later ones ease, so a late relief does not make it jump.
+    let trotLift = 0;
+    if (s.kind === 'sled') {
+      const ready = reliefReady();
+      const wanted = ready ? height : (sled.current.height ?? height);
+      sled.current.height = sled.current.height === null || !ready ? wanted : easeToward(sled.current.height, wanted, dt, SLED_SETTLE_RATE);
+      height = sled.current.height;
+      // Pace in map units per second, from how far the trip moved since the last frame; 0 when paused.
+      const pace = dt > 0 && drawn.current.transport === s.transport ? (Math.abs(s.t - drawn.current.t) * length) / dt : 0;
+      sled.current.phase += dt * trotRate(pace);
+      trotLift = sledTrot(sled.current.phase, size, pace, reduced);
+    }
+    const heading = voyageHeading(s.kind, s.t) + (bus.back ? Math.PI : 0);
 
     // Nose up while climbing, down while descending; a ship stays level.
     let pitch = 0;
@@ -176,9 +226,17 @@ export function Voyage3D({ bus, reduced, overlay }: {
       const rise = heightOf('plane', s.t + PITCH_SPAN, size) - heightOf('plane', s.t - PITCH_SPAN, size);
       pitch = Math.min(MAX_PITCH, Math.max(-MAX_PITCH, Math.atan2(rise, 2 * PITCH_SPAN * length))) * (bus.back ? -1 : 1);
     }
+    if (s.kind === 'sled') {
+      // Follows the slope between the ground behind and ahead of the team, half a length each way.
+      const half = (0.5 * size) / length;
+      const slope = sledPitch(sledGround(Math.max(0, s.t - half)), sledGround(Math.min(1, s.t + half)), size);
+      pitch = Math.min(SLED_MAX_PITCH, Math.max(-SLED_MAX_PITCH, slope)) * (bus.back ? -1 : 1);
+    }
     // A gentle sway, so the vehicle is alive even when the trip is paused.
     const time = reduced ? 0 : performance.now() / 1000;
-    const sway = s.kind === 'plane'
+    const sway = s.kind === 'sled'
+      ? { roll: 0, pitch: 0, lift: 0 } // the team does not sway: it trots (trotLift)
+      : s.kind === 'plane'
       ? { roll: Math.sin(time * 0.9) * 0.05, pitch: Math.sin(time * 0.7) * 0.015, lift: Math.sin(time * 1.4) * 0.035 }
       : { roll: Math.sin(time * 1.1) * 0.04, pitch: Math.sin(time * 0.8) * 0.025, lift: Math.sin(time * 1.3) * 0.012 };
     // In the storm the waves throw the ship about; the deeper in, the more.
@@ -203,7 +261,7 @@ export function Voyage3D({ bus, reduced, overlay }: {
       drop.scale.setScalar(burst * (0.11 - 0.011 * reach));
     });
 
-    g.position.set(p.x - 500, height + sway.lift * size, p.y - 500);
+    g.position.set(p.x - 500, height + sway.lift * size + trotLift, p.y - 500);
     g.rotation.set(sway.roll, -heading, pitch + sway.pitch, 'YZX');
     g.scale.setScalar(size);
 
@@ -222,7 +280,9 @@ export function Voyage3D({ bus, reduced, overlay }: {
       updateTrail(trail, s.kind, size, (lengthsBehind) => {
         const t = Math.max(0, s.t - (lengthsBehind * size) / length);
         const q = voyageAt(s.kind, t);
-        return { x: q.x - 500, y: s.kind === 'ship' ? 0.05 : heightOf('plane', t, size), z: q.y - 500, heading: voyageHeading(s.kind, t) };
+        // A ship's wake lies on the water, a plane's contrails at its height, the sled's tracks on the snow.
+        const y = s.kind === 'ship' ? 0.05 : s.kind === 'sled' ? sledGround(t) + TRACK_LIFT : heightOf('plane', t, size);
+        return { x: q.x - 500, y, z: q.y - 500, heading: voyageHeading(s.kind, t) };
       });
     }
 
@@ -244,7 +304,10 @@ export function Voyage3D({ bus, reduced, overlay }: {
       const departing = s.t === 0 && (drawn.current.t !== 0 || drawn.current.transport !== s.transport);
       if (departing) {
         // At the vehicle, so the camera does not jump to it when the trip starts moving.
-        void controls.setLookAt(p.x - 500 + DEPARTURE_OFFSET.x, DEPARTURE_OFFSET.y, p.y - 500 + DEPARTURE_OFFSET.z, p.x - 500, 0, p.y - 500, !reduced);
+        // The sled starts over its ground, which the relief may place well above the sea.
+        const offset = s.kind === 'sled' ? SLED_DEPARTURE_OFFSET : DEPARTURE_OFFSET;
+        const base = s.kind === 'sled' ? sledGround(0) : 0;
+        void controls.setLookAt(p.x - 500 + offset.x, base + offset.y, p.y - 500 + offset.z, p.x - 500, base, p.y - 500, !reduced);
       } else {
         const open = bus.open ? voyageSightings(s.kind).find((v) => v.sighting.id === bus.open) : undefined;
         // A milestone about a place off the path (Cabo de Hornos): its card shows the place, where its pin stands.

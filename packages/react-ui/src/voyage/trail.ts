@@ -37,10 +37,10 @@ export const TRAILS: Record<TransportKind, TrailShape> = {
   },
   sled: {
     start: 0.5,
-    length: 4,
+    length: 5,
     strips: [
-      { offset: [0.06, 0.06], width: [0.025, 0.04], alpha: 0.7 },
-      { offset: [-0.06, -0.06], width: [0.025, 0.04], alpha: 0.7 },
+      { offset: [0.07, 0.075], width: [0.035, 0.06], alpha: 0.75 },
+      { offset: [-0.07, -0.075], width: [0.035, 0.06], alpha: 0.75 },
     ],
   },
 };

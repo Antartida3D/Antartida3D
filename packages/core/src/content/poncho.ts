@@ -1,80 +1,57 @@
 /**
- * Where a fact comes from. Sources are never invented or completed:
- * when the origin is unknown, use the `pending` variant.
+ * Content of the expedition of Poncho (issue #9): the life of the Argentine polar sled dog told as a
+ * trip over the Antarctic map, with the same shape as the trip «Desde Ushuaia» (content/ushuaia.ts):
+ * the dog's team is one more transport (`kind: 'sled'`) and its stops are milestones.
+ * Texts come from docs/expediciones/poncho.md; source codes point to VOYAGE_SOURCES.
  */
-export type SourceRef =
-  | {
-      status: 'verified';
-      /** Reference or URL. */
-      ref: string;
-      /** Organization or author that publishes it. */
-      publisher: string;
-      /** Date the source was consulted, format DD/MM/YYYY. */
-      consultedOn: string;
-    }
-  | { status: 'pending' };
+import type { ExpeditionStop, Milestone, Transport } from './ushuaia.ts';
 
 /**
- * What the UI must label each milestone as, so a simulation or a
- * reconstruction is never shown as a real fact.
+ * Route of the team as [lon, lat] waypoints, from Base Esperanza (where Poncho was born in 1961) to
+ * Base San Martín (the end of the 1962 winter expedition).
+ *
+ * ILLUSTRATIVE: it is not a logged track. The curve joins places whose coordinates are verified
+ * (docs/expediciones/poncho-fuentes.md, section 3): the line between them is only the way the map draws it.
  */
-export type MilestoneKind = 'hecho' | 'reconstruccion' | 'contexto';
+export const PONCHO_ROUTE_WAYPOINTS: readonly (readonly [number, number])[] = [
+  [-57.0, -63.4], // Base Esperanza
+  [-60.25, -65.07], // Foca nunataks (Base Teniente Matienzo)
+  [-67.1, -68.13], // Base San Martín
+];
 
-/**
- * Rights of a third-party resource (the pages we use do not state a license,
- * so the permission has to be documented). Never assumed: use `pending` if unknown.
- */
-export type RightsRef =
-  | {
-      status: 'documented';
-      /** Terms under which we may use it, e.g. the author's permission. */
-      terms: string;
-      /** Who granted it. */
-      grantedBy: string;
-    }
-  | { status: 'pending' };
+/** The team: Poncho in front, the sled and the pack behind. */
+export const PONCHO_TRANSPORT: Transport = {
+  id: 'poncho',
+  kind: 'sled',
+  name: 'Poncho y su jauría',
+  type: 'Trineo de perros',
+  pitch: 'Un perro polar argentino guía el trineo por el hielo.',
+  // Own estimate: the book says a team covered 40 to 50 km in more than six hours on level ground.
+  cruiseKmh: 7,
+  facts: [
+    { text: 'Poncho nació el 10 de abril de 1961 en la Base Esperanza y fue perro-guía de trineo durante años de expediciones.', kind: 'real', sources: ['P1'] },
+  ],
+};
 
-/** A real photo is a record; an illustration is a reconstruction. The UI labels each. */
-export type ImageKind = 'foto' | 'ilustracion';
+/** In trip order. The first one opens at departure and the last one on arrival. */
+export const PONCHO_MILESTONES: readonly Milestone[] = [
+  {
+    id: 'poncho-nacimiento',
+    title: 'Nace Poncho',
+    anchor: [-57.0, -63.4],
+    kinds: ['sled'],
+    essential: { text: 'Poncho nació el 10 de abril de 1961 en la Base Esperanza, hijo de «Coca» y «Flecha».', kind: 'real', sources: ['P1'] },
+    more: [],
+  },
+  {
+    id: 'poncho-san-martin',
+    title: 'La Expedición Invernal de 1962',
+    anchor: [-67.1, -68.13],
+    kinds: ['sled'],
+    essential: { text: 'En 1962 una expedición terrestre llegó en pleno invierno de la Base Esperanza a la Base San Martín. En ese viaje Poncho pasó a ser perro-guía.', kind: 'real', sources: ['P1'] },
+    more: [],
+  },
+];
 
-export interface MilestoneImage {
-  /** Path or URL of the file. */
-  src: string;
-  /** Description for screen readers. */
-  alt: string;
-  /** Visible caption, e.g. the original book caption. */
-  caption: string;
-  /** Who made or lent it, e.g. "Gentileza: ...". */
-  credit: string;
-  kind: ImageKind;
-  /** Year it was taken or drawn, when known. */
-  year?: number;
-  rights: RightsRef;
-  /** Where the image comes from. */
-  source: SourceRef;
-}
-
-export interface PonchoMilestone {
-  id: string;
-  /** Year, used to order the route. */
-  year: number;
-  /** Exact start date when known, format DD/MM/YYYY (or MM/YYYY if the day is unknown). */
-  date?: string;
-  /** End date for events that last a while (an expedition), same format as `date`. */
-  endDate?: string;
-  place: string;
-  title: string;
-  summary: string;
-  kind: MilestoneKind;
-  source: SourceRef;
-  /** Photos or illustrations of the milestone, if any. */
-  images?: readonly MilestoneImage[];
-}
-
-/** State of the route: how far the user has gone and which milestone is current. */
-export interface PonchoProgress {
-  /** Position along the whole route, 0..1. */
-  progress: number;
-  /** Index of the current milestone in the milestone list. */
-  current: number;
-}
+/** What the team tells at each milestone, by milestone id. */
+export const PONCHO_EXPEDITION: Readonly<Record<string, ExpeditionStop>> = {};

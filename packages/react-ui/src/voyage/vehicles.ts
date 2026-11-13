@@ -1,5 +1,6 @@
 import { BufferAttribute, BufferGeometry, Color, MeshBasicMaterial } from 'three';
 import type { TransportId } from '@antartida/core';
+import { PONCHO_MODELS } from './ponchoModels.ts';
 
 /** [centerX, centerY, centerZ, sizeX, sizeY, sizeZ, color]. The bow or nose points to +x, y is up. */
 export type Box = readonly [number, number, number, number, number, number, number];
@@ -24,6 +25,8 @@ export const VOXEL_MIN_COLORS = 2;
 
 /** One unit is the length of the vehicle. */
 const MODELS: Record<TransportId, readonly Box[]> = {
+  // The team of Poncho: dog, sled and pack, in ponchoModels.ts.
+  poncho: PONCHO_MODELS.poncho,
   // Icebreaker: superstructure on the forward half, hangar and flight deck aft, red hull.
   irizar: [
     [-0.03, 0.03, 0, 0.86, 0.1, 0.2, HULL_RED],

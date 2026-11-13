@@ -4,7 +4,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import type { CameraControls } from '@react-three/drei';
 import {
   DRAKE_STORM,
-  TRANSPORTS,
+  findTransport,
   flightClearance,
   heightAt,
   sightingsInView,
@@ -134,7 +134,7 @@ export function Voyage3D({ bus, reduced, overlay }: {
     };
   }, [camera, viewport, invalidate]);
 
-  const kind = transport ? TRANSPORTS.find((v) => v.id === transport)!.kind : null;
+  const kind = transport ? findTransport(transport).kind : null;
   const geometry = useMemo(() => (transport ? buildVehicleGeometry(transport) : null), [transport]);
   useEffect(() => () => geometry?.dispose(), [geometry]);
 

@@ -1,17 +1,23 @@
 import {
   EXPEDITION, MILESTONES, SIGHTINGS, TRANSPORTS,
-  type Milestone, type Sighting, type TransportId, type TransportKind, type VoyageFact, type VoyageQuestion,
+  type Milestone, type Sighting, type Transport, type TransportId, type TransportKind, type VoyageFact, type VoyageQuestion,
 } from './content/ushuaia.ts';
+import { PONCHO_EXPEDITION, PONCHO_MILESTONES, PONCHO_ROUTE_WAYPOINTS, PONCHO_TRANSPORT } from './content/poncho.ts';
 import { FLIGHT_GROUND_M } from './flight-ground.ts';
 import { FLIGHT_GROUND_STEP, flightAt } from './flight-path.ts';
 import { fuegiaWorldHeight } from './fuegia.ts';
 import { project, unproject } from './projection.ts';
 import { worldHeight } from './relief.ts';
-import { ROUTE_LENGTH, routeAt } from './route.ts';
+import { ROUTE_LENGTH, buildCurve, routeAt } from './route.ts';
 import { stormCeiling } from './storm.ts';
 import { heightAt, type TerrainMesh } from './terrain.ts';
 
 type Point = { x: number; y: number };
+
+/** The transports of every trip: the ones of Ushuaia and the team of Poncho. */
+const ALL_TRANSPORTS: readonly Transport[] = [...TRANSPORTS, PONCHO_TRANSPORT];
+export const findTransport = (id: TransportId): Transport => ALL_TRANSPORTS.find((v) => v.id === id)!;
+const ALL_EXPEDITION = { ...EXPEDITION, ...PONCHO_EXPEDITION };
 
 const clamp01 = (t: number) => Math.min(1, Math.max(0, t));
 const smooth01 = (v: number) => {
@@ -92,9 +98,14 @@ export function flightClearance(t: number, mesh?: TerrainMesh): number {
 export const SHIP_HEAD_START = 1.3;
 const SHIP_START = SHIP_HEAD_START / ROUTE_LENGTH;
 
-/** Position in map space at fraction `t` of the trip (0 = departure from Ushuaia, 1 = Marambio). */
+/** The team of Poncho follows its own route over the ice, drawn with the same curve as the sea route. */
+const PONCHO_CURVE = buildCurve(PONCHO_ROUTE_WAYPOINTS.map(([lon, lat]) => project(lon, lat)));
+
+/** Position in map space at fraction `t` of the trip (0 = departure, 1 = arrival: Ushuaia to Marambio, or Esperanza to San Martín for the sled). */
 export function voyageAt(kind: TransportKind, t: number): Point {
-  return kind === 'plane' ? flightAt(clamp01(t)) : routeAt(SHIP_START + clamp01(t) * (1 - SHIP_START));
+  if (kind === 'plane') return flightAt(clamp01(t));
+  if (kind === 'sled') return PONCHO_CURVE.at(clamp01(t));
+  return routeAt(SHIP_START + clamp01(t) * (1 - SHIP_START));
 }
 
 const PATH_SAMPLES = 400;
@@ -107,7 +118,7 @@ const pathLength = (kind: TransportKind) => {
   }
   return total;
 };
-const LENGTHS: Record<TransportKind, number> = { ship: pathLength('ship'), plane: pathLength('plane') };
+const LENGTHS: Record<TransportKind, number> = { ship: pathLength('ship'), plane: pathLength('plane'), sled: pathLength('sled') };
 
 /** Length of the whole trip in map units. */
 export const voyageLength = (kind: TransportKind) => LENGTHS[kind];
@@ -131,7 +142,7 @@ const pathKm = (kind: TransportKind) => {
   }
   return km;
 };
-const KM: Record<TransportKind, readonly number[]> = { ship: pathKm('ship'), plane: pathKm('plane') };
+const KM: Record<TransportKind, readonly number[]> = { ship: pathKm('ship'), plane: pathKm('plane'), sled: pathKm('sled') };
 
 export interface VoyageProgress {
   /** Km travelled along the drawn path. */
@@ -147,7 +158,7 @@ export interface VoyageProgress {
  * path is the drawn one and the speed is the cruise speed of the transport.
  */
 export function voyageProgress(transport: TransportId, t: number): VoyageProgress {
-  const { kind, cruiseKmh } = TRANSPORTS.find((v) => v.id === transport)!;
+  const { kind, cruiseKmh } = findTransport(transport);
   const at = clamp01(t) * PATH_SAMPLES;
   const i = Math.min(PATH_SAMPLES - 1, Math.floor(at));
   const km = KM[kind][i] + (KM[kind][i + 1] - KM[kind][i]) * (at - i);
@@ -174,7 +185,7 @@ const STOP_SAMPLES = 800;
 
 function buildStops(kind: TransportKind): VoyageStop[] {
   const samples = Array.from({ length: STOP_SAMPLES + 1 }, (_, i) => voyageAt(kind, i / STOP_SAMPLES));
-  const stops = MILESTONES.filter((m) => m.kinds.includes(kind)).map((milestone) => {
+  const stops = [...MILESTONES, ...PONCHO_MILESTONES].filter((m) => m.kinds.includes(kind)).map((milestone) => {
     const { anchor } = milestone;
     let index: number;
     if ('lat' in anchor) {
@@ -190,7 +201,7 @@ function buildStops(kind: TransportKind): VoyageStop[] {
   return stops;
 }
 
-const STOPS: Record<TransportKind, VoyageStop[]> = { ship: buildStops('ship'), plane: buildStops('plane') };
+const STOPS: Record<TransportKind, VoyageStop[]> = { ship: buildStops('ship'), plane: buildStops('plane'), sled: buildStops('sled') };
 
 /** Milestones a transport passes, in trip order, with the fraction where each one opens. */
 export function voyageStops(kind: TransportKind): readonly VoyageStop[] {
@@ -247,14 +258,14 @@ export function sightingsInView(kind: TransportKind, t: number): SightingSpot[] 
   return voyageSightings(kind).filter((s) => t >= s.from && t <= s.to);
 }
 
-const kindOf = (transport: TransportId) => TRANSPORTS.find((v) => v.id === transport)!.kind;
+const kindOf = (transport: TransportId) => findTransport(transport).kind;
 
 /**
  * «Así funciona la expedición» at a milestone for the chosen transport: only the notes that hold
  * for it (nothing about the icebreaker on the plane), and the question if it is asked on it.
  */
 export function expeditionAt(milestoneId: string, transport: TransportId): { notes: VoyageFact[]; question: VoyageQuestion | null } {
-  const stop = EXPEDITION[milestoneId];
+  const stop = ALL_EXPEDITION[milestoneId];
   const kind = kindOf(transport);
   const notes = (stop?.notes ?? [])
     .filter((n) => (!n.kind || n.kind === kind) && (!n.only || n.only === transport))
@@ -272,7 +283,7 @@ export function quizScore(transport: TransportId, answers: Readonly<Record<strin
 }
 
 /** Seconds the whole trip takes while the user keeps advancing. Not a real duration. */
-export const VOYAGE_SECONDS: Record<TransportKind, number> = { ship: 48, plane: 30 };
+export const VOYAGE_SECONDS: Record<TransportKind, number> = { ship: 48, plane: 30, sled: 60 };
 
 /**
  * Speed multipliers of "advance". Pressing again right after the previous press shifts up one
@@ -298,7 +309,7 @@ export interface VoyageState {
 }
 
 export function startVoyage(transport: TransportId): VoyageState {
-  const kind = TRANSPORTS.find((v) => v.id === transport)!.kind;
+  const kind = findTransport(transport).kind;
   // The first milestone is the departure: its card opens right away.
   return { transport, kind, t: 0, reached: 1, card: 0 };
 }

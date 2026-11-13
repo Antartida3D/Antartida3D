@@ -16,7 +16,7 @@ interface TrailShape {
   strips: readonly Strip[];
 }
 
-/** ILLUSTRATIVE shapes: a ship's wake (churned water and the two arms of the V) and a plane's contrails. */
+/** ILLUSTRATIVE shapes: a ship's wake (churned water and the two arms of the V), a plane's contrails and the two runner tracks of a sled. */
 export const TRAILS: Record<TransportKind, TrailShape> = {
   ship: {
     start: 0.42,
@@ -33,6 +33,14 @@ export const TRAILS: Record<TransportKind, TrailShape> = {
     strips: [
       { offset: [0.3, 0.3], width: [0.03, 0.11], alpha: 0.8 },
       { offset: [-0.3, -0.3], width: [0.03, 0.11], alpha: 0.8 },
+    ],
+  },
+  sled: {
+    start: 0.5,
+    length: 4,
+    strips: [
+      { offset: [0.06, 0.06], width: [0.025, 0.04], alpha: 0.7 },
+      { offset: [-0.06, -0.06], width: [0.025, 0.04], alpha: 0.7 },
     ],
   },
 };

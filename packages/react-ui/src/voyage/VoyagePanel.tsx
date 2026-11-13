@@ -17,7 +17,7 @@ import {
   voyageSightings,
   voyageStops,
   type TransportId,
-  type TransportKind,
+  type VoyageState,
   type VoyageSource,
   type VoyageSourceCode,
 } from '@antartida/core';
@@ -247,9 +247,9 @@ function MilestoneCard({ voyage, animated, onExit, onSource }: {
         </p>
       )}
       {last && voyageSightings(state.kind).length > 0 && <Notebook voyage={voyage} animated={animated} />}
-      {last && <p className="anno">Si te quedó curiosidad por otro medio, volvé a hacer la expedición.</p>}
+      {last && <p className="anno">{state.kind === 'sled' ? 'Podés volver a recorrer su historia cuando quieras.' : 'Si te quedó curiosidad por otro medio, volvé a hacer la expedición.'}</p>}
       <div className="row vactions">
-        <button type="button" className="btn primary" onClick={next}>{last ? 'Terminar el viaje' : 'Continuar'}</button>
+        <button type="button" className="btn primary" onClick={next}>{last ? 'Terminar el viaje' : state.kind === 'sled' && state.card === 0 ? 'Partir' : 'Continuar'}</button>
         <button type="button" className="btn ghost" aria-expanded={more} onClick={() => setMore((m) => !m)}>
           {more ? 'Ver menos' : 'Saber más'}
         </button>
@@ -274,7 +274,9 @@ function formatTripHours(hours: number): string {
 }
 
 /** Distance and time travelled so far. Always an estimate, and the text says so. */
-function tripLine(transport: TransportId, kind: TransportKind, t: number): string {
+function tripLine({ transport, kind, t, reached }: VoyageState): string {
+  // A life of 17 years is not measured in hours, nor in km of a line the map only draws: it goes by milestones.
+  if (kind === 'sled') return `${reached} de ${voyageStops(kind).length} hitos de su historia`;
   const { km, totalKm, hours } = voyageProgress(transport, t);
   return `Estimación: ≈ ${WHOLE.format(km)} de ${WHOLE.format(totalKm)} km · ≈ ${formatTripHours(hours)} ${kind === 'plane' ? 'de vuelo' : 'de navegación'}`;
 }
@@ -292,7 +294,7 @@ function TravelBar({ voyage, animated, onExit }: { voyage: VoyageController; ani
       if (bar.current && bus.state) bar.current.style.transform = `scaleX(${bus.state.t})`;
       if (trip.current && bus.state) {
         // Written only when it changes: the text moves by whole km and minutes, not every frame.
-        const text = tripLine(bus.state.transport, bus.state.kind, bus.state.t);
+        const text = tripLine(bus.state);
         if (trip.current.textContent !== text) trip.current.textContent = text;
       }
       if (bus.state) setAtStart(bus.state.t <= 0); // re-renders only when it changes
@@ -407,8 +409,10 @@ function TravelBar({ voyage, animated, onExit }: { voyage: VoyageController; ani
  * read each milestone. `animated` is false on the 2D map and under reduced motion: the trip then
  * advances milestone by milestone.
  */
-export function VoyagePanel({ voyage, animated, webgl, reduced, onExit }: {
+export function VoyagePanel({ voyage, transport, animated, webgl, reduced, onExit }: {
   voyage: VoyageController;
+  /** Transport of a trip that is not picked (Poncho's team): it starts at once, without the picker. */
+  transport?: TransportId;
   animated: boolean;
   /** The 3D map is on, so WebGL works: the picker can show the vehicle model. */
   webgl: boolean;
@@ -418,13 +422,16 @@ export function VoyagePanel({ voyage, animated, webgl, reduced, onExit }: {
   const { state } = voyage;
   // The source the sources page is open at, or null while it is closed.
   const [sources, setSources] = useState<VoyageSourceCode | null>(null);
+  useEffect(() => {
+    if (transport && !voyage.state) voyage.start(transport);
+  }, [transport, voyage.state]);
   // The 3D scene opens a source from the card it shows next to an animal.
   voyage.bus.openSource = setSources;
   // On a wide screen an animal touched on the map opens beside it, and the trip controls stay put.
   const stage = voyage.sighting && !voyage.popover
     ? <SightingCard voyage={voyage} onSource={setSources} />
     : !state
-      ? <Picker onStart={voyage.start} onExit={() => onExit(false)} onSource={setSources} preview={webgl} reduced={reduced} />
+      ? transport ? null : <Picker onStart={voyage.start} onExit={() => onExit(false)} onSource={setSources} preview={webgl} reduced={reduced} />
     : state.card >= 0
       ? <MilestoneCard key={state.card} voyage={voyage} animated={animated} onExit={onExit} onSource={setSources} />
       : <TravelBar voyage={voyage} animated={animated} onExit={() => onExit(false)} />;

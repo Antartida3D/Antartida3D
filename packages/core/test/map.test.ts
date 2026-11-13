@@ -70,7 +70,10 @@ describe('clustering', () => {
     const { S } = geometry(size);
     const count = (k: number) => clusterPoints(PTS, (S * k) / 1000).length;
     expect(count(1)).toBeLessThan(PTS.length);
-    expect(count(MAX_K)).toBe(PTS.length);
+    // Base Esperanza (Poncho) and Isla Marambio (Fósiles) are about 90 km apart, 12 map units: the 2D map
+    // cannot tell them apart even at MAX_K. They are the only pair left together; the 3D camera and the list separate them.
+    const atMax = clusterPoints(PTS, (S * MAX_K) / 1000).filter((g) => g.length > 1);
+    expect(atMax.map((g) => g.map((p) => p.id).sort())).toEqual([['fosiles', 'poncho']]);
     for (let k = 1; k < MAX_K; k += 0.5) expect(count(k + 0.5)).toBeGreaterThanOrEqual(count(k));
   });
 

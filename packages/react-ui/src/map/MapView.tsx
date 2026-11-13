@@ -1,8 +1,8 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import {
-  DRAG_THRESHOLD, EXPEDITION_POINT, HOME, KEY_PAN, MIN_K, PTS, VOYAGE_POINT, ZOOM_MS,
+  DRAG_THRESHOLD, EXPEDITION_POINT, HOME, KEY_PAN, MIN_K, PTS, VOYAGE_POINTS, ZOOM_MS,
   buildMarkers, diveView, markerPress, geometry, isWheelNotch, keyView, panBy, wheelFactor, zoomAround, zoomCenter,
-  type MapPoint, type Marker, type SeaPoint, type Size, type View,
+  type MapPoint, type Marker, type SeaPoint, type Size, type TransportId, type View,
 } from '@antartida/core';
 import { useReducedMotion, useTimers } from '../hooks.ts';
 import { useVoyage, type VoyageBus } from '../voyage/useVoyage.ts';
@@ -61,7 +61,9 @@ export interface MapViewProps {
   onToggleLegend: () => void;
   onToggleMode?: (next: ViewMode) => void;
   onStart: (point: MapPoint) => void;
-  onStartVoyage?: () => void;
+  /** Transport the trip starts with when it is not picked (Poncho's team); undefined: the traveller picks. */
+  voyageTransport?: TransportId;
+  onStartVoyage?: (point: MapPoint) => void;
   onEndVoyage?: (done: boolean) => void;
 }
 
@@ -92,6 +94,7 @@ export function MapView({
   onToggleLegend,
   onToggleMode,
   onStart,
+  voyageTransport,
   onStartVoyage,
   onEndVoyage,
 }: MapViewProps) {
@@ -293,7 +296,7 @@ export function MapView({
   };
 
   const openPoint = (p: MapPoint | SeaPoint) => {
-    if (p.id === VOYAGE_POINT.id && onStartVoyage) onStartVoyage();
+    if (onStartVoyage && VOYAGE_POINTS.some((v) => v.id === p.id)) onStartVoyage(p as MapPoint);
     else if ('tier' in p && p.tier === 'A') onStart(p);
     else {
       setSheet(p);
@@ -400,7 +403,7 @@ export function MapView({
         )}
         {voyaging && onEndVoyage && (
           <Suspense fallback={null}>
-            <VoyagePanel voyage={voyage} animated={is3D && !reduced} webgl={is3D} reduced={reduced} onExit={onEndVoyage} />
+            <VoyagePanel voyage={voyage} transport={voyageTransport} animated={is3D && !reduced} webgl={is3D} reduced={reduced} onExit={onEndVoyage} />
           </Suspense>
         )}
         {sheet && <PointSheet point={sheet} onClose={() => setSheet(null)} fallbackFocus={() => vpRef.current} preview={is3D} reduced={reduced} />}

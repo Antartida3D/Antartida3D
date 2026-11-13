@@ -1,3 +1,5 @@
+import { project } from '../projection.ts';
+
 export type Tier = 'A' | 'B' | 'C';
 
 export interface MapPoint {
@@ -11,10 +13,13 @@ export interface MapPoint {
   q: string;
 }
 
+/** Base Esperanza, where Poncho was born and where his trip starts (content/poncho.ts). */
+const ESPERANZA = project(-57.0, -63.4);
+
 export const PTS: readonly MapPoint[] = [
   { id: 'fosiles', tier: 'B', title: 'Fósiles', place: 'Isla Marambio', x: 196, y: 300, q: '¿Cómo era la Antártida antes del hielo?' },
   { id: 'oceano', tier: 'B', title: 'Océano', place: 'Mar de Weddell', x: 322, y: 322, q: '¿Qué pasa debajo del hielo marino del Mar de Weddell?' },
-  { id: 'poncho', tier: 'B', title: 'Poncho', place: 'Península Antártica · ubicación a definir', x: 196, y: 352, q: '¿Qué historia puede contar un poncho en la Antártida?' },
+  { id: 'poncho', tier: 'A', title: 'Poncho', place: 'Península Antártica · Base Esperanza', x: ESPERANZA.x, y: ESPERANZA.y, q: '¿Qué historia puede contar un perro polar argentino de trineo?' },
   { id: 'campana', tier: 'A', title: 'Desde Ushuaia', place: 'Ushuaia', x: 31.4, y: 313.5, q: '¿Cómo se llega desde Ushuaia hasta la Antártida?' },
   { id: 'orcadas', tier: 'A', title: 'Estación Orcadas', place: 'Islas Orcadas del Sur', x: 208, y: 205, q: '¿Cómo es pasar un invierno entero en Orcadas?' },
   { id: 'polo', tier: 'C', title: 'El Polo Sur', place: 'Centro del continente', x: 500, y: 500, q: '¿Qué hay en el punto más austral del planeta?' },
@@ -32,4 +37,8 @@ export const ORCADAS_POINT = PTS.find((p) => p.id === 'orcadas')!;
 export const EXPEDITION_POINT = ORCADAS_POINT;
 /** The trip from Ushuaia happens on the map itself, not on a separate screen. */
 export const VOYAGE_POINT = PTS.find((p) => p.id === 'campana')!;
+/** Poncho's trip also happens on the map, with the same engine as the one from Ushuaia. */
+export const PONCHO_POINT = PTS.find((p) => p.id === 'poncho')!;
+/** Points whose expedition is a trip over the map (not a separate screen). */
+export const VOYAGE_POINTS: readonly MapPoint[] = [VOYAGE_POINT, PONCHO_POINT];
 export const AVAILABLE_COUNT = PTS.filter((p) => p.tier === 'A').length;

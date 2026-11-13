@@ -1,10 +1,11 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
+import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import {
-  DRAG_THRESHOLD, EXPEDITION_POINT, HOME, KEY_PAN, MIN_K, PTS, ZOOM_MS,
-  buildMarkers, diveView, geometry, isWheelNotch, keyView, panBy, wheelFactor, zoomAround, zoomCenter,
-  type MapPoint, type Marker, type Size, type View,
+  DRAG_THRESHOLD, EXPEDITION_POINT, HOME, KEY_PAN, MIN_K, PTS, VOYAGE_POINT, ZOOM_MS,
+  buildMarkers, diveView, markerPress, geometry, isWheelNotch, keyView, panBy, wheelFactor, zoomAround, zoomCenter,
+  type MapPoint, type Marker, type SeaPoint, type Size, type View,
 } from '@antartida/core';
-import { useTimers } from '../hooks.ts';
+import { useReducedMotion, useTimers } from '../hooks.ts';
+import { useVoyage, type VoyageBus } from '../voyage/useVoyage.ts';
 import { Icon } from '../ui.tsx';
 import { ExplorationLog } from './ExplorationLog.tsx';
 import { Legend } from './Legend.tsx';
@@ -13,7 +14,10 @@ import { PointSheet } from './PointSheet.tsx';
 import { ViewToggle } from './ViewToggle.tsx';
 import { Map2DLayer, type LayerProps } from './Map2DLayer.tsx';
 
-export type Phase = 'idle' | 'dive' | 'fade' | 'ret';
+const VoyagePanel = lazy(() => import('../voyage/VoyagePanel.tsx').then((m) => ({ default: m.VoyagePanel })));
+
+/** `approach`: the 3D camera zooms down to the point before its scene opens. */
+export type Phase = 'idle' | 'dive' | 'approach' | 'fade' | 'ret';
 export type Anim = '' | 'zoom' | 'wheel' | 'dive';
 export type ViewMode = '2d' | '3d';
 
@@ -32,15 +36,21 @@ export type Camera3DCommand =
 
 export type Layer3DProps = LayerProps & {
   size: Size;
+  diveTarget: MapPoint;
   /** `n` grows with every request so repeating the same command still fires. */
   command: { n: number; cmd: Camera3DCommand } | null;
   /** The camera came to rest: the 2D-style view it shows, for clustering and the 2D switch. */
   onCameraRest: (view: View) => void;
+  /** The trip from Ushuaia while it is under way: the scene draws the vehicle and follows it. */
+  voyage: VoyageBus | null;
 };
 
 export interface MapViewProps {
   phase: Phase;
-  explored: boolean;
+  explored: readonly string[];
+  /** The trip from Ushuaia is open: its panel replaces the map's own controls. */
+  voyaging?: boolean;
+  diveTarget?: MapPoint;
   toast: string;
   legend: boolean;
   /** Move focus to the expedition marker on mount (coming back from the expedition). */
@@ -50,7 +60,9 @@ export interface MapViewProps {
   Layer3D?: (props: Layer3DProps) => React.ReactNode;
   onToggleLegend: () => void;
   onToggleMode?: (next: ViewMode) => void;
-  onStart: () => void;
+  onStart: (point: MapPoint) => void;
+  onStartVoyage?: () => void;
+  onEndVoyage?: (done: boolean) => void;
 }
 
 /** Keyboard navigation of the 3D camera: same keys as 2D, plus Q and E to turn. */
@@ -69,6 +81,8 @@ function keyCommand3D(key: string): Camera3DCommand | null {
 export function MapView({
   phase,
   explored,
+  voyaging = false,
+  diveTarget = EXPEDITION_POINT,
   toast,
   legend,
   focusExpedition,
@@ -78,15 +92,25 @@ export function MapView({
   onToggleLegend,
   onToggleMode,
   onStart,
+  onStartVoyage,
+  onEndVoyage,
 }: MapViewProps) {
   const vpRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState<Size>({ vw: 390, vh: 844 });
   const [view, setView] = useState<View>(HOME);
   const [anim, setAnim] = useState<Anim>('');
   const [touched, setTouched] = useState(false);
-  const [sheet, setSheet] = useState<MapPoint | null>(null);
+  const [sheet, setSheet] = useState<MapPoint | SeaPoint | null>(null);
+  // Key of the marker whose label a first touch brought into view.
+  const [shown, setShown] = useState<string | null>(null);
   const [list, setList] = useState(false);
   const later = useTimers();
+  const reduced = useReducedMotion();
+  const voyage = useVoyage();
+
+  useEffect(() => {
+    if (!voyaging) voyage.reset();
+  }, [voyaging]);
 
   const is3D = mode === '3d' && !!Layer3D;
   const [command, setCommand] = useState<Layer3DProps['command']>(null);
@@ -123,9 +147,23 @@ export function MapView({
     return () => ro.disconnect();
   }, []);
 
+  // Title of the expedition the user came back from: only read when the map mounts again.
+  const returnTitle = useRef(diveTarget.title);
   useEffect(() => {
     if (!focusExpedition) return;
-    vpRef.current?.querySelector<HTMLElement>('.mk.ta, .mk.has-a')?.focus();
+    // Back from an expedition: focus its own marker, or the group that holds it.
+    // The 3D markers appear once the layer has loaded, so look for them over a few frames.
+    let id = 0;
+    let tries = 0;
+    const title = returnTitle.current;
+    const focus = () => {
+      const markers = Array.from(vpRef.current?.querySelectorAll<HTMLElement>('.mk') ?? []);
+      const el = markers.find((m) => m.getAttribute('aria-label')?.includes(title)) ?? vpRef.current?.querySelector<HTMLElement>('.mk.ta, .mk.has-a');
+      if (el) el.focus();
+      else if (++tries < 120) id = requestAnimationFrame(focus);
+    };
+    focus();
+    return () => cancelAnimationFrame(id);
   }, [focusExpedition]);
 
   useEffect(() => {
@@ -134,8 +172,8 @@ export function MapView({
     setList(false);
     if (phase === 'fade') return;
     setAnim('dive');
-    setView(diveView(live.current.size, EXPEDITION_POINT.x, EXPEDITION_POINT.y));
-  }, [phase]);
+    setView(diveView(live.current.size, diveTarget.x, diveTarget.y));
+  }, [phase, diveTarget]);
 
   const animateTo = (next: View) => {
     setView(next);
@@ -150,6 +188,8 @@ export function MapView({
   };
 
   const onDown = (e: PointerEvent) => {
+    // A press anywhere else puts the label away.
+    if (!(e.target as Element).closest?.('.mk')) setShown(null);
     if (phase !== 'idle') return;
     const p = rel(e);
     const g = gesture.current;
@@ -252,26 +292,31 @@ export function MapView({
     }
   };
 
-  const openPoint = (p: MapPoint) => {
-    if (p.tier === 'A') onStart();
+  const openPoint = (p: MapPoint | SeaPoint) => {
+    if (p.id === VOYAGE_POINT.id && onStartVoyage) onStartVoyage();
+    else if ('tier' in p && p.tier === 'A') onStart(p);
     else {
       setSheet(p);
       setTouched(true);
     }
   };
 
-  const onPick = (m: Marker) => {
+  const onPick = (m: Marker, touch: boolean) => {
     if (gesture.current.dragged) return;
     if (m.kind === 'cluster') {
+      setShown(null);
       if (is3D) send3D({ type: 'focus', view: m.target });
       else animateTo(m.target);
+    } else if (markerPress(shown, m.key, touch) === 'show') setShown(m.key);
+    else {
+      setShown(null);
+      openPoint(m.point);
     }
-    else openPoint(m.point);
   };
 
   const markers = useMemo(() => buildMarkers(size, view, explored, PTS), [size, view, explored]);
   const geo = geometry(size);
-  const stageCls = 'stage' + (is3D ? ' m3d' : '') + (phase === 'dive' ? ' dive' : phase === 'fade' ? ' fade' : phase === 'ret' ? ' ret' : '');
+  const stageCls = 'stage' + (is3D ? ' m3d' : '') + (voyaging ? ' voyaging' : '') + (phase === 'dive' ? ' dive' : phase === 'approach' ? ' approach' : phase === 'fade' ? ' fade' : phase === 'ret' ? ' ret' : '');
 
   return (
     <div className="stagewrap">
@@ -283,7 +328,7 @@ export function MapView({
           role="application"
           aria-label={
             mode === '3d'
-              ? 'Mapa en relieve 3D de la Antártida. Arrastrá para orbitar o mover, usá las flechas para desplazarte, las teclas más y menos para acercar, y las teclas Q y E para girar.'
+              ? 'Mapa en relieve 3D de la Antártida. Arrastrá para mover, y con el botón derecho o con dos dedos para girar e inclinar. Usá las flechas para desplazarte, las teclas más y menos para acercar, y las teclas Q y E para girar.'
               : 'Mapa de la Antártida. Arrastrá para mover, usá las flechas para desplazarte y las teclas más y menos para acercar.'
           }
           onPointerDown={onDown}
@@ -300,13 +345,16 @@ export function MapView({
               view={view}
               anim={anim}
               phase={phase}
+              diveTarget={diveTarget}
               markers={markers}
+              shown={shown}
               onPick={onPick}
               command={command}
               onCameraRest={setView}
+              voyage={voyaging ? voyage.bus : null}
             />
           ) : (
-            <Map2DLayer geo={geo} view={view} anim={anim} phase={phase} markers={markers} onPick={onPick} />
+            <Map2DLayer geo={geo} view={view} anim={anim} phase={phase} markers={markers} shown={shown} onPick={onPick} />
           )}
         </div>
 
@@ -320,10 +368,11 @@ export function MapView({
           <ExplorationLog explored={explored} />
         </header>
 
-        {!touched && phase === 'idle' && <div className="hint">arrastrá para mover · pellizcá para acercar</div>}
+        {!touched && !voyaging && phase === 'idle' && <div className="hint">arrastrá para mover · pellizcá para acercar</div>}
         {toast && <div className="toast" role="status">{toast}</div>}
 
         <div className="bottom">
+          {voyaging ? <span /> : (
           <div className="leftcol">
             <Legend open={legend} onToggle={onToggleLegend} mode={mode} />
             <button type="button" className="btn" onClick={() => { setSheet(null); setList(true); }}>
@@ -334,6 +383,7 @@ export function MapView({
               <ViewToggle mode={mode} onChange={onToggleMode} />
             )}
           </div>
+          )}
           <div className="zoom">
             <button type="button" className="iconbtn" onClick={() => (is3D ? send3D({ type: 'zoom', factor: 1.6 }) : animateTo(zoomCenter(size, view, 1.6)))} aria-label="Acercar">{Icon.plus}</button>
             <button type="button" className="iconbtn" onClick={() => (is3D ? send3D({ type: 'zoom', factor: 1 / 1.6 }) : animateTo(zoomCenter(size, view, 1 / 1.6)))} aria-label="Alejar">{Icon.minus}</button>
@@ -348,9 +398,14 @@ export function MapView({
             onPick={(p) => { setList(false); openPoint(p); }}
           />
         )}
-        {sheet && <PointSheet point={sheet} onClose={() => setSheet(null)} fallbackFocus={() => vpRef.current} />}
+        {voyaging && onEndVoyage && (
+          <Suspense fallback={null}>
+            <VoyagePanel voyage={voyage} animated={is3D && !reduced} webgl={is3D} reduced={reduced} onExit={onEndVoyage} />
+          </Suspense>
+        )}
+        {sheet && <PointSheet point={sheet} onClose={() => setSheet(null)} fallbackFocus={() => vpRef.current} preview={is3D} reduced={reduced} />}
       </div>
-      <div className={'veil' + (phase === 'dive' ? ' on' : '')} />
+      <div className={'veil' + (phase === 'dive' ? ' on' : phase === 'approach' ? ' late' : '')} />
     </div>
   );
 }

@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import {
-  Color,
   Mesh,
   NoColorSpace,
   PlaneGeometry,
@@ -10,16 +9,25 @@ import {
   SRGBColorSpace,
   Texture,
   TextureLoader,
+  Vector2,
   Vector3,
+  Vector4,
 } from 'three';
-import { DEPTH_ABSORB, OCEAN_SIZE, sunDirection } from '@antartida/core';
+import {
+  DEPTH_ABSORB,
+  DRAKE_STORM,
+  MAX_WHALE_RIPPLES,
+  OCEAN_SIZE,
+  computeWhaleRipples,
+  sunDirection,
+  type SeaLifeInstance,
+} from '@antartida/core';
 import oceanBathy2048Url from '@antartida/core/assets/ocean-bathy-2048.webp';
 import oceanBathy1024Url from '@antartida/core/assets/ocean-bathy-1024.webp';
 import oceanWavesAUrl from '@antartida/core/assets/ocean-waves-a-256.webp';
 import oceanWavesBUrl from '@antartida/core/assets/ocean-waves-b-256.webp';
 import paper512Url from '@antartida/core/assets/paper-512.webp';
 import { oceanFragmentShader, oceanVertexShader } from './ocean.glsl.ts';
-import { FOG_COLOR_HEX } from './fog.glsl.ts';
 import { useSeaTime, type SeaTimeUniform } from './useAnimationClock.ts';
 
 interface OceanTextures {
@@ -29,7 +37,17 @@ interface OceanTextures {
   waveB: Texture;
 }
 
-export function Ocean({ wide = true, timeUniform }: { wide?: boolean; timeUniform?: SeaTimeUniform }) {
+const EMPTY_INSTANCES: readonly SeaLifeInstance[] = [];
+
+export function Ocean({
+  wide = true,
+  timeUniform,
+  instances = EMPTY_INSTANCES,
+}: {
+  wide?: boolean;
+  timeUniform?: SeaTimeUniform;
+  instances?: readonly SeaLifeInstance[];
+}) {
   const meshRef = useRef<Mesh>(null);
   const invalidate = useThree((s) => s.invalidate);
   const contextTime = useSeaTime();
@@ -74,7 +92,17 @@ export function Ocean({ wide = true, timeUniform }: { wide?: boolean; timeUnifor
 
   const geo = useMemo(() => new PlaneGeometry(OCEAN_SIZE, OCEAN_SIZE, 4, 4), []);
 
+  const whaleInstances = useMemo(
+    () =>
+      instances
+        .filter((inst) => inst.species === 'humpback' || inst.species === 'minke')
+        .slice(0, MAX_WHALE_RIPPLES),
+    [instances]
+  );
+  const lastWhaleCyclesRef = useRef<number[]>([]);
+
   const uniforms = useMemo(() => {
+    const initialRipples = Array.from({ length: MAX_WHALE_RIPPLES }, () => new Vector4(0, 0, 0, 0));
     return {
       uBathy: { value: null as Texture | null },
       uPaperTex: { value: null as Texture | null },
@@ -93,8 +121,10 @@ export function Ocean({ wide = true, timeUniform }: { wide?: boolean; timeUnifor
       uIsobarsStrength: { value: 0.88 },
       uFoamStrength: { value: 0.90 },
       uPaperGrainStrength: { value: 0.24 },
-      uFogColor: { value: new Color(FOG_COLOR_HEX) },
-      uFogDensity: { value: 0.35 },
+      uWhaleRipples: { value: initialRipples },
+      uStormBand: { value: new Vector4(DRAKE_STORM.from.x - 500, DRAKE_STORM.from.y - 500, DRAKE_STORM.to.x - 500, DRAKE_STORM.to.y - 500) },
+      uStormShape: { value: new Vector2(DRAKE_STORM.radius, DRAKE_STORM.edge) },
+      uStormWind: { value: new Vector2(Math.cos(DRAKE_STORM.wind), Math.sin(DRAKE_STORM.wind)) },
     };
   }, []);
 
@@ -138,7 +168,33 @@ export function Ocean({ wide = true, timeUniform }: { wide?: boolean; timeUnifor
   const lastCenter = useRef({ x: 0, z: 0 });
 
   useFrame((state) => {
-    uniforms.uTime.value = effectiveTimeUniform.value;
+    const t = effectiveTimeUniform.value;
+    uniforms.uTime.value = t;
+
+    // Recompute whale emergence ripple uniforms on CPU ONLY when a whale's cycle index changes
+    const prevCycles = lastWhaleCyclesRef.current;
+    let cycleChanged = prevCycles.length !== whaleInstances.length;
+    if (!cycleChanged) {
+      for (let i = 0; i < whaleInstances.length; i++) {
+        const w = whaleInstances[i];
+        if (Math.floor(t * w.speed + w.phase) !== prevCycles[i]) {
+          cycleChanged = true;
+          break;
+        }
+      }
+    }
+    if (cycleChanged) {
+      const nextRipples = computeWhaleRipples(whaleInstances, t);
+      lastWhaleCyclesRef.current = nextRipples.map((r) => r.cycleIndex);
+      for (let i = 0; i < MAX_WHALE_RIPPLES; i++) {
+        const r = nextRipples[i];
+        if (r) {
+          uniforms.uWhaleRipples.value[i].set(r.worldX, r.worldZ, r.speed, r.phase);
+        } else {
+          uniforms.uWhaleRipples.value[i].set(0, 0, 0, 0);
+        }
+      }
+    }
 
     const controls = (state as unknown as { controls?: { target?: Vector3 } }).controls;
     const target = controls?.target;

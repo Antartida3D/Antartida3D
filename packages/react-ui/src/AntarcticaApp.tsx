@@ -1,21 +1,26 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import {
+  APPROACH_MS,
   DIVE_MS,
   FADE_MS,
+  AVAILABLE_COUNT,
+  EXPEDITION_POINT,
   RETURN_MS,
-  RETURN_TOAST,
+  VOYAGE_POINT,
+  returnToast,
   TOAST_MS,
   loadExplored,
   saveExplored,
   loadViewMode,
   saveViewMode,
+  type MapPoint,
 } from '@antartida/core';
 import { useReducedMotion, useTimers } from './hooks.ts';
 import { MapView, type Layer3DProps, type Phase, type ViewMode } from './map/MapView.tsx';
 import { Filters } from './ui.tsx';
 
-const loadExpedition = () => import('./expedition/Expedition.tsx');
-const Expedition = lazy(() => loadExpedition().then((m) => ({ default: m.Expedition })));
+const loadOrcadas = () => import('./orcadas/OrcadasExpedition.tsx');
+const OrcadasExpedition = lazy(() => loadOrcadas().then((m) => ({ default: m.OrcadasExpedition })));
 
 const loadMap3D = () => import('./map3d/Map3DLayer.tsx');
 const Map3DLayerLazy = lazy(() => loadMap3D().then((m) => ({ default: m.Map3DLayer })));
@@ -40,9 +45,11 @@ function hasWebGL(): boolean {
 }
 
 export function AntarcticaApp() {
-  const [screen, setScreen] = useState<'map' | 'exp'>('map');
+  const [screen, setScreen] = useState<'map' | 'orcadas'>('map');
   const [phase, setPhase] = useState<Phase>('idle');
-  const [explored, setExplored] = useState(false);
+  const [explored, setExplored] = useState<string[]>([]);
+  const [voyaging, setVoyaging] = useState(false);
+  const [activePoint, setActivePoint] = useState<MapPoint>(EXPEDITION_POINT);
   const [toast, setToast] = useState('');
   const [legend, setLegend] = useState(true);
   const [returned, setReturned] = useState(false);
@@ -84,6 +91,8 @@ export function AntarcticaApp() {
   }, [reduced]);
 
   const toggleMode = (next: ViewMode) => {
+    // A transition into an expedition is tied to the view it started on.
+    if (phase !== 'idle') return;
     if (next === '3d' && !webglSupported) {
       setToast('WebGL no está disponible en este navegador');
       later('toast', () => setToast(''), TOAST_MS);
@@ -93,32 +102,52 @@ export function AntarcticaApp() {
     saveViewMode(next);
   };
 
-  const start = () => {
-    if (phase !== 'idle') return;
+  const start = (point: MapPoint) => {
+    if (phase !== 'idle' || point.id !== 'orcadas') return;
     setToast('');
-    void loadExpedition();
-    setPhase(reduced ? 'fade' : 'dive');
+    setActivePoint(point);
+    void loadOrcadas();
+    // Orcadas on the 3D map: the camera zooms all the way down to the island, like the trip from Ushuaia.
+    const approach = !reduced && mode === '3d' && document.querySelector('.stage.m3d canvas') !== null;
+    setPhase(reduced ? 'fade' : approach ? 'approach' : 'dive');
     later(
       'enter',
       () => {
-        setScreen('exp');
+        setScreen('orcadas');
         setPhase('idle');
       },
-      reduced ? FADE_MS : DIVE_MS
+      reduced ? FADE_MS : approach ? APPROACH_MS : DIVE_MS
     );
   };
 
+  /** Marks an expedition as explored and announces it. */
+  const complete = (point: { id: string; title: string }) => {
+    const ids = explored.includes(point.id) ? explored : [...explored, point.id];
+    setExplored(ids);
+    saveExplored(ids);
+    setToast(returnToast(point.title, ids.length, AVAILABLE_COUNT));
+    later('toast', () => setToast(''), TOAST_MS);
+  };
+
+  // The trip from Ushuaia happens on the 3D map; without WebGL it advances step by step on the 2D one.
+  const startVoyage = () => {
+    setToast('');
+    if (webglSupported) setMode('3d');
+    setVoyaging(true);
+  };
+
+  const endVoyage = (done: boolean) => {
+    setVoyaging(false);
+    if (done) complete(VOYAGE_POINT);
+  };
+
   const leave = (done: boolean) => {
-    if (done) {
-      setExplored(true);
-      saveExplored(true);
-    }
     setScreen('map');
     setPhase('ret');
     setReturned(true);
-    setToast(done ? RETURN_TOAST : '');
+    if (done) complete(activePoint);
+    else setToast('');
     later('ret', () => setPhase('idle'), RETURN_MS);
-    if (done) later('toast', () => setToast(''), TOAST_MS);
   };
 
   return (
@@ -128,6 +157,8 @@ export function AntarcticaApp() {
         <MapView
           phase={phase}
           explored={explored}
+          voyaging={voyaging}
+          diveTarget={activePoint}
           toast={toast}
           legend={legend}
           focusExpedition={returned}
@@ -137,10 +168,12 @@ export function AntarcticaApp() {
           onToggleLegend={() => setLegend((l) => !l)}
           onToggleMode={toggleMode}
           onStart={start}
+          onStartVoyage={startVoyage}
+          onEndVoyage={endVoyage}
         />
       ) : (
         <Suspense fallback={null}>
-          <Expedition reduced={reduced} onLeave={leave} />
+          <OrcadasExpedition reduced={reduced} onLeave={leave} />
         </Suspense>
       )}
     </div>

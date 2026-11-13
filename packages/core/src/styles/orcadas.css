@@ -1,0 +1,1745 @@
+/* Estación Orcadas expedition styles (.orc prefix). Uses tokens from tokens.css. */
+
+.orc {
+  position: absolute;
+  inset: 0 0 auto 0;
+  width: 100%;
+  /* The shared .app has min-height: 600px; on a landscape phone the expedition must still fit
+     the screen, or the bottom of the scene and its hotspots fall below it. */
+  height: min(100%, 100dvh);
+  overflow: hidden;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.orc-scene-wrap,
+.orc-fallback {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.orc-fallback-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Always-visible reconstruction chip on the scene with help button */
+.orc-scene-badge {
+  position: absolute;
+  left: 12px;
+  bottom: calc(var(--orc-sheet) + 10px);
+  top: auto;
+  z-index: 5;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-start;
+}
+
+.orc-scene-badge-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.orc-scene-help-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Atkinson Hyperlegible', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  pointer-events: auto;
+}
+
+.orc-scene-help-btn:focus-visible {
+  outline: 2px solid var(--deep);
+  outline-offset: 2px;
+}
+
+.orc-scene-help-popover {
+  pointer-events: auto;
+  margin-top: 6px;
+  max-width: 280px;
+  background: #FBF4E6;
+  border: 1.5px solid var(--ink);
+  border-radius: 6px 12px 8px 10px;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--ink);
+  box-shadow: 2px 3px 0 rgba(31, 42, 54, 0.2);
+}
+
+.orc-scene-help-popover p {
+  margin: 0;
+}
+
+.orc-scene-help-popover p + p {
+  margin-top: 6px;
+}
+
+.orc-scene-sources-link {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--navy, #274666);
+  text-decoration: underline;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.orc-scene-sources-link:hover,
+.orc-scene-sources-link:focus-visible {
+  color: var(--teal, #1a7f72);
+}
+
+/* KindChip: color + shape + border + text */
+.orc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+  padding: 3px 9px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.orc-chip-ico {
+  width: 11px;
+  height: 11px;
+  flex: none;
+}
+
+.orc-chip-real {
+  background: var(--ink);
+  color: var(--ice);
+  border: 1.5px solid var(--ink);
+}
+
+.orc-chip-sim {
+  background: #D6E5EF;
+  color: #152E47;
+  border: 1.5px solid var(--deep);
+}
+
+.orc-chip-recon {
+  background: #FBF4E6;
+  color: #4A2E08;
+  border: 1.5px dashed #7A4E10;
+}
+
+.orc-chip-calc {
+  background: #E8DEC9;
+  color: var(--ink);
+  border: 1.5px dotted var(--ink);
+}
+
+/* Top bar */
+.orc-top {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 5;
+  padding: 8px 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: linear-gradient(
+    rgba(243, 235, 221, 0.96) 65%,
+    rgba(243, 235, 221, 0)
+  );
+  pointer-events: none;
+}
+
+.orc-top > * {
+  pointer-events: auto;
+}
+
+.orc-top-r1 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.orc-top-btn {
+  min-height: 44px;
+  padding: 0 12px;
+  font-size: 14px;
+  box-shadow: 1px 2px 0 rgba(31, 42, 54, 0.16);
+}
+
+.orc-top-title {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+}
+
+.orc-top-title strong {
+  display: block;
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 16px;
+  line-height: 1.1;
+  color: var(--ink);
+}
+
+.orc-top-title span {
+  display: block;
+  font-size: 12px;
+  color: #2B3640;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 420px) {
+  .orc-top-title span {
+    display: none;
+  }
+}
+
+/* Chapter step navigation */
+.orc-steps-nav {
+  width: 100%;
+  overflow-x: hidden;
+  scrollbar-width: none;
+}
+
+.orc-steps-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.orc-steps {
+  list-style: none;
+  margin: 0;
+  padding: 2px 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 3px;
+  width: 100%;
+}
+
+.orc-step-item {
+  width: 100%;
+  min-width: 0;
+}
+
+.orc-step-btn {
+  width: 100%;
+  min-height: 44px;
+  padding: 4px 1px;
+  border-radius: 18px;
+  border: 1.5px solid rgba(31, 42, 54, 0.45);
+  background: rgba(251, 244, 230, 0.92);
+  color: var(--ink);
+  font-size: 12px;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  white-space: nowrap;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.orc-step-btn:hover {
+  background: #fff;
+}
+
+.orc-step-btn.is-visited {
+  border-color: var(--deep);
+  background: #E7F0F5;
+}
+
+.orc-step-btn.is-current {
+  background: var(--ink);
+  color: var(--ice);
+  border-color: var(--ink);
+}
+
+.orc-step-num {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(31, 42, 54, 0.12);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex: none;
+}
+
+.orc-step-btn.is-current .orc-step-num {
+  background: var(--ocre);
+  color: var(--ink);
+}
+
+/* 3D-projected HTML Hotspots */
+.orc-hotspots {
+  position: absolute;
+  inset: 0;
+  z-index: 11;
+  pointer-events: none;
+}
+
+.orc-hs {
+  position: absolute;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transform: translate(-50%, -50%);
+  will-change: transform;
+}
+
+.orc-hs.is-dimmed {
+  opacity: 0.38;
+}
+
+.orc-hs.is-dimmed:hover,
+.orc-hs.is-dimmed:focus-visible,
+.orc-hs.is-dimmed.is-active {
+  opacity: 1;
+}
+
+.orc-hs-dot {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--ocre);
+  border: 2px solid var(--ink);
+  box-shadow: 0 0 0 2px var(--paper);
+  flex: none;
+}
+
+.orc-hs.is-active .orc-hs-dot {
+  background: var(--oxide);
+  transform: scale(1.15);
+}
+
+.orc-hs-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 22px;
+  height: 22px;
+  margin-left: -11px;
+  margin-top: -11px;
+  border-radius: 50%;
+  border: 2px solid var(--ocre);
+  pointer-events: none;
+  animation: orc-pulse 2.4s ease-out infinite;
+}
+
+@keyframes orc-pulse {
+  0% {
+    transform: scale(0.75);
+    opacity: 0.95;
+  }
+  100% {
+    transform: scale(1.85);
+    opacity: 0;
+  }
+}
+
+.orc-hs-lbl {
+  display: none;
+  font-family: 'Atkinson Hyperlegible', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.05;
+  color: var(--ink);
+  background: rgba(251, 244, 230, 0.95);
+  border: 1.5px solid var(--ink);
+  border-radius: 4px 10px 6px 8px;
+  padding: 2px 7px 3px;
+  box-shadow: 1px 2px 0 rgba(31, 42, 54, 0.18);
+  white-space: nowrap;
+}
+
+.orc-hs.is-active .orc-hs-lbl {
+  display: inline-block;
+}
+
+/* Hotspot floating fact card (desktop) */
+.orc-spot-card {
+  position: absolute;
+  max-width: 320px;
+  width: 320px;
+  max-height: 60dvh;
+  overflow-y: auto;
+  z-index: 8;
+  background: #FBF4E6;
+  border: 2px solid var(--ink);
+  border-radius: 10px 18px 12px 14px;
+  padding: 12px 14px;
+  box-shadow: 3px 5px 0 rgba(31, 42, 54, 0.22);
+  animation: orc-card-in 0.24s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+/* Hotspot card inside bottom panel (mobile) */
+.orc-spot-panel-card {
+  position: static;
+  width: 100%;
+  max-width: none;
+  max-height: none;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 16px 16px 20px;
+  animation: none;
+}
+
+.orc-btn-return {
+  padding: 4px 10px;
+  font-size: 13px;
+  border: 1.5px solid var(--ink);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+@keyframes orc-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.orc-spot-head,
+.orc-sources-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.orc-spot-head h3,
+.orc-sources-head h3 {
+  margin: 0;
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 19px;
+  line-height: 1.15;
+}
+
+.orc-spot-sub {
+  margin: 4px 0 8px;
+  font-size: 13px;
+  color: #2B3640;
+}
+
+.orc-spot-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Chapter panel. On a portrait phone it is a bottom sheet (BottomSheet) with three sizes: peek
+   (chapter name and main button), small and tall. The scene label sits on top of it. */
+.orc {
+  --orc-sheet: 45dvh;
+}
+
+.orc.is-panel-expanded {
+  --orc-sheet: 85dvh;
+}
+
+.orc.is-panel-peek {
+  --orc-sheet: 132px;
+}
+
+.orc-panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--orc-sheet);
+  max-height: var(--orc-sheet);
+  z-index: 6;
+  background: var(--paper);
+  border-top: 2px solid var(--ink);
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 -8px 24px rgba(31, 42, 54, 0.22);
+  display: flex;
+  flex-direction: column;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  transition: height 0.22s cubic-bezier(0.2, 0.85, 0.3, 1), max-height 0.22s cubic-bezier(0.2, 0.85, 0.3, 1);
+}
+
+/* The shared sheet styles (painted.css) are for a card with padding; this one lays out its own. */
+.orc-panel.sheet {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: auto;
+  padding: 0 0 env(safe-area-inset-bottom, 0px);
+  border: 0;
+  border-top: 2px solid var(--ink);
+  border-radius: 18px 18px 0 0;
+  overflow: hidden;
+  max-height: var(--orc-sheet);
+  z-index: 6;
+}
+
+.orc-panel.sheet.full {
+  max-height: var(--orc-sheet);
+  z-index: 15;
+}
+
+/* While dragged, the sheet can grow up to tall; the finger sets its max-height. */
+.orc-panel.sheet.dragging {
+  height: 85dvh;
+  z-index: 15;
+}
+
+.orc-panel .sheet-handle {
+  display: flex;
+  position: static;
+  flex: none;
+  width: 100%;
+  height: 28px;
+  margin: 0;
+  border-radius: 18px 18px 0 0;
+}
+
+.orc-panel .sheet-handle:focus-visible {
+  outline: 2px solid var(--deep);
+  outline-offset: -3px;
+}
+
+/* Peek: only the chapter name and the main button. */
+.orc-panel.peek .orc-panel-scroll {
+  overflow: hidden;
+}
+
+.orc-panel.peek .orc-panel-scroll > :not(.orc-panel-head),
+.orc-panel.peek .orc-chapter-h2 {
+  display: none;
+}
+
+.orc-panel-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 10px 14px 8px;
+}
+
+.orc-panel-head {
+  margin-bottom: 6px;
+}
+
+.orc-kicker {
+  display: block;
+  font-size: 17px;
+  line-height: 1.05;
+  color: var(--deep);
+}
+
+/* Scoped to the panel so the shared `.sheet h2` style does not win on phones. */
+.orc-panel .orc-chapter-h2 {
+  margin: 1px 0 0;
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 20px;
+  line-height: 1.12;
+  color: var(--ink);
+}
+
+.orc-chapter-h2:focus {
+  outline: none;
+}
+
+.orc-chapter-h2:focus-visible {
+  outline: 2px solid var(--deep);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.orc-chapter-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.orc-question {
+  margin: 0;
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--deep);
+}
+
+.orc-lead {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.38;
+  color: var(--ink);
+}
+
+/* Guided tour stop card */
+.orc-tour-card {
+  background: #FBF4E6;
+  border: 1.5px solid rgba(31, 42, 54, 0.35);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.orc-activity .orc-tour-card {
+  background: var(--paper);
+}
+
+.orc-tour-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.orc-tour-count {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--pencil);
+}
+
+.orc-tour-line {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.42;
+  color: var(--ink);
+}
+
+.orc-tour-card .orc-fact-srcs {
+  margin-top: 0;
+}
+
+.orc-tour-more {
+  margin-top: 0;
+}
+
+/* Fact cards */
+.orc-facts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.orc-fact-card {
+  background: #FBF4E6;
+  border: 1.5px solid rgba(31, 42, 54, 0.42);
+  border-radius: 6px 14px 8px 12px;
+  padding: 8px 10px;
+  box-shadow: 2px 3px 0 rgba(31, 42, 54, 0.1);
+}
+
+.orc-fact-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.orc-fact-title {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.orc-fact-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--ink);
+}
+
+.orc-fact-srcs {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.orc-src-prefix {
+  color: #5E656C;
+  font-size: 12px;
+}
+
+.orc-src-link {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 4px 8px;
+  margin: 1px 0;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--deep);
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.orc-src-link:hover {
+  color: var(--ocre);
+}
+
+.orc-src-link:focus-visible {
+  outline: 2px solid var(--deep);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+details.orc-more {
+  margin-top: 4px;
+  border: 1px dashed rgba(31, 42, 54, 0.3);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: rgba(251, 244, 230, 0.6);
+}
+
+details.orc-more > summary {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--deep);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+details.orc-more > summary::-webkit-details-marker {
+  display: none;
+}
+
+details.orc-more > summary::before {
+  content: '▸';
+  display: inline-block;
+  transition: transform 0.2s ease;
+  font-size: 12px;
+}
+
+details.orc-more[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+details.orc-more > summary:focus-visible {
+  outline: 2px solid var(--deep);
+  outline-offset: 2px;
+}
+
+.orc-more-facts {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Activity blocks */
+.orc-activity {
+  background: #FBF4E6;
+  border: 1.5px solid var(--ink);
+  border-radius: 8px 14px 10px 12px;
+  padding: 9px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.orc-chip-row,
+.orc-obs-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.orc-obs-meta {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--deep);
+}
+
+.orc-activity-intro {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.3;
+  color: #2B3640;
+}
+
+.orc-link-btn {
+  border: 0;
+  background: transparent;
+  color: var(--deep);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: underline;
+  padding: 4px;
+}
+
+/* Sliders (YearWheel & TimeMachine) */
+.orc-slider-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.orc-slider-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 13px;
+}
+
+.orc-slider-val {
+  font-family: 'Fraunces', Georgia, serif;
+  color: var(--deep);
+}
+
+.orc-range {
+  width: 100%;
+  accent-color: var(--deep);
+  height: 24px;
+  cursor: pointer;
+}
+
+/* MonthStrip */
+.orc-month-strip-wrap {
+  position: absolute;
+  /* Below the header and the chapter buttons, which end at 106 px on a portrait phone. */
+  top: 114px;
+  left: 8px;
+  right: auto;
+  width: fit-content;
+  max-width: calc(100vw - 16px);
+  /* Above the hotspots (11), so the open popover and «Saber más» are never covered by a dot. */
+  z-index: 12;
+}
+
+.orc-month-chip {
+  min-height: 44px;
+  padding: 6px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  border-radius: 8px;
+  box-shadow: 2px 3px 0 rgba(31, 42, 54, 0.12);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.orc-month-chip:hover {
+  background: #fff;
+}
+
+.orc-month-chip:focus-visible {
+  outline: 2px solid var(--deep);
+  outline-offset: 2px;
+}
+
+.orc-month-chip-bars {
+  width: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: none;
+}
+
+.orc-month-chip-bars .orc-month-daylight-track {
+  height: 14px;
+}
+
+.orc-month-chip-caret {
+  font-size: 12px;
+  line-height: 1;
+  transition: transform 0.15s ease;
+}
+
+.orc-month-chip[aria-expanded="true"] .orc-month-chip-caret {
+  transform: rotate(180deg);
+}
+
+.orc-month-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: calc(100vw - 16px);
+  max-width: 420px;
+  max-height: calc(100dvh - 176px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  border-radius: 10px;
+  padding: 6px;
+  box-shadow: 2px 4px 0 rgba(31, 42, 54, 0.18);
+  animation: orc-card-in 0.18s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+.orc-month-popover .orc-month-strip {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.orc-month-popover .orc-month-btn {
+  padding: 3px 1px 4px;
+}
+
+@media (max-width: 400px) {
+  .orc-month-popover .orc-month-short {
+    font-size: 11px;
+  }
+}
+
+.orc-month-strip {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  border-radius: 8px;
+  padding: 3px;
+  box-shadow: 2px 3px 0 rgba(31, 42, 54, 0.12);
+}
+
+.orc-month-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 44px;
+  padding: 3px 2px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 3px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.orc-month-btn:hover {
+  background: rgba(31, 42, 54, 0.08);
+}
+
+.orc-month-btn.is-active,
+.orc-month-btn[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--ice);
+}
+
+.orc-month-btn:focus-visible {
+  outline: 2px solid var(--deep);
+  outline-offset: 1px;
+}
+
+.orc-month-short {
+  display: block;
+  text-align: center;
+  font-size: 12px;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+/* Hours of daylight: a bar that grows from the bottom of a fixed track (0 to 24 h). */
+.orc-month-daylight-track {
+  position: relative;
+  display: block;
+  height: 16px;
+  border-radius: 2px;
+  background: rgba(31, 42, 54, 0.08);
+  overflow: hidden;
+}
+
+.orc-month-daylight-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #E8A838;
+}
+
+.orc-month-btn[aria-pressed="true"] .orc-month-daylight-track {
+  background: rgba(247, 250, 251, 0.18);
+}
+
+.orc-month-btn[aria-pressed="true"] .orc-month-daylight-bar {
+  background: #FFD479;
+}
+
+/* Sea ice of the bay (simulation): stronger blue, more ice. */
+.orc-month-ice-stripe {
+  display: block;
+  height: 4px;
+  border-radius: 2px;
+  background: #5C8FB3;
+}
+
+.orc-month-ice-stripe[data-ice="no"] {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px rgba(31, 42, 54, 0.18);
+}
+
+.orc-month-btn[aria-pressed="true"] .orc-month-ice-stripe {
+  background: #A8D1ED;
+}
+
+.orc-month-btn[aria-pressed="true"] .orc-month-ice-stripe[data-ice="no"] {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px rgba(247, 250, 251, 0.35);
+}
+
+.orc-month-legend {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  margin: 4px 0 0;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink);
+  background: rgba(251, 244, 230, 0.92);
+  border-radius: 6px;
+}
+
+.orc-month-legend-sun,
+.orc-month-legend-ice {
+  display: inline-block;
+  width: 10px;
+  border-radius: 2px;
+}
+
+.orc-month-legend-sun {
+  height: 10px;
+  background: #E8A838;
+}
+
+.orc-month-legend-ice {
+  height: 4px;
+  margin-left: 6px;
+  background: #5C8FB3;
+}
+
+.orc-month-details {
+  margin-top: 4px;
+  background: #FBF4E6;
+  border: 1.5px solid var(--ink);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  box-shadow: 2px 3px 0 rgba(31, 42, 54, 0.12);
+  overflow-y: auto;
+}
+
+.orc-month-popover .orc-month-details {
+  max-height: none;
+  overflow-y: visible;
+}
+
+.orc-month-summary-toggle {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--deep);
+}
+
+.orc-month-summary-toggle:focus-visible {
+  outline: 2px solid var(--deep);
+  outline-offset: 2px;
+}
+
+.orc-month-details-body {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.orc-month-info-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--ink);
+}
+
+.orc-month-ice-text {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Answer & Century Charts */
+.orc-answer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.orc-century-summary {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.32;
+}
+
+.orc-chart-frame {
+  background: var(--paper);
+  border: 1px solid rgba(31, 42, 54, 0.35);
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+
+.orc-chart-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.orc-answer-sentence-block {
+  background: #FBF4E6;
+  border: 1.5px solid var(--ink);
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.orc-answer-sentence {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.38;
+  color: var(--ink);
+}
+
+.orc-answer-cta-row {
+  margin: 2px 0;
+}
+
+.orc-btn-goto-obs {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--deep);
+  border: 1.5px solid var(--deep);
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.orc-swatch-dot {
+  background: #3D6B8E;
+  border-radius: 50%;
+}
+
+.orc-swatch-dot-warm {
+  background: #CE8F3A;
+  border-radius: 50%;
+}
+
+.orc-swatch-thresh {
+  background: #A4471F;
+}
+
+/* Done chapter */
+.orc-done-seal-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #FBF4E6;
+  border: 1.5px solid var(--ink);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+/* Closing checklist: solid chips for what was done, dashed for what was left (like .vnote). */
+.orc-checklist-lead {
+  margin: 2px 0 6px;
+  font-size: 13px;
+}
+
+.orc-checklist ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.orc-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 4px 10px;
+  border-radius: 18px;
+  border: 1.5px dashed var(--pencil);
+  color: var(--pencil);
+  font-size: 13px;
+}
+
+.orc-check svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  opacity: 0.7;
+}
+
+.orc-check.is-done {
+  border: 1.5px solid var(--ink);
+  background: var(--ice);
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.orc-check.is-done svg {
+  color: var(--deep);
+  opacity: 1;
+}
+
+.orc-seal {
+  width: 68px;
+  height: 68px;
+  flex: none;
+}
+
+.orc-done-summary p {
+  margin: 2px 0 0;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.orc-done-sim {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.orc-done-readings {
+  margin: 0;
+  background: #FBF4E6;
+  border: 1.5px solid var(--ink);
+  border-radius: 10px;
+  padding: 4px 12px;
+}
+
+.orc-done-readings > div {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+  gap: 2px 12px;
+  padding: 7px 0;
+}
+
+.orc-done-readings > div + div {
+  border-top: 1px dashed rgba(31, 42, 54, 0.3);
+}
+
+.orc-done-readings dt {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.orc-done-readings dd {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.1;
+  text-align: right;
+  color: var(--deep);
+}
+
+.orc-done-readings small {
+  grid-column: 1 / -1;
+  font-size: 12px;
+  color: var(--ink);
+  opacity: 0.8;
+}
+
+/* Bottom bar inside panel */
+.orc-panel .orc-bar {
+  position: static;
+  padding: 7px 14px 9px;
+  background: var(--paper);
+  border-top: 1px dashed rgba(31, 42, 54, 0.3);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.orc-panel .orc-bar .btn {
+  min-height: 44px;
+  font-size: 15px;
+  padding: 0 14px;
+}
+
+/* The primary button fills the bar, so it is centred whether «Atrás» is there or not. */
+.orc-panel .orc-bar .btn.primary {
+  flex: 1 1 auto;
+  width: auto;
+  max-width: none;
+}
+
+.orc-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(31, 42, 54, 0.45);
+  backdrop-filter: blur(1.5px);
+  z-index: 10;
+  animation: orc-fade-in 0.2s ease-out both;
+}
+
+@keyframes orc-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Sources dialog panel */
+.orc-sources {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  max-height: 44dvh;
+  z-index: 20;
+  background: #FBF4E6;
+  border: 2px solid var(--ink);
+  border-radius: 16px;
+  padding: 14px 16px;
+  box-shadow: 0 -8px 28px rgba(31, 42, 54, 0.28);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  animation: orc-card-in 0.24s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+.orc-close-btn {
+  width: 44px;
+  height: 44px;
+  flex: none;
+}
+
+.orc-sources-defs {
+  margin: 4px 0 8px;
+  padding: 8px 10px;
+  background: rgba(251, 244, 230, 0.7);
+  border: 1px dashed rgba(31, 42, 54, 0.3);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.orc-sources-def {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.orc-sources-def dt {
+  flex-shrink: 0;
+}
+
+.orc-sources-def dd {
+  margin: 0;
+  color: #3B4651;
+}
+
+.orc-sources-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.orc-source-item {
+  margin: 0;
+  padding: 0;
+}
+
+.orc-source-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 44px;
+  padding: 8px 10px;
+  background: var(--paper);
+  border: 1px solid rgba(31, 42, 54, 0.32);
+  border-radius: 8px;
+  text-decoration: none;
+  color: inherit;
+  box-sizing: border-box;
+}
+
+.orc-source-card:hover {
+  border-color: var(--deep);
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.orc-source-card:focus-visible {
+  outline: 2px solid var(--deep);
+  outline-offset: 2px;
+}
+
+.orc-source-card[data-highlight] {
+  outline: 2.5px solid var(--ocre);
+  outline-offset: 2px;
+}
+
+.orc-source-label {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--deep);
+  line-height: 1.25;
+}
+
+.orc-source-org {
+  font-size: 12.5px;
+  color: var(--ink);
+  line-height: 1.25;
+}
+
+.orc-source-meta {
+  font-size: 11px;
+  color: #5E656C;
+}
+
+.orc-sources-footer {
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(31, 42, 54, 0.25);
+  display: flex;
+  justify-content: center;
+}
+
+.orc-sources-toggle-btn {
+  font-size: 13px;
+  padding: 6px 14px;
+  min-height: 44px;
+}
+
+/* Desktop layout (>= 900px): side notebook column */
+@media (min-width: 900px) {
+  .orc-top {
+    padding: 14px 24px 16px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+  }
+
+  .orc-top-r1 {
+    flex: 0 0 auto;
+    gap: 14px;
+  }
+
+  .orc-top-title {
+    text-align: left;
+  }
+
+  .orc-top-title strong {
+    font-size: 20px;
+  }
+
+  .orc-steps-nav {
+    width: auto;
+    flex: 1;
+    display: flex;
+    justify-content: center;
+  }
+
+  .orc-steps {
+    display: flex;
+    gap: 5px;
+    width: auto;
+  }
+
+  .orc-step-item {
+    width: auto;
+  }
+
+  .orc-step-btn {
+    min-height: 40px;
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+
+  .orc-scene-badge {
+    left: 24px;
+    top: auto;
+    bottom: 24px;
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: flex-start;
+  }
+
+  .orc-scene-badge .orc-scene-help-popover {
+    margin-top: 0;
+    margin-bottom: 6px;
+  }
+
+  .orc-month-strip-wrap {
+    top: 86px;
+    left: 24px;
+    right: auto;
+    width: 380px;
+    z-index: 15;
+  }
+
+  .orc-month-details {
+    max-height: calc(100dvh - 240px);
+  }
+
+  .orc-panel {
+    top: 86px;
+    right: 24px;
+    bottom: 24px;
+    left: auto;
+    width: 480px;
+    height: auto;
+    max-height: calc(100dvh - 110px);
+    border: 2px solid var(--ink);
+    border-radius: 10px 18px 12px 16px;
+    box-shadow: 4px 6px 0 rgba(31, 42, 54, 0.2);
+  }
+
+  .orc-panel-scroll {
+    padding: 16px 18px 12px;
+  }
+
+  .orc-panel .orc-chapter-h2 {
+    font-size: 26px;
+  }
+
+  /* Only the spots that matter in this chapter keep their label; the rest show it on hover or
+     focus, so six labels do not compete with the scene. */
+  .orc-hs:not(.is-dimmed) .orc-hs-lbl,
+  .orc-hs:hover .orc-hs-lbl,
+  .orc-hs:focus-visible .orc-hs-lbl {
+    display: inline-block;
+  }
+
+  .orc-spot-card {
+    right: auto;
+    bottom: auto;
+    max-width: 320px;
+    width: 320px;
+    max-height: 60dvh;
+  }
+
+  .orc-sources {
+    left: 24px;
+    right: auto;
+    bottom: 24px;
+    width: 440px;
+    max-height: calc(100dvh - 120px);
+  }
+}
+
+/* Landscape phones (max-height: 500px): use desktop side panel on right */
+@media ((orientation: landscape) and (max-height: 500px)) {
+  .orc-top {
+    padding: 6px 12px 8px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .orc-top-r1 {
+    flex: 0 0 auto;
+    gap: 8px;
+  }
+
+  .orc-top-btn {
+    min-height: 36px;
+    padding: 0 10px;
+    font-size: 13px;
+  }
+
+  .orc-top-title {
+    text-align: left;
+  }
+
+  .orc-top-title strong {
+    font-size: 15px;
+  }
+
+  .orc-top-title span {
+    font-size: 12px;
+    display: block;
+  }
+
+  .orc-steps-nav {
+    width: auto;
+    flex: 1;
+    display: flex;
+    justify-content: center;
+  }
+
+  .orc-steps {
+    display: flex;
+    gap: 4px;
+    width: auto;
+  }
+
+  .orc-step-item {
+    width: auto;
+  }
+
+  .orc-step-btn {
+    min-height: 36px;
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+
+  .orc-panel {
+    top: 52px;
+    right: 8px;
+    bottom: 8px;
+    left: auto;
+    width: 46%;
+    height: auto;
+    max-height: calc(100dvh - 60px);
+    border: 2px solid var(--ink);
+    border-radius: 10px 16px 12px 14px;
+    box-shadow: 3px 5px 0 rgba(31, 42, 54, 0.2);
+  }
+
+  .orc-panel-scroll {
+    padding: 8px 12px 6px;
+  }
+
+  .orc-panel .orc-chapter-h2 {
+    font-size: 18px;
+  }
+
+  .orc-kicker {
+    font-size: 13px;
+  }
+
+  .orc-bar.ebar {
+    padding: 6px 10px;
+  }
+
+  .orc-month-strip-wrap {
+    top: 58px;
+    z-index: 15;
+  }
+
+  /* The open strip stays left of the chapter panel, and scrolls inside the short screen. */
+  .orc-month-popover {
+    width: calc(54vw - 24px);
+    max-height: calc(100dvh - 116px);
+  }
+
+  /* Fuentes takes the place of the chapter panel, so the scene and its dots stay usable. */
+  .orc-sources {
+    top: 52px;
+    right: 8px;
+    bottom: 8px;
+    left: auto;
+    width: 46%;
+    max-height: none;
+  }
+
+  .orc-scene-badge {
+    left: 8px;
+    bottom: 8px;
+  }
+
+  .orc-hs:not(.is-dimmed) .orc-hs-lbl,
+  .orc-hs:hover .orc-hs-lbl,
+  .orc-hs:focus-visible .orc-hs-lbl {
+    display: inline-block;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orc-hs-ring {
+    animation: none;
+    display: none;
+  }
+  .orc-panel,
+  .orc-spot-card,
+  .orc-sources,
+  .orc-step-btn,
+  .orc-month-popover,
+  .orc-month-chip-caret {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* Mobile portrait with the panel expanded: the scene is a thin strip under the month strip,
+   so the hotspots and the scene label would pile up over it. Hide them until it is compact. */
+@media (max-width: 899px) and (orientation: portrait) {
+  .orc.is-panel-expanded .orc-scene-badge,
+  .orc.is-panel-expanded .orc-hotspots {
+    visibility: hidden;
+  }
+}

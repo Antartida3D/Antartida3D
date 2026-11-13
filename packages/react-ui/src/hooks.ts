@@ -30,6 +30,43 @@ export function useReducedMotion(): boolean {
   return reduced;
 }
 
+/** Whether a CSS media query matches, kept up to date. */
+export function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState(() => typeof window !== 'undefined' && window.matchMedia(query).matches);
+  useEffect(() => {
+    const mql = window.matchMedia(query);
+    const update = () => setMatches(mql.matches);
+    update();
+    mql.addEventListener('change', update);
+    return () => mql.removeEventListener('change', update);
+  }, [query]);
+  return matches;
+}
+
+export function useIsDesktop(breakpoint = 900): boolean {
+  const [isDesktop, setIsDesktop] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return (
+      window.innerWidth >= breakpoint ||
+      window.matchMedia('(orientation: landscape) and (max-height: 500px)').matches
+    );
+  });
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mqlWide = window.matchMedia(`(min-width: ${breakpoint}px)`);
+    const mqlLand = window.matchMedia('(orientation: landscape) and (max-height: 500px)');
+    const update = () => setIsDesktop(mqlWide.matches || mqlLand.matches);
+    update();
+    mqlWide.addEventListener('change', update);
+    mqlLand.addEventListener('change', update);
+    return () => {
+      mqlWide.removeEventListener('change', update);
+      mqlLand.removeEventListener('change', update);
+    };
+  }, [breakpoint]);
+  return isDesktop;
+}
+
 export function useTimers() {
   const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   useEffect(() => () => timers.current.forEach(clearTimeout), []);

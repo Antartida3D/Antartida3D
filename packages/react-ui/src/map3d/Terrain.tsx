@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   BufferAttribute,
   BufferGeometry,
-  Color,
   NoColorSpace,
   RepeatWrapping,
   ShaderMaterial,
@@ -31,7 +30,6 @@ import {
   paintedTerrainFragmentShader,
   paintedTerrainVertexShader,
 } from './paintedTerrain.glsl.ts';
-import { FOG_COLOR_HEX } from './fog.glsl.ts';
 
 export function Terrain({ wide }: { wide: boolean }) {
   const [meshData, setMeshData] = useState<TerrainMesh | null>(null);
@@ -114,9 +112,33 @@ export function Terrain({ wide }: { wide: boolean }) {
       masks[i] = meshData.masks[i];
     }
 
+    // Propagate non-zero land/shelf mask to coastal sea-level vertices of mixed boundary
+    // triangles so interpolated vMask does not drop to 0 down coastal cliffs or shelf fronts.
+    const idx = meshData.indices;
+    for (let t = 0; t < idx.length; t += 3) {
+      const i0 = idx[t];
+      const i1 = idx[t + 1];
+      const i2 = idx[t + 2];
+      const m0 = meshData.masks[i0];
+      const m1 = meshData.masks[i1];
+      const m2 = meshData.masks[i2];
+      const maxMask = Math.max(m0, m1, m2);
+      if (maxMask > 0) {
+        if (m0 === 0 && maxMask > masks[i0]) masks[i0] = maxMask;
+        if (m1 === 0 && maxMask > masks[i1]) masks[i1] = maxMask;
+        if (m2 === 0 && maxMask > masks[i2]) masks[i2] = maxMask;
+      }
+    }
+
+    // Floating ice shelf (Bedmap3 mask 3) as 0/1: interpolating the mask itself crosses 3 between
+    // rock (4) and grounded ice (1), which would tint mountain slopes as shelf.
+    const shelves = new Float32Array(n);
+    for (let i = 0; i < n; i++) shelves[i] = masks[i] === 3 ? 1 : 0;
+
     geo.setAttribute('position', new BufferAttribute(positions, 3));
     geo.setAttribute('aHeight', new BufferAttribute(heights, 1));
     geo.setAttribute('aMask', new BufferAttribute(masks, 1));
+    geo.setAttribute('aShelf', new BufferAttribute(shelves, 1));
     geo.setIndex(new BufferAttribute(meshData.indices, 1));
     geo.computeVertexNormals();
     geo.computeBoundingBox();
@@ -146,8 +168,6 @@ export function Terrain({ wide }: { wide: boolean }) {
         uSunDir: { value: new Vector3(...sunDirection()) },
         uContour: { value: CONTOUR_M },
         uPaperTex: { value: textures.paper },
-        uFogColor: { value: new Color(FOG_COLOR_HEX) },
-        uFogDensity: { value: 0.35 },
         uScreenSize: { value: new Vector2(window.innerWidth, window.innerHeight) },
       },
     });

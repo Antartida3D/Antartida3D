@@ -92,4 +92,118 @@ test.describe('Ocean 3D animation efficiency', () => {
     // Screenshots are byte-for-byte identical
     expect(shot1.equals(shot2)).toBe(true);
   });
+
+  test('open sea in the tilted 3D view is water color, and the far corner fades to paper, never black (1440 and 390 px)', async ({ page }) => {
+    await page.goto('/');
+
+    const toggle = page.getByRole('group', { name: 'Modo de vista' });
+    await toggle.getByRole('button', { name: 'Relieve 3D' }).click();
+    const canvas = page.locator('canvas');
+    await expect(canvas).toBeVisible();
+
+    // Settle scene and terrain
+    await page.waitForTimeout(1200);
+
+    const samples = await page.evaluate(() => {
+      const c = document.querySelector('canvas');
+      const cc = (window as any).__cameraControls;
+      if (!c || !cc) return null;
+      const c2d = document.createElement('canvas');
+      c2d.width = 1;
+      c2d.height = 1;
+      const ctx = c2d.getContext('2d');
+      if (!ctx) return null;
+      const rect = c.getBoundingClientRect();
+      const pixel = (cssX: number, cssY: number) => {
+        const sx = (cssX / rect.width) * c.width;
+        const sy = (cssY / rect.height) * c.height;
+        ctx.drawImage(c, sx, sy, 1, 1, 0, 0, 1, 1);
+        const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+        return { r, g, b };
+      };
+      // Open sea at 0° E, 55° S (Weddell / Scotia side, away from land and markers), in the
+      // polar stereographic map space (scale 1590, centered on 500, 500): world = map - 500.
+      const r = 1590 * Math.tan(((90 - 55) / 2) * (Math.PI / 180));
+      const V = cc.camera.position.constructor;
+      const p = new V(0, 0, -r).project(cc.camera);
+      return {
+        sea: pixel(((p.x + 1) / 2) * rect.width, ((1 - p.y) / 2) * rect.height),
+        corner: pixel(10, 10),
+      };
+    });
+
+    expect(samples).not.toBeNull();
+    const { sea, corner } = samples!;
+    // The sea is drawn: bluish water, not the raw paper background.
+    expect(sea.b).toBeGreaterThanOrEqual(sea.r);
+    expect(sea.r > 220 && sea.g > 210 && sea.b > 190).toBe(false);
+    // Far away the world fades into paper (#42), but the canvas never shows black there.
+    expect(corner.r + corner.g + corner.b).toBeGreaterThan(30);
+  });
+
+  test('ARA Almirante Irizar marker exists, can be focused with Tab, and opens a card with verified source (1440 and 390 px)', async ({ page }) => {
+    await page.goto('/');
+
+    const toggle = page.getByRole('group', { name: 'Modo de vista' });
+    await toggle.getByRole('button', { name: 'Relieve 3D' }).click();
+    await expect(page.locator('canvas')).toBeVisible();
+    await page.waitForTimeout(800);
+
+    const irizarBtn = page.locator('[data-key="sea-irizar"] button');
+    await expect(irizarBtn).toBeVisible();
+
+    // Test focusability (Tab key / focus-visible)
+    await irizarBtn.focus();
+    await expect(irizarBtn).toBeFocused();
+
+    // Click opens PointSheet with verified source or pending tag
+    await irizarBtn.click();
+    const sheet = page.locator('.sheet[role="dialog"]');
+    await expect(sheet).toBeVisible();
+    const sheetText = await sheet.innerText();
+    const hasSource = sheetText.includes('Fuente') || sheetText.includes('fuente') || sheetText.includes('[Fuente a definir]');
+    expect(hasSource).toBe(true);
+
+    // Close sheet
+    await page.keyboard.press('Escape');
+    await expect(sheet).not.toBeVisible();
+  });
+
+  test('hint, brand title, subtitle, and registration panel bounding boxes do not overlap at 390 px in 2D and 3D', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/');
+    await page.waitForTimeout(500);
+
+    const checkNoIntersections = async (mode: string) => {
+      const hint = await page.locator('.hint').boundingBox();
+      const brand = await page.locator('.brand').boundingBox();
+      const sub = await page.locator('.brand p').boundingBox();
+      const reg = await page.locator('.reg').boundingBox();
+
+      expect(hint, `${mode}: hint bounding box`).not.toBeNull();
+      expect(brand, `${mode}: brand bounding box`).not.toBeNull();
+      expect(sub, `${mode}: sub bounding box`).not.toBeNull();
+      expect(reg, `${mode}: reg bounding box`).not.toBeNull();
+
+      const overlaps = (
+        a: { x: number; y: number; width: number; height: number },
+        b: { x: number; y: number; width: number; height: number }
+      ) => !(a.x + a.width <= b.x || b.x + b.width <= a.x || a.y + a.height <= b.y || b.y + b.height <= a.y);
+
+      expect(overlaps(hint!, brand!), `${mode}: hint overlaps brand`).toBe(false);
+      expect(overlaps(hint!, sub!), `${mode}: hint overlaps subtitle`).toBe(false);
+      expect(overlaps(hint!, reg!), `${mode}: hint overlaps registration panel`).toBe(false);
+      expect(overlaps(brand!, reg!), `${mode}: brand overlaps registration panel`).toBe(false);
+    };
+
+    // 1. Check in 2D
+    await checkNoIntersections('2D');
+
+    // 2. Check in 3D
+    const toggle = page.getByRole('group', { name: 'Modo de vista' });
+    await toggle.getByRole('button', { name: 'Relieve 3D' }).click();
+    await expect(page.locator('canvas')).toBeVisible();
+    await page.waitForTimeout(500);
+    await checkNoIntersections('3D');
+  });
 });

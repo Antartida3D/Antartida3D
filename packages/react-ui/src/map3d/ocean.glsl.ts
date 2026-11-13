@@ -1,5 +1,5 @@
 import { MAP_RASTER_PAD, MAP_RASTER_SPAN } from '@antartida/core';
-import { fogParsChunk, periodicLineChunk } from './fog.glsl.ts';
+import { periodicLineChunk } from './periodicLine.glsl.ts';
 
 export const oceanVertexShader = /* glsl */ `
 varying vec2 vMapUV;
@@ -47,8 +47,11 @@ uniform float uInkWavesStrength;   // 6. Nautical chart "~" ink wave marks in op
 uniform float uIsobarsStrength;    // 7. Pencil isobaths every 500 m and 2000 m when zoomed in
 uniform float uFoamStrength;       // 8. Animated coastal & ice-shelf barrier surf foam
 uniform float uPaperGrainStrength; // 9. Screen-space paper grain overlay
+uniform vec4 uWhaleRipples[8];     // Up to 8 whale emergence positions (xy = worldXZ, z = speed, w = phase)
+uniform vec4 uStormBand;           // Storm of the Drake: ends of its middle line (xy = from, zw = to, world XZ)
+uniform vec2 uStormShape;          // x = reach from the middle line, y = width of the edge where it builds up
+uniform vec2 uStormWind;           // Unit vector the wind blows to (world XZ)
 
-${fogParsChunk}
 ${periodicLineChunk}
 
 varying vec2 vMapUV;
@@ -116,6 +119,12 @@ void main() {
   float depthMeters = mix(sampledDepth, 4000.0, edgeFactor);
   float coastDist = mix(bathySample.a * 12.0, 12.0, edgeFactor);
 
+  // Storm of the Drake Passage: 0 outside, 1 well inside (same shape as stormAt in @antartida/core).
+  vec2 stormAxis = uStormBand.zw - uStormBand.xy;
+  float stormAlong = clamp(dot(vWorldPos.xz - uStormBand.xy, stormAxis) / dot(stormAxis, stormAxis), 0.0, 1.0);
+  float stormDist = length(vWorldPos.xz - uStormBand.xy - stormAxis * stormAlong);
+  float storm = smoothstep(0.0, uStormShape.y, uStormShape.x - stormDist) * (1.0 - edgeFactor);
+
   // ---------------------------------------------------------------------------
   // 1. Depth absorption (Beer-Lambert 1 - exp(-d * k)) & shallow seabed shading
   // ---------------------------------------------------------------------------
@@ -175,7 +184,7 @@ void main() {
   vec3 wnB = waveSampleB.rgb * 2.0 - 1.0;
   // Fade wave normal perturbation in the far distance to prevent horizon Moire/corduroy
   float waveDistFade = 1.0 - smoothstep(280.0, 850.0, camDist);
-  float effWaveStrength = uWaveStrength * (0.18 + 0.82 * waveDistFade);
+  float effWaveStrength = uWaveStrength * (0.18 + 0.82 * waveDistFade) * (1.0 + 1.5 * storm);
   vec3 waveNormal = normalize(vec3(
     (wnA.x + wnB.x) * effWaveStrength,
     1.0,
@@ -203,6 +212,30 @@ void main() {
   float glint = smoothstep(0.08, 0.36, specRaw * (0.5 + 0.9 * brushCut)) * brushCut;
   vec3 glintCol = mix(ICE, PAPER_SRGB, 0.25);
   waterCol = mix(waterCol, glintCol, glint * uSunGlintStrength);
+
+  // ---------------------------------------------------------------------------
+  // 5b. Rough sea under the storm: darker water and a swell that runs downwind.
+  //     ILLUSTRATIVE: not a measured sea state.
+  // ---------------------------------------------------------------------------
+  if (storm > 0.001) {
+    // Shadow of the clouds: darker and greyer.
+    waterCol = mix(waterCol, waterCol * 0.74 + vec3(0.035, 0.045, 0.055), storm * 0.65);
+    // The swell shows from the camera of the trip and fades out from afar, where it would shimmer.
+    float swellFade = 1.0 - smoothstep(60.0, 190.0, camDist);
+    if (swellFade > 0.001) {
+      float downwind = dot(vWorldPos.xz, uStormWind);
+      // Crests bent by noise, so they do not read as ruled lines.
+      float bend = (valueNoise(vWorldPos.xz * 0.30) - 0.5) * 3.2 + (lowNoise - 0.5) * 4.0;
+      float swell = sin(downwind * 2.6 + bend - uTime * 1.5);
+      float trough = 1.0 - smoothstep(-0.95, -0.15, swell);
+      float crest = smoothstep(0.74, 0.98, swell);
+      // Only some crests break into foam, and not for long.
+      float breaking = smoothstep(0.42, 0.72, valueNoise(vWorldPos.xz * 0.55 + vec2(uTime * 0.07, 0.0)));
+      float amount = storm * swellFade;
+      waterCol = mix(waterCol, waterCol * 0.80, trough * 0.55 * amount);
+      waterCol = mix(waterCol, mix(GLACIER, ICE, 0.45), crest * (0.09 + 0.40 * breaking) * amount);
+    }
+  }
 
   // ---------------------------------------------------------------------------
   // 6. Nautical chart "~" ink wave marks in open ocean (world space, fwidth fade)
@@ -240,6 +273,37 @@ void main() {
   }
 
   // ---------------------------------------------------------------------------
+  // 6b. Concentric nautical ink ripples where whales emerge (up to 8 active whales)
+  // ---------------------------------------------------------------------------
+  if (camDist < 1650.0) {
+    for (int i = 0; i < 8; i++) {
+      vec4 wr = uWhaleRipples[i];
+      if (wr.z > 0.0) {
+        vec2 dVec = vWorldPos.xz - wr.xy;
+        if (abs(dVec.x) < 15.0 && abs(dVec.y) < 15.0) {
+          float rDist = length(dVec);
+          float cPhase = fract(uTime * wr.z + wr.w);
+          // Synchronized with whaleCycleState(cPhase).rippleAlpha in packages/core/src/sea.ts
+          if (rDist < 15.0 && cPhase > 0.06 && cPhase < 0.90) {
+            float uRipple = clamp((cPhase - 0.06) / 0.84, 0.0, 1.0);
+            float env = sin(uRipple * 3.14159265);
+            float distFade = (1.0 - smoothstep(4.5, 14.5, rDist)) * smoothstep(1.8, 4.2, rDist);
+            float ringCoord = rDist * 0.34 - (cPhase - 0.06) * 2.4;
+            float ang = atan(dVec.y, dVec.x);
+            float wiggled = fract(ringCoord + sin(ang * 5.0 + float(i) * 1.9) * 0.06);
+            float inkRing = smoothstep(0.08, 0.16, wiggled) * (1.0 - smoothstep(0.16, 0.28, wiggled));
+            float foamRing = smoothstep(0.24, 0.34, wiggled) * (1.0 - smoothstep(0.34, 0.48, wiggled));
+            float dashMask = smoothstep(-0.20, 0.25, sin(ang * 6.0 + rDist * 0.5));
+            float vis = env * distFade * dashMask;
+            waterCol = mix(waterCol, mix(PAPER_SRGB, ICE, 0.65), foamRing * vis * 0.55);
+            waterCol = mix(waterCol, INK, inkRing * vis * 0.72);
+          }
+        }
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // 7. Pencil isobaths every 500 m and 2000 m when zoomed in (same contourFade as Terrain)
   // ---------------------------------------------------------------------------
   float contourFade = (1.0 - smoothstep(260.0, 480.0, camDist)) * (1.0 - edgeFactor);
@@ -248,7 +312,8 @@ void main() {
     float gradGuard = smoothstep(0.0004, 0.0025, fwidth(coord500));
     float minorIso = periodicLine(coord500, 0.50);
     float majorIso = periodicLine(depthMeters / 2000.0, 0.78);
-    float isoStrength = max(minorIso * 0.38, majorIso * 0.62) * gradGuard * contourFade * uIsobarsStrength;
+    // Under the storm the sea is the picture: the depth lines step back.
+    float isoStrength = max(minorIso * 0.38, majorIso * 0.62) * gradGuard * contourFade * uIsobarsStrength * (1.0 - 0.7 * storm);
     // Dark pencil on bright shallow shelf; pale etched slate line on dark deep slope for contrast
     vec3 isoCol = mix(mix(PENCIL, INK, 0.65), mix(GLACIER, ICE, 0.50), smoothstep(850.0, 2000.0, depthMeters) * 0.65);
     waterCol = mix(waterCol, isoCol, isoStrength);
@@ -284,18 +349,15 @@ void main() {
   }
 
   // ---------------------------------------------------------------------------
-  // 9. Exponential distance fog towards paper + screen-space paper grain (matching Terrain)
+  // 9. Screen-space paper grain (matching Terrain)
   // ---------------------------------------------------------------------------
   // Convert perceptual sRGB watercolor to Linear-sRGB for Three.js output pipeline,
-  // then apply screen-space paper grain and blend with linear uFogColor.
+  // then apply screen-space paper grain.
   vec3 waterLinear = srgbToLinear(waterCol);
   vec3 screenPaper = texture2D(uPaperTex, gl_FragCoord.xy / 512.0).rgb;
   waterLinear = mix(waterLinear, waterLinear * screenPaper * 1.18, uPaperGrainStrength);
 
-  float fog = computeFogFactor(vWorldPos);
-  vec3 finalCol = mix(waterLinear, uFogColor, fog);
-
-  gl_FragColor = vec4(finalCol, 1.0);
+  gl_FragColor = vec4(waterLinear, 1.0);
   // Shading is done in linear space (sRGB textures decode on sampling). Encode for the screen
   // when drawing straight to it; into the post-processing buffer this is a no-op.
   #include <colorspace_fragment>

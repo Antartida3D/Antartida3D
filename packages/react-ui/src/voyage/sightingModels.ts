@@ -14,6 +14,7 @@ import {
   SEA_ICE_FLOE_D,
   STATION_BOAT_BOXES,
 } from '../orcadas/stationModels.ts';
+import { PONCHO_MODELS } from './ponchoModels.ts';
 import { assemblePenguinBoxes, buildRookeryBoxes } from '../orcadas/penguins.ts';
 import { assembleWeddellSealBoxes, assembleElephantSealBoxes } from '../orcadas/seals.ts';
 
@@ -566,6 +567,7 @@ export const SCENE_MODELS: Readonly<Record<string, readonly Box[]>> = {
   ...Object.fromEntries(Object.entries(SEA_MODELS).map(([id, boxes]) => [`sea:${id}`, boxes])),
   ushuaia: TOWN,
   orcadas: ORCADAS_SITE,
+  ...PONCHO_MODELS,
   // Orcadas station models: getters, because stationModels.ts imports this module (cycle).
   get moduleRound() {
     return buildModuleBoxes(4.8, 1.7, 0.67, 'orange', 'round', false);

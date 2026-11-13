@@ -4,40 +4,8 @@
  * the dog team is one more transport (`kind: 'dogs'`) whose trip has legs (sled on the ice, ship on the sea) and whose stops are milestones.
  * Texts come from docs/expediciones/poncho.md; source codes point to VOYAGE_SOURCES.
  */
-import type { ExpeditionStop, Milestone, Transport, TripSegment, VoyageFact, VoyageSourceCode } from './ushuaia.ts';
-
-/**
- * Route of the team as [lon, lat] waypoints, in the order of the story: Base Esperanza (where Poncho was
- * born in 1961), the Foca nunataks and Base San Martín (the winter expedition of 1962), the Belgrano
- * area on the Filchner ice shelf (1964-66), the Santa Fe peak (the «Paralelo 82» patrol of 1965), back to
- * the Belgrano area and, in 1967, Duse Bay near Esperanza.
- *
- * ILLUSTRATIVE: it is not a logged track. The curve joins places whose coordinates are verified
- * (docs/expediciones/poncho-fuentes.md, section 3) and two approximate ones: Belgrano I has no verified
- * coordinate, so it is drawn on the Filchner ice shelf, and the way back to it is a second, nearby point.
- */
-// Waypoints of the route below ([lon, lat]).
-const ESPERANZA = [-57.0, -63.4] as const;
-const FOCA_NUNATAKS = [-60.25, -65.07] as const;
-const SAN_MARTIN = [-67.1, -68.13] as const;
-/** APPROXIMATE: central point of the Filchner ice shelf (SCAR gazetteer), standing for Base Belgrano I. */
-const BELGRANO_AREA = [-40, -79] as const;
-const SANTA_FE_PEAK = [-41.33, -82.05] as const;
-/** APPROXIMATE and ILLUSTRATIVE: a point near Belgrano for the way back of the patrol, only to draw the curve. */
-const BELGRANO_RETURN = [-41, -79.6] as const;
-const DUSE_BAY = [-57.33, -63.5] as const;
-/** Ushuaia as the trip «Desde Ushuaia» marks it (`[Fuente a definir]` there too). */
-const USHUAIA = [-68.3, -54.81] as const;
-const SOUTH_POLE = [0, -90] as const;
-
-/** The legs of the trip of the team, in the order of the story. For now a single leg on the sled: see the waypoints above. */
-export const PONCHO_SEGMENTS: readonly TripSegment[] = [
-  {
-    vehicle: 'sled',
-    seconds: 60,
-    waypoints: [ESPERANZA, FOCA_NUNATAKS, SAN_MARTIN, BELGRANO_AREA, SANTA_FE_PEAK, BELGRANO_RETURN, DUSE_BAY],
-  },
-];
+import type { ExpeditionStop, Milestone, Transport, VoyageFact, VoyageSourceCode } from './ushuaia.ts';
+import { BELGRANO_AREA, BELGRANO_RETURN, DUSE_BAY, ESPERANZA, FOCA_NUNATAKS, SAN_MARTIN, SANTA_FE_PEAK, SOUTH_POLE, USHUAIA } from './poncho-route.ts';
 
 /** The team: Poncho in front, the sled and the pack behind. */
 export const PONCHO_TRANSPORT: Transport = {

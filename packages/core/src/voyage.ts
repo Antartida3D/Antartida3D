@@ -2,7 +2,8 @@ import {
   EXPEDITION, MILESTONES, SIGHTINGS, TRANSPORTS,
   type Milestone, type Sighting, type Transport, type TransportId, type TransportKind, type VehicleKind, type VoyageFact, type VoyageQuestion,
 } from './content/ushuaia.ts';
-import { PONCHO_EXPEDITION, PONCHO_MILESTONES, PONCHO_SEGMENTS, PONCHO_TRANSPORT } from './content/poncho.ts';
+import { PONCHO_EXPEDITION, PONCHO_MILESTONES, PONCHO_TRANSPORT } from './content/poncho.ts';
+import { PONCHO_SEGMENTS } from './content/poncho-route.ts';
 import { FLIGHT_GROUND_M } from './flight-ground.ts';
 import { FLIGHT_GROUND_STEP, flightAt } from './flight-path.ts';
 import { fuegiaWorldHeight } from './fuegia.ts';

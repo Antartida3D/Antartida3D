@@ -2,6 +2,7 @@ export * from './content/points.ts';
 export * from './content/sea.ts';
 export * from './content/ushuaia.ts';
 export * from './content/poncho.ts';
+export * from './content/poncho-route.ts';
 export * from './content/orcadas.ts';
 export * from './content/orcadas-series.ts';
 export * from './content/orcadas-layout.ts';

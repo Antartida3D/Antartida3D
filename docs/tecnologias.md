@@ -120,9 +120,9 @@ El 3D se dibuja con **WebGL**, la tecnología del navegador para usar la placa d
 
 ### Qué hay en la escena
 
-- **Terreno antártico** (`Terrain.tsx`): una malla de triángulos hecha con el relieve real de Bedmap3. Las alturas se multiplican por 50 para que se lean; la leyenda lo dice.
+- **Terreno antártico** (`Terrain.tsx`): una malla de triángulos hecha con el relieve real de Bedmap3. Las alturas se multiplican por 10 para que se lean; la leyenda lo dice.
 - **Océano** (`Ocean.tsx`): un plano en el nivel del mar, coloreado según la profundidad real de IBCSO v2, con un oleaje suave.
-- **Tierra del Fuego, Patagonia sur y Malvinas** (`Fuegia.tsx`): otra malla, también de IBCSO v2, con exageración ×10. Se descarga solo cuando la cámara se acerca a esa zona.
+- **Tierra del Fuego, Patagonia sur y Malvinas** (`Fuegia.tsx`): otra malla, también de IBCSO v2, con exageración ×5. Se descarga solo cuando la cámara se acerca a esa zona.
 - **Resto del mundo** (`SouthernLands.tsx`): siluetas planas de Natural Earth hasta 60° N, sin relieve. Son contexto, no datos.
 - **Fauna, témpanos, Irízar y Hércules** (`SeaLife.tsx`): modelos de bloques ilustrativos. La leyenda aclara que no son posiciones reales.
 - **Cuadrícula, marcadores y escenas** de Ushuaia, Orcadas y el viaje.

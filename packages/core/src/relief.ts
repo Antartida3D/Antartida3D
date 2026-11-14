@@ -4,7 +4,7 @@
  */
 
 /** Heights are multiplied by this when drawn. The UI legend states it. */
-export const VERTICAL_EXAGGERATION = 50;
+export const VERTICAL_EXAGGERATION = 10;
 
 /** Contour interval in meters (thin pencil lines; every 4th one is inked). */
 export const CONTOUR_M = 250;

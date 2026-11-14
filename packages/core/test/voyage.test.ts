@@ -284,7 +284,7 @@ describe('flight altitude', () => {
       highest = Math.max(highest, ground(t));
       expect(flightClearance(t, terrain), `t=${t}`).toBeGreaterThanOrEqual(ground(t));
     }
-    expect(highest).toBeGreaterThan(1); // the path does cross relief
+    expect(highest).toBeGreaterThan(worldHeight(160)); // the path does cross relief
   });
 
   it('climbs and descends without steps', () => {
@@ -330,9 +330,10 @@ describe('flight altitude', () => {
     // Soon after take-off it is only as high as the hills of Navarino need.
     expect(flightClearance(0.02, terrain)).toBeLessThan(FLIGHT_CRUISE * 0.6);
     // Then it keeps climbing, to pass over the storm of the Drake: no step between two samples.
+    // The step is measured against the storm it climbs over, which does not change with the exaggeration.
     for (let i = 20; i < 300; i++) {
       const rise = flightClearance((i + 1) / 1000, terrain) - flightClearance(i / 1000, terrain);
-      expect(rise, `t=${i / 1000}`).toBeLessThan(FLIGHT_CRUISE * 0.1);
+      expect(rise, `t=${i / 1000}`).toBeLessThan(DRAKE_STORM.cloudTop * 0.02);
     }
     // Past the storm it is back at its cruise height.
     expect(flightClearance(0.85, terrain)).toBeCloseTo(FLIGHT_CRUISE);

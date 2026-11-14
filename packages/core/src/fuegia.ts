@@ -13,11 +13,11 @@ export const FUEGIA_DATA_LIMIT_LAT = -50.05;
 export const FUEGIA_EDGE_FADE_DEG = 0.6;
 
 /**
- * Heights here are multiplied by this, not by the continental VERTICAL_EXAGGERATION: at x50 a
- * 1000 m ridge would stand six map units over a channel less than one unit wide and hide it.
+ * Heights here are multiplied by this, not by the continental VERTICAL_EXAGGERATION: the channels
+ * are less than one map unit wide, and at x5 a 1000 m ridge already stands 0.6 units over them.
  * The UI legend states it.
  */
-export const FUEGIA_VERTICAL_EXAGGERATION = 10;
+export const FUEGIA_VERTICAL_EXAGGERATION = 5;
 
 /**
  * The mesh also carries the water within this many map units of the shore (about 30 km), so the

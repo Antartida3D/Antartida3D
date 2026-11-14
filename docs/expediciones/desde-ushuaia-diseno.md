@@ -207,7 +207,7 @@ Pedido de quien lleva el issue: el avión pasa por encima de la tormenta, en el 
 - **Nubes con tope:** `Storm3D.tsx` no deja que ninguna nube pase de `cloudTop`.
 - **Cámara del viaje en avión:** ya no baja debajo de las nubes al entrar en la tormenta. Eso queda solo para el barco. La cámara sigue al avión, arriba.
 - **El avión ya no se sacude en la tormenta:** vuela por encima, en aire calmo. El barco sí se sigue sacudiendo. (Cambiado el 13-11-2026: vuelve a sacudirse, menos que antes. Ver «Turbulencia del Hércules sobre el Drake».)
-- **Es ilustrativo:** la altura del avión sobre la tormenta no es un nivel de vuelo real, igual que la altura de las nubes no es un dato. La altura de crucero dibujada (10.000 pies a ×10) sigue valiendo fuera de la tormenta.
+- **Es ilustrativo:** la altura del avión sobre la tormenta no es un nivel de vuelo real, igual que la altura de las nubes no es un dato. La altura de crucero dibujada (10.000 pies a la exageración de Tierra del Fuego, ×5 desde #100) sigue valiendo fuera de la tormenta.
 - **Prueba cambiada:** «climbs little by little» en `core/test/voyage.test.ts` pedía que el avión estuviera a altura de crucero al 30 % del viaje. Ahí ahora está sobre la tormenta. La prueba pide que suba sin saltos y que después de la tormenta vuelva a la altura de crucero. Prueba nueva: el avión está por encima del tope de las nubes en todo el tramo de tormenta.
 - **Verificación:** capturas del viaje en avión a 1440 px y a 390 px, en «Pasaje de Drake» y «Convergencia Antártica». El Hércules de ambiente del mapa abierto no se capturó: usa la misma función, cubierta por la prueba.
 

@@ -65,25 +65,33 @@ export function Legend({ open, onToggle, mode = '2d' }: { open: boolean; onToggl
         Leyenda
       </button>
       {open && (
-        <ul>
-          <li className="leg-note" style={{ fontStyle: 'italic', fontSize: '0.82em', opacity: 0.9 }}>{MALVINAS_FLAG.description}</li>
-          {mode === '3d' && (
-            <>
-              <li className="leg-note" style={{ fontStyle: 'italic', fontSize: '0.82em', opacity: 0.9 }}>
-                Relieve real: Bedmap3 (BAS) ×{VERTICAL_EXAGGERATION}, curvas cada {CONTOUR_M} m · Tierra del Fuego y Malvinas: IBCSO v2 ×{FUEGIA_VERTICAL_EXAGGERATION}, color según altura · Profundidad: IBCSO v2 (SCAR) · Resto del mundo, hasta 60° N: Natural Earth II, plano y sin relieve
-              </li>
-              <li className="leg-note" style={{ fontStyle: 'italic', fontSize: '0.82em', opacity: 0.9 }}>
-                Fauna y témpanos: ilustración, no posiciones reales
-              </li>
-            </>
-          )}
-          <li><span className="sw"><span className="a" /></span><span><b>Expedición disponible</b></span></li>
-          <li><span className="sw"><span className="b" /></span><span>Ampliación prevista</span></li>
-          <li><span className="sw"><span className="c" /></span><span>Próximamente</span></li>
-          {mode === '3d' && (
-            <li><span className="sw"><span className="sea">{Icon.sea}</span></span><span>Vida en el mar</span></li>
-          )}
-        </ul>
+        <>
+          <ul>
+            <li><span className="sw"><span className="a" /></span><span><b>Expedición disponible</b></span></li>
+            <li><span className="sw"><span className="b" /></span><span>Ampliación prevista</span></li>
+            <li><span className="sw"><span className="c" /></span><span>Próximamente</span></li>
+            {mode === '3d' && (
+              <li><span className="sw"><span className="sea">{Icon.sea}</span></span><span>Vida en el mar</span></li>
+            )}
+          </ul>
+          {/* Sources and what is only an illustration: folded, so the legend stays short (#114). */}
+          <details>
+            <summary>Fuentes y aclaraciones</summary>
+            <ul>
+              <li className="leg-note" style={{ fontStyle: 'italic', fontSize: '0.82em', opacity: 0.9 }}>{MALVINAS_FLAG.description}</li>
+              {mode === '3d' && (
+                <>
+                  <li className="leg-note" style={{ fontStyle: 'italic', fontSize: '0.82em', opacity: 0.9 }}>
+                    Relieve real: Bedmap3 (BAS) ×{VERTICAL_EXAGGERATION}, curvas cada {CONTOUR_M} m · Tierra del Fuego y Malvinas: IBCSO v2 ×{FUEGIA_VERTICAL_EXAGGERATION}, color según altura · Profundidad: IBCSO v2 (SCAR) · Resto del mundo, hasta 60° N: Natural Earth II, plano y sin relieve
+                  </li>
+                  <li className="leg-note" style={{ fontStyle: 'italic', fontSize: '0.82em', opacity: 0.9 }}>
+                    Fauna y témpanos: ilustración, no posiciones reales
+                  </li>
+                </>
+              )}
+            </ul>
+          </details>
+        </>
       )}
     </div>
   );

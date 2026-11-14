@@ -185,8 +185,14 @@ test('on a phone the legend starts closed, and a swipe left or down closes it (#
   await expect(legend).not.toHaveAttribute('style', /translate/);
 });
 
-test('on a wide screen the legend starts open (#114)', async ({ page, isMobile }) => {
+test('on a wide screen the legend starts open, with its sources and notes folded (#114)', async ({ page, isMobile }) => {
   test.skip(isMobile, 'on a phone it starts closed (previous test)');
   await expect(page.getByRole('button', { name: /Leyenda/ })).toHaveAttribute('aria-expanded', 'true');
-  await expect(page.locator('.legend ul')).toBeVisible();
+  await expect(page.locator('.legend').getByText('Expedición disponible')).toBeVisible();
+
+  // What is only an illustration stays one tap away, not off the screen.
+  const note = page.locator('.legend').getByText(/símbolo ilustrativo/);
+  await expect(note).toBeHidden();
+  await page.locator('.legend summary', { hasText: 'Fuentes y aclaraciones' }).click();
+  await expect(note).toBeVisible();
 });

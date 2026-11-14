@@ -118,6 +118,12 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid #1E3E5C;outline-
 /* A finger swiping the open legend carries it (Legend.tsx, #114); let go, it eases back into place. */
 .legend{transition:transform .2s ease}
 .legend.swiping{transition:none}
+/* Sources and illustration notes, folded under the symbols (#114). */
+.legend details{margin-top:6px;border-top:1px dashed rgba(31,42,54,.3);padding-top:2px}
+.legend summary{min-height:32px;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;cursor:pointer;list-style:none}
+.legend summary::-webkit-details-marker{display:none}
+.legend summary::before{content:'▸';font-size:12px;transition:transform .2s ease}
+.legend details[open] summary::before{transform:rotate(90deg)}
 .sw .a{width:14px;height:14px;border-radius:50%;background:var(--ocre);border:2px solid var(--ink)}
 .sw .b{width:12px;height:12px;border-radius:50%;background:#8FA2AF;border:2px solid #3B4651}
 .sw .c{width:12px;height:12px;border-radius:50%;border:1.5px dashed #5E656C}
@@ -316,6 +322,6 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid #1E3E5C;outline-
   .pl{transition:none}
   .sheet,.kp,.mcard,.toast{animation:fadein .2s ease both}
   .sheet.grows{transition:none}
-  .legend{transition:none}
+  .legend,.legend summary::before{transition:none}
   .stage.ret{animation:fadein .4s ease both}
 }

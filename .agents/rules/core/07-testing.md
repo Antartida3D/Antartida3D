@@ -21,4 +21,5 @@ Suite de pruebas del proyecto.
 <!-- adapt -->
 - Pruebas unitarias: `pnpm test` (Vitest para `@antartida/core`).
 - Pruebas E2E: `pnpm e2e` (`@antartida/e2e` con Playwright a 390 y 1440 px).
+- E2E más rápido en local, opcional: `E2E_GPU=1` (placa de video en vez de SwiftShader), `E2E_WORKERS=<n>` (archivos en paralelo, solo con `E2E_GPU=1`) y `E2E_PORT=<puerto>` (otro puerto, para no reutilizar el servidor de otra rama). Sin variables corre como siempre. Ver `README.md` y `docs/rendimiento/e2e.md`.
 <!-- /adapt -->

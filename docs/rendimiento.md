@@ -58,6 +58,10 @@ Escenario medido con `scripts/bench/src/gpu.ts`: 10 s quieto en vista general in
 - **Criterio de escritorio:** 0 tareas largas en hilo principal (cumplido: 0), GPU < 8 ms por cuadro (cumplido: 0.72 ms), llamadas de dibujo nuevas ≤ 5 (cumplido: 2 llamadas nuevas en escena —superficie de agua y malla instanciada de fauna—; 1 llamada en el pase final del compositor).
 - **Móvil (390 px, dpr 2):** 0 tareas largas registradas; GPU promedio 0.83 ms por cuadro, tarea máxima 3 ms.
 
+## Tiempo de la suite e2e
+
+Medido a mano, con y sin GPU, en [`docs/rendimiento/e2e.md`](rendimiento/e2e.md).
+
 ## Capturas
 
 En `docs/rendimiento/capturas/<app>/`: `mapa`, `ficha`, `lista`, `excavacion` y `conclusion`, a 390 y 1440 px.

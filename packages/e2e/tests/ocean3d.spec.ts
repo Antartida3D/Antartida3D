@@ -1,4 +1,20 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
+
+const frames = (page: Page) => page.evaluate(() => (window as unknown as { __frames?: number }).__frames ?? 0);
+
+/**
+ * Waits until the 3D scene has drawn and then drew nothing for half a second. The relief and
+ * textures load in the background and each one draws a frame, so a fixed wait was not enough with
+ * 8 workers (#87). A scene that keeps drawing never settles, and the test fails on the timeout.
+ */
+const framesSettled = (page: Page) =>
+  expect
+    .poll(async () => {
+      const before = await frames(page);
+      await page.waitForTimeout(500);
+      return before > 0 && (await frames(page)) === before;
+    }, { timeout: 20_000 })
+    .toBe(true);
 
 let consoleErrors: string[] = [];
 
@@ -67,11 +83,11 @@ test.describe('Ocean 3D animation efficiency', () => {
     });
 
     // Allow loop to settle
-    await page.waitForTimeout(200);
+    await framesSettled(page);
 
-    const framesBefore = await page.evaluate(() => (window as unknown as { __frames?: number }).__frames ?? 0);
+    const framesBefore = await frames(page);
     await page.waitForTimeout(1000);
-    const framesAfter = await page.evaluate(() => (window as unknown as { __frames?: number }).__frames ?? 0);
+    const framesAfter = await frames(page);
 
     // When hidden, uTime is paused and invalidate() is not called by animation clock
     expect(framesAfter).toBe(framesBefore);
@@ -87,16 +103,17 @@ test.describe('Ocean 3D animation efficiency', () => {
     const canvas = page.locator('canvas');
     await expect(canvas).toBeVisible();
 
-    // Settle textures
-    await page.waitForTimeout(1000);
+    await framesSettled(page);
 
+    // At CSS scale: with a real GPU the phone's 2.625 device pixels came out 1 colour level apart in
+    // 1 to 4 pixels between two shots of the same frame (#87).
     const t0 = await page.evaluate(() => (window as unknown as { __seaTime?: number }).__seaTime ?? 0);
-    const shot1 = await canvas.screenshot();
+    const shot1 = await canvas.screenshot({ scale: 'css' });
 
     await page.waitForTimeout(1000);
 
     const t1 = await page.evaluate(() => (window as unknown as { __seaTime?: number }).__seaTime ?? 0);
-    const shot2 = await canvas.screenshot();
+    const shot2 = await canvas.screenshot({ scale: 'css' });
 
     // Time remains locked at 0
     expect(t0).toBe(0);

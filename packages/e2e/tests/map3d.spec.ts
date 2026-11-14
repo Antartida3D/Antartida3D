@@ -1,6 +1,26 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { ORCADAS_GUIDING_QUESTION } from '../../core/src/content/orcadas.ts';
 import { FUEGIA_MIN_DISTANCE, GROUND_TARGET_MAX, GROUND_TARGET_MIN, ICE_MIN_DISTANCE } from '../../core/src/fuegia.ts';
+
+/**
+ * Waits until the camera has reached where it was heading. `active` turns false as soon as the
+ * camera is within `restThreshold` (0.01) of its end, and how close it is by then depends on the
+ * frame rate: drawing with a real GPU a twist read at that moment came out 0.0085 rad short (#87).
+ */
+const cameraSettled = (page: Page) =>
+  page.waitForFunction(() => {
+    (window as any).__invalidate();
+    const cc = (window as any).__cameraControls;
+    if (cc.active) return false;
+    const [now, end] = [cc.getSpherical(undefined, false), cc.getSpherical()];
+    const close = (a: number, b: number) => Math.abs(a - b) < 1e-4;
+    return (
+      close(now.theta, end.theta) &&
+      close(now.phi, end.phi) &&
+      close(now.radius, end.radius) &&
+      cc.getTarget(undefined, false).distanceTo(cc.getTarget()) < 1e-4
+    );
+  });
 
 let consoleErrors: string[] = [];
 
@@ -245,10 +265,7 @@ test.describe('3D relief view', () => {
       await page.mouse.up({ button });
       // The camera eases to where the drag left it.
       await page.waitForTimeout(150);
-      await page.waitForFunction(() => {
-        (window as any).__invalidate();
-        return !(window as any).__cameraControls.active;
-      });
+      await cameraSettled(page);
     };
 
     // Dragging to the right pulls the map with the pointer: the target goes to the camera's left.
@@ -304,10 +321,7 @@ test.describe('3D relief view', () => {
     for (let i = 1; i <= 8; i++) await touch('touchMove', vp.width * 0.3 + i * 15);
     await touch('touchEnd', 0);
     await page.waitForTimeout(150);
-    await page.waitForFunction(() => {
-      (window as any).__invalidate();
-      return !(window as any).__cameraControls.active;
-    });
+    await cameraSettled(page);
 
     const end = await cam();
     expect(end.tx).toBeLessThan(start.tx - 10);
@@ -356,10 +370,7 @@ test.describe('3D relief view', () => {
       for (let i = 1; i <= 10; i++) await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: points(i / 10) });
       await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
       await page.waitForTimeout(150);
-      await page.waitForFunction(() => {
-        (window as any).__invalidate();
-        return !(window as any).__cameraControls.active;
-      });
+      await cameraSettled(page);
     };
 
     // Spreading the fingers to twice the gap halves the distance; nothing else moves.

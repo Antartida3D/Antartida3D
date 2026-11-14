@@ -289,6 +289,18 @@ Pedido de quien lleva el issue: en el celular la Leyenda aparecía abierta al en
 - **Movimiento reducido:** vuelve a su lugar sin animación.
 - **Verificación:** prueba e2e en `flow.spec.ts`. En el celular arranca cerrada, el swipe hacia la izquierda y hacia abajo la cierra, y uno corto o hacia la derecha la deja abierta. En escritorio arranca abierta, con las notas plegadas, y se despliegan con un clic. En un celular de 560 px de alto, en 3D, las notas desplegadas se desplazan con el dedo sin cerrar la Leyenda, y tirar hacia abajo desde arriba la cierra. Capturas a 390 y 1440 px. Quien lleva el issue revisó el swipe y lo aprobó.
 
+### Tope del zoom en el relieve 3D (#127, 14-11-2026)
+
+Pedido del usuario: en algunos lugares el zoom parecía no tener fin; sobre la Antártida quedaba corto; y en el viaje «Desde Ushuaia», al salir de la tormenta del Drake, la cámara se alejaba de golpe.
+
+- **Medición previa (escritorio, 1024×768):** el mapa 2D frena en 5× (`MAX_K`) con rueda, pellizco, teclas y botones. En 3D, la distancia mínima a la mira era 60 sobre el hielo (≈13× la vista general), 3 sobre Tierra del Fuego y la tormenta (≈260×) y la mitad del primer plano junto a los puntos con modelo (#58).
+- **Tope del hielo: 30** (`ICE_MIN_DISTANCE` en `core/src/fuegia.ts`, por defecto de `minCameraDistance`). El 60 venía de cuando la meseta medía 25 unidades de alto (exageración ×50). Con la exageración actual (×10, #100) el punto más alto del relieve no llega a 7. La mira está al nivel del mar y la cámara se inclina como mucho 60° (`MAX_POLAR_DEG`), así que a distancia 30 queda a 15 de altura como mínimo. Una prueba unitaria lee las mallas `hi` y `lo` y comprueba que ese mínimo duplica la cumbre más alta.
+- **Tierra del Fuego y la tormenta: 15** (`FUEGIA_MIN_DISTANCE`, antes 3, ≈260× la vista general). Ese era el «zoom infinito»: se podía acercar hasta ver una mancha borrosa. El usuario eligió mantener topes propios por zona, pero finitos: a 15 todavía se ven las islas y los canales. Con la inclinación máxima, la cámara del barco sigue quedando bajo las nubes de la tormenta (prueba unitaria en `voyage.test.ts`).
+- **Un solo tope por lugar:** la rueda, el pellizco, las teclas + y − y los botones usan el mismo `cc.minDistance`, que se recalcula en cada cuadro según dónde está la mira. Solo los puntos con modelo (#58) permiten acercarse más, hasta la mitad de su primer plano.
+- **Salida de la tormenta:** al entrar, la cámara del barco baja bajo las nubes, como antes. Al salir ya no vuelve a la distancia que tenía antes de entrar: mantiene la actual y, si está más cerca que el tope del hielo, retrocede solo hasta ahí.
+- **Plano cercano:** no cambia: 0,5 por debajo de distancia 60 (`NEAR_FROM`), como antes.
+- **Verificación:** e2e en `map3d.spec.ts`: sobre la meseta, la rueda, el botón «Acercar» y la tecla + frenan en `ICE_MIN_DISTANCE`, en celular y escritorio; sobre Ushuaia, el tope es `FUEGIA_MIN_DISTANCE`. Capturas a distancia 60 y 30 en la Península (Marambio) y sobre la cumbre más alta.
+
 ## Benchmark
 
 - Lighthouse, peso, pan y pinch corren en Chromium headless sin GPU. Las cifras de frames e interacción sirven para comparar corridas entre sí, no como valores absolutos de un teléfono real.

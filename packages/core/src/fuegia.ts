@@ -48,12 +48,22 @@ export function inFuegia(x: number, y: number): boolean {
 }
 
 /**
- * Closest the orbit camera may get to its target (map units). Over Antarctica `base` keeps it off
- * the 4 km plateau; around Tierra del Fuego the land is low and narrow channels need a close look.
- * In the storm of the Drake, open sea, it may get as close: the camera has to go under the clouds.
+ * Closest the orbit camera of the 3D map may get to its target over Antarctica and its seas, the
+ * same for the wheel, pinch, keys and buttons (#127). The target lies at sea level and the camera
+ * tilts at most MAX_POLAR_DEG (60°), so it stays at least half this distance high: 15 world units,
+ * more than twice the highest point of the relief (fuegia.test.ts measures it).
  */
-export const FUEGIA_MIN_DISTANCE = 3;
-export function minCameraDistance(x: number, y: number, base: number): number {
+export const ICE_MIN_DISTANCE = 30;
+
+/**
+ * Closest the orbit camera may get to its target (map units). Over Antarctica `base` keeps it off
+ * the plateau; around Tierra del Fuego the land is low and narrow channels need a closer look.
+ * In the storm of the Drake, open sea, it may get as close: the camera has to go under the clouds.
+ * It used to be 3, about 260 times closer than the overview: it felt like a zoom without end (#127).
+ * At 15 the islands and channels still fill the screen.
+ */
+export const FUEGIA_MIN_DISTANCE = 15;
+export function minCameraDistance(x: number, y: number, base = ICE_MIN_DISTANCE): number {
   if (inFuegia(x, y) || stormAt(x, y) > 0) return Math.min(base, FUEGIA_MIN_DISTANCE);
   // Round a point with a model the camera comes down to see it on the relief (MapPoint.closeUp).
   for (const p of CLOSE_UP_POINTS) {

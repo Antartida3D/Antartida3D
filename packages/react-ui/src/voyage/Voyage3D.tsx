@@ -128,8 +128,8 @@ export function Voyage3D({ bus, reduced, overlay }: {
   const spray = useRef<(Mesh | null)[]>([]);
   const helicopter = useRef<Group>(null);
   const rotor = useRef<Group>(null);
-  // Whether the vehicle is in the storm, and the camera distance to go back to when it leaves.
-  const storm = useRef({ inside: false, distance: null as number | null });
+  // Whether the vehicle is in the storm.
+  const storm = useRef({ inside: false });
   // Ids of the animals in view and of the ones already spotted, joined: React re-renders only when they change.
   const [inView, setInView] = useState('||');
 
@@ -201,7 +201,7 @@ export function Voyage3D({ bus, reduced, overlay }: {
   useFrame(({ camera }, delta) => {
     const s = bus.state;
     const g = group.current;
-    if (!s) storm.current = { inside: false, distance: null };
+    if (!s) storm.current = { inside: false };
     if (!s || !g) return;
     const p = voyageAt(s.kind, s.t);
     const size = Math.max(MIN_SIZE, camera.position.distanceTo(g.position) * SIZE_PER_DISTANCE);
@@ -298,19 +298,17 @@ export function Voyage3D({ bus, reduced, overlay }: {
       // The controls apply a move on the next frame, and the canvas draws on demand: a move asks for
       // that frame, or a move without animation (reduced motion) is not drawn until something else redraws (#76).
       let moved = false;
-      // Entering the storm, the camera comes down under the clouds; leaving it, it goes back up.
+      // Entering the storm, the camera comes down under the clouds. Leaving it, it keeps its distance:
+      // going back to where it was before the storm pulled it far away (#127); over the ice it only
+      // backs off to the closest distance there (minCameraDistance).
       // Only for a ship: the plane is above the clouds, and the camera stays up there with it.
       const inside = s.kind === 'ship' && rough > 0;
       if (inside !== storm.current.inside) {
         if (inside && camera.position.y > STORM_CAMERA_HEIGHT) {
-          storm.current.distance = controls.distance;
           void controls.dollyTo((controls.distance * STORM_CAMERA_HEIGHT) / camera.position.y, !reduced);
-        } else if (!inside && storm.current.distance !== null) {
-          void controls.dollyTo(storm.current.distance, !reduced);
-          storm.current.distance = null;
+          moved = true;
         }
         storm.current.inside = inside;
-        moved = true;
       }
       const departing = s.t === 0 && (drawn.current.t !== 0 || drawn.current.transport !== s.transport);
       if (departing) {

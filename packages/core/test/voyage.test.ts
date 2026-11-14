@@ -6,6 +6,8 @@ import {
   FLIGHT_CRUISE,
   PLANE_TURBULENCE,
   FUEGIA_MIN_DISTANCE,
+  ICE_MIN_DISTANCE,
+  MAX_POLAR_DEG,
   FUEGIA_LAND_MASK,
   GEAR_TAP_MS,
   ROUTE_LENGTH,
@@ -508,12 +510,14 @@ describe('storm over the Drake Passage', () => {
     for (const kind of ['ship', 'plane'] as const) {
       for (let i = 0; i <= 400; i++) {
         const p = voyageAt(kind, i / 400);
-        if (stormAt(p.x, p.y) > 0) expect(minCameraDistance(p.x, p.y, 60), `${kind} ${i}`).toBe(FUEGIA_MIN_DISTANCE);
+        if (stormAt(p.x, p.y) > 0) expect(minCameraDistance(p.x, p.y), `${kind} ${i}`).toBe(FUEGIA_MIN_DISTANCE);
       }
     }
+    // Even tilted as far as it goes, the closest camera fits under the clouds (Voyage3D's STORM_CAMERA_HEIGHT).
+    expect(FUEGIA_MIN_DISTANCE * Math.cos((MAX_POLAR_DEG * Math.PI) / 180)).toBeLessThan(DRAKE_STORM.cloudBase - 2);
     // Not past it: south of the storm the camera keeps off the plateau.
     const end = voyageAt('ship', 1);
-    expect(minCameraDistance(end.x, end.y, 60)).toBe(60);
+    expect(minCameraDistance(end.x, end.y)).toBe(ICE_MIN_DISTANCE);
   });
 
   it('is over the ship from the Drake to the 60° S parallel', () => {

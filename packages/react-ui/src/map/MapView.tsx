@@ -4,7 +4,7 @@ import {
   buildMarkers, diveView, markerPress, geometry, isWheelNotch, keyView, panBy, welcomeView, wheelFactor, zoomAround, zoomCenter,
   type MapPoint, type Marker, type SeaPoint, type Size, type View, type ClaimsCoverage,
 } from '@antartida/core';
-import { useReducedMotion, useTimers } from '../hooks.ts';
+import { usePageSettled, useReducedMotion, useTimers } from '../hooks.ts';
 import { useVoyage, type VoyageBus } from '../voyage/useVoyage.ts';
 import { Icon } from '../ui.tsx';
 import { ExplorationLog } from './ExplorationLog.tsx';
@@ -203,22 +203,25 @@ export function MapView({
     setTouched(true);
   };
 
-  // First visit (#115): the map comes close to «Desde Ushuaia», its label opens (one more touch
-  // starts the trip) and the hint says to start there. The move is not the user's, so it does not
-  // count as `touched`; anything the user does afterwards ends the welcome.
+  // First visit (#115): once the page has loaded and stopped stuttering, the map comes close to
+  // «Desde Ushuaia», its label opens (one more touch starts the trip) and the hint says to start
+  // there. The move is not the user's, so it does not count as `touched`; anything the user does
+  // afterwards ends the welcome. Someone who already moved the map while it loaded gets no welcome.
   const [welcoming, setWelcoming] = useState(false);
+  const settled = usePageSettled(welcome);
   const welcomeMove = () => {
     const next = welcomeView(live.current.size);
     if (live.current.is3D) queue3D({ type: 'focus', view: next });
     else glide(next);
   };
   useEffect(() => {
-    if (!welcome || phase !== 'idle' || voyaging) return;
+    if (!welcome || !settled) return;
+    if (touched || phase !== 'idle' || voyaging) return void onWelcomeShown?.();
     welcomeMove();
     setShown(VOYAGE_POINT.id);
     setWelcoming(true);
     onWelcomeShown?.();
-  }, [welcome]);
+  }, [welcome, settled]);
   // The map can still switch between 3D and 2D during the welcome: the starting view changes once
   // reduced motion is read (useReducedMotion), and the user may switch it. Stay close to Ushuaia.
   useEffect(() => {
@@ -419,7 +422,7 @@ export function MapView({
         </header>
 
         {welcoming ? (
-          <div className="hint" role="status">Tocá «Desde Ushuaia» para empezar</div>
+          <div className="hint" role="status">Tocá <strong>Desde Ushuaia</strong> para empezar</div>
         ) : (
           !touched && !voyaging && phase === 'idle' && <div className="hint">arrastrá para mover · pellizcá para acercar</div>
         )}

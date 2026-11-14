@@ -20,11 +20,13 @@ test.afterEach(() => {
 
 const ushuaia = (page: Page) => page.getByRole('button', { name: /^Desde Ushuaia, Ushuaia/ });
 const hint = (page: Page) => page.locator('.hint');
-const WELCOME = 'Tocá «Desde Ushuaia» para empezar';
+const WELCOME = 'Tocá Desde Ushuaia para empezar';
+// The welcome waits for the page to load and settle (SETTLE_MAX_MS after `load` at most).
+const SETTLE_WAIT = 15_000;
 
 /** The welcome is on: Ushuaia well inside the screen, its label open and the hint saying to start there. */
 async function expectWelcome(page: Page) {
-  await expect(hint(page)).toHaveText(WELCOME);
+  await expect(hint(page)).toHaveText(WELCOME, { timeout: SETTLE_WAIT });
   const marker = ushuaia(page);
   await expect(marker).toBeVisible();
   await expect(marker).toHaveClass(/\bshown\b/);
@@ -51,7 +53,7 @@ test('the welcome also comes close to Ushuaia on the 3D map, where a phone overv
 
 test('the welcome shows once: the next visit starts from the overview (#115)', async ({ page }) => {
   await page.goto('/');
-  await expect(hint(page)).toHaveText(WELCOME);
+  await expect(hint(page)).toHaveText(WELCOME, { timeout: SETTLE_WAIT });
   await page.reload();
   await expect(hint(page)).toHaveText('arrastrá para mover · pellizcá para acercar');
   await expect(ushuaia(page)).not.toHaveClass(/\bshown\b/);
@@ -59,7 +61,7 @@ test('the welcome shows once: the next visit starts from the overview (#115)', a
 
 test('dragging the map ends the welcome (#115)', async ({ page }) => {
   await page.goto('/');
-  await expect(hint(page)).toHaveText(WELCOME);
+  await expect(hint(page)).toHaveText(WELCOME, { timeout: SETTLE_WAIT });
   const box = (await page.locator('.vp').boundingBox())!;
   const [x, y] = [box.x + box.width / 2, box.y + box.height * 0.3];
   await page.mouse.move(x, y);

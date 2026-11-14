@@ -17,7 +17,7 @@ import { fileURLToPath } from 'node:url';
 import { fromFile } from 'geotiff';
 import proj4 from 'proj4';
 import Martini from '@mapbox/martini';
-import { unproject } from '../src/projection.ts';
+import { project, unproject } from '../src/projection.ts';
 import {
   FUEGIA_BOX,
   FUEGIA_DATA_LIMIT_LAT,
@@ -152,9 +152,24 @@ const inWater = (i: number) => known[i] === 1 && elevations[i] <= 0 && shoreUnit
 const COAST_STEP_M = 600;
 const SEABED_CAP_M = 150;
 const WATER_EDGE_M = 150;
+
+// The triangle budget forces a coarse threshold (about 300 m), which turns the mountains around
+// Ushuaia into single-vertex spikes. Around the Beagle Channel, where the Irízar sails and the camera
+// gets closest, the relief counts DETAIL_GAIN times more, so it keeps that much finer detail there.
+const DETAIL_CENTER = project(-67.6, -54.85); // middle of the Beagle Channel
+const DETAIL_RADIUS = 9; // map units (about 70 km): from west of Ushuaia to the channel's eastern mouth
+const DETAIL_FADE = 4;
+const DETAIL_GAIN = 6;
+const detailWeight = (i: number) => {
+  const x = FUEGIA_BOX.minX + ((i % GRID) / (GRID - 1)) * spanX;
+  const y = FUEGIA_BOX.minY + (Math.floor(i / GRID) / (GRID - 1)) * spanY;
+  const t = Math.min(1, Math.max(0, (DETAIL_RADIUS + DETAIL_FADE - Math.hypot(x - DETAIL_CENTER.x, y - DETAIL_CENTER.y)) / DETAIL_FADE));
+  return 1 + (DETAIL_GAIN - 1) * t * t * (3 - 2 * t);
+};
+
 const standIn = new Float32Array(GRID * GRID);
 for (let i = 0; i < GRID * GRID; i++) {
-  if (elevations[i] > 0) standIn[i] = elevations[i] + COAST_STEP_M;
+  if (elevations[i] > 0) standIn[i] = elevations[i] * detailWeight(i) + COAST_STEP_M;
   else if (known[i]) {
     const out = Math.min(1, shoreUnits(i) / FUEGIA_WATER_REACH);
     standIn[i] = -Math.min(depths[i], SEABED_CAP_M) - WATER_EDGE_M * out;

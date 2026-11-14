@@ -22,8 +22,8 @@ export const ROUTE_WAYPOINTS: readonly (readonly [number, number])[] = [
   [-67.8, -54.893],
   [-67.66, -54.905],
   [-67.56, -54.915], // Mackinlay Pass, between Gable Island and Navarino
-  [-67.46, -54.9158],
-  [-67.38, -54.9155],
+  [-67.46, -54.915],
+  [-67.38, -54.914],
   [-67.25, -54.916],
   [-67.02, -54.965],
   [-66.78, -55.03], // between Picton Island and Tierra del Fuego

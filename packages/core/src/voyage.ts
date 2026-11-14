@@ -30,7 +30,7 @@ const FLIGHT_LOOK = 0.03;
 const FLIGHT_SIDES = [-2.5, -1.25, 0, 1.25, 2.5];
 
 /**
- * Cruise height: 10,000 ft (3048 m) at the x10 exaggeration of the regional relief, reached with a
+ * Cruise height: 10,000 ft (3048 m) at the exaggeration of the regional relief, reached with a
  * long steady climb. ILLUSTRATIVE: not a real flight level of the C-130.
  */
 export const FLIGHT_CRUISE = fuegiaWorldHeight(3048);

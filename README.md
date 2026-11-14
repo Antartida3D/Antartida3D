@@ -55,6 +55,20 @@ pnpm e2e             # tests de flujo e2e en apps/dibujado (Playwright)
 pnpm bench           # benchmark de rendimiento
 ```
 
+`pnpm e2e` acepta tres variables opcionales para correr más rápido en local (#87). Sin ellas, la suite corre como siempre: un solo worker y WebGL dibujado por CPU (SwiftShader), que funciona en cualquier máquina.
+
+- `E2E_GPU=1`: dibuja WebGL con la placa de video. Al empezar, la suite imprime qué GPU usa y avisa si Chromium volvió a SwiftShader.
+- `E2E_WORKERS=<n>`: corre `n` archivos de prueba en paralelo. Solo junto con `E2E_GPU=1`: con SwiftShader cada worker usa varios núcleos y, con 4, la prueba de arrastre del mapa 3D se pasa del tiempo límite.
+- `E2E_PORT=<puerto>`: levanta la vista previa en otro puerto. Sirve si hay un `pnpm dev` de otra rama en 5103, que si no la suite reutilizaría.
+
+Por ejemplo, en una máquina con placa de video (Git Bash o sh):
+
+```sh
+E2E_GPU=1 E2E_WORKERS=4 pnpm e2e
+```
+
+Tiempos medidos en [`docs/rendimiento/e2e.md`](docs/rendimiento/e2e.md).
+
 ## Fuentes y licencias
 
 - **Reclamos territoriales antárticos (#108):** capa opcional del mapa 3D, desactivada al cargar. El interruptor **Reclamos territoriales** muestra superficies transparentes de colores intensos, con bordes punteados y banderas; los botones por país permiten distinguir superposiciones. Incluye los siete países reclamantes y Pedro I como reclamo insular separado de Tierra de la Reina Maud. Ofrece **Sectores con mar** (referencia geográfica hasta 60° S) y **Solo tierra y hielo** sobre Bedmap3. El color de un sector sobre el mar no significa soberanía ni ZEE. Las fichas de los siete países describen sus reclamos y enlazan las fuentes. Banderas con ubicación y escala ilustrativas. Fuentes nacionales, Tratado Antártico, metodología y licencias en [`docs/reclamos-antarticos-fuentes.md`](docs/reclamos-antarticos-fuentes.md).
@@ -159,6 +173,8 @@ En cumplimiento con las bases de la hackatón, se declara el uso de herramientas
   > Diagnóstico, planificación, implementación, pruebas y verificación con capturas con asistencia de IA, con revisión del equipo. No se agregaron datos ni fuentes.
 - **Cámara del viaje con movimiento reducido (#76):**
   > Diagnóstico, arreglo y prueba e2e con asistencia de IA, con revisión del equipo. No se agregaron datos ni fuentes.
+- **E2E más rápido en local con GPU, workers y puerto (#87):**
+  > Medición, diagnóstico (en Windows `--use-angle=gl-egl` caía a SwiftShader) e implementación con Claude Code (modelo Claude Opus 5.5), con revisión del equipo. Solo cambia cómo se corren las pruebas; no se agregaron datos ni fuentes.
 - **Leyenda cerrada en el celular y swipe para cerrarla (#114):**
   > Planificación, implementación, pruebas y verificación con capturas con asistencia de IA, con revisión del equipo. No se agregaron datos ni fuentes.
 - **Tope del zoom en el relieve 3D (#127):**

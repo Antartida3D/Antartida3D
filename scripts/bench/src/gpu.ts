@@ -3,12 +3,8 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium, type Page } from '@playwright/test';
 import { chromiumPath } from '@antartida/e2e/browser';
-
-/**
- * Chromium flags that use the machine's real GPU (ANGLE over EGL). Without them headless Chromium
- * draws with SwiftShader and GPU raster costs (SVG filters re-rasterized on zoom) never show up.
- */
-export const GPU_ARGS = ['--use-gl=angle', '--use-angle=gl-egl', '--ignore-gpu-blocklist', '--enable-gpu-rasterization'];
+// Real GPU (not SwiftShader), so GPU raster costs (SVG filters re-rasterized on zoom) show up.
+import { GPU_ARGS, webglRenderer } from '@antartida/e2e/gpu';
 
 export interface ZoomCost {
   /** Total GPU-process work while zooming (ms). */
@@ -50,11 +46,7 @@ export async function measureZoomGpu(url: string, chromiumPath: string | undefin
       return page;
     };
     let page = await open();
-    const renderer = await page.evaluate(() => {
-      const gl = document.createElement('canvas').getContext('webgl');
-      const info = gl?.getExtension('WEBGL_debug_renderer_info');
-      return info ? String(gl!.getParameter(info.UNMASKED_RENDERER_WEBGL)) : 'unknown';
-    });
+    const renderer = await page.evaluate(webglRenderer);
     const buttons = await trace(page, browser, join(outDir, 'zoom-trace.json'), async () => {
       for (let i = 0; i < 3; i++) {
         await page.getByRole('button', { name: 'Acercar', exact: true }).click();

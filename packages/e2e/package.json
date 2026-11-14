@@ -6,7 +6,8 @@
   "exports": {
     "./ports": "./ports.ts",
     "./browser": "./browser.ts",
-    "./storage": "./storage.ts"
+    "./storage": "./storage.ts",
+    "./gpu": "./gpu.ts"
   },
   "devDependencies": {
     "@antartida/core": "workspace:*",

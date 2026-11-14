@@ -85,6 +85,10 @@ export function renderReport(file: BenchFile): string {
     out.push('');
   }
 
+  // Measured by hand (a full e2e run is too long for the benchmark): kept in its own file so regenerating does not drop it.
+  out.push('## Tiempo de la suite e2e', '');
+  out.push('Medido a mano, con y sin GPU, en [`docs/rendimiento/e2e.md`](rendimiento/e2e.md).', '');
+
   out.push('## Capturas', '');
   out.push('En `docs/rendimiento/capturas/<app>/`: `mapa`, `ficha`, `lista`, `excavacion` y `conclusion`, a 390 y 1440 px.', '');
   return out.join('\n');

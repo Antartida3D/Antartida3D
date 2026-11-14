@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { chromium } from '@playwright/test';
 import { startPreview } from './server.ts';
-import { GPU_ARGS } from './gpu.ts';
+import { GPU_ARGS } from '@antartida/e2e/gpu';
 
 const root = join(process.cwd(), '../../');
 const outDir = join(root, 'docs/rendimiento/capturas/3d');

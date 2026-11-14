@@ -1,6 +1,6 @@
 import { BufferAttribute, BufferGeometry, Color, SRGBColorSpace } from 'three';
 import { createSeededRng } from '@antartida/core';
-import { chunk, prism, shift, turn, type Tri, type Vec3 } from '../voyage/lowPoly.ts';
+import { chunk, mirrorZ, prism, shift, turn, type Tri, type Vec3 } from '../voyage/lowPoly.ts';
 import { SLIDE_DIRECTION, VOXEL_PALETTE } from './stationModels.ts';
 import { PENGUIN_NECK, type PenguinSpecies } from './penguins.ts';
 import {
@@ -51,10 +51,7 @@ const CONTACT_SHADOW_RGB: readonly [number, number, number] = [0.11, 0.15, 0.2];
 // ---------------------------------------------------------------------------------------------
 
 /** Mirror triangles across the z = 0 plane while preserving outward triangle winding. */
-export function mirrorZTris(tris: readonly Tri[]): Tri[] {
-  const m = ([x, y, z]: Vec3): Vec3 => [x, y, -z];
-  return tris.map(([a, b, c, col]) => [m(a), m(c), m(b), col]);
-}
+export const mirrorZTris = mirrorZ;
 
 const centroid = (pts: readonly Vec3[]): Vec3 => {
   const n = pts.length;

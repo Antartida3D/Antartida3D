@@ -4,10 +4,13 @@ import {
   block,
   chunk,
   lathe,
+  loftAlongX,
   ngon,
   prism,
   quad,
   rect,
+  strut,
+  type LoftStation,
   type Tri,
   type Vec3,
 } from '../voyage/lowPoly.ts';
@@ -83,31 +86,6 @@ function buildAlphaWaterGeometry(faces: readonly (readonly [RgbaVertex, RgbaVert
   return geometry;
 }
 
-/** Square-section strut between two 3D points with outward normals. */
-function strut(a: Vec3, b: Vec3, r: number, color: number, caps = true): Tri[] {
-  const dir = norm(sub(b, a));
-  const ref: Vec3 = Math.abs(dir[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];
-  const u = norm(cross(ref, dir));
-  const v = cross(dir, u);
-  const ring = (p: Vec3): [Vec3, Vec3, Vec3, Vec3] => [
-    addScaled(p, u, r, v, r),
-    addScaled(p, u, -r, v, r),
-    addScaled(p, u, -r, v, -r),
-    addScaled(p, u, r, v, -r),
-  ];
-  const ra = ring(a);
-  const rb = ring(b);
-  const out: Tri[] = [];
-  for (let i = 0; i < 4; i++) {
-    const j = (i + 1) % 4;
-    out.push([ra[i], ra[j], rb[j], color], [ra[i], rb[j], rb[i], color]);
-  }
-  if (caps) {
-    out.push([ra[0], ra[3], ra[2], color], [ra[0], ra[2], ra[1], color]);
-    out.push([rb[0], rb[1], rb[2], color], [rb[0], rb[2], rb[3], color]);
-  }
-  return out;
-}
 
 interface TubeStation {
   readonly pos: Vec3;
@@ -163,58 +141,6 @@ function sweptTube(
   return out;
 }
 
-interface LoftStation {
-  readonly x: number;
-  /** Ring of [z, y] points counter-clockwise seen from +x. */
-  readonly ring: readonly (readonly [number, number])[];
-}
-
-/**
- * Loft between cross-section rings ordered back-to-front or front-to-back along x.
- * Stations must be strictly ascending in x (`stations[k].x < stations[k+1].x`).
- */
-function loftAlongX(
-  stations: readonly LoftStation[],
-  colorAt: (bandIdx: number, segIdx: number) => number,
-  backCapColor?: number,
-  frontCapColor?: number,
-): Tri[] {
-  const out: Tri[] = [];
-  const n = stations[0].ring.length;
-  for (let k = 0; k < stations.length - 1; k++) {
-    const x0 = stations[k].x;
-    const x1 = stations[k + 1].x;
-    const r0 = stations[k].ring;
-    const r1 = stations[k + 1].ring;
-    for (let i = 0; i < n; i++) {
-      const j = (i + 1) % n;
-      const [az0, ay0] = r0[i];
-      const [bz0, by0] = r0[j];
-      const [az1, ay1] = r1[i];
-      const [bz1, by1] = r1[j];
-      out.push(...quad([x1, ay1, az1], [x1, by1, bz1], [x0, by0, bz0], [x0, ay0, az0], colorAt(k, i)));
-    }
-  }
-  if (backCapColor !== undefined) {
-    const s = stations[0];
-    const [cz, cy] = s.ring.reduce(([sz, sy], [z, y]) => [sz + z / n, sy + y / n], [0, 0]);
-    for (let i = 0; i < n; i++) {
-      const [az, ay] = s.ring[i];
-      const [bz, by] = s.ring[(i + 1) % n];
-      out.push([[s.x, cy, cz], [s.x, ay, az], [s.x, by, bz], backCapColor]);
-    }
-  }
-  if (frontCapColor !== undefined) {
-    const s = stations[stations.length - 1];
-    const [cz, cy] = s.ring.reduce(([sz, sy], [z, y]) => [sz + z / n, sy + y / n], [0, 0]);
-    for (let i = 0; i < n; i++) {
-      const [az, ay] = s.ring[i];
-      const [bz, by] = s.ring[(i + 1) % n];
-      out.push([[s.x, cy, cz], [s.x, by, bz], [s.x, ay, az], frontCapColor]);
-    }
-  }
-  return out;
-}
 
 // ============================================================================
 // 1. SEA-ICE FLOES (4 low-poly variants + waterline foam/glow per variant)

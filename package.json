@@ -16,6 +16,7 @@
     "sea-atlas": "pnpm --filter @antartida/core sea-atlas",
     "terrain": "pnpm --filter @antartida/core terrain",
     "e2e": "pnpm --filter @antartida/dibujado e2e",
+    "e2e:smoke": "pnpm --filter @antartida/dibujado e2e:smoke",
     "coastline": "pnpm --filter @antartida/core coastline",
     "map-raster": "pnpm --filter @antartida/core map-raster",
     "bench": "pnpm --filter @antartida/bench bench"

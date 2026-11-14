@@ -38,4 +38,5 @@ Reglas y arquitectura de trabajo para el equipo y agentes en este repositorio.
 - `pnpm test`: corre suite de pruebas unitarias (`packages/core`).
 - `pnpm typecheck`: validación de tipos TypeScript en el workspace.
 - `pnpm e2e`: tests de flujo con Playwright para `apps/dibujado`.
+- `pnpm e2e:smoke`: humo e2e (las vistas cargan y cada expedición arranca), antes de cada PR.
 - `pnpm bench`: benchmark de rendimiento.

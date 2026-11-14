@@ -33,6 +33,6 @@ description: Frontend: accesibilidad, rendimiento, estados de UI y diseño dibuj
 Pruebas de interfaz y rendimiento.
 
 <!-- adapt -->
-- E2E: `pnpm e2e` (`packages/e2e/tests/`).
+- E2E: `pnpm e2e` (`packages/e2e/tests/`). Humo antes de cada PR: `pnpm e2e:smoke`.
 - Rendimiento: `pnpm bench`.
 <!-- /adapt -->

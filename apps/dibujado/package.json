@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc -p .",
-    "e2e": "playwright test -c ../../packages/e2e/playwright.config.ts"
+    "e2e": "playwright test -c ../../packages/e2e/playwright.config.ts",
+    "e2e:smoke": "playwright test -c ../../packages/e2e/playwright.config.ts smoke.spec.ts"
   },
   "dependencies": {
     "@antartida/core": "workspace:*",

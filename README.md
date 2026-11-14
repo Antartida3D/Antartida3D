@@ -52,6 +52,7 @@ pnpm preview         # vista previa de apps/dibujado
 pnpm test            # tests unitarios de core
 pnpm typecheck       # validación de tipos TypeScript
 pnpm e2e             # tests de flujo e2e en apps/dibujado (Playwright)
+pnpm e2e:smoke       # humo e2e: las vistas cargan y cada expedición arranca
 pnpm bench           # benchmark de rendimiento
 ```
 
@@ -160,6 +161,8 @@ En cumplimiento con las bases de la hackatón, se declara el uso de herramientas
   > Diagnóstico, planificación, implementación, pruebas y verificación con capturas con asistencia de IA, con revisión del equipo. No se agregaron datos ni fuentes.
 - **Cámara del viaje con movimiento reducido (#76):**
   > Diagnóstico, arreglo y prueba e2e con asistencia de IA, con revisión del equipo. No se agregaron datos ni fuentes.
+- **Suite de humo e2e (#131):**
+  > Datos de la suite, propuesta de opciones e implementación con Claude Code (modelo Claude Opus 5.5); la opción la eligió quien lleva el issue. No se borró ninguna prueba ni se agregaron datos o fuentes.
 - **Leyenda cerrada en el celular y swipe para cerrarla (#114):**
   > Planificación, implementación, pruebas y verificación con capturas con asistencia de IA, con revisión del equipo. No se agregaron datos ni fuentes.
 - **Tope del zoom en el relieve 3D (#127):**

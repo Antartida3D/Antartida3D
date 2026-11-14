@@ -54,10 +54,11 @@ Si hay dos asignados, gana el primer comentario "Lo tomo." en el issue. El otro 
 
 ### 3. Entregar
 
-- Antes de abrir el PR: `git rebase origin/main`, `pnpm test` y `pnpm build` sin errores.
+- Antes de abrir el PR: `git rebase origin/main`, `pnpm test`, `pnpm build` y `pnpm e2e:smoke` sin errores. La suite de humo comprueba que las vistas cargan y que cada expedición arranca (unos 25 s).
 - El PR incluye `Closes #<N>` en la descripción.
 - PRs chicos. Un issue, un PR.
 - Otra persona del equipo revisa y mergea. Nadie mergea su propio PR, salvo urgencia del día de entrega.
+- Quien revisa corre la suite e2e completa (`pnpm e2e`) antes de mergear. También se corre completa antes de cada fecha de congelamiento.
 
 ### 4. Liberar
 

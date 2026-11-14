@@ -1,5 +1,7 @@
 export * from './content/points.ts';
 export * from './content/malvinas.ts';
+export * from './content/claims.ts';
+export * from './claims.ts';
 export * from './content/sea.ts';
 export * from './content/ushuaia.ts';
 export * from './content/orcadas.ts';

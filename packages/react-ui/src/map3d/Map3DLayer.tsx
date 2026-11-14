@@ -52,6 +52,7 @@ import { Terrain } from './Terrain.tsx';
 import { SouthernLands } from './SouthernLands.tsx';
 import { Fuegia } from './Fuegia.tsx';
 import { MalvinasFlag } from './MalvinasFlag.tsx';
+import { Claims3D } from './Claims3D.tsx';
 import { Graticule3D } from './Graticule3D.tsx';
 import { InkEffect } from './InkEffect.ts';
 import { SeaTimeContext, useAnimationClock } from './useAnimationClock.ts';
@@ -76,6 +77,8 @@ function SceneContent({
   enablePost,
   voyage,
   seaMarkers,
+  claims,
+  onClaimsStatus,
 }: {
   wide: boolean;
   lowQuality: boolean;
@@ -91,6 +94,8 @@ function SceneContent({
   enablePost: boolean;
   voyage: Layer3DProps['voyage'];
   seaMarkers: SeaMarker[];
+  claims: Layer3DProps['claims'];
+  onClaimsStatus: Layer3DProps['onClaimsStatus'];
 }) {
   const seaTime = useAnimationClock({ lowQuality });
   const invalidate = useThree((s) => s.invalidate);
@@ -132,6 +137,7 @@ function SceneContent({
     <SeaTimeContext.Provider value={seaTime}>
       <Ocean wide={wide} timeUniform={seaTime} instances={seaLifeInstances} />
       <Terrain wide={wide} />
+      {claims && <Claims3D wide={wide} selection={claims.selection} coverage={claims.coverage} onStatus={onClaimsStatus} />}
       <SouthernLands />
       <Fuegia wide={wide} />
       <MalvinasFlag wide={wide} />
@@ -583,6 +589,8 @@ export function Map3DLayer({
   command,
   onCameraRest,
   voyage,
+  claims,
+  onClaimsStatus,
 }: Map3DLayerProps) {
   const reduced = useReducedMotion();
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -671,6 +679,8 @@ export function Map3DLayer({
           enablePost={enablePost}
           voyage={voyage}
           seaMarkers={seaMarkers}
+          claims={claims}
+          onClaimsStatus={onClaimsStatus}
         />
       </Canvas>
       <div

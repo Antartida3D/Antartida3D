@@ -108,3 +108,14 @@ export function legendSwipe(dx: number, dy: number): { x: number; y: number; dra
   const y = Math.max(dy, 0);
   return { x: 0, y, drag: true, closes: y >= SHEET_SNAP_PX };
 }
+
+/**
+ * Whether the first move of a finger on the open legend (once it is a drag, see legendSwipe)
+ * starts a swipe towards closing it: left, or down from the top of the text under the finger.
+ * Up, right, or down through text scrolled `scrolledTop` px from its top leave the move to the
+ * page, so a legend list that scrolls on a short screen still scrolls under the finger.
+ */
+export function legendSwipeStarts(dx: number, dy: number, scrolledTop: number): boolean {
+  if (Math.abs(dx) >= Math.abs(dy)) return dx < 0;
+  return dy > 0 && scrolledTop <= 0;
+}

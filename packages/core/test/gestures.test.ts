@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SHEET_SNAP_PX, SHEET_TAP_PX, legendSwipe, moveTwoFingers, sheetAfterDrag, startTwoFingers, type TwoFingerState } from '../src/index.ts';
+import { SHEET_SNAP_PX, SHEET_TAP_PX, legendSwipe, legendSwipeStarts, moveTwoFingers, sheetAfterDrag, startTwoFingers, type TwoFingerState } from '../src/index.ts';
 
 type Point = { x: number; y: number };
 /** Runs a gesture through its moves and adds up what it did. */
@@ -143,5 +143,19 @@ describe('swiping the map legend', () => {
   it('does not move or close right or up, but that is still a drag and not a tap', () => {
     expect(legendSwipe(120, 0)).toEqual({ x: 0, y: 0, drag: true, closes: false });
     expect(legendSwipe(10, -120)).toEqual({ x: 0, y: 0, drag: true, closes: false });
+  });
+
+  it('starts a swipe only left, or down from the top of the text', () => {
+    expect(legendSwipeStarts(-10, 2, 0)).toBe(true);
+    expect(legendSwipeStarts(2, 10, 0)).toBe(true);
+    // Up or right: the page keeps the move.
+    expect(legendSwipeStarts(10, 2, 0)).toBe(false);
+    expect(legendSwipeStarts(2, -10, 0)).toBe(false);
+  });
+
+  it('lets a scrolled list scroll back up instead of closing the legend', () => {
+    expect(legendSwipeStarts(2, 10, 40)).toBe(false);
+    // Sideways it still closes, scrolled or not.
+    expect(legendSwipeStarts(-10, 2, 40)).toBe(true);
   });
 });

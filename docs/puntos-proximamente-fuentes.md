@@ -85,7 +85,7 @@ Para la animación (no aparece en la ficha): USAP registra «two to six Strombol
 
 ## `belgrano` — Base Belgrano II
 
-> La Base Belgrano II se inauguró el 5 de febrero de 1979 sobre roca firme, en el nunatak Bertrab, al sur del Mar de Weddell. Es la base más austral de la Argentina, a 1.300 km del Polo Sur. Tiene cuatro meses de noche polar, vientos fuertes y temperaturas de hasta -54 °C, y se abastece una vez por año, sobre todo con el rompehielos Almirante Irízar. En el Laboratorio Belgrano (LABEL), científicos del Instituto Antártico Argentino estudian el ozono, el magnetismo, el clima y los sismos.
+> La Base Belgrano II se inauguró el 5 de febrero de 1979 sobre roca firme, en el nunatak Bertrab, al sur del Mar de Weddell. Es la base más austral de la Argentina, a 1.300 km del Polo Sur. Tiene cuatro meses de noche polar, vientos fuertes y temperaturas de hasta -54 °C, y se abastece una vez por año, sobre todo con el rompehielos Almirante Irízar. De noche se ven abundantes auroras polares. En el Laboratorio Belgrano (LABEL), científicos del Instituto Antártico Argentino estudian el ozono, el magnetismo, el clima y los sismos.
 
 | Oración | Fuente | Cita |
 |---|---|---|
@@ -95,10 +95,11 @@ Para la animación (no aparece en la ficha): USAP registra «two to six Strombol
 | 2 | [Ejército Argentino · Base Belgrano II](https://www.argentina.gob.ar/ejercito/antartida/base-belgrano2) | "Se encuentra a 1300 km del Polo Sur" |
 | 3 | [Cancillería · Base Belgrano II](https://cancilleria.gob.ar/es/iniciativas/dna/antartida-argentina/bases/belgrano-ii) | "cuatro de noche polar. Se trata de una zona de fuertes vientos con temperaturas constantemente negativas que llegan hasta los -54˚C." |
 | 3 | [Ministerio de Defensa · 47° aniversario](https://www.argentina.gob.ar/noticias/47deg-aniversario-de-la-base-conjunta-antartica-belgrano-2) | "El abastecimiento logístico se realiza una vez al año, principalmente mediante el rompehielos ARA "Almirante Irízar"" |
-| 4 | [Ejército Argentino · Base Belgrano II](https://www.argentina.gob.ar/ejercito/antartida/base-belgrano2) | "Al contar con el Laboratorio Belgrano (LABEL) del Instituto Antártico Argentino" |
-| 4 | [Cancillería · Base Belgrano II](https://cancilleria.gob.ar/es/iniciativas/dna/antartida-argentina/bases/belgrano-ii) | "científicos del IAA que en el LABEL realizan estudios de ozono, magnetismo, meteorología, glaciología, biología terrestre, geodesia y sismología" |
+| 4 | [Ejército Argentino · Base Belgrano II](https://www.argentina.gob.ar/ejercito/antartida/base-belgrano2) | "Desde allí, durante la noche, se observan abundantes "auroras polares"." |
+| 5 | [Ejército Argentino · Base Belgrano II](https://www.argentina.gob.ar/ejercito/antartida/base-belgrano2) | "Al contar con el Laboratorio Belgrano (LABEL) del Instituto Antártico Argentino" |
+| 5 | [Cancillería · Base Belgrano II](https://cancilleria.gob.ar/es/iniciativas/dna/antartida-argentina/bases/belgrano-ii) | "científicos del IAA que en el LABEL realizan estudios de ozono, magnetismo, meteorología, glaciología, biología terrestre, geodesia y sismología" |
 
-Para la animación de la aurora (no aparece en la ficha): «Desde allí, durante la noche, se observan abundantes "auroras polares"» ([Ejército Argentino](https://www.argentina.gob.ar/ejercito/antartida/base-belgrano2)).
+La aurora ya no se dibuja en el mapa 3D (#117): de día se leía como rayas verdes sueltas. Queda solo en la ficha (cita revisada el 14 de noviembre de 2026).
 
 ## `emperador` — Colonias de pingüino emperador
 

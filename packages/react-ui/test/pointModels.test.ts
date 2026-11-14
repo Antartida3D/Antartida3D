@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { PTS } from '@antartida/core';
 import { normalOf, POLY_MIN_COLORS, POLY_MIN_TRIS } from '../src/voyage/lowPoly.ts';
 import { POINT_MODEL_IDS } from '../src/voyage/pointModelIds.ts';
-import { BOMBS, calvingPose, erebusSummit, huddleTurn, lavaBomb, PLUME_PUFFS, plumePuff, POINT_MODELS } from '../src/voyage/pointModels.ts';
+import { BOMBS, calvingPose, erebusSummit, huddleTurn, lavaBomb, PLUME_PUFFS, plumePuff, POINT_MODELS, thwaitesFront } from '../src/voyage/pointModels.ts';
 
 describe('point models (#58, docs/diseno/estilo-voxel.md)', () => {
   it('gives models only to points of the map, and the card knows which', () => {
@@ -38,6 +38,46 @@ describe('point models (#58, docs/diseno/estilo-voxel.md)', () => {
     expect(vent[1]).toBeLessThan(rim);
     const lowest = Math.min(...tris.flatMap(([a, b, c]) => [a, b, c].map((p) => p[1] - ground(p[0], p[2]))));
     expect(lowest).toBeGreaterThan(-0.05);
+  });
+
+  it('places Thwaites cliff, crevasses, and brash ice on the right side of a straight coast', () => {
+    const coastAt = (_dx: number, dz: number) => -dz;
+    const groundAt = (dx: number, dz: number) => (coastAt(dx, dz) > 0 ? 0.1 : 0);
+    const { cliff, crevasses, brash, calving } = thwaitesFront(groundAt, coastAt);
+    expect(cliff.length).toBeGreaterThan(0);
+    expect(crevasses.length).toBeGreaterThan(0);
+    expect(brash.length).toBeGreaterThan(0);
+    expect(calving).not.toBeNull();
+    // Cliff vertices stay on ice or at most 0.02 seaward at the wall foot (never < -0.03).
+    for (const [a, b, c] of cliff) {
+      for (const p of [a, b, c]) {
+        expect(coastAt(p[0], p[2])).toBeGreaterThanOrEqual(-0.02);
+      }
+    }
+    // All crevasse/rift vertices stay strictly inland (coastAt > 0.1).
+    for (const [a, b, c] of crevasses) {
+      for (const p of [a, b, c]) {
+        expect(coastAt(p[0], p[2])).toBeGreaterThan(0.1);
+      }
+    }
+    // All brash ice and tabular icebergs stay strictly seaward (coastAt < -0.05).
+    for (const [a, b, c] of brash) {
+      for (const p of [a, b, c]) {
+        expect(coastAt(p[0], p[2])).toBeLessThan(-0.05);
+      }
+    }
+  });
+
+  it('leaves small pools and islets of the coast mask without a ring of cliff (#117)', () => {
+    // Ice up to the coast at z = 1.5, a pool of sea inside it, and an islet in the sea.
+    const coastAt = (dx: number, dz: number) =>
+      Math.max(Math.min(1.5 - dz, Math.hypot(dx - 1, dz + 1) - 0.15), 0.15 - Math.hypot(dx + 1, dz - 2.3));
+    const groundAt = (dx: number, dz: number) => (coastAt(dx, dz) > 0 ? 0.1 : 0);
+    const { cliff } = thwaitesFront(groundAt, coastAt);
+    const near = (x: number, z: number) => cliff.filter(([a]) => Math.hypot(a[0] - x, a[2] - z) < 0.4).length;
+    expect(near(1, -1)).toBe(0);
+    expect(near(-1, 2.3)).toBe(0);
+    expect(near(0, 1.5)).toBeGreaterThan(0);
   });
 });
 

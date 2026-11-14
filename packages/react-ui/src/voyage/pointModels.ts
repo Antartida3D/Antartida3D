@@ -15,7 +15,7 @@ import {
   WHITE,
   ZINC,
 } from './sightingModels.ts';
-import { ICEBERG_PEAKS_POLY, ICEBERG_TABULAR_POLY } from './icebergs.ts';
+import { ICEBERG_TABULAR_POLY } from './icebergs.ts';
 import { block, chunk, emperor, extrude, groundField, lathe, ngon, normalOf, prism, quad, rect, RELIEF_ICE, RELIEF_ROCK, reliefColor, resolveRelief, scaled, shift, turn, type Tri, type Vec3 } from './lowPoly.ts';
 
 // Approximate colors. Every model here is an illustration, not to scale (docs/diseno/estilo-voxel.md).
@@ -24,8 +24,8 @@ const LAVA_CRUST = 0xb8411c;
 const LAVA = 0xf0661c;
 const LAVA_GLOW = 0xffc24a;
 const ICE_TOWER = 0xddf0fa;
-// Thwaites: rifts and crevasses of the floating ice.
-const CREVASSE = 0x6f9dbd;
+// Thwaites: pale ice wall tone blended with relief snow for V-shaped crevasses.
+const CREVASSE_ICE = 0xc9e0ee;
 // Vostok: section of the ice sheet, the lake and the bed (illustrative colors).
 const GLACIAL_ICE = 0x9ccfe6;
 const GLACIAL_ICE_DEEP = 0x5f9fc6;
@@ -209,92 +209,179 @@ const CLIFF_MIN = 0.1;
 
 export interface ThwaitesFront {
   tris: Tri[];
+  /** Parts exposed separately for tests; `tris` joins all three. */
+  cliff: Tri[];
+  crevasses: Tri[];
+  brash: Tri[];
   /** The block that breaks off: its faces relative to its pivot, the pivot and the turn that faces the sea. */
   calving: { tris: Tri[]; pivot: Point3; heading: number } | null;
 }
 
 /**
- * Thwaites Glacier where it meets the Amundsen Sea, built from the relief around (0, 0) in world
- * units: `groundAt(dx, dz)` gives the world height of the relief, 0 or less on the sea. Along the
- * real coastline the ice ends in a ragged cliff over the water; behind it rifts and crevasses run
- * parallel to the front on the ice of the relief, and brash ice and small icebergs drift in front.
+ * Thwaites Glacier where it meets the Amundsen Sea, built around (0, 0) in world units:
+ * `groundAt(dx, dz)` gives the world height of the relief and `coastAt(dx, dz)` gives the signed
+ * distance to the Bedmap3 coastline (> 0 on ice, < 0 on sea). Along `coastAt = 0` the ice ends in
+ * a ragged cliff over the water; behind it V-shaped crevasses and rifts run parallel to the front
+ * on ice, and brash ice and tabular icebergs sit in the sea in front.
  * Illustration, not to scale: the cliff is drawn higher than its real tens of metres.
  */
-export function thwaitesFront(groundAt: (dx: number, dz: number) => number): ThwaitesFront {
+export function thwaitesFront(
+  groundAt: (dx: number, dz: number) => number,
+  coastAt: (dx: number, dz: number) => number,
+): ThwaitesFront {
   const rng = createSeededRng(2026);
   const n = Math.round((2 * THWAITES_REACH) / THWAITES_STEP);
   const at = (i: number) => -THWAITES_REACH + i * THWAITES_STEP;
-  const h: number[][] = Array.from({ length: n + 1 }, (_, i) => Array.from({ length: n + 1 }, (_, j) => groundAt(at(i), at(j))));
-  const land = (i: number, j: number) => i >= 0 && j >= 0 && i <= n && j <= n && h[i][j] > 0.002;
-  const tris: Tri[] = [];
+  const s: number[][] = Array.from({ length: n + 1 }, (_, i) => Array.from({ length: n + 1 }, (_, j) => coastAt(at(i), at(j))));
+  const cliff: Tri[] = [];
+  const crevasses: Tri[] = [];
+  const brash: Tri[] = [];
   const coast: { x: number; z: number; nx: number; nz: number; top: number }[] = [];
 
-  // The coastline, traced smoothly between the samples (marching squares), cut into short stretches.
-  const LAND = 0.002;
+  const faceUp = (t: Tri): Tri => {
+    const up = (t[1][2] - t[0][2]) * (t[2][0] - t[0][0]) - (t[1][0] - t[0][0]) * (t[2][2] - t[0][2]) >= 0;
+    return up ? t : [t[0], t[2], t[1], t[3]];
+  };
+
+  // The coastline, traced smoothly along coastAt = 0 (marching squares), cut into short stretches.
   const segments: [number, number, number, number][] = [];
   const cross = (x0: number, z0: number, v0: number, x1: number, z1: number, v1: number): [number, number] => {
-    const t = (v0 - LAND) / (v0 - v1);
+    const t = v0 / (v0 - v1);
     return [x0 + (x1 - x0) * t, z0 + (z1 - z0) * t];
   };
   for (let i = 0; i < n; i++) {
     for (let j = 0; j < n; j++) {
       const [x0, x1, z0, z1] = [at(i), at(i + 1), at(j), at(j + 1)];
-      const v = [h[i][j], h[i + 1][j], h[i + 1][j + 1], h[i][j + 1]];
+      const v = [s[i][j], s[i + 1][j], s[i + 1][j + 1], s[i][j + 1]];
       const corners: [number, number][] = [[x0, z0], [x1, z0], [x1, z1], [x0, z1]];
       const pts: [number, number][] = [];
       for (let e = 0; e < 4; e++) {
         const a = e;
         const b = (e + 1) % 4;
-        if (v[a] > LAND !== v[b] > LAND) pts.push(cross(...corners[a], v[a], ...corners[b], v[b]));
+        if (v[a] > 0 !== v[b] > 0) pts.push(cross(...corners[a], v[a], ...corners[b], v[b]));
       }
       if (pts.length === 2) segments.push([...pts[0], ...pts[1]]);
       else if (pts.length === 4) segments.push([...pts[0], ...pts[1]], [...pts[2], ...pts[3]]);
     }
   }
-  const heightNear = (x: number, z: number) => {
-    const i = Math.max(0, Math.min(n, Math.round((x + THWAITES_REACH) / THWAITES_STEP)));
-    const j = Math.max(0, Math.min(n, Math.round((z + THWAITES_REACH) / THWAITES_STEP)));
-    return h[i][j];
+
+  const inlandPt = (px: number, pz: number, nx: number, nz: number): [number, number] | null => {
+    for (const d of [0.14, 0.09, 0.05, 0.02]) {
+      const ix = px - nx * d;
+      const iz = pz - nz * d;
+      if (coastAt(ix, iz) > 0.005) return [ix, iz];
+    }
+    return null;
   };
 
   // The cliff: along each stretch of coast, a wall from under the water up over the ice, its top
-  // ragged, its foot a little out to sea, and a ledge of snow back to the ice behind it.
-  for (const [ax, az, bx, bz] of segments) {
+  // ragged, its foot right on the isoline or barely seaward, and a snow ledge back onto the ice.
+  // Everything at a point of the coastline depends only on that point, so neighbouring stretches
+  // share their edges: the way to the sea (down the slope of coastAt), the top and the foot.
+  const edge = (x: number, z: number) => {
+    const e = 0.02;
+    let nx = coastAt(x - e, z) - coastAt(x + e, z);
+    let nz = coastAt(x, z - e) - coastAt(x, z + e);
+    const l = Math.hypot(nx, nz) || 1;
+    [nx, nz] = [nx / l, nz / l];
+    const ice = groundAt(x - nx * 0.12, z - nz * 0.12);
+    // Ragged but continuous: a top that rises and falls along the front, sinking to the relief
+    // towards the edge of the model so the front does not end in a cut.
+    const fade = Math.min(1, Math.max(0, (THWAITES_REACH - Math.max(Math.abs(x), Math.abs(z))) / 0.8));
+    const rise = Math.max(ice, CLIFF_MIN) - ice + 0.03 * (0.5 + 0.5 * Math.sin(x * 9.1 + z * 4.7) * Math.sin(z * 7.3 - x * 3.1));
+    const top = ice + rise * fade;
+    const footOut = 0.008;
+    const back = inlandPt(x, z, nx, nz);
+    return {
+      nx,
+      nz,
+      top,
+      foot: [x + nx * footOut, -0.06, z + nz * footOut] as Vec3,
+      crest: [x, top, z] as Vec3,
+      back: back ? ([back[0], groundAt(back[0], back[1]) + 0.003, back[1]] as Vec3) : null,
+    };
+  };
+  // Islets and pools of the mask (small closed rings of coastline) stay as the map paints them: a
+  // ring of cliff round them reads as a crater. Stretches are joined by their shared ends.
+  const islet = new Set<(typeof segments)[number]>();
+  {
+    const key = (x: number, z: number) => `${Math.round(x * 1e4)},${Math.round(z * 1e4)}`;
+    const ends = new Map<string, (typeof segments)[number][]>();
+    for (const sg of segments) for (const k of [key(sg[0], sg[1]), key(sg[2], sg[3])]) ends.set(k, [...(ends.get(k) ?? []), sg]);
+    const seen = new Set<(typeof segments)[number]>();
+    for (const first of segments) {
+      if (seen.has(first)) continue;
+      const ring: (typeof segments)[number][] = [];
+      const stack = [first];
+      while (stack.length) {
+        const sg = stack.pop()!;
+        if (seen.has(sg)) continue;
+        seen.add(sg);
+        ring.push(sg);
+        for (const k of [key(sg[0], sg[1]), key(sg[2], sg[3])]) stack.push(...(ends.get(k) ?? []));
+      }
+      const xs = ring.flatMap((sg) => [sg[0], sg[2]]);
+      const zs = ring.flatMap((sg) => [sg[1], sg[3]]);
+      const closed = ring.every((sg) => [key(sg[0], sg[1]), key(sg[2], sg[3])].every((k) => ends.get(k)!.length === 2));
+      if (closed && Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...zs) - Math.min(...zs)) < 1) ring.forEach((sg) => islet.add(sg));
+    }
+  }
+  for (const segment of segments) {
+    const [ax, az, bx, bz] = segment;
     const len = Math.hypot(bx - ax, bz - az);
     if (len < 1e-4) continue;
-    let nx = (bz - az) / len;
-    let nz = -(bx - ax) / len;
+    if (islet.has(segment)) continue;
+    const ea = edge(ax, az);
+    const eb = edge(bx, bz);
     const mx = (ax + bx) / 2;
     const mz = (az + bz) / 2;
-    // The normal points to the sea.
-    if (groundAt(mx + nx * 0.06, mz + nz * 0.06) > groundAt(mx - nx * 0.06, mz - nz * 0.06)) [nx, nz] = [-nx, -nz];
-    const ice = Math.max(groundAt(mx - nx * 0.12, mz - nz * 0.12), heightNear(mx - nx * 0.12, mz - nz * 0.12));
-    const ta = Math.max(ice, CLIFF_MIN) + rng() * 0.03;
-    const tb = Math.max(ice, CLIFF_MIN) + rng() * 0.03;
-    const out = 0.015;
-    const A: Vec3 = [ax + nx * out, -0.06, az + nz * out];
-    const B: Vec3 = [bx + nx * out, -0.06, bz + nz * out];
-    const At: Vec3 = [ax + nx * out * 0.3, ta, az + nz * out * 0.3];
-    const Bt: Vec3 = [bx + nx * out * 0.3, tb, bz + nz * out * 0.3];
+    const l = Math.hypot(ea.nx + eb.nx, ea.nz + eb.nz) || 1;
+    const nx = (ea.nx + eb.nx) / l;
+    const nz = (ea.nz + eb.nz) / l;
     const wall = rng() > 0.3 ? ICE_WALL : ICE_SHADE;
     // Facing the sea whichever way the stretch runs.
-    const facing = (bx - ax) * nz - (bz - az) * nx < 0;
-    tris.push(...(facing ? quad(A, B, Bt, At, wall) : quad(B, A, At, Bt, wall)));
-    const back = 0.14;
-    const Ai: Vec3 = [ax - nx * back, groundAt(ax - nx * back, az - nz * back) + 0.003, az - nz * back];
-    const Bi: Vec3 = [bx - nx * back, groundAt(bx - nx * back, bz - nz * back) + 0.003, bz - nz * back];
-    const ledge: Tri[] = [[At, Bt, Bi, RELIEF_ICE], [At, Bi, Ai, RELIEF_ICE]];
-    for (const t of ledge) {
-      const up = (t[1][2] - t[0][2]) * (t[2][0] - t[0][0]) - (t[1][0] - t[0][0]) * (t[2][2] - t[0][2]) >= 0;
-      tris.push(up ? t : [t[0], t[2], t[1], t[3]]);
-    }
-    coast.push({ x: mx, z: mz, nx, nz, top: (ta + tb) / 2 });
+    const facing = (bx - ax) * nz - (bz - az) * nx > 0;
+    cliff.push(...(facing ? quad(ea.foot, eb.foot, eb.crest, ea.crest, wall) : quad(eb.foot, ea.foot, ea.crest, eb.crest, wall)));
+    if (ea.back && eb.back) cliff.push(faceUp([ea.crest, eb.crest, eb.back, RELIEF_ICE]), faceUp([ea.crest, eb.back, ea.back, RELIEF_ICE]));
+    coast.push({ x: mx, z: mz, nx, nz, top: (ea.top + eb.top) / 2 });
   }
 
-  // Rifts and crevasses on the ice behind the front, across the way to the sea.
+  /** V-shaped sunken band along `centers` on ice (coastAt > 0.15 at every vertex; out-of-bounds stretches clipped). */
+  const pushVTrench = (centers: readonly [number, number][], halfWidth: number, depth: number, color: number) => {
+    const stations: { L: Vec3; C: Vec3; R: Vec3; ok: boolean }[] = centers.map(([cx, cz], k) => {
+      const prev = centers[Math.max(0, k - 1)];
+      const next = centers[Math.min(centers.length - 1, k + 1)];
+      const tx0 = next[0] - prev[0];
+      const tz0 = next[1] - prev[1];
+      const tLen = Math.hypot(tx0, tz0) || 1;
+      const ox = -tz0 / tLen;
+      const oz = tx0 / tLen;
+      const lx = cx - ox * halfWidth;
+      const lz = cz - oz * halfWidth;
+      const rx = cx + ox * halfWidth;
+      const rz = cz + oz * halfWidth;
+      const ok = coastAt(lx, lz) > 0.15 && coastAt(cx, cz) > 0.15 && coastAt(rx, rz) > 0.15;
+      return {
+        L: [lx, groundAt(lx, lz) + 0.003, lz],
+        C: [cx, groundAt(cx, cz) + 0.003 - depth, cz],
+        R: [rx, groundAt(rx, rz) + 0.003, rz],
+        ok,
+      };
+    });
+    for (let k = 0; k < stations.length - 1; k++) {
+      const a = stations[k];
+      const b = stations[k + 1];
+      if (!a.ok || !b.ok) continue;
+      for (const t of [...quad(a.L, b.L, b.C, a.C, color), ...quad(a.C, b.C, b.R, a.R, color)]) {
+        crevasses.push(faceUp(t));
+      }
+    }
+  };
+
+  // Short curved crevasses on the ice behind the front (coastAt > 0.15), parallel to the coast.
   for (let i = 0; i <= n; i++) {
     for (let j = 0; j <= n; j++) {
-      if (!land(i, j) || !coast.length) continue;
+      if (s[i][j] <= 0.15 || !coast.length) continue;
       const x = at(i);
       const z = at(j);
       let best = coast[0];
@@ -305,38 +392,22 @@ export function thwaitesFront(groundAt: (dx: number, dz: number) => number): Thw
       }
       const band = d > 0.2 && d < 1.3 && Math.abs(Math.sin(d * 11 + Math.sin(x * 2 + z * 3) * 1.2)) < 0.16 && rng() > 0.35;
       if (!band) continue;
-      // Along the front: perpendicular to the way to the nearest stretch of coast.
-      const len = Math.hypot(best.x - x, best.z - z) || 1;
-      const tx = -(best.z - z) / len;
-      const tz = (best.x - x) / len;
-      const l = THWAITES_STEP * (0.55 + rng() * 0.4);
-      const w = 0.006 + (d < 0.6 ? 0.006 : 0);
-      const y = h[i][j] + 0.004;
-      const p = (s: number, o: number): Vec3 => [x + tx * s * l - tz * o * w, y, z + tz * s * l + tx * o * w];
-      tris.push(...quad(p(-1, -1), p(-1, 1), p(1, 1), p(1, -1), d < 0.6 ? CREVASSE : ICE_WALL).map(([a, b, c, col]): Tri => {
-        // Face up whatever the turn.
-        const up = (b[2] - a[2]) * (c[0] - a[0]) - (b[0] - a[0]) * (c[2] - a[2]) >= 0;
-        return up ? [a, b, c, col] : [a, c, b, col];
-      }));
+      const len = Math.hypot(x - best.x, z - best.z) || 1;
+      const rx = (x - best.x) / len;
+      const rz = (z - best.z) / len;
+      const tx = -rz;
+      const tz = rx;
+      const halfLen = THWAITES_STEP * (0.7 + rng() * 0.5);
+      const curve = (rng() > 0.5 ? 1 : -1) * (0.018 + rng() * 0.02);
+      const centers: [number, number][] = [-1, -0.35, 0.35, 1].map((u) => [
+        x + tx * u * halfLen + rx * (1 - u * u) * curve,
+        z + tz * u * halfLen + rz * (1 - u * u) * curve,
+      ]);
+      pushVTrench(centers, 0.014 + (d < 0.6 ? 0.006 : 0), 0.011 + rng() * 0.004, CREVASSE_ICE);
     }
   }
 
-  // Brash ice and small bergs in the water in front of the cliff, thinning out to sea.
-  for (let i = 0; i <= n; i++) {
-    for (let j = 0; j <= n; j++) {
-      if (land(i, j)) continue;
-      const x = at(i);
-      const z = at(j);
-      let d = Infinity;
-      for (const c of coast) d = Math.min(d, Math.hypot(c.x - x, c.z - z));
-      if (d > 1.1 || rng() > 0.35 * (1 - d / 1.1) ** 2) continue;
-      const s = 0.02 + rng() * (d < 0.4 ? 0.07 : 0.04);
-      const color = rng() > 0.4 ? WHITE : ICE_WALL;
-      tris.push(...chunk(x + (rng() - 0.5) * 0.08, 0.004, z + (rng() - 0.5) * 0.08, s, s * (0.5 + rng() * 0.4), s * (0.7 + rng() * 0.6), Math.floor(rng() * 1e6), color));
-    }
-  }
-
-  // Long rifts parallel to the front, a little inland: where the next icebergs will break off.
+  // Long rifts parallel to the front, inland (coastAt > 0.15): where the next icebergs will break off.
   for (let k = 0; k < coast.length; k += 6) {
     const c = coast[k];
     if (rng() > 0.6) continue;
@@ -345,53 +416,88 @@ export function thwaitesFront(groundAt: (dx: number, dz: number) => number): Thw
     const x = c.x - c.nx * inland;
     const z = c.z - c.nz * inland;
     const [tx, tz] = [-c.nz, c.nx];
-    const w = 0.012;
-    const y = (u: number) => groundAt(x + tx * u * len, z + tz * u * len) + 0.005;
-    const p = (u: number, o: number): Vec3 => [x + tx * u * len - c.nx * o * w, y(u), z + tz * u * len - c.nz * o * w];
-    for (let s = -1; s < 1; s += 0.25) {
-      const t: Tri[] = [[p(s, -1), p(s + 0.25, -1), p(s + 0.25, 1), CREVASSE], [p(s, -1), p(s + 0.25, 1), p(s, 1), CREVASSE]];
-      for (const f of t) {
-        const up = (f[1][2] - f[0][2]) * (f[2][0] - f[0][0]) - (f[1][0] - f[0][0]) * (f[2][2] - f[0][2]) >= 0;
-        tris.push(up ? f : [f[0], f[2], f[1], f[3]]);
+    const curve = (rng() - 0.5) * 0.08;
+    const centers: [number, number][] = [];
+    for (let u = -1; u <= 1.001; u += 0.25) {
+      centers.push([x + tx * u * len - c.nx * (1 - u * u) * curve, z + tz * u * len - c.nz * (1 - u * u) * curve]);
+    }
+    pushVTrench(centers, 0.018, 0.014, CREVASSE_ICE);
+  }
+
+  // Brash ice on the ocean plane (y = -0.05) in front of the cliff (coastAt < -0.1), thinning out to sea.
+  for (let i = 0; i <= n; i++) {
+    for (let j = 0; j <= n; j++) {
+      if (s[i][j] >= 0 || !coast.length) continue;
+      const x = at(i) + (rng() - 0.5) * 0.08;
+      const z = at(j) + (rng() - 0.5) * 0.08;
+      if (coastAt(x, z) >= -0.1) continue;
+      let d = Infinity;
+      for (const c of coast) d = Math.min(d, Math.hypot(c.x - x, c.z - z));
+      if (d > 1.1 || rng() > 0.175 * (1 - d / 1.1) ** 2) continue;
+      const sz = 0.02 + rng() * (d < 0.4 ? 0.07 : 0.04);
+      const color = rng() > 0.4 ? WHITE : ICE_WALL;
+      const piece = chunk(x, -0.045, z, sz, sz * (0.5 + rng() * 0.4), sz * (0.7 + rng() * 0.6), Math.floor(rng() * 1e6), color);
+      if (piece.every(([a, b, c]) => coastAt(a[0], a[2]) < -0.05 && coastAt(b[0], b[2]) < -0.05 && coastAt(c[0], c[2]) < -0.05)) {
+        brash.push(...piece);
       }
     }
   }
 
-  // Tabular icebergs that broke off the front, drifting off it.
-  for (let k = 0; k < 6 && coast.length; k++) {
-    const c = coast[Math.floor(rng() * coast.length)];
-    const off = 0.35 + rng() * 1.3;
-    const x = c.x + c.nx * off;
-    const z = c.z + c.nz * off;
-    if (groundAt(x, z) > 0.002) continue;
-    const size = 0.18 + rng() * 0.32;
-    const berg = rng() > 0.35 ? ICEBERG_TABULAR_POLY : ICEBERG_PEAKS_POLY;
-    tris.push(...shift(turn(scaled(berg, size), rng() * Math.PI * 2), x, -0.004, z));
+  // Two or three tabular icebergs embedded in the ocean plane (y = -0.05) near the front.
+  const bergCenters: [number, number][] = [];
+  if (coast.length) {
+    const candidates = Array.from({ length: 12 }, (_, k) => Math.floor(((k + 0.5) / 12) * coast.length));
+    for (const idx of candidates) {
+      if (bergCenters.length >= 3) break;
+      const c = coast[idx];
+      const size = 0.1 + rng() * 0.06;
+      const radius = 0.75 * size;
+      const off = radius + 0.15 + rng() * 0.25;
+      const x = c.x + c.nx * off;
+      const z = c.z + c.nz * off;
+      if (coastAt(x, z) >= -0.1) continue;
+      if (bergCenters.some(([bx, bz]) => Math.hypot(bx - x, bz - z) < 0.55)) continue;
+      let clear = true;
+      for (let k = 0; k < 8 && clear; k++) {
+        const a = (k / 8) * Math.PI * 2;
+        if (coastAt(x + Math.cos(a) * radius, z + Math.sin(a) * radius) >= -0.1) clear = false;
+      }
+      if (!clear) continue;
+      const berg = shift(turn(scaled(ICEBERG_TABULAR_POLY, size), rng() * Math.PI * 2), x, -0.05, z);
+      if (berg.every(([a, b, d]) => coastAt(a[0], a[2]) < -0.05 && coastAt(b[0], b[2]) < -0.05 && coastAt(d[0], d[2]) < -0.05)) {
+        brash.push(...berg);
+        bergCenters.push([x, z]);
+      }
+    }
   }
 
-  // The block that breaks off: on the stretch of front nearest the point.
+  // The block that breaks off: on the stretch of front nearest (0, 0).
   let calving: ThwaitesFront['calving'] = null;
   if (coast.length) {
     const c = coast.reduce((a, b) => (Math.hypot(a.x, a.z) < Math.hypot(b.x, b.z) ? a : b));
     const heading = Math.atan2(c.nx, c.nz);
     const top = c.top + 0.01;
     calving = {
-      pivot: [c.x, -0.02, c.z],
+      pivot: [c.x, -0.05, c.z],
       heading,
       tris: prism([[0.07, 0], [0.06, -0.06], [-0.01, -0.075], [-0.07, -0.05], [-0.08, 0], [-0.02, 0.004]], 0, top + 0.02, ICE_WALL, WHITE),
     };
   }
-  return { tris, calving };
+  return { tris: [...cliff, ...crevasses, ...brash], cliff, crevasses, brash, calving };
 }
 
 /** The front on a made-up stretch of coast, scaled to one unit: the model of the Thwaites card. */
 const THWAITES_CARD: Tri[] = (() => {
-  const coast = (dx: number, dz: number) => (dz < 0.6 + 0.35 * Math.sin(dx * 1.7) - (Math.abs(dx - 0.8) < 0.4 ? 0.35 : 0) ? 0.06 + Math.max(0, -dz) * 0.04 : 0);
-  const { tris, calving } = thwaitesFront(coast);
+  const coastLine = (dx: number) => 0.6 + 0.35 * Math.sin(dx * 1.7) - 0.35 * Math.exp(-(((dx - 0.8) / 0.25) ** 2));
+  const coastAt = (dx: number, dz: number) => coastLine(dx) - dz;
+  const groundAt = (dx: number, dz: number) => (coastAt(dx, dz) > 0 ? 0.06 + Math.max(0, -dz) * 0.04 : 0);
+  const { tris, calving } = thwaitesFront(groundAt, coastAt);
   const all = [...tris, ...(calving ? shift(turn(calving.tris, calving.heading), ...calving.pivot) : [])];
   const k = 1 / (2 * THWAITES_REACH);
-  const fit = (p: Vec3): Vec3 => [p[0] * k * 1.6, Math.max(0, p[1] * k * 4), p[2] * k * 1.6];
-  const fitted = all.map(([a, b, c, col]): Tri => [fit(a), fit(b), fit(c), col]);
+  const fit = (p: Vec3): Vec3 => [p[0] * k * 1.6, Math.max(0, (p[1] + 0.05) * k * 4), p[2] * k * 1.6];
+  const fitted = all
+    .filter(([a, b, c]) => Math.max(a[1], b[1], c[1]) > -0.049)
+    .map(([a, b, c, col]): Tri => [fit(a), fit(b), fit(c), col]);
   // Only the middle of the stretch: the card shows a piece of front, not the whole square.
   const near = fitted.filter(([a, b, c]) => Math.max(Math.hypot(a[0], a[2]), Math.hypot(b[0], b[2]), Math.hypot(c[0], c[2])) < 0.62);
   return resolveRelief(near, (y) => y);
@@ -547,8 +653,6 @@ const BELGRANO: Tri[] = [
 
 export const BELGRANO_FLAGS: readonly PointFlag[] = [{ top: [0.04, SITE + 0.18, 0.14], colors: [SKY, WHITE, SKY] }];
 
-/** The aurora hangs here, behind the base and high over it (Ejército Argentino: «auroras polares»). */
-export const BELGRANO_AURORA_ANCHOR: Point3 = [0, 0.85, -0.4];
 
 // ---------------------------------------------------------------------------------------------
 // South Pole: Amundsen-Scott station
@@ -865,15 +969,3 @@ export const huddleTurn = (t: number) => t * 0.04;
 
 /** Swing of a flag cloth round its pole. */
 export const flagSwing = (i: number, t: number) => 0.45 * Math.sin(t * 2.2 + i * 1.3) + 0.15 * Math.sin(t * 5.1 + i);
-
-export const AURORA_RAYS = 16;
-
-/** A ray of the aurora curtain over Belgrano II: its height and how far it sways. */
-export function auroraRay(i: number, t: number): { x: number; height: number; z: number } {
-  const [x, , z] = BELGRANO_AURORA_ANCHOR;
-  return {
-    x: x - 0.5 + (1 * i) / (AURORA_RAYS - 1),
-    height: 0.34 + 0.12 * Math.sin(t * 0.7 + i * 0.8),
-    z: z + 0.05 * Math.sin(t * 0.5 + i * 0.6),
-  };
-}

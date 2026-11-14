@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useRef, type MutableRefObject } from 'react';
-import { BoxGeometry, Color, Frustum, IcosahedronGeometry, Matrix4, MeshBasicMaterial, Sphere, type BufferGeometry, type Group, type Mesh, type Vector3 } from 'three';
+import { Color, Frustum, IcosahedronGeometry, Matrix4, MeshBasicMaterial, Sphere, type BufferGeometry, type Group, type Mesh, type Vector3 } from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
-import { FOV, MODEL_MIN_PX, PTS, heightAt, screenPx, worldHeight, type MapPoint } from '@antartida/core';
+import { FOV, MODEL_MIN_PX, PTS, TERRAIN_BOX, heightAt, screenPx, worldHeight, type MapPoint } from '@antartida/core';
+import relief4096Url from '@antartida/core/assets/terrain-relief-4096.webp';
+import relief2048Url from '@antartida/core/assets/terrain-relief-2048.webp';
 import {
-  AURORA_RAYS,
-  auroraRay,
-  BELGRANO_AURORA_ANCHOR,
   BELGRANO_FLAGS,
   BOMBS,
   calvingPose,
@@ -29,6 +28,7 @@ import {
 } from '../voyage/pointModels.ts';
 import { buildPolyGeometry, resolveRelief, type Tri, type Vec3 } from '../voyage/lowPoly.ts';
 import { vehicleMaterial } from '../voyage/vehicles.ts';
+import { coastSdfAt, loadCoastSdf } from './coast.ts';
 
 /** Highest relief within `radius` map units of (x, y), searched on a fine grid: the top of a mountain, in map space. */
 function summit(x: number, y: number, radius: number): { x: number; y: number } {
@@ -59,11 +59,9 @@ const MOVING_MIN_PX = 40;
 
 // Effects are low-poly too (docs/diseno/estilo-voxel.md, rule 9), with their own flat materials.
 const puffGeometry = new IcosahedronGeometry(0.5, 0);
-const rayGeometry = new BoxGeometry(1, 1, 1);
 const plumeMaterial = new MeshBasicMaterial({ color: 0xd3d9de, transparent: true, opacity: 0.75 });
 const steamMaterial = new MeshBasicMaterial({ color: 0xf7fafb, transparent: true, opacity: 0.7 });
 const bombMaterial = new MeshBasicMaterial({ color: 0xf0661c });
-const auroraMaterial = new MeshBasicMaterial({ color: 0x6fe3a0, transparent: true, opacity: 0.2, depthWrite: false });
 const LAVA_DIM = new Color(0xb8411c);
 const LAVA_BRIGHT = new Color(0xffc24a);
 
@@ -133,29 +131,6 @@ function HuddlePart({ parts }: { parts: MutableRefObject<Part[]> }) {
     <group ref={pivot} position={EMPEROR_HUDDLE_CENTER as [number, number, number]}>
       <mesh geometry={geometry} material={vehicleMaterial} />
     </group>
-  );
-}
-
-/** Belgrano II: a curtain of aurora sways over the base. */
-function AuroraPart({ parts }: { parts: MutableRefObject<Part[]> }) {
-  const rays = useRef<(Mesh | null)[]>([]);
-  const move = useMemo(
-    () => (t: number) =>
-      rays.current.forEach((m, i) => {
-        if (!m) return;
-        const { x, height, z } = auroraRay(i, t);
-        m.position.set(x, BELGRANO_AURORA_ANCHOR[1], z);
-        m.scale.set(0.035, height, 0.01);
-      }),
-    [],
-  );
-  usePart(parts, move);
-  return (
-    <>
-      {Array.from({ length: AURORA_RAYS }, (_, i) => (
-        <mesh key={i} ref={(m) => void (rays.current[i] = m)} geometry={rayGeometry} material={auroraMaterial} renderOrder={2} />
-      ))}
-    </>
   );
 }
 
@@ -275,12 +250,7 @@ function PointModelMesh({ id, point, model, reduced }: Placed & { reduced: boole
       <group rotation-y={model.heading ?? 0} scale={width}>
         {id === 'emperador' && <HuddlePart parts={parts} />}
         {id === 'polo' && <Flags flags={POLO_FLAGS} parts={parts} />}
-        {id === 'belgrano' && (
-          <>
-            <Flags flags={BELGRANO_FLAGS} parts={parts} />
-            <AuroraPart parts={parts} />
-          </>
-        )}
+        {id === 'belgrano' && <Flags flags={BELGRANO_FLAGS} parts={parts} />}
       </group>
     </group>
   );
@@ -391,7 +361,10 @@ function ErebusSummitMesh({ reduced }: { reduced: boolean }) {
  */
 export function pointFocus(id: string): { x: number; y: number; z: number } {
   const p = PTS.find((q) => q.id === id)!;
-  if (id === THWAITES.id) return { x: p.x - 500, y: worldHeight(heightAt(p.x, p.y)), z: p.y - 500 + 0.4 };
+  if (id === THWAITES.id) {
+    const [dx, dz] = thwaitesCalvingOffset ?? [0, 0.4];
+    return { x: p.x - 500 + dx, y: worldHeight(heightAt(p.x + dx, p.y + dz)), z: p.y - 500 + dz };
+  }
   if (id === EREBUS.id) {
     const top = summit(p.x, p.y, EREBUS_SEARCH);
     return { x: top.x - 500, y: worldHeight(heightAt(top.x, top.y)), z: top.y - 500 };
@@ -404,11 +377,14 @@ export function pointFocus(id: string): { x: number; y: number; z: number } {
 const THWAITES = PTS.find((p) => p.id === 'thwaites')!;
 /** World width of the front (twice its reach in pointModels.ts), for visibility and frames. */
 const THWAITES_WIDTH = 6;
+let thwaitesCalvingOffset: readonly [number, number] | null = null;
+
+type CoastState = 'loading' | 'ready' | 'failed';
 
 /**
- * Thwaites Glacier: the ice cliff, crevasses and brash ice are built from the real coastline round
- * its point, at the scale of the map, and rebuilt when the relief loads or changes its detail. Now
- * and then a block of the front tips over into the sea and sinks.
+ * Thwaites Glacier: the ice cliff, crevasses and brash ice are built from the real Bedmap3
+ * coastline round its point, at the scale of the map, and rebuilt when the relief or coast SDF
+ * loads or changes its detail. Now and then a block of the front tips over into the sea and sinks.
  */
 function ThwaitesMesh({ reduced }: { reduced: boolean }) {
   const group = useRef<Group>(null);
@@ -416,9 +392,24 @@ function ThwaitesMesh({ reduced }: { reduced: boolean }) {
   const block = useRef<Mesh>(null);
   const pivot = useRef<Group>(null);
   const turnRef = useRef<Group>(null);
-  const built = useRef<{ ground: number; ok: boolean }>({ ground: NaN, ok: false });
+  const built = useRef<{ ground: number; coast: CoastState; ok: boolean }>({ ground: NaN, coast: 'loading', ok: false });
+  const coast = useRef<CoastState>('loading');
   const invalidateScene = useThree((st) => st.invalidate);
   useEffect(() => invalidateScene(), [reduced, invalidateScene]);
+  useEffect(() => {
+    let alive = true;
+    // The same relief texture as Terrain.tsx (wide = vw > 820), so the browser has it cached.
+    const wide = window.innerWidth > 820;
+    loadCoastSdf(wide ? relief4096Url : relief2048Url, TERRAIN_BOX, THWAITES.x, THWAITES.y, THWAITES_WIDTH / 2 + 0.5).then((fn) => {
+      if (!alive) return;
+      coast.current = fn ? 'ready' : 'failed';
+      invalidateScene();
+    });
+    return () => {
+      alive = false;
+      thwaitesCalvingOffset = null;
+    };
+  }, [invalidateScene]);
   useEffect(() => {
     const a = body.current;
     const b = block.current;
@@ -432,12 +423,16 @@ function ThwaitesMesh({ reduced }: { reduced: boolean }) {
     const g = group.current;
     if (!g || !body.current || !block.current || !pivot.current || !turnRef.current) return;
     const ground = heightAt(THWAITES.x, THWAITES.y);
-    if (ground === 0) return void (g.visible = false);
-    if (ground !== built.current.ground) {
-      const f = thwaitesFront((dx, dz) => {
-        const h = heightAt(THWAITES.x + dx, THWAITES.y + dz);
-        return h > 0 ? worldHeight(h) : 0;
-      });
+    if (ground === 0 || coast.current === 'loading') return void (g.visible = false);
+    if (ground !== built.current.ground || coast.current !== built.current.coast) {
+      const f = thwaitesFront(
+        (dx, dz) => {
+          const h = heightAt(THWAITES.x + dx, THWAITES.y + dz);
+          return h > 0 ? worldHeight(h) : 0;
+        },
+        // Without the coast mask, the coastline of the relief heights: close to it, not on its ink.
+        (dx, dz) => coastSdfAt(THWAITES.x + dx, THWAITES.y + dz) ?? (heightAt(THWAITES.x + dx, THWAITES.y + dz) > 0 ? 0.5 : -0.5),
+      );
       body.current.geometry.dispose();
       body.current.geometry = buildPolyGeometry(resolveRelief(f.tris));
       block.current.geometry.dispose();
@@ -445,9 +440,12 @@ function ThwaitesMesh({ reduced }: { reduced: boolean }) {
       if (f.calving) {
         turnRef.current.position.set(...f.calving.pivot);
         turnRef.current.rotation.y = f.calving.heading;
+        thwaitesCalvingOffset = [f.calving.pivot[0], f.calving.pivot[2]];
+      } else {
+        thwaitesCalvingOffset = null;
       }
       g.position.set(THWAITES.x - 500, 0, THWAITES.y - 500);
-      built.current = { ground, ok: !!f.calving };
+      built.current = { ground, coast: coast.current, ok: !!f.calving };
     }
     const px = screenPx(THWAITES_WIDTH, camera.position.distanceTo(g.position), size.height);
     g.visible = px >= MODEL_MIN_PX;

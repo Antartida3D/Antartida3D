@@ -66,6 +66,8 @@ export interface MapViewProps {
   onWelcomeShown?: () => void;
   mode?: ViewMode;
   showToggle?: boolean;
+  /** False without WebGL: «Relieve 3D» explains how to turn it on (#123). */
+  available3D?: boolean;
   Layer3D?: (props: Layer3DProps) => React.ReactNode;
   onToggleLegend: () => void;
   onToggleMode?: (next: ViewMode) => void;
@@ -99,6 +101,7 @@ export function MapView({
   onWelcomeShown,
   mode = '2d',
   showToggle = false,
+  available3D = true,
   Layer3D,
   onToggleLegend,
   onToggleMode,
@@ -444,7 +447,7 @@ export function MapView({
               Ver como lista
             </button>
             {showToggle && onToggleMode && (
-              <ViewToggle mode={mode} onChange={onToggleMode} />
+              <ViewToggle mode={mode} available3D={available3D} onChange={onToggleMode} />
             )}
           </div>
           )}

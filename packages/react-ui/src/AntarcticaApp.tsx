@@ -59,7 +59,8 @@ export function AntarcticaApp() {
   const [legend, setLegend] = useState(() => typeof window === 'undefined' || window.innerWidth >= NARROW_PX);
   const [returned, setReturned] = useState(false);
   const [mode, setMode] = useState<ViewMode>('2d');
-  const [webglSupported, setWebglSupported] = useState(false);
+  // null until checked: the view toggle waits for it, so it does not flash as «not available».
+  const [webglSupported, setWebglSupported] = useState<boolean | null>(null);
   // First visit: the map comes close to «Desde Ushuaia» (#115). True until MapView has shown it.
   const [welcome, setWelcome] = useState(false);
 
@@ -110,11 +111,8 @@ export function AntarcticaApp() {
   const toggleMode = (next: ViewMode) => {
     // A transition into an expedition is tied to the view it started on.
     if (phase !== 'idle') return;
-    if (next === '3d' && !webglSupported) {
-      setToast('WebGL no está disponible en este navegador');
-      later('toast', () => setToast(''), TOAST_MS);
-      return;
-    }
+    // Without WebGL the toggle explains how to turn it on instead (ViewToggle, #123).
+    if (next === '3d' && !webglSupported) return;
     setMode(next);
     saveViewMode(next);
   };
@@ -182,7 +180,8 @@ export function AntarcticaApp() {
           welcome={welcome}
           onWelcomeShown={welcomeShown}
           mode={mode}
-          showToggle={webglSupported}
+          showToggle={webglSupported !== null}
+          available3D={webglSupported === true}
           Layer3D={Layer3D}
           onToggleLegend={() => setLegend((l) => !l)}
           onToggleMode={toggleMode}

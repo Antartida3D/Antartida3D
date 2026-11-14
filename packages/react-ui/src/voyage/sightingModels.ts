@@ -24,23 +24,23 @@ import { assembleWeddellSealBoxes, assembleElephantSealBoxes } from '../orcadas/
 import { MALVINAS_FLAG_BOXES } from '../map3d/malvinasFlagModel.ts';
 
 // Approximate colors. The models are illustrations, not portraits: one unit is about the length of the model.
-const BLACK = 0x1f2a36;
-const WHITE = 0xf7fafb;
-const ROCK = 0x8a8f8c;
-const ICE = 0xe9f1f4;
-const ORANGE = 0xd9822b;
-const RED = 0xc8472a;
-const CREAM = 0xf1e6c8;
+export const BLACK = 0x1f2a36;
+export const WHITE = 0xf7fafb;
+export const ROCK = 0x8a8f8c;
+export const ICE = 0xe9f1f4;
+export const ORANGE = 0xd9822b;
+export const RED = 0xc8472a;
+export const CREAM = 0xf1e6c8;
 const WOOD = 0x8a6a4a;
 const GRASS = 0x9aa86a;
 const SEA_GREY = 0x6f7f8c;
 const BROWN = 0x6b5443;
 const WHALE_GREY = 0x55606b;
-const LAMP = 0xf2c14e;
-const ZINC = 0x7d868c;
-const SKY = 0x7fb6dc;
+export const LAMP = 0xf2c14e;
+export const ZINC = 0x7d868c;
+export const SKY = 0x7fb6dc;
 const RED_DARK = 0x96351e;
-const NAVY_ROOF = 0x1e3e5c;
+export const NAVY_ROOF = 0x1e3e5c;
 const ROCK_DARK = 0x656a68;
 const WOOD_LIGHT = 0xc49a6c;
 // Emperor penguin: the yellow of its ear patch and the pale yellow of its upper chest.
@@ -430,12 +430,12 @@ const SPOUT: Box[] = [
   [-0.02, 0.2, -0.06, 0.06, 0.06, 0.06, WHITE],
 ];
 
-const ICE_SHADE = 0xc5dbe6;
+export const ICE_SHADE = 0xc5dbe6;
 
 /** Pale turquoise of the ice seen through shallow water: the foot that spreads under an iceberg. */
-const ICE_SUBMERGED = 0x9fd6dc;
+export const ICE_SUBMERGED = 0x9fd6dc;
 /** Wall of an iceberg: bluer than snow, so the baked face shading reads as ice and not as grey stone. */
-const ICE_WALL = 0xb4d5ea;
+export const ICE_WALL = 0xb4d5ea;
 
 /** Side of one ice column, in model units. */
 const ICE_CELL = 0.1;

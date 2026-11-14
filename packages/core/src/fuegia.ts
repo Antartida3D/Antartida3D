@@ -1,5 +1,6 @@
 import { METERS_PER_MAP_UNIT } from './relief.ts';
 import { stormAt } from './storm.ts';
+import { PTS } from './content/points.ts';
 
 /**
  * Tierra del Fuego, southern Patagonia and the Malvinas in map space: the land the Antarctic
@@ -53,5 +54,16 @@ export function inFuegia(x: number, y: number): boolean {
  */
 export const FUEGIA_MIN_DISTANCE = 3;
 export function minCameraDistance(x: number, y: number, base: number): number {
-  return inFuegia(x, y) || stormAt(x, y) > 0 ? Math.min(base, FUEGIA_MIN_DISTANCE) : base;
+  if (inFuegia(x, y) || stormAt(x, y) > 0) return Math.min(base, FUEGIA_MIN_DISTANCE);
+  // Round a point with a model the camera comes down to see it on the relief (MapPoint.closeUp).
+  for (const p of CLOSE_UP_POINTS) {
+    if (Math.hypot(x - p.x, y - p.y) < Math.max(CLOSE_UP_REACH, p.closeUp! * 2)) return Math.min(base, p.closeUp! * CLOSE_UP_MIN);
+  }
+  return base;
 }
+
+/** Around a point with a model the close-up rule holds this far (map units) at least. */
+const CLOSE_UP_REACH = 4;
+/** The camera may come this fraction of the close-up distance to the model. */
+const CLOSE_UP_MIN = 0.5;
+const CLOSE_UP_POINTS = PTS.filter((p) => p.closeUp !== undefined);

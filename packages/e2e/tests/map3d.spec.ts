@@ -406,8 +406,9 @@ test.describe('3D relief view', () => {
     const minHere = await page.evaluate(() => (window as any).__cameraControls.minDistance as number);
     expect(await distance()).toBeGreaterThanOrEqual(minHere - 0.01);
 
-    // Moving the target to the South Pole pushes it back out.
-    await page.evaluate(() => void (window as any).__cameraControls.moveTo(0, 0, 0, false));
+    // Moving the target to the open plateau pushes it back out. Not the South Pole itself: a point
+    // with a model lets the camera come down to it (#58).
+    await page.evaluate(() => void (window as any).__cameraControls.moveTo(-50, 0, 0, false));
     await settle('cc.minDistance === 60 && cc.distance >= 59.9');
   });
 

@@ -52,9 +52,15 @@ describe('fuegia region', () => {
   it('lets the camera closer only inside the region', () => {
     const ushuaia = project(-68.3, -54.81);
     expect(minCameraDistance(ushuaia.x, ushuaia.y, 60)).toBe(FUEGIA_MIN_DISTANCE);
-    expect(minCameraDistance(500, 500, 60)).toBe(60);
+    expect(minCameraDistance(450, 450, 60)).toBe(60);
     // A base that is already closer than the regional minimum stays as it is.
     expect(minCameraDistance(ushuaia.x, ushuaia.y, FUEGIA_MIN_DISTANCE / 2)).toBe(FUEGIA_MIN_DISTANCE / 2);
+  });
+
+  it('lets the camera come down to a point with a model (#58)', () => {
+    // The South Pole station: its close-up is 2.6 world units.
+    expect(minCameraDistance(500, 500, 60)).toBeCloseTo(1.3, 5);
+    expect(minCameraDistance(501, 498, 60)).toBeCloseTo(1.3, 5);
   });
 
   it('uses its own vertical exaggeration', () => {

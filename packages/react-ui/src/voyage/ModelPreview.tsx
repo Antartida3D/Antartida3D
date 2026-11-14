@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import type { Group } from 'three';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { buildBoxGeometry, vehicleMaterial, type Box } from './vehicles.ts';
+import { buildPolyGeometry, type Tri } from './lowPoly.ts';
 
 /**
  * How the model moves in its preview. ILLUSTRATIVE: no source backs these movements.
@@ -17,9 +18,9 @@ const TURN_SECONDS = 9;
 /** The model is looked at from the front and a little to one side. */
 const POSE = -0.6;
 
-function Model({ boxes, motion, reduced }: { boxes: readonly Box[]; motion: PreviewMotion; reduced: boolean }) {
+function Model({ boxes, tris, motion, reduced }: { boxes?: readonly Box[]; tris?: readonly Tri[]; motion: PreviewMotion; reduced: boolean }) {
   const group = useRef<Group>(null);
-  const geometry = useMemo(() => buildBoxGeometry(boxes), [boxes]);
+  const geometry = useMemo(() => (tris ? buildPolyGeometry(tris) : buildBoxGeometry(boxes ?? [])), [boxes, tris]);
   useEffect(() => () => geometry.dispose(), [geometry]);
   useFrame(({ clock }, delta) => {
     const g = group.current;
@@ -43,8 +44,10 @@ function Model({ boxes, motion, reduced }: { boxes: readonly Box[]; motion: Prev
  * is one unit long or wide (docs/diseno/estilo-voxel.md), so one camera fits them all; `lift`
  * raises the look for a tall one.
  */
-export function ModelPreview({ boxes, motion, reduced, lift = 0, sea = false }: {
-  boxes: readonly Box[];
+export function ModelPreview({ boxes, tris, motion, reduced, lift = 0, sea = false }: {
+  /** A block model, or a low-poly one in `tris`. */
+  boxes?: readonly Box[];
+  tris?: readonly Tri[];
   motion: PreviewMotion;
   reduced: boolean;
   /** Model units the camera looks above the base of the model. */
@@ -62,7 +65,7 @@ export function ModelPreview({ boxes, motion, reduced, lift = 0, sea = false }: 
         camera={{ fov: 30, near: 0.1, far: 20, position: [0, 0.62 + lift, 1.55] }}
         onCreated={({ camera }) => camera.lookAt(0, lift, 0)}
       >
-        <Model boxes={boxes} motion={motion} reduced={reduced} />
+        <Model boxes={boxes} tris={tris} motion={motion} reduced={reduced} />
       </Canvas>
     </div>
   );

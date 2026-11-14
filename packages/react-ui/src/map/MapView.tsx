@@ -31,6 +31,8 @@ export type Camera3DCommand =
   | { type: 'zoom'; factor: number }
   | { type: 'home' }
   | { type: 'focus'; view: View }
+  /** Fly down to the model of a point, this close (world units): MapPoint.closeUp. */
+  | { type: 'visit'; id: string; distance: number }
   | { type: 'pan'; dx: number; dy: number }
   | { type: 'rotate'; deg: number };
 
@@ -296,6 +298,7 @@ export function MapView({
     if (p.id === VOYAGE_POINT.id && onStartVoyage) onStartVoyage();
     else if ('tier' in p && p.tier === 'A') onStart(p);
     else {
+      if (is3D && 'closeUp' in p && p.closeUp) send3D({ type: 'visit', id: p.id, distance: p.closeUp });
       setSheet(p);
       setTouched(true);
     }

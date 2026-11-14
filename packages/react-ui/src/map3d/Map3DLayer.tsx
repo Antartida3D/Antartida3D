@@ -58,6 +58,7 @@ import { SeaTimeContext, useAnimationClock } from './useAnimationClock.ts';
 import { Town3D } from '../voyage/Town3D.tsx';
 import { Storm3D } from '../voyage/Storm3D.tsx';
 import { OrcadasSite } from './OrcadasSite.tsx';
+import { PointModels, pointFocus } from './PointModels.tsx';
 import { Voyage3D } from '../voyage/Voyage3D.tsx';
 
 function SceneContent({
@@ -138,6 +139,7 @@ function SceneContent({
       <SeaLife visible={phase !== 'dive'} timeUniform={seaTime} instances={seaLifeInstances} voyage={voyage} />
       <Town3D reduced={reduced} wide={wide} overlay={overlayRef} />
       <OrcadasSite reduced={reduced} />
+      <PointModels reduced={reduced} />
       <Storm3D reduced={reduced} />
       {voyage && <Voyage3D bus={voyage} reduced={reduced} overlay={overlayRef} />}
       {enablePost && (
@@ -174,6 +176,10 @@ export type Map3DLayerProps = Layer3DProps;
 // (homeDistance3D: ~800 on desktop and ~2250 on a phone), where the whole continent fits; farther
 // the camera would see past the lands of the rest of the world (WORLD_FADE_END).
 const MIN_DISTANCE = 60;
+/** Angle from straight down of the close-up of a point with a model: the model is seen at a slant, on its ground. */
+const VISIT_POLAR = (52 * Math.PI) / 180;
+/** From this window width the point card is a side panel, not a bottom sheet (painted.css). */
+const VISIT_WIDE_PX = 820;
 // The camera only gets closer than MIN_DISTANCE around Tierra del Fuego; there the near plane must
 // come in too, or the land in front of the target would be clipped.
 const NEAR = 10;
@@ -314,6 +320,25 @@ function ControlsBridge({
       endDistance = clampDistance(distanceFromK3D(aspect, cmd.view.k));
       cc.moveTo(t.x, 0, t.z, smooth);
       cc.dollyTo(endDistance, smooth);
+    } else if (cmd.type === 'visit') {
+      // Down to the model on the relief, looking at it from above at an angle, from where the camera is.
+      const at = pointFocus(cmd.id);
+      endDistance = cmd.distance;
+      cc.minDistance = Math.min(cc.minDistance, cmd.distance);
+      // The card covers the right side of a wide screen and the bottom of a phone: aim beside it, so
+      // the model sits in the free part (to the left, or higher up, seen from the camera).
+      const wide = size.vw >= VISIT_WIDE_PX;
+      const across = wide ? 0.14 * 2 * cmd.distance * Math.tan((FOV * Math.PI) / 360) * aspect : 0;
+      const toward = wide ? 0 : 0.22 * cmd.distance;
+      const az = cc.azimuthAngle;
+      void cc.moveTo(
+        at.x + Math.cos(az) * across + Math.sin(az) * toward,
+        at.y,
+        at.z - Math.sin(az) * across + Math.cos(az) * toward,
+        smooth
+      );
+      void cc.dollyTo(cmd.distance, smooth);
+      void cc.rotatePolarTo(VISIT_POLAR, smooth);
     } else if (cmd.type === 'pan') {
       // Move the target over the ground, in the camera's own left/right and forward directions.
       const upp = (2 * cc.distance * Math.tan((FOV * Math.PI) / 360)) / size.vh; // world units per px

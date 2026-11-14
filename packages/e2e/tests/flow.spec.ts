@@ -1,4 +1,5 @@
 import { expect, test, type CDPSession, type Locator, type Page } from '@playwright/test';
+import { clearStorage } from '../storage.ts';
 
 const log = (page: Page) => page.locator('.reg');
 
@@ -44,7 +45,7 @@ test.beforeEach(async ({ page }) => {
   });
   page.on('pageerror', (e) => consoleErrors.push(e.message));
   await page.goto('/');
-  await page.evaluate(() => localStorage.clear());
+  await clearStorage(page);
   await page.reload();
   await expect(log(page)).toContainText('0/2');
 });

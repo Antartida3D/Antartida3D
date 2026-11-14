@@ -13,6 +13,9 @@ import {
   saveExplored,
   loadViewMode,
   saveViewMode,
+  loadWelcomeSeen,
+  saveWelcomeSeen,
+  showsWelcome,
   type MapPoint,
 } from '@antartida/core';
 import { useReducedMotion, useTimers } from './hooks.ts';
@@ -57,6 +60,8 @@ export function AntarcticaApp() {
   const [returned, setReturned] = useState(false);
   const [mode, setMode] = useState<ViewMode>('2d');
   const [webglSupported, setWebglSupported] = useState(false);
+  // First visit: the map comes close to «Desde Ushuaia» (#115). True until MapView has shown it.
+  const [welcome, setWelcome] = useState(false);
 
   const reduced = useReducedMotion();
   const later = useTimers();
@@ -91,6 +96,16 @@ export function AntarcticaApp() {
       setMode('2d');
     }
   }, [reduced]);
+
+  // Decided once, in the same render as the starting view above, so MapView zooms in the right mode.
+  useEffect(() => {
+    setWelcome(showsWelcome(loadWelcomeSeen(), loadExplored()));
+  }, []);
+
+  const welcomeShown = () => {
+    saveWelcomeSeen();
+    setWelcome(false);
+  };
 
   const toggleMode = (next: ViewMode) => {
     // A transition into an expedition is tied to the view it started on.
@@ -164,6 +179,8 @@ export function AntarcticaApp() {
           toast={toast}
           legend={legend}
           focusExpedition={returned}
+          welcome={welcome}
+          onWelcomeShown={welcomeShown}
           mode={mode}
           showToggle={webglSupported}
           Layer3D={Layer3D}

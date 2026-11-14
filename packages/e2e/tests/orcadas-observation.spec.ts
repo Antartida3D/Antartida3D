@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { clearStorage } from '../storage.ts';
 import { ORCADAS_GUIDING_QUESTION } from '../../core/src/content/orcadas.ts';
 import { ORCADAS_CLIMATE } from '../../core/src/content/orcadas-series.ts';
 import { beaufort, observationFor, type Reading } from '../../core/src/orcadas.ts';
@@ -82,7 +83,7 @@ test.beforeEach(async ({ page }) => {
   });
   page.on('pageerror', (e) => consoleErrors.push(e.message));
   await page.goto('/');
-  await page.evaluate(() => localStorage.clear());
+  await clearStorage(page);
   await page.reload();
 });
 

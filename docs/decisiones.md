@@ -243,6 +243,21 @@ Plan: `.agents/plans/plan-helipuerto-orcadas.md`.
 - **Helicóptero en temporada de visitas:** Sea King voxel posado sobre la losa, visible solo entre noviembre y marzo (`helicopterOnPad(month)` en `@antartida/core`), según COMNAP (2017).
 - **Qué es ilustrativo:** el tipo de helicóptero, sus colores, su escala y su ubicación en el escenario. La leyenda de la escena lo declara.
 
+### Bienvenida: la primera visita empieza en «Desde Ushuaia» (#115, 14-11-2026)
+
+Pedido de quien lleva el issue: quien entra por primera vez se queda perdido y no sabe a dónde ir. Propuesta: que al entrar la cámara se acerque a «Desde Ushuaia», la primera expedición del orden sugerido (#75), para dejar claro que hay que tocar ahí.
+
+- **Diagnóstico:** en el celular (390 px), en 3D, la vista general encuadra solo el continente y el marcador de «Desde Ushuaia» queda fuera de la pantalla: no se ve. En 2D queda pegado al borde izquierdo. En escritorio se ve en los dos modos, pero chico y en una esquina.
+- **Qué pasa en la primera visita:** el mapa se acerca a Ushuaia (×3, `WELCOME_K`), se abre su cartel y la pista de arriba dice «Tocá «Desde Ushuaia» para empezar». Con el cartel abierto, un solo toque más arranca el viaje (`markerPress`, #54). No se suma un aro nuevo: los marcadores de expedición ya laten.
+- **Qué la termina:** cualquier cosa que haga la persona: arrastrar, acercar, usar las teclas o los botones de zoom, tocar otro marcador o empezar el viaje. Después vuelve la pista de siempre.
+- **Una sola vez:** se guarda en `localStorage` (`antartida:welcome`) apenas se muestra, con `try/catch`. Si el almacenamiento está bloqueado, se muestra una vez por visita. Tampoco se muestra si «Desde Ushuaia» ya está explorada.
+- **Dónde está la regla:** `welcomeView(size)` y `showsWelcome(seen, explored)` en `core/src/welcome.ts`, con pruebas; la clave, en `core/src/storage.ts`. La misma vista sirve para 2D (`glide`) y 3D (el comando `focus` de la cámara, el mismo de los grupos de marcadores). El movimiento de la bienvenida no cuenta como gesto de la persona (`touched`).
+- **Borde del mapa:** el mapa no deja que el centro de la vista pase de x = 80 (`clampView`) y Ushuaia está en x = 31. Por eso queda un poco a la izquierda del centro; a ×3 sigue bien dentro de la pantalla y su cartel entra a la derecha.
+- **Cambio de 2D a 3D durante la bienvenida:** la vista inicial puede cambiar después del primer dibujo, porque `useReducedMotion` lee la preferencia en un efecto: con movimiento reducido la app elige 3D y enseguida pasa a 2D. Mientras dura la bienvenida, si el modo cambia (por eso o porque la persona toca el botón), el mapa se vuelve a acercar a Ushuaia en el modo nuevo.
+- **Movimiento reducido:** sin animación de cámara en 3D; en 2D, el mismo acercamiento que usan los botones de zoom.
+- **Pruebas e2e:** como cada prueba arranca con el almacenamiento vacío, todas verían la bienvenida y empezarían con el mapa cerca de Ushuaia. `playwright.config.ts` les da la bienvenida ya vista (`storageState`), y las siete specs que limpiaban `localStorage` usan `clearStorage(page)`, que limpia y la deja vista (`packages/e2e/storage.ts`). Solo `welcome.spec.ts` arranca vacía. La clave se importa de `@antartida/core/storage` (subruta nueva: el índice del core no se puede cargar fuera de Vite).
+- **Queda afuera:** el orden completo de las expediciones (#75), y el botón «Ver todo el continente», que en el celular en 3D vuelve a dejar a Ushuaia fuera de la pantalla.
+
 ### La lista tapa todo el mapa (#48, 13-11-2026)
 
 - **Problema:** con «Ver como lista» abierta, los marcadores (2D y 3D), la barra de arriba, la de abajo y la pista «arrastrá para mover» quedaban encima de la lista. En el celular, el registro de exploración tapaba el botón «Ver mapa». Pasaba porque `.vp` no crea contexto de apilamiento: los `z-index` de los marcadores (1 a 3, y 20 cuando el cartel está abierto) competían con `.listview`, que no tenía `z-index`.

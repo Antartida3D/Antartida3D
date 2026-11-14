@@ -3,6 +3,7 @@ import { basename, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromiumPath } from './browser.ts';
 import { APPS, type AppName } from './ports.ts';
+import { welcomeSeen } from './storage.ts';
 
 // Run from an app folder (`pnpm e2e`) or repository root: default to `dibujado`.
 const folder = basename(process.cwd());
@@ -19,6 +20,8 @@ export default defineConfig({
   reporter: [['list']],
   use: {
     baseURL: `http://localhost:${port}`,
+    // The first-visit welcome (#115) already seen: tests start from the overview of the map.
+    storageState: welcomeSeen(`http://localhost:${port}`),
     reducedMotion: 'reduce',
     trace: 'retain-on-failure',
     launchOptions: { executablePath: chromiumPath },

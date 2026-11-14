@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { clearStorage } from '../storage.ts';
 
 let consoleErrors: string[] = [];
 
@@ -9,7 +10,7 @@ test.beforeEach(async ({ page }) => {
   });
   page.on('pageerror', (e) => consoleErrors.push(e.message));
   await page.goto('/');
-  await page.evaluate(() => localStorage.clear());
+  await clearStorage(page);
   await page.reload();
 });
 

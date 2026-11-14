@@ -2,13 +2,14 @@ import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, 
 import {
   DRAG_THRESHOLD, EXPEDITION_POINT, HOME, KEY_PAN, MIN_K, PTS, VOYAGE_POINT, ZOOM_MS,
   buildMarkers, diveView, markerPress, geometry, isWheelNotch, keyView, panBy, wheelFactor, zoomAround, zoomCenter,
-  type MapPoint, type Marker, type SeaPoint, type Size, type View,
+  type MapPoint, type Marker, type SeaPoint, type Size, type View, type ClaimsCoverage,
 } from '@antartida/core';
 import { useReducedMotion, useTimers } from '../hooks.ts';
 import { useVoyage, type VoyageBus } from '../voyage/useVoyage.ts';
 import { Icon } from '../ui.tsx';
 import { ExplorationLog } from './ExplorationLog.tsx';
 import { Legend } from './Legend.tsx';
+import { ClaimsControl, type ClaimsSelection, type ClaimsStatus } from './ClaimsControl.tsx';
 import { ListView } from './ListView.tsx';
 import { PointSheet } from './PointSheet.tsx';
 import { ViewToggle } from './ViewToggle.tsx';
@@ -45,6 +46,8 @@ export type Layer3DProps = LayerProps & {
   onCameraRest: (view: View) => void;
   /** The trip from Ushuaia while it is under way: the scene draws the vehicle and follows it. */
   voyage: VoyageBus | null;
+  claims: { selection: ClaimsSelection; coverage: ClaimsCoverage } | null;
+  onClaimsStatus: (status: ClaimsStatus) => void;
 };
 
 export interface MapViewProps {
@@ -106,6 +109,10 @@ export function MapView({
   // Key of the marker whose label a first touch brought into view.
   const [shown, setShown] = useState<string | null>(null);
   const [list, setList] = useState(false);
+  const [claimsEnabled, setClaimsEnabled] = useState(false);
+  const [claimsSelection, setClaimsSelection] = useState<ClaimsSelection>('all');
+  const [claimsCoverage, setClaimsCoverage] = useState<ClaimsCoverage>('sectors');
+  const [claimsStatus, setClaimsStatus] = useState<ClaimsStatus>('loading');
   const later = useTimers();
   const reduced = useReducedMotion();
   const voyage = useVoyage();
@@ -355,6 +362,8 @@ export function MapView({
               command={command}
               onCameraRest={setView}
               voyage={voyaging ? voyage.bus : null}
+              claims={claimsEnabled && !voyaging ? { selection: claimsSelection, coverage: claimsCoverage } : null}
+              onClaimsStatus={setClaimsStatus}
             />
           ) : (
             <Map2DLayer geo={geo} view={view} anim={anim} phase={phase} markers={markers} shown={shown} onPick={onPick} />
@@ -378,6 +387,13 @@ export function MapView({
           {voyaging ? <span /> : (
           <div className="leftcol">
             <Legend open={legend} onToggle={onToggleLegend} mode={mode} />
+            {is3D && <ClaimsControl enabled={claimsEnabled} selection={claimsSelection} coverage={claimsCoverage} status={claimsStatus}
+              onToggle={() => {
+                if (!claimsEnabled && legend) onToggleLegend();
+                setClaimsEnabled((value) => !value);
+                setClaimsStatus('loading');
+              }}
+              onSelect={setClaimsSelection} onCoverage={setClaimsCoverage} />}
             <button type="button" className="btn" onClick={() => { setSheet(null); setList(true); }}>
               {Icon.list}
               Ver como lista

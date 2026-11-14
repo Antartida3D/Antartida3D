@@ -57,6 +57,7 @@ pnpm bench           # benchmark de rendimiento
 
 ## Fuentes y licencias
 
+- **Reclamos territoriales antárticos (#108):** capa opcional del mapa 3D, desactivada al cargar. El interruptor **Reclamos territoriales** muestra superficies transparentes de colores intensos, con bordes punteados y banderas; los botones por país permiten distinguir superposiciones. Incluye los siete países reclamantes y Pedro I como reclamo insular separado de Tierra de la Reina Maud. Ofrece **Sectores con mar** (referencia geográfica hasta 60° S) y **Solo tierra y hielo** sobre Bedmap3. El color de un sector sobre el mar no significa soberanía ni ZEE. Las fichas de los siete países describen sus reclamos y enlazan las fuentes. Banderas con ubicación y escala ilustrativas. Fuentes nacionales, Tratado Antártico, metodología y licencias en [`docs/reclamos-antarticos-fuentes.md`](docs/reclamos-antarticos-fuentes.md).
 - **Relieve Bedmap3 (apps/dibujado):** British Antarctic Survey (UK Polar Data Centre). Dataset de superficie y máscaras a 500 m en EPSG:3031, licencia [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Detalle de archivos, transformación y cita en [`docs/datos-relieve.md`](docs/datos-relieve.md).
   - Organismo: UK Polar Data Centre, British Antarctic Survey.
   - Dataset DOI: [https://doi.org/10.5285/2d0e4791-8e20-46a3-80e4-f5f6716025d2](https://doi.org/10.5285/2d0e4791-8e20-46a3-80e4-f5f6716025d2).
@@ -118,6 +119,8 @@ pnpm bench           # benchmark de rendimiento
 
 En cumplimiento con las bases de la hackatón, se declara el uso de herramientas de inteligencia artificial en el desarrollo de los prototipos:
 
+- **Reclamos territoriales antárticos (#108):**
+  > Investigación, implementación y pruebas con Codex. Seis banderas nacionales modeladas e inspeccionadas en Blender mediante MCP; se reutiliza la bandera argentina existente. Los modelos son ilustraciones de bloques, no reproducciones normativas de símbolos oficiales. Banderas editables en [`claim-flags.blend`](docs/diseno/modelos/claim-flags.blend) y generador [`build-claim-flags.py`](packages/react-ui/scripts/build-claim-flags.py). Las superficies siguen el relieve Bedmap3 existente (CC BY 4.0) y se extienden sobre el mar según meridianos documentados, conservando las superposiciones. Los bordes punteados distinguen los reclamos sin añadir altura ni paredes. No se incorporaron imágenes ni modelos de terceros.
 - **Bandera argentina en Malvinas (#97):**
   > Modelado e inspección en Blender mediante MCP, integración y verificaciones con Codex. Asta con soporte horizontal y bandera desplegada, sin animación. Por pedido del usuario, mantiene un tamaño fijo en el mundo tanto en 2D como en 3D, sin compensar el zoom. Es un símbolo ilustrativo: su ubicación y tamaño no representan un mástil real. Usa la cartografía existente; no agrega datos históricos ni recursos de terceros. Modelo editable en [`malvinas-flag.blend`](docs/diseno/modelos/malvinas-flag.blend); script de construcción y exportación en [`build-malvinas-flag.py`](packages/react-ui/scripts/build-malvinas-flag.py).
 - **App dibujada:**

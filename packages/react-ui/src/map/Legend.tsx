@@ -9,7 +9,7 @@ export function Legend({ open, onToggle, mode = '2d' }: { open: boolean; onToggl
         Leyenda
       </button>
       {open && (
-        <ul>
+        <ul tabIndex={mode === '3d' ? 0 : undefined} aria-label="Contenido de la leyenda">
           <li className="leg-note" style={{ fontStyle: 'italic', fontSize: '0.82em', opacity: 0.9 }}>{MALVINAS_FLAG.description}</li>
           {mode === '3d' && (
             <>

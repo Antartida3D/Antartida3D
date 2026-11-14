@@ -22,6 +22,7 @@ import {
 import { assemblePenguinBoxes, buildRookeryBoxes } from '../orcadas/penguins.ts';
 import { assembleWeddellSealBoxes, assembleElephantSealBoxes } from '../orcadas/seals.ts';
 import { MALVINAS_FLAG_BOXES } from '../map3d/malvinasFlagModel.ts';
+import { CLAIM_FLAG_MODELS } from '../map3d/claimFlagModels.ts';
 
 // Approximate colors. The models are illustrations, not portraits: one unit is about the length of the model.
 export const BLACK = 0x1f2a36;
@@ -568,6 +569,7 @@ export const ORCADAS_SITE: Box[] = [
 
 /** Every model of this file by name, for the test of least detail. */
 export const SCENE_MODELS: Readonly<Record<string, readonly Box[]>> = {
+  ...Object.fromEntries(Object.entries(CLAIM_FLAG_MODELS).map(([country, boxes]) => [`claimFlag:${country}`, boxes])),
   malvinasFlag: MALVINAS_FLAG_BOXES,
   ...Object.fromEntries(Object.entries(MODELS).map(([id, m]) => [id, [...m.body, ...(m.wing ?? []), ...(m.wing ?? [])]])),
   ...Object.fromEntries(Object.entries(SEA_MODELS).map(([id, boxes]) => [`sea:${id}`, boxes])),

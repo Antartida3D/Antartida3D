@@ -66,15 +66,6 @@ export const POINT_DETAILS: Readonly<Record<string, { desc: string; sources: rea
       { label: 'Four unreported emperor penguin colonies discovered by satellite', org: 'Antarctic Science (Cambridge University Press)', url: 'https://www.cambridge.org/core/journals/antarctic-science/article/four-unreported-emperor-penguin-colonies-discovered-by-satellite/20956FD3E80F3604C21D0E2AA80FEF9B', consulted: '2026-11-13' },
     ],
   },
-  fosiles: {
-    desc: 'La Isla Marambio tiene laderas sin hielo con fósiles de plantas, invertebrados y vertebrados. Sus maderas fósiles muestran que en el Eoceno crecían allí bosques de coníferas, en un clima templado. Cerca de la Base Marambio, un investigador del CONICET halló en 2018 al reptil marino Marambionectes molinai, de unos 67 millones de años. De la misma época es el ave buceadora Pujatopouli soberana, que nadaba en un mar mucho más templado que el actual.',
-    sources: [
-      { label: 'Cretaceous – Paleogene transition at Seymour (Marambio) Island', org: 'International Union of Geological Sciences (IUGS) · Geoheritage', url: 'https://iugs-geoheritage.org/geoheritage_sites/cretaceous-paleogene-k-pg-transition-at-seymour-marambio-island-antarctica/', consulted: '2026-11-13' },
-      { label: 'New insights into the Eocene Western Antarctic forests: fossil woods from La Meseta Formation', org: 'CONICET · Bicyt', url: 'https://bicyt.conicet.gov.ar/fichas/produccion/11775307', consulted: '2026-11-13' },
-      { label: 'Hallan en la Antártida restos de una nueva especie de un reptil extinto hace 67 millones de años', org: 'CONICET', url: 'https://www.conicet.gov.ar/web-accesible/?nota_id=136847', consulted: '2026-11-13' },
-      { label: 'Reportan el hallazgo de un nuevo género y especie de ave buceadora que habitó la Antártida hace 67 millones de años', org: 'CONICET La Plata', url: 'https://laplata.conicet.gov.ar/reportan-el-hallazgo-de-un-nuevo-genero-y-especie-de-ave-buceadora-que-habito-la-antartida-hace-67-millones-de-anos/', consulted: '2026-11-13' },
-    ],
-  },
   oceano: {
     desc: 'Bajo el hielo marino viven microalgas que alimentan al krill en invierno y primavera, y casi todos los animales grandes de la Antártida dependen del krill. En el Mar de Weddell, el agua muy fría y salada se hunde hasta el fondo: es el Agua de Fondo Antártica, que ayuda a mover la circulación de todo el océano. Esa agua lleva oxígeno a las profundidades y guarda carbono lejos de la atmósfera durante siglos. Bajo el hielo fijo vive la foca de Weddell, que mantiene abiertos sus respiraderos raspando el hielo con los dientes.',
     sources: [

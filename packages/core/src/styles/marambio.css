@@ -1,0 +1,92 @@
+/* Base Marambio expedition (.mar). It shares the layout of the Orcadas one (.orc): scene, top bar,
+   scene label, dots and panel. Only what is its own goes here. Uses tokens from tokens.css. */
+
+/* The panel holds a few short cards: on wide screens it takes their height, not the whole side. */
+@media (min-width: 900px) {
+  .mar .orc-panel {
+    bottom: auto;
+    width: 420px;
+  }
+}
+
+.mar-sources {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mar-source {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: #FBF4E6;
+  border: 1.5px solid rgba(31, 42, 54, 0.42);
+  border-radius: 6px 14px 8px 12px;
+  padding: 8px 10px;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--ink);
+}
+
+.mar-source.is-highlight {
+  border-color: var(--oxide);
+  box-shadow: 2px 3px 0 rgba(31, 42, 54, 0.16);
+}
+
+.mar-source strong {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 14px;
+}
+
+.mar-source a {
+  align-self: flex-start;
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--deep);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.mar-source a:focus-visible {
+  outline: 2px solid var(--deep);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Dots over the drawing shown without WebGL. With WebGL the scene places them with a transform. */
+.mar .orc-hs {
+  left: calc(var(--fx) * 1%);
+  top: calc(var(--fy) * 1%);
+}
+
+/* On a portrait phone the drawing is shown whole above the sheet, not cut to fill the screen. */
+@media (max-width: 899px) and (orientation: portrait) {
+  .mar .orc-fallback {
+    inset: 72px 0 auto 0;
+    height: 56.25vw;
+  }
+
+  .mar:has(.orc-fallback) .orc-hs {
+    top: calc(72px + var(--fy) * 0.5625vw);
+  }
+}
+
+/* On a wide screen the drawing sits whole left of the card, and the dots share its box. */
+@media (min-width: 900px) {
+  .mar .orc-fallback,
+  .mar:has(.orc-fallback) .orc-hotspots {
+    inset: 86px auto auto 24px;
+    width: min(calc(100vw - 492px), calc((100dvh - 110px) * 16 / 9));
+    height: auto;
+    aspect-ratio: 16 / 9;
+  }
+}
+
+/* With WebGL the dots wait for the scene: until it has placed them they would float over nothing. */
+.mar:has(canvas) .orc-hotspots:not([data-ready]) {
+  visibility: hidden;
+}

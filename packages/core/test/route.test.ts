@@ -95,7 +95,7 @@ describe('Ushuaia–Marambio route', () => {
     expect(dist(routeAt(0), USHUAIA)).toBeLessThan(0.01);
     expect(dist(routeAt(1), MARAMBIO)).toBeLessThan(0.01);
     expect(dist(routeAt(0), pt('campana'))).toBeLessThan(1);
-    expect(dist(routeAt(1), pt('fosiles'))).toBeLessThan(1);
+    expect(dist(routeAt(1), pt('marambio'))).toBeLessThan(1);
   });
 
   it('draws the SVG path from the same endpoints', () => {

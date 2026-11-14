@@ -8,6 +8,7 @@ import {
   POLY_MIN_COLORS,
   POLY_MIN_TRIS,
   PRESHADED,
+  shift,
   type Tri,
   type Vec3,
 } from '../src/voyage/lowPoly.ts';
@@ -18,10 +19,16 @@ import {
   buildModuleTris,
   buildOmondTris,
   buildRadioTowerTris,
+  buildStevensonDoorTris,
+  buildStevensonInstrumentsTris,
   buildStevensonScreenTris,
   buildWindCupsTris,
   buildWindMastBaseTris,
   buildWindVaneTris,
+  SCREEN_DOOR_DURATION,
+  SCREEN_DOOR_HINGE,
+  SCREEN_DOOR_OPEN_ANGLE,
+  screenDoorAngle,
 } from '../src/orcadas/lowPolyBuildings.ts';
 import { buildStageDetailTris, FLAG_SEGMENT_WIDTH, VOXEL_PALETTE } from '../src/orcadas/stationModels.ts';
 import { inward } from './polyHelpers.ts';
@@ -288,5 +295,65 @@ describe('Orcadas low-poly buildings and structures', () => {
     const pGeo = buildPolyGeometry([preshadedTri], () => 0.1);
     const pCol = pGeo.getAttribute('color').array as Float32Array;
     expect(pCol[0]).toBeCloseTo(1, 4);
+  });
+
+  it('Stevenson door and instruments meet detail, outward winding, containment and closed bbox', () => {
+    const body = buildStevensonScreenTris();
+    const door = buildStevensonDoorTris();
+    const instruments = buildStevensonInstrumentsTris();
+
+    for (const [name, tris] of [
+      ['stevensonDoor', door],
+      ['stevensonInstruments', instruments],
+    ] as const) {
+      const colors = new Set(tris.map((t) => t[3]));
+      expect(tris.length, name).toBeGreaterThanOrEqual(POLY_MIN_TRIS);
+      expect(colors.size, name).toBeGreaterThanOrEqual(POLY_MIN_COLORS);
+      for (const t of tris) {
+        expect(t.slice(0, 3).flat().every(Number.isFinite)).toBe(true);
+      }
+      const box = triBBox(tris);
+      expect(inward(tris, bboxCenter(box)) / tris.length, name).toBeLessThan(0.5);
+    }
+
+    const closedCombined = [...body, ...shift(door, ...SCREEN_DOOR_HINGE)];
+    const closedBox = triBBox(closedCombined);
+    for (let axis = 0; axis < 3; axis++) {
+      expect(Math.abs(closedBox.min[axis] - EXPECTED_BBOXES.stevensonScreen.min[axis])).toBeLessThanOrEqual(0.02);
+      expect(Math.abs(closedBox.max[axis] - EXPECTED_BBOXES.stevensonScreen.max[axis])).toBeLessThanOrEqual(0.02);
+    }
+
+    const bodyBox = triBBox(body);
+    const instBox = triBBox(instruments);
+    for (let axis = 0; axis < 3; axis++) {
+      expect(instBox.min[axis]).toBeGreaterThanOrEqual(bodyBox.min[axis]);
+      expect(instBox.max[axis]).toBeLessThanOrEqual(bodyBox.max[axis]);
+    }
+  });
+
+  it('screenDoorAngle animates smoothly between 0 and ~110 deg and jumps when reduced', () => {
+    expect(screenDoorAngle(false, SCREEN_DOOR_DURATION, false)).toBe(0);
+    expect(screenDoorAngle(true, 0, false)).toBe(0);
+
+    const mid = screenDoorAngle(true, SCREEN_DOOR_DURATION / 2, false);
+    expect(mid).toBeCloseTo(SCREEN_DOOR_OPEN_ANGLE / 2, 6);
+
+    const early = screenDoorAngle(true, SCREEN_DOOR_DURATION * 0.25, false);
+    expect(early).toBeGreaterThan(0);
+    expect(early).toBeLessThan(SCREEN_DOOR_OPEN_ANGLE * 0.25);
+
+    expect(screenDoorAngle(true, SCREEN_DOOR_DURATION, false)).toBeCloseTo(SCREEN_DOOR_OPEN_ANGLE, 6);
+    expect(screenDoorAngle(true, SCREEN_DOOR_DURATION * 2, false)).toBeCloseTo(SCREEN_DOOR_OPEN_ANGLE, 6);
+
+    // Reduced motion jumps straight to target with no intermediate values
+    expect(screenDoorAngle(true, 0, true)).toBeCloseTo(SCREEN_DOOR_OPEN_ANGLE, 6);
+    expect(screenDoorAngle(true, SCREEN_DOOR_DURATION * 0.25, true)).toBeCloseTo(SCREEN_DOOR_OPEN_ANGLE, 6);
+    expect(screenDoorAngle(false, 0, true)).toBe(0);
+    expect(screenDoorAngle(false, SCREEN_DOOR_DURATION * 0.25, true)).toBe(0);
+
+    // Closing returns smoothly to 0
+    expect(screenDoorAngle(false, 0, false)).toBeCloseTo(SCREEN_DOOR_OPEN_ANGLE, 6);
+    expect(screenDoorAngle(false, SCREEN_DOOR_DURATION / 2, false)).toBeCloseTo(SCREEN_DOOR_OPEN_ANGLE / 2, 6);
+    expect(screenDoorAngle(false, SCREEN_DOOR_DURATION, false)).toBe(0);
   });
 });

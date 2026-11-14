@@ -66,54 +66,55 @@ Estado: **aprobado por Lk (14 nov 2026).** Rama `125-orcadas-modal-y-puerta-del-
 
 ## Pasos
 
-- [ ] 1. Línea base. Correr `pnpm test` (anotar el conteo de core y react-ui), `pnpm typecheck` y los e2e de Orcadas en desktop. → verificar: los conteos anotados en el issue #125.
-- [ ] 2. `packages/react-ui/src/orcadas/OrcadasIntro.tsx`: componente `OrcadasIntro({ onStart, onExit })` con `BottomSheet` (`packages/react-ui/src/BottomSheet.tsx`), scrim, `useFocusReturn` y `labelledBy`.
+- [x] 1. Línea base. Correr `pnpm test` (anotar el conteo de core y react-ui), `pnpm typecheck` y los e2e de Orcadas en desktop. → verificar: los conteos anotados en el issue #125.
+- [x] 2. `packages/react-ui/src/orcadas/OrcadasIntro.tsx`: componente `OrcadasIntro({ onStart, onExit })` con `BottomSheet` (`packages/react-ui/src/BottomSheet.tsx`), scrim, `useFocusReturn` y `labelledBy`.
   - Contenido: h2 «Estación Orcadas», la pregunta guía, una frase de qué se hace y la lista de los 4 capítulos con `CHAPTER_NAMES`.
   - Botones «Comenzar expedición» (primario) y «Volver al mapa».
   - Textos nuevos, si los hay: como constante en `packages/core/src/content/orcadas.ts` (fuente única), sin datos sin fuente.
   - → verificar: `pnpm typecheck`.
-- [ ] 3. `packages/react-ui/src/map/MapView.tsx:347-355`: en la rama `tier === 'A'`, guardar el punto pendiente y mostrar `OrcadasIntro`. `onStart` del panel llama al `onStart(p)` de hoy; `onExit` lo cierra. Si `AntarcticaApp` tiene `phase !== 'idle'`, el panel no se abre (mismo guard que `start`). → verificar: en `pnpm dev`, al tocar Orcadas en 2D, en 3D y en la lista aparece el panel; «Comenzar» entra igual que antes y Escape lo cierra con el foco devuelto.
-- [ ] 4. e2e del panel: un test nuevo en `packages/e2e/tests/orcadas.spec.ts`.
+- [x] 3. `packages/react-ui/src/map/MapView.tsx:347-355`: en la rama `tier === 'A'`, guardar el punto pendiente y mostrar `OrcadasIntro`. `onStart` del panel llama al `onStart(p)` de hoy; `onExit` lo cierra. Si `AntarcticaApp` tiene `phase !== 'idle'`, el panel no se abre (mismo guard que `start`). → verificar: en `pnpm dev`, al tocar Orcadas en 2D, en 3D y en la lista aparece el panel; «Comenzar» entra igual que antes y Escape lo cierra con el foco devuelto.
+- [x] 4. e2e del panel: un test nuevo en `packages/e2e/tests/orcadas.spec.ts`.
   - Abre el panel desde el marcador y desde la lista, y comprueba el foco atrapado.
   - Escape y «Volver al mapa» cierran el panel y devuelven el foco.
   - «Comenzar expedición» muestra `ORCADAS_GUIDING_QUESTION`.
   - Revisa a 390 px que no haya scroll horizontal.
   - → verificar: `npx playwright test orcadas.spec --project=desktop --project=mobile`.
-- [ ] 5. Adaptar los e2e del blast radius: después del clic en Orcadas, pulsar «Comenzar expedición». Si se repite, hacerlo en un helper compartido dentro de `packages/e2e/tests/`. → verificar: `npx playwright test orcadas map3d no-webgl --project=desktop --project=mobile` en verde.
-- [ ] 6. `lowPolyBuildings.ts`: partir el abrigo en tres piezas.
+- [x] 5. Adaptar los e2e del blast radius: después del clic en Orcadas, pulsar «Comenzar expedición». Si se repite, hacerlo en un helper compartido dentro de `packages/e2e/tests/`. → verificar: `npx playwright test orcadas map3d no-webgl --project=desktop --project=mobile` en verde.
+- [x] 6. `lowPolyBuildings.ts`: partir el abrigo en tres piezas.
   - `buildStevensonScreenTris()` queda como el cuerpo, sin la hoja de la puerta. El hueco de la puerta deja ver el interior: se saca el bloque macizo `SEA_GREY` (`:757-759`) y queda un fondo y piso interior oscuro.
   - `buildStevensonDoorTris()`: la hoja con persianas, bisagras y pasador, con el pivote en la bisagra en el origen.
   - `SCREEN_DOOR_HINGE: Vec3`: dónde va esa bisagra dentro del abrigo.
   - `buildStevensonInstrumentsTris()`: soporte con los termómetros seco y húmedo (verticales; el húmedo con su muselina y su recipiente de agua) y los de máxima y mínima (horizontales). Detalle: bulbos con `lathe`, escala blanca, columna roja o plateada.
   - Colores con nombre en `VOXEL_PALETTE` si hacen falta (regla 30.5).
   - → verificar: `pnpm --filter @antartida/react-ui test` (la caja envolvente del cuerpo más la puerta cerrada sigue igual).
-- [ ] 7. Función pura `screenDoorAngle(open: boolean, t: number, reduced: boolean)`, o el patrón de `arrivalRef` con `smooth01` (`StationScene.tsx:762-769`): de 0 a unos 110° en unos 0,8 s, con suavizado; con `reduced`, directo al ángulo final. Va en `lowPolyBuildings.ts` o en un módulo puro chico, para poder probarla. → verificar: test del paso 9.
-- [ ] 8. `StationScene.tsx`:
+- [x] 7. Función pura `screenDoorAngle(open: boolean, t: number, reduced: boolean)`, o el patrón de `arrivalRef` con `smooth01` (`StationScene.tsx:762-769`): de 0 a unos 110° en unos 0,8 s, con suavizado; con `reduced`, directo al ángulo final. Va en `lowPolyBuildings.ts` o en un módulo puro chico, para poder probarla. → verificar: test del paso 9.
+- [x] 8. `StationScene.tsx`:
   - Prop nuevo `screenOpen?: boolean` en `StationSceneProps` y en `StationElements`.
   - En el render del elemento `screen` (`:1226-1240`), sumar un grupo con la puerta en `SCREEN_DOOR_HINGE` (que rota en `useFrame`) y el mesh de los instrumentos. Mismo `vehicleMaterial`, geometrías con `buildPolyGeometry(..., boxShade)` y liberadas en el cleanup (`:932-947`).
   - Llamar a `invalidate()` mientras la puerta se mueve (`frameloop="demand"`).
   - Con `screenOpen`, la cámara usa la pose del hotspot del abrigo (`poseForHotspot`, `Hotspots.tsx:145-154`) si todavía no está ahí.
   - → verificar: `pnpm typecheck`.
-- [ ] 9. Tests en `packages/react-ui/test/orcadasLowPoly.test.ts`:
+- [x] 9. Tests en `packages/react-ui/test/orcadasLowPoly.test.ts`:
   - la puerta y los instrumentos cumplen `POLY_MIN_TRIS` y `POLY_MIN_COLORS` y tienen caras hacia afuera;
   - con la puerta cerrada, cuerpo más puerta conservan la caja envolvente fijada;
   - los instrumentos quedan dentro del abrigo (su caja dentro de la del cuerpo);
   - `screenDoorAngle`: cerrada en 0; abierta al final de la animación; con `reduced`, abierta sin pasos intermedios; cierre de vuelta a 0.
   - → verificar: `pnpm --filter @antartida/react-ui test`.
-- [ ] 10. `OrcadasExpedition.tsx` (y `Observation.tsx` si hace falta): calcular `screenOpen` según S4 y pasarlo a `StationScene` (`:420-434`). → verificar: e2e `orcadas-observation.spec.ts` en desktop y mobile, más una aserción nueva de que la cámara del diorama queda en la toma del abrigo durante la lectura (por ejemplo con `window.__orcadasCamera.getTarget`).
+- [x] 10. `OrcadasExpedition.tsx` (y `Observation.tsx` si hace falta): calcular `screenOpen` según S4 y pasarlo a `StationScene` (`:420-434`). → verificar: e2e `orcadas-observation.spec.ts` en desktop y mobile, más una aserción nueva de que la cámara del diorama queda en la toma del abrigo durante la lectura (por ejemplo con `window.__orcadasCamera.getTarget`).
+- [x] 3a. > Enmienda: si el panel «Desde Ushuaia» está abierto (por ejemplo tras la bienvenida), tocar Orcadas lo cierra antes de abrir el panel de inicio (`onEndVoyage(false)`), para no apilar dos paneles. Antes, Orcadas arrancaba directo y también lo abandonaba.
 - [ ] 11. Capturas en Chromium con `--use-angle=vulkan` a 1440 y 390 px:
   - el panel de inicio desde el mapa 2D y desde el 3D;
   - el abrigo durante la lectura (puerta abierta con los instrumentos);
   - el abrigo después de anotar (puerta cerrada).
   - Mostrárselas a Lk antes del PR.
   - → verificar: aprobación de Lk.
-- [ ] 12. Gestos del mapa en el diorama. Delegable a agy en un solo encargo, porque no toca los archivos de los pasos 2 a 10 salvo `StationScene.tsx:1715-1735` y `:1931`.
+- [x] 12. Gestos del mapa en el diorama. Delegable a agy en un solo encargo, porque no toca los archivos de los pasos 2 a 10 salvo `StationScene.tsx:1715-1735` y `:1931`.
   - Crear `packages/react-ui/src/map3d/useMapGestures.ts` con un hook `useMapGestures(controlsRef, options)`. Fija `mouseButtons` (izquierdo `SCREEN_PAN`, derecho `ROTATE`) y `touches` (`one: TOUCH_SCREEN_PAN`, `two: NONE`), y conecta los dos dedos como hoy `Map3DLayer.tsx:368-420`, sobre `@antartida/core/gestures.ts`.
   - Las opciones cubren lo que difiere entre el mapa y el diorama (límites de distancia y de inclinación, `invalidate`), sin configuración de más.
   - `Map3DLayer.tsx` pasa a usar el hook, sin cambiar su comportamiento. `StationCameraAndProjection` (`StationScene.tsx:1715-1735`) también lo usa, con sus límites actuales y conservando `dollyToCursor`.
   - → verificar: `pnpm typecheck`; `npx playwright test map3d --project=desktop --project=mobile` en verde; prueba a mano en `pnpm dev` con la emulación táctil de Chromium (un dedo desplaza; dos dedos pellizcan, giran e inclinan) en el mapa y en el diorama.
   - Test: e2e nuevo en `packages/e2e/tests/orcadas.spec.ts`, en el proyecto `mobile`. Un arrastre con un dedo (`page.touchscreen` o eventos de puntero táctiles) cambia el target de `window.__orcadasCamera` sin cambiar su ángulo polar; un pellizco cambia `distance`.
-- [ ] 13. `README.md`: entrada de declaración de IA de #125. → verificar: `git diff README.md`.
+- [x] 13. `README.md`: entrada de declaración de IA de #125. → verificar: `git diff README.md`.
 - [ ] 14. Cierre: `git rebase origin/main`, `pnpm test && pnpm typecheck && pnpm build` y los e2e `orcadas*`, `map3d`, `no-webgl` y `flow` en desktop y mobile. Commit y PR con `Closes #125`; el push lo corre Lk. → verificar: todo en verde y el link del PR.
 
 ## Tests nuevos

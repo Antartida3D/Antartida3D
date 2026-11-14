@@ -1,5 +1,7 @@
 /* Trip from Ushuaia (issue #4): panel laid over the live map. */
 .sheet.voyage{z-index:6}
+/* The Orcadas intro sheet and its scrim cover the bottom bar (.bottom, z-index 10) on phones. */
+.sheet.voyage.orc-intro,.vscrim.orc-intro{z-index:20}
 .vscrim{z-index:6}
 .sheet.voyage p{margin:8px 0}
 /* The actions stay in view at the bottom of the sheet however long its content is. */

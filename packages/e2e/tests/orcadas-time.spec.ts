@@ -1,16 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
 import { clearStorage } from '../storage.ts';
-import { ORCADAS_GUIDING_QUESTION } from '../../core/src/content/orcadas.ts';
 import { recordSpanText } from '../../core/src/orcadas.ts';
+import { openOrcadasFromMap } from './orcadas-helpers.ts';
 
 async function openOrcadasChapter(page: Page, stepName: 'Viajar' | 'Responder' | 'Llegar' | 'Observar') {
-  const cluster = page.getByRole('button', { name: /Grupo de .*Estación Orcadas/ });
-  if (await cluster.isVisible()) await cluster.click();
-  await page.getByRole('button', { name: /^Estación Orcadas, Islas Orcadas del Sur/ }).click();
-  await expect(page.getByRole('heading', { level: 2, name: ORCADAS_GUIDING_QUESTION })).toBeVisible();
-  await page.waitForFunction(
-    () => (window as unknown as { __orcadasReady?: boolean }).__orcadasReady === true
-  );
+  await openOrcadasFromMap(page);
   if (stepName !== 'Llegar') {
     await page
       .getByRole('navigation', { name: 'Capítulos de la expedición' })

@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { Box3, Vector3 } from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { CameraControls, CameraControlsImpl, PerformanceMonitor } from '@react-three/drei';
+import { CameraControls, PerformanceMonitor } from '@react-three/drei';
 import { EffectComposer } from '@react-three/postprocessing';
 import {
   homePose3D,
@@ -25,10 +25,6 @@ import {
   fromWorld,
   minCameraDistance,
   MAX_POLAR_DEG,
-  TILT_SCREEN_FRACTION,
-  moveTwoFingers,
-  startTwoFingers,
-  type TwoFingerState,
   PAN_LIMIT,
   SEA_HINT_MIN_PX,
   screenPx,
@@ -56,6 +52,7 @@ import { MalvinasFlag } from './MalvinasFlag.tsx';
 import { Claims3D } from './Claims3D.tsx';
 import { Graticule3D } from './Graticule3D.tsx';
 import { InkEffect } from './InkEffect.ts';
+import { useMapGestures } from './useMapGestures.ts';
 import { SeaTimeContext, useAnimationClock } from './useAnimationClock.ts';
 import { Town3D } from '../voyage/Town3D.tsx';
 import { Storm3D } from '../voyage/Storm3D.tsx';
@@ -222,6 +219,19 @@ function ControlsBridge({
   const approach = useRef<{ from: CameraPose; to: CameraPose; startMs: number } | null>(null);
   const live = useRef({ size, geo, onCameraRest });
   live.current = { size, geo, onCameraRest };
+  // Boundary box enclosing continent and surrounding ocean navigation area
+  const boundary = useMemo(
+    () => new Box3(new Vector3(-PAN_LIMIT, -50, -PAN_LIMIT), new Vector3(PAN_LIMIT, 2500, PAN_LIMIT)),
+    []
+  );
+
+  useMapGestures(controlsRef, {
+    minPolarAngle: 0,
+    maxPolarAngle: (MAX_POLAR_DEG * Math.PI) / 180,
+    smoothTime: 0.25,
+    boundary,
+    invalidate,
+  });
 
   useLayoutEffect(() => {
     const cc = controlsRef.current;
@@ -231,22 +241,6 @@ function ControlsBridge({
     (window as unknown as { __invalidate?: () => void }).__invalidate = invalidate;
     (window as unknown as { __scene?: unknown }).__scene = scene;
     (window as unknown as { __gl?: unknown }).__gl = gl;
-
-    cc.minPolarAngle = 0;
-    cc.maxPolarAngle = (MAX_POLAR_DEG * Math.PI) / 180;
-    cc.smoothTime = 0.25;
-
-    // Dragging moves over the map, like in the 2D view; the right button turns and tilts. Two
-    // fingers are handled below (twoFingers): the built-in action cannot tell a twist from a drag.
-    const { ACTION } = CameraControlsImpl;
-    cc.mouseButtons.left = ACTION.SCREEN_PAN;
-    cc.mouseButtons.right = ACTION.ROTATE;
-    cc.touches.one = ACTION.TOUCH_SCREEN_PAN;
-    cc.touches.two = ACTION.NONE;
-
-    // Boundary box enclosing continent and surrounding ocean navigation area
-    const bbox = new Box3(new Vector3(-PAN_LIMIT, -50, -PAN_LIMIT), new Vector3(PAN_LIMIT, 2500, PAN_LIMIT));
-    cc.setBoundary(bbox);
 
     if (phase === 'approach') {
       const from = { pos: cc.getPosition(new Vector3()), target: cc.getTarget(new Vector3()) };
@@ -370,64 +364,6 @@ function ControlsBridge({
     onCameraRest(viewFrom3D(size, geo, cc.getTarget(new Vector3()), endDistance));
     invalidate();
   }, [command]);
-
-  // Two fingers, like in a globe app: pinching zooms, twisting turns the camera and dragging both
-  // up or down tilts it. The gesture itself is in @antartida/core (gestures.ts).
-  useEffect(() => {
-    const el = gl.domElement;
-    const fingers = new Map<number, { x: number; y: number }>();
-    let gesture: TwoFingerState | null = null;
-    // Distance the pinch is heading to, and the easing to give back when the fingers lift.
-    let goal = 0;
-    let easing: number | null = null;
-    const pair = () => [...fingers.values()] as [{ x: number; y: number }, { x: number; y: number }];
-    const onDown = (e: PointerEvent) => {
-      if (e.pointerType !== 'touch') return;
-      fingers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-      gesture = fingers.size === 2 ? startTwoFingers(...pair()) : null;
-      const cc = controlsRef.current;
-      if (gesture && cc && easing === null) {
-        goal = cc.distance;
-        // As quick as the library's own drags. It still eases a little: with no easing at all the
-        // library never reports that the camera came to rest, and the markers would not regroup.
-        easing = cc.smoothTime;
-        cc.smoothTime = cc.draggingSmoothTime;
-      }
-    };
-    const onMove = (e: PointerEvent) => {
-      if (!fingers.has(e.pointerId)) return;
-      fingers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-      const cc = controlsRef.current;
-      if (!gesture || !cc || !cc.enabled) return;
-      const step = moveTwoFingers(gesture, ...pair());
-      gesture = step.state;
-      if (step.zoom !== 1) {
-        goal = Math.min(cc.maxDistance, Math.max(cc.minDistance, goal / step.zoom));
-        void cc.dollyTo(goal, true);
-      }
-      // Fingers up tilt the view towards the horizon; the whole range takes TILT_SCREEN_FRACTION of the screen.
-      const tilt = (-step.tilt * cc.maxPolarAngle) / (TILT_SCREEN_FRACTION * el.clientHeight);
-      if (step.turn !== 0 || tilt !== 0) void cc.rotate(step.turn, tilt, true);
-      invalidate();
-    };
-    const onUp = (e: PointerEvent) => {
-      if (!fingers.delete(e.pointerId)) return;
-      gesture = null;
-      const cc = controlsRef.current;
-      if (cc && easing !== null) cc.smoothTime = easing;
-      easing = null;
-    };
-    el.addEventListener('pointerdown', onDown);
-    window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup', onUp);
-    window.addEventListener('pointercancel', onUp);
-    return () => {
-      el.removeEventListener('pointerdown', onDown);
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onUp);
-      window.removeEventListener('pointercancel', onUp);
-    };
-  }, [gl, invalidate]);
 
   const target = useRef(new Vector3());
   const eye = useRef(new Vector3());

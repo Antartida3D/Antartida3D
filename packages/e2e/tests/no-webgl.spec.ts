@@ -57,5 +57,6 @@ test('without WebGL the app falls back cleanly to 2D and «Relieve 3D» says how
   const dialog = page.getByRole('dialog', { name: 'Todos los puntos' });
   await expect(dialog).toBeVisible();
   await dialog.getByRole('button', { name: /Estación Orcadas/ }).click();
+  await page.getByRole('dialog', { name: 'Estación Orcadas' }).getByRole('button', { name: 'Comenzar expedición' }).click();
   await expect(page.getByRole('heading', { level: 2, name: ORCADAS_GUIDING_QUESTION })).toBeVisible();
 });

@@ -77,10 +77,12 @@ test.describe('3D relief view', () => {
     await clusterOrMarker.click();
 
     // If it was in a cluster, clicking it zooms in and separates the points; then click the marker.
+    const intro = page.getByRole('dialog', { name: 'Estación Orcadas' });
     const orcadasBtn = page.getByRole('button', { name: /Estación Orcadas.*Expedición disponible/ });
-    if (await orcadasBtn.isVisible()) {
+    if (!(await intro.isVisible()) && (await orcadasBtn.isVisible())) {
       await orcadasBtn.click();
     }
+    await intro.getByRole('button', { name: 'Comenzar expedición' }).click();
 
     await expect(page.getByRole('heading', { level: 2, name: ORCADAS_GUIDING_QUESTION })).toBeVisible({ timeout: 10000 });
   });

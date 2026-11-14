@@ -1,8 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
 import { clearStorage } from '../storage.ts';
-import { ORCADAS_GUIDING_QUESTION } from '../../core/src/content/orcadas.ts';
 import { ORCADAS_CLIMATE } from '../../core/src/content/orcadas-series.ts';
 import { beaufort, observationFor, type Reading } from '../../core/src/orcadas.ts';
+import { openOrcadasFromMap } from './orcadas-helpers.ts';
 
 const primary = (page: Page) => page.locator('.ebar .btn.primary');
 
@@ -16,13 +16,7 @@ function currentExpectedReading(): Reading {
 }
 
 async function openOrcadasObservation(page: Page) {
-  const cluster = page.getByRole('button', { name: /Grupo de .*Estación Orcadas/ });
-  if (await cluster.isVisible()) await cluster.click();
-  await page.getByRole('button', { name: /^Estación Orcadas, Islas Orcadas del Sur/ }).click();
-  await expect(page.getByRole('heading', { level: 2, name: ORCADAS_GUIDING_QUESTION })).toBeVisible();
-  await page.waitForFunction(
-    () => (window as unknown as { __orcadasReady?: boolean }).__orcadasReady === true
-  );
+  await openOrcadasFromMap(page);
   await page
     .getByRole('navigation', { name: 'Capítulos de la expedición' })
     .getByRole('button', { name: /Observar/ })
@@ -223,5 +217,20 @@ test.describe('Orcadas · observación', () => {
     await expect(page.locator('.orc-done-summary')).toContainText('4 de 4 lecturas dentro del margen');
     await page.locator('details.orc-more', { hasText: 'Tu observación del día' }).locator('> summary').click();
     await expect(page.locator('.orc-done-readings')).toContainText(windBf.name);
+  });
+
+  test('frames the Stevenson screen while reading temperature', async ({ page }) => {
+    await openOrcadasObservation(page);
+    await expect(page.locator('.orc-obs')).toBeVisible();
+    await page.waitForFunction(() => {
+      const cc = (
+        window as unknown as {
+          __orcadasCamera?: { getTarget: () => { x: number; z: number } };
+        }
+      ).__orcadasCamera;
+      if (!cc) return false;
+      const t = cc.getTarget();
+      return Math.hypot(t.x - -3.9, t.z - 0.9) < 1.5;
+    });
   });
 });

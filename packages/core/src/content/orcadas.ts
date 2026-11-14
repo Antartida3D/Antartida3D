@@ -2,6 +2,10 @@ import type { Chapter } from '../orcadas.ts';
 
 export const ORCADAS_GUIDING_QUESTION = '¿Cuánto cambió el clima de la isla Laurie en 120 años?';
 
+/** Activity summary for the pre-expedition intro sheet (describes user actions, not scientific data). */
+export const ORCADAS_INTRO_DESC =
+  'Recorré la base, registrá una observación del día, explorá la serie histórica y respondé la pregunta.';
+
 /** Short chapter names (buttons, Sources panel) and panel headings. Single source for the UI. */
 export const CHAPTER_NAMES: Record<Chapter, string> = {
   arrival: 'Llegar',

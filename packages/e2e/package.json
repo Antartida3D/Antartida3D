@@ -5,9 +5,11 @@
   "type": "module",
   "exports": {
     "./ports": "./ports.ts",
-    "./browser": "./browser.ts"
+    "./browser": "./browser.ts",
+    "./storage": "./storage.ts"
   },
   "devDependencies": {
+    "@antartida/core": "workspace:*",
     "@playwright/test": "1.65.0"
   }
 }

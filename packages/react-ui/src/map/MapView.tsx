@@ -1,10 +1,10 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import {
   DRAG_THRESHOLD, EXPEDITION_POINT, HOME, KEY_PAN, MIN_K, PTS, VOYAGE_POINT, ZOOM_MS,
-  buildMarkers, diveView, markerPress, geometry, isWheelNotch, keyView, panBy, wheelFactor, zoomAround, zoomCenter,
+  buildMarkers, diveView, markerPress, geometry, isWheelNotch, keyView, panBy, welcomeView, wheelFactor, zoomAround, zoomCenter,
   type MapPoint, type Marker, type SeaPoint, type Size, type View, type ClaimsCoverage,
 } from '@antartida/core';
-import { useReducedMotion, useTimers } from '../hooks.ts';
+import { usePageSettled, useReducedMotion, useTimers } from '../hooks.ts';
 import { useVoyage, type VoyageBus } from '../voyage/useVoyage.ts';
 import { Icon } from '../ui.tsx';
 import { ExplorationLog } from './ExplorationLog.tsx';
@@ -60,6 +60,10 @@ export interface MapViewProps {
   legend: boolean;
   /** Move focus to the expedition marker on mount (coming back from the expedition). */
   focusExpedition: boolean;
+  /** First visit (#115): come close to «Desde Ushuaia», show its label and say to start there. */
+  welcome?: boolean;
+  /** The welcome is on screen: it must not show again. */
+  onWelcomeShown?: () => void;
   mode?: ViewMode;
   showToggle?: boolean;
   Layer3D?: (props: Layer3DProps) => React.ReactNode;
@@ -91,6 +95,8 @@ export function MapView({
   toast,
   legend,
   focusExpedition,
+  welcome = false,
+  onWelcomeShown,
   mode = '2d',
   showToggle = false,
   Layer3D,
@@ -126,8 +132,10 @@ export function MapView({
   const live = useRef({ size, view, phase, is3D });
   live.current = { size, view, phase, is3D };
 
+  /** Moves the 3D camera; `send3D` when the user asked for it. */
+  const queue3D = (cmd: Camera3DCommand) => setCommand((c) => ({ n: (c?.n ?? 0) + 1, cmd }));
   const send3D = (cmd: Camera3DCommand) => {
-    setCommand((c) => ({ n: (c?.n ?? 0) + 1, cmd }));
+    queue3D(cmd);
     setTouched(true);
   };
 
@@ -184,12 +192,44 @@ export function MapView({
     setView(diveView(live.current.size, diveTarget.x, diveTarget.y));
   }, [phase, diveTarget]);
 
-  const animateTo = (next: View) => {
+  /** Eases the 2D map to `next`; `animateTo` when the user asked for it. */
+  const glide = (next: View) => {
     setView(next);
     setAnim('zoom');
-    setTouched(true);
     later('zoom', () => setAnim(''), ZOOM_MS);
   };
+  const animateTo = (next: View) => {
+    glide(next);
+    setTouched(true);
+  };
+
+  // First visit (#115): once the page has loaded and stopped stuttering, the map comes close to
+  // «Desde Ushuaia», its label opens (one more touch starts the trip) and the hint says to start
+  // there. The move is not the user's, so it does not count as `touched`; anything the user does
+  // afterwards ends the welcome. Someone who already moved the map while it loaded gets no welcome.
+  const [welcoming, setWelcoming] = useState(false);
+  const settled = usePageSettled(welcome);
+  const welcomeMove = () => {
+    const next = welcomeView(live.current.size);
+    if (live.current.is3D) queue3D({ type: 'focus', view: next });
+    else glide(next);
+  };
+  useEffect(() => {
+    if (!welcome || !settled) return;
+    if (touched || phase !== 'idle' || voyaging) return void onWelcomeShown?.();
+    welcomeMove();
+    setShown(VOYAGE_POINT.id);
+    setWelcoming(true);
+    onWelcomeShown?.();
+  }, [welcome, settled]);
+  // The map can still switch between 3D and 2D during the welcome: the starting view changes once
+  // reduced motion is read (useReducedMotion), and the user may switch it. Stay close to Ushuaia.
+  useEffect(() => {
+    if (welcoming) welcomeMove();
+  }, [is3D]);
+  useEffect(() => {
+    if (touched || voyaging || phase !== 'idle') setWelcoming(false);
+  }, [touched, voyaging, phase]);
 
   const rel = (e: { clientX: number; clientY: number }) => {
     const r = vpRef.current!.getBoundingClientRect();
@@ -313,6 +353,7 @@ export function MapView({
 
   const onPick = (m: Marker, touch: boolean) => {
     if (gesture.current.dragged) return;
+    setWelcoming(false);
     if (m.kind === 'cluster') {
       setShown(null);
       if (is3D) send3D({ type: 'focus', view: m.target });
@@ -380,7 +421,11 @@ export function MapView({
           <ExplorationLog explored={explored} />
         </header>
 
-        {!touched && !voyaging && phase === 'idle' && <div className="hint">arrastrá para mover · pellizcá para acercar</div>}
+        {welcoming ? (
+          <div className="hint" role="status">Tocá <strong>Desde Ushuaia</strong> para empezar</div>
+        ) : (
+          !touched && !voyaging && phase === 'idle' && <div className="hint">arrastrá para mover · pellizcá para acercar</div>
+        )}
         {toast && <div className="toast" role="status">{toast}</div>}
 
         <div className="bottom">

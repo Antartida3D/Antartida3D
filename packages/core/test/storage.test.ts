@@ -5,6 +5,9 @@ import {
   saveExplored,
   loadViewMode,
   saveViewMode,
+  loadWelcomeSeen,
+  saveWelcomeSeen,
+  WELCOME_KEY,
   ORCADAS_POINT,
 } from '../src/index.ts';
 
@@ -50,5 +53,25 @@ describe('storage', () => {
     expect(loadViewMode()).toBe('3d');
     saveViewMode('2d');
     expect(loadViewMode()).toBe('2d');
+  });
+
+  it('remembers that the welcome was shown', () => {
+    expect(loadWelcomeSeen()).toBe(false);
+    saveWelcomeSeen();
+    expect(loadWelcomeSeen()).toBe(true);
+    expect(mem.get(WELCOME_KEY)).toBe('1');
+  });
+
+  it('reads the welcome as not seen when storage throws', () => {
+    (globalThis as { localStorage?: unknown }).localStorage = {
+      getItem: () => {
+        throw new Error('blocked');
+      },
+      setItem: () => {
+        throw new Error('blocked');
+      },
+    };
+    expect(loadWelcomeSeen()).toBe(false);
+    expect(() => saveWelcomeSeen()).not.toThrow();
   });
 });

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
-import { prefersReducedMotion } from '@antartida/core';
+import { prefersReducedMotion, settleTracker } from '@antartida/core';
 
 /**
  * While `open`, focuses the first element matching `initial` inside the container.
@@ -22,6 +22,34 @@ export function useFocusReturn(
       target?.focus();
     };
   }, [open, container, initial]);
+}
+
+/**
+ * True once the page has loaded and stopped stuttering (settleTracker), only while `active`.
+ * The first-visit welcome waits for it (#115).
+ */
+export function usePageSettled(active: boolean): boolean {
+  const [settled, setSettled] = useState(false);
+  useEffect(() => {
+    if (!active || settled) return;
+    let id = 0;
+    const watch = () => {
+      const tracker = settleTracker();
+      const start = performance.now();
+      const tick = (t: number) => {
+        if (tracker.frame(t - start)) setSettled(true);
+        else id = requestAnimationFrame(tick);
+      };
+      id = requestAnimationFrame(tick);
+    };
+    if (document.readyState === 'complete') watch();
+    else window.addEventListener('load', watch, { once: true });
+    return () => {
+      window.removeEventListener('load', watch);
+      cancelAnimationFrame(id);
+    };
+  }, [active, settled]);
+  return settled;
 }
 
 export function useReducedMotion(): boolean {

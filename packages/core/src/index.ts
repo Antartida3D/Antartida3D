@@ -18,6 +18,7 @@ export * from './viewport.ts';
 export * from './markers.ts';
 export * from './orcadas.ts';
 export * from './storage.ts';
+export * from './welcome.ts';
 export * from './motion.ts';
 export * from './svg/filters.ts';
 export * from './svg/map.ts';

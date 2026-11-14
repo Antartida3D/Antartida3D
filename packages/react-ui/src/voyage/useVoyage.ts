@@ -26,7 +26,10 @@ export interface VoyageBus {
   listeners: Set<() => void>;
 }
 
-/** Up to this width the trip panel spans the bottom of the screen (same breakpoint as the styles). */
+/**
+ * Up to this width the trip panel spans the bottom of the screen (same breakpoint as the styles).
+ * Below it the map legend also starts closed (#114).
+ */
 export const NARROW_PX = 820;
 
 /** Speed of the trip to the next milestone when the user asks for it instead of holding "advance". */

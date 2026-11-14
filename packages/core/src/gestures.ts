@@ -91,3 +91,20 @@ export function sheetAfterDrag(
   if (draggedUp <= -SHEET_SNAP_PX) return size === 'tall' ? 'small' : floor;
   return size;
 }
+
+/**
+ * A finger swiping the open map legend, `dx` and `dy` px from where it landed (right and down
+ * positive). The legend sits at the bottom left of the screen, so it closes towards that corner:
+ * it follows the finger only along the axis the finger moves most, and only left or down. Let go
+ * past SHEET_SNAP_PX it closes; short of that it goes back. A move shorter than SHEET_TAP_PX is a
+ * tap (`drag` false), so the legend button still works.
+ */
+export function legendSwipe(dx: number, dy: number): { x: number; y: number; drag: boolean; closes: boolean } {
+  if (Math.hypot(dx, dy) < SHEET_TAP_PX) return { x: 0, y: 0, drag: false, closes: false };
+  if (Math.abs(dx) >= Math.abs(dy)) {
+    const x = Math.min(dx, 0);
+    return { x, y: 0, drag: true, closes: -x >= SHEET_SNAP_PX };
+  }
+  const y = Math.max(dy, 0);
+  return { x: 0, y, drag: true, closes: y >= SHEET_SNAP_PX };
+}

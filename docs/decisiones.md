@@ -249,6 +249,19 @@ Plan: `.agents/plans/plan-helipuerto-orcadas.md`.
 - **Arreglo:** `.listview` lleva `z-index: 21`, por encima de todo lo del mapa. La lista y la ficha (`.sheet`, 20 y 21) nunca están abiertas a la vez: abrir la lista cierra la ficha y elegir un punto cierra la lista. La lista de fuentes del viaje (`.listview.vsources`, 8) no cambia.
 - **Descartado: `isolation: isolate` en `.vp`.** Encerraría los marcadores debajo de las barras, y el cartel abierto (#54) dejaría de verse por encima de la barra de arriba.
 
+### Leyenda cerrada en el celular y swipe para cerrarla (#114, 14-11-2026)
+
+Pedido de quien lleva el issue: en el celular la Leyenda aparecía abierta al entrar, tapaba casi medio mapa (en 3D, con las notas de fuentes del relieve) y solo se cerraba con su botón.
+
+- **Arranca cerrada en el celular** (menos de 820 px de ancho, el mismo corte que los estilos: `NARROW_PX` en `react-ui/src/voyage/useVoyage.ts`). En pantallas anchas sigue abierta: hay lugar y no tapa el mapa. Se decide una sola vez, al abrir la aplicación; girar el teléfono no la abre ni la cierra.
+- **Swipe para cerrarla:** con la Leyenda abierta, deslizarla hacia la izquierda o hacia abajo la cierra. Se aceptan las dos direcciones para que nadie tenga que adivinar cuál es. La tarjeta sigue al dedo solo en el eje en que más se mueve y solo hacia la esquina donde está anclada. Al soltar, si se movió 40 px o más (`SHEET_SNAP_PX`, el mismo umbral que el panel inferior) se cierra; si no, vuelve a su lugar. Un movimiento de menos de 6 px (`SHEET_TAP_PX`) es un toque.
+- **Regla en `@antartida/core`:** `legendSwipe(dx, dy)` en `core/src/gestures.ts`, con pruebas.
+- **Un swipe no aprieta el botón:** igual que en `BottomSheet`, los listeners son táctiles y nativos, y al soltar se cancela el clic. Si el swipe empieza sobre el botón «Leyenda», no la vuelve a abrir.
+- **No choca con los gestos del mapa:** la Leyenda está en `.bottom`, fuera de `.vp`, que es donde el mapa escucha los gestos.
+- **Teclado y lector de pantalla:** no cambian. El botón «Leyenda» con `aria-expanded` sigue abriendo y cerrando.
+- **Movimiento reducido:** vuelve a su lugar sin animación.
+- **Verificación:** prueba e2e en `flow.spec.ts`. En el celular arranca cerrada, el swipe hacia la izquierda y hacia abajo la cierra, y uno corto o hacia la derecha la deja abierta. En escritorio arranca abierta. Capturas a 390 y 1440 px. No se probó en un teléfono real.
+
 ## Benchmark
 
 - Lighthouse, peso, pan y pinch corren en Chromium headless sin GPU. Las cifras de frames e interacción sirven para comparar corridas entre sí, no como valores absolutos de un teléfono real.

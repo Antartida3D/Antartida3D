@@ -115,6 +115,9 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid #1E3E5C;outline-
 .legend ul{list-style:none;margin:4px 0 2px;padding:0;display:flex;flex-direction:column;gap:6px}
 .legend li{display:flex;align-items:center;gap:8px;font-size:13px;line-height:1.2}
 .legend .sw{flex:none;width:18px;height:18px;display:flex;align-items:center;justify-content:center}
+/* A finger swiping the open legend carries it (Legend.tsx, #114); let go, it eases back into place. */
+.legend{transition:transform .2s ease}
+.legend.swiping{transition:none}
 .sw .a{width:14px;height:14px;border-radius:50%;background:var(--ocre);border:2px solid var(--ink)}
 .sw .b{width:12px;height:12px;border-radius:50%;background:#8FA2AF;border:2px solid #3B4651}
 .sw .c{width:12px;height:12px;border-radius:50%;border:1.5px dashed #5E656C}
@@ -313,5 +316,6 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid #1E3E5C;outline-
   .pl{transition:none}
   .sheet,.kp,.mcard,.toast{animation:fadein .2s ease both}
   .sheet.grows{transition:none}
+  .legend{transition:none}
   .stage.ret{animation:fadein .4s ease both}
 }

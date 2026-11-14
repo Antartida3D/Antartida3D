@@ -150,3 +150,5 @@ En cumplimiento con las bases de la hackatón, se declara el uso de herramientas
   > Planificación, implementación, pruebas y verificación con capturas con asistencia de IA, con revisión del equipo. El traslado en helicóptero cita a la Armada Argentina (30 dic 2025). El lugar donde espera el buque, el recorrido del helicóptero y su tamaño son ilustrativos, y la interfaz lo dice. La turbulencia del avión es un efecto visual, no un dato. El modelo del helicóptero es el de #68.
 - **Cámara del viaje con movimiento reducido (#76):**
   > Diagnóstico, arreglo y prueba e2e con asistencia de IA, con revisión del equipo. No se agregaron datos ni fuentes.
+- **Leyenda cerrada en el celular y swipe para cerrarla (#114):**
+  > Planificación, implementación, pruebas y verificación con capturas con asistencia de IA, con revisión del equipo. No se agregaron datos ni fuentes.

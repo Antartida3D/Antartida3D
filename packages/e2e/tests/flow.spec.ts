@@ -147,3 +147,46 @@ test('on a phone the trip picker grows when its handle is dragged up, shrinks ba
   await expect(page.locator('.vbar')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Ver como lista' })).toBeVisible();
 });
+
+test('on a phone the legend starts closed, and a swipe left or down closes it (#114)', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'on wide screens the legend starts open (next test)');
+  const button = page.getByRole('button', { name: /Leyenda/ });
+  const legend = page.locator('.legend');
+  await expect(button).toHaveAttribute('aria-expanded', 'false');
+  await expect(legend.locator('ul')).toHaveCount(0);
+
+  const cdp = await page.context().newCDPSession(page);
+  /** One finger swipes from the middle of the legend button by (dx, dy) px. */
+  const swipe = async (dx: number, dy: number) => {
+    const box = (await button.boundingBox())!;
+    const [x, y] = [box.x + box.width / 2, box.y + box.height / 2];
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
+    for (let i = 1; i <= 8; i++) {
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x + (dx * i) / 8, y: y + (dy * i) / 8 }] });
+    }
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  };
+
+  // Left and down both close it. The swipe starts on the button: it must not press it and open
+  // the legend again.
+  for (const [dx, dy] of [[-60, 0], [0, 100]] as const) {
+    await button.tap();
+    await expect(button).toHaveAttribute('aria-expanded', 'true');
+    await swipe(dx, dy);
+    await expect(button).toHaveAttribute('aria-expanded', 'false');
+    await expect(legend.locator('ul')).toHaveCount(0);
+  }
+
+  // A short swipe, or one to the right, leaves it open and back in its place.
+  await button.tap();
+  await swipe(-20, 0);
+  await swipe(80, 0);
+  await expect(button).toHaveAttribute('aria-expanded', 'true');
+  await expect(legend).not.toHaveAttribute('style', /translate/);
+});
+
+test('on a wide screen the legend starts open (#114)', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'on a phone it starts closed (previous test)');
+  await expect(page.getByRole('button', { name: /Leyenda/ })).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.locator('.legend ul')).toBeVisible();
+});

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SHEET_SNAP_PX, moveTwoFingers, sheetAfterDrag, startTwoFingers, type TwoFingerState } from '../src/index.ts';
+import { SHEET_SNAP_PX, SHEET_TAP_PX, legendSwipe, moveTwoFingers, sheetAfterDrag, startTwoFingers, type TwoFingerState } from '../src/index.ts';
 
 type Point = { x: number; y: number };
 /** Runs a gesture through its moves and adds up what it did. */
@@ -118,5 +118,30 @@ describe('bottom sheet handle', () => {
     expect(sheetAfterDrag('small', 0, 'peek')).toBe('tall');
     expect(sheetAfterDrag('tall', 0, 'peek')).toBe('small');
     expect(sheetAfterDrag('peek', SHEET_SNAP_PX - 1, 'peek')).toBe('peek');
+  });
+});
+
+describe('swiping the map legend', () => {
+  it('is a tap while the finger moves less than the tap distance', () => {
+    expect(legendSwipe(0, 0)).toEqual({ x: 0, y: 0, drag: false, closes: false });
+    expect(legendSwipe(-(SHEET_TAP_PX - 1), 0).drag).toBe(false);
+  });
+
+  it('closes when swiped left or down past the snap distance', () => {
+    expect(legendSwipe(-SHEET_SNAP_PX, 0)).toEqual({ x: -SHEET_SNAP_PX, y: 0, drag: true, closes: true });
+    expect(legendSwipe(0, SHEET_SNAP_PX)).toEqual({ x: 0, y: SHEET_SNAP_PX, drag: true, closes: true });
+    // A diagonal follows the axis the finger moves most.
+    expect(legendSwipe(-80, 30)).toEqual({ x: -80, y: 0, drag: true, closes: true });
+    expect(legendSwipe(-20, 90)).toEqual({ x: 0, y: 90, drag: true, closes: true });
+  });
+
+  it('goes back after a short swipe', () => {
+    expect(legendSwipe(-(SHEET_SNAP_PX - 1), 0).closes).toBe(false);
+    expect(legendSwipe(0, SHEET_SNAP_PX - 1).closes).toBe(false);
+  });
+
+  it('does not move or close right or up, but that is still a drag and not a tap', () => {
+    expect(legendSwipe(120, 0)).toEqual({ x: 0, y: 0, drag: true, closes: false });
+    expect(legendSwipe(10, -120)).toEqual({ x: 0, y: 0, drag: true, closes: false });
   });
 });

@@ -394,7 +394,10 @@ export function MapView({
         // One sheet at a time: the intro replaces the trip from Ushuaia, as starting Orcadas did before.
         if (voyaging) onEndVoyage?.(false);
         setSheet(null);
-        setPendingOrcadas(p);
+        // Orcadas first shows its intro, where the visitor picks how to arrive (#125, #135); any
+        // other expedition starts at once.
+        if (p.id === EXPEDITION_POINT.id) setPendingOrcadas(p);
+        else onStart(p);
       }
     } else {
       if (is3D && 'closeUp' in p && p.closeUp) send3D({ type: 'visit', id: p.id, distance: p.closeUp });

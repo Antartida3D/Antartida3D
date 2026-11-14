@@ -1,10 +1,10 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, type RefObject } from 'react';
 import { ANTARCTIC_CLAIMS, ANTARCTIC_CLAIMS_CONTEXT, type ClaimId, type ClaimsCoverage } from '@antartida/core';
 
 export type ClaimsStatus = 'loading' | 'ready' | 'error';
 export type ClaimsSelection = ClaimId | 'all';
 
-export function ClaimsControl({ enabled, selection, coverage, status, onToggle, onSelect, onCoverage }: {
+export function ClaimsControl({ enabled, selection, coverage, status, onToggle, onSelect, onCoverage, switchRef }: {
   enabled: boolean;
   selection: ClaimsSelection;
   coverage: ClaimsCoverage;
@@ -12,6 +12,7 @@ export function ClaimsControl({ enabled, selection, coverage, status, onToggle, 
   onToggle: () => void;
   onSelect: (selection: ClaimsSelection) => void;
   onCoverage: (coverage: ClaimsCoverage) => void;
+  switchRef?: RefObject<HTMLButtonElement | null>;
 }) {
   const [details, setDetails] = useState(true);
   const detailsButton = useRef<HTMLButtonElement>(null);
@@ -21,7 +22,7 @@ export function ClaimsControl({ enabled, selection, coverage, status, onToggle, 
   return (
     <div className="claims-control">
       <div className="claims-actions">
-        <button className="btn" type="button" role="switch" aria-checked={enabled}
+        <button className="btn" type="button" role="switch" aria-checked={enabled} ref={switchRef}
           onClick={() => { if (!enabled) setDetails(true); onToggle(); }}>
           <span className="claims-switch" aria-hidden="true" />Reclamos territoriales
         </button>

@@ -1,4 +1,16 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
+
+/** The claims layer has no control in the map menu while off: it opens from the South Pole sheet (#128). */
+async function openFromPole(page: Page, key = false, beforeAction?: () => Promise<void>) {
+  await page.getByRole('button', { name: 'Ver como lista', exact: true }).click();
+  await page.getByRole('dialog').getByRole('button', { name: /^El Polo Sur/ }).click();
+  await beforeAction?.();
+  const action = page.getByRole('dialog').getByRole('button', { name: 'Ver reclamos territoriales', exact: true });
+  if (key) {
+    await action.focus();
+    await page.keyboard.press('Space');
+  } else await action.click();
+}
 
 test('claims start off, toggle areas and flags together, and keep the map camera', async ({ page }, testInfo) => {
   test.setTimeout(60_000);
@@ -7,15 +19,19 @@ test('claims start off, toggle areas and flags together, and keep the map camera
   await page.goto('/');
   await page.getByRole('button', { name: 'Relieve 3D', exact: true }).click();
   const toggle = page.getByRole('switch', { name: 'Reclamos territoriales' });
-  await expect(toggle).toHaveAttribute('aria-checked', 'false');
   await page.waitForFunction(() => (window as any).__scene);
+  await expect(toggle).toHaveCount(0);
   expect(await page.evaluate(() => !!(window as any).__scene.getObjectByName('antarctic-claims'))).toBe(false);
   const sceneId = await page.evaluate(() => (window as any).__scene.uuid);
-  const cameraPosition = await page.evaluate(() => (window as any).__cameraControls.camera.position.toArray());
+  const distance = () => page.evaluate(() => (window as any).__cameraControls.distance as number);
+  const homeDistance = await distance();
 
-  await toggle.focus();
-  await page.keyboard.press('Space');
+  // The pole sheet zooms in; showing the claims pulls back to the whole continent.
+  await openFromPole(page, true, () => expect.poll(distance, { timeout: 10_000 }).toBeLessThan(homeDistance * .5));
+  await expect.poll(distance, { timeout: 10_000 }).toBeGreaterThan(homeDistance * .95);
+  await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(toggle).toHaveAttribute('aria-checked', 'true');
+  await expect(toggle).toBeFocused();
   await expect(page.getByLabel('Superficie visible')).toHaveValue('sectors');
   await expect(page.getByRole('region', { name: 'Reclamos antárticos' }).getByRole('status')).toContainText('Elegí un país');
   await page.waitForFunction(() => (window as any).__scene.getObjectByName('claim-ar')?.children.length > 0);
@@ -71,16 +87,18 @@ test('claims start off, toggle areas and flags together, and keep the map camera
   await expect(page.getByRole('button', { name: 'Detalles de reclamos', exact: true })).toBeFocused();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 
+  const cameraPosition = await page.evaluate(() => (window as any).__cameraControls.camera.position.toArray());
   await toggle.click();
-  await expect(toggle).toHaveAttribute('aria-checked', 'false');
+  await expect(toggle).toHaveCount(0);
+  await expect(page.getByRole('application')).toBeFocused();
   await expect.poll(() => page.evaluate(() => !!(window as any).__scene.getObjectByName('antarctic-claims'))).toBe(false);
   expect(await page.evaluate(() => (window as any).__scene.uuid)).toBe(sceneId);
   const afterPosition = await page.evaluate(() => (window as any).__cameraControls.camera.position.toArray());
   afterPosition.forEach((coordinate: number, index: number) => expect(coordinate).toBeCloseTo(cameraPosition[index], 3));
-  await toggle.click();
+  await openFromPole(page);
   await expect(page.getByRole('region', { name: 'Reclamos antárticos' }).getByRole('status')).toContainText('Sector Antártico Argentino');
   await page.reload();
-  await expect(page.getByRole('switch', { name: 'Reclamos territoriales' })).toHaveAttribute('aria-checked', 'false');
+  await expect(page.getByRole('switch', { name: 'Reclamos territoriales' })).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 
@@ -90,7 +108,7 @@ test('claims offer sea sectors and land coverage, with the full ocean extent', a
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('/');
   await page.getByRole('button', { name: 'Relieve 3D', exact: true }).click();
-  await page.getByRole('switch', { name: 'Reclamos territoriales' }).click();
+  await openFromPole(page);
   const panel = page.getByRole('region', { name: 'Reclamos antárticos' });
   // This test enables the overlay during the initial high-resolution WebGL load.
   await expect(panel.getByRole('status')).toContainText('Elegí un país', { timeout: 20_000 });
@@ -115,7 +133,7 @@ test('claims controls fit the viewport and preserve selection when changing view
   test.setTimeout(60_000);
   await page.goto('/');
   await page.getByRole('button', { name: 'Relieve 3D', exact: true }).click();
-  await page.getByRole('switch', { name: 'Reclamos territoriales' }).click();
+  await openFromPole(page);
   await page.getByRole('group', { name: 'País reclamante' }).getByRole('button', { name: 'Noruega', exact: true }).click();
   await expect(page.getByRole('region', { name: 'Reclamos antárticos' }).getByRole('status')).toContainText('isla Pedro I');
   const bounds = await page.getByRole('region', { name: 'Reclamos antárticos' }).boundingBox();
@@ -130,6 +148,11 @@ test('claims controls fit the viewport and preserve selection when changing view
   expect(withLegend!.y).toBeGreaterThanOrEqual(0);
   await page.getByRole('button', { name: 'Mapa 2D', exact: true }).click();
   await expect(page.getByRole('switch', { name: 'Reclamos territoriales' })).toHaveCount(0);
+  // The 2D map has no claims layer, so the South Pole sheet does not offer it.
+  await page.getByRole('button', { name: 'Ver como lista', exact: true }).click();
+  await page.getByRole('dialog').getByRole('button', { name: /^El Polo Sur/ }).click();
+  await expect(page.getByRole('dialog').getByRole('button', { name: /reclamos/i })).toHaveCount(0);
+  await page.getByRole('dialog').getByRole('button', { name: 'Volver al mapa', exact: true }).click();
   await page.getByRole('button', { name: 'Relieve 3D', exact: true }).click();
   await expect(page.getByRole('switch', { name: 'Reclamos territoriales' })).toHaveAttribute('aria-checked', 'true');
   await expect(page.getByRole('group', { name: 'País reclamante' }).getByRole('button', { name: 'Noruega', exact: true })).toHaveAttribute('aria-pressed', 'true');

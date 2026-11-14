@@ -179,8 +179,13 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid #1E3E5C;outline-
 .sheet .place{margin:0 0 14px;color:#3B4651}
 .sheet-desc{margin:0;font-size:15px;line-height:1.45;color:var(--ink)}
 .sheet-sources{margin:12px 0 0;padding-top:10px;border-top:1px dashed rgba(31,42,54,.3)}
-.sheet-sources h3{font-family:'Fraunces',Georgia,serif;font-size:15px;margin:0 0 6px}
-.sheet-sources ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.sheet-sources h3{font-family:'Fraunces',Georgia,serif;font-size:15px;margin:0}
+.sheet-sources-toggle{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;min-height:32px;font:inherit;color:var(--ink)}
+.sheet-sources-toggle::after{content:'▸';font-size:12px;transition:transform .15s}
+.sheet-sources-toggle[aria-expanded=true]::after{transform:rotate(90deg)}
+.sheet-sources-toggle:focus-visible{outline:2px solid var(--deep);outline-offset:2px;border-radius:4px}
+.sheet-sources ul[hidden]{display:none}
+.sheet-sources ul{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
 .sheet-sources li{font-size:13px;color:#3B4651;line-height:1.3}
 .sheet-sources a{font-weight:700;color:var(--deep)}
 .sheet-sources small{display:block;color:#5E656C}

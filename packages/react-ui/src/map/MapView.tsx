@@ -23,6 +23,8 @@ export type Anim = '' | 'zoom' | 'wheel' | 'dive';
 export type ViewMode = '2d' | '3d';
 
 const WHEEL_MS = 200;
+/** The territorial claims open from this point's sheet: the claimed sectors meet at the pole. */
+const CLAIMS_POINT_ID = 'polo';
 
 /**
  * A request from the shared controls (buttons, keys, cluster clicks) to the 3D camera. In 3D the
@@ -122,6 +124,7 @@ export function MapView({
   const [claimsSelection, setClaimsSelection] = useState<ClaimsSelection>('all');
   const [claimsCoverage, setClaimsCoverage] = useState<ClaimsCoverage>('sectors');
   const [claimsStatus, setClaimsStatus] = useState<ClaimsStatus>('loading');
+  const claimsSwitch = useRef<HTMLButtonElement>(null);
   const later = useTimers();
   const reduced = useReducedMotion();
   const voyage = useVoyage();
@@ -354,6 +357,20 @@ export function MapView({
     }
   };
 
+  /** From the South Pole sheet: closes it, turns the claims layer on, shows the whole continent and focuses the control. */
+  const showClaims = () => {
+    setSheet(null);
+    if (!claimsEnabled) {
+      if (legend) onToggleLegend();
+      setClaimsEnabled(true);
+      setClaimsStatus('loading');
+    }
+    // Pull back to the whole continent: the sectors only read as a whole.
+    send3D({ type: 'home' });
+    // After the sheet returns focus to its opener.
+    requestAnimationFrame(() => claimsSwitch.current?.focus());
+  };
+
   const onPick = (m: Marker, touch: boolean) => {
     if (gesture.current.dragged) return;
     setWelcoming(false);
@@ -435,11 +452,13 @@ export function MapView({
           {voyaging ? <span /> : (
           <div className="leftcol">
             <Legend open={legend} onToggle={onToggleLegend} mode={mode} />
-            {is3D && <ClaimsControl enabled={claimsEnabled} selection={claimsSelection} coverage={claimsCoverage} status={claimsStatus}
+            {/* Off, the claims open from the South Pole sheet; on, this control turns them off. */}
+            {is3D && claimsEnabled && <ClaimsControl enabled selection={claimsSelection} coverage={claimsCoverage} status={claimsStatus}
+              switchRef={claimsSwitch}
               onToggle={() => {
-                if (!claimsEnabled && legend) onToggleLegend();
-                setClaimsEnabled((value) => !value);
+                setClaimsEnabled(false);
                 setClaimsStatus('loading');
+                vpRef.current?.focus();
               }}
               onSelect={setClaimsSelection} onCoverage={setClaimsCoverage} />}
             <button type="button" className="btn" onClick={() => { setSheet(null); setList(true); }}>
@@ -470,7 +489,8 @@ export function MapView({
             <VoyagePanel voyage={voyage} animated={is3D && !reduced} webgl={is3D} reduced={reduced} onExit={onEndVoyage} />
           </Suspense>
         )}
-        {sheet && <PointSheet point={sheet} onClose={() => setSheet(null)} fallbackFocus={() => vpRef.current} preview={is3D} reduced={reduced} />}
+        {sheet && <PointSheet point={sheet} onClose={() => setSheet(null)} fallbackFocus={() => vpRef.current} preview={is3D} reduced={reduced}
+          action={is3D && sheet.id === CLAIMS_POINT_ID ? { label: claimsEnabled ? 'Ver reclamos en el mapa' : 'Ver reclamos territoriales', onClick: showClaims } : undefined} />}
       </div>
       <div className={'veil' + (phase === 'dive' ? ' on' : phase === 'approach' ? ' late' : '')} />
     </div>

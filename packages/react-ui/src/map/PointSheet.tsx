@@ -1,4 +1,4 @@
-import { lazy, Suspense, useRef } from 'react';
+import { lazy, Suspense, useId, useRef, useState } from 'react';
 import { TIER, type MapPoint, type SeaPoint, type Source } from '@antartida/core';
 import { useFocusReturn } from '../hooks.ts';
 import { Icon } from '../ui.tsx';
@@ -8,12 +8,19 @@ import { POINT_MODEL_IDS } from '../voyage/pointModelIds.ts';
 const SeaPreview = lazy(() => import('../voyage/SeaPreview.tsx').then((m) => ({ default: m.SeaPreview })));
 const PointPreview = lazy(() => import('../voyage/PointPreview.tsx').then((m) => ({ default: m.PointPreview })));
 
+/** Folded by default: the sources would otherwise push the sheet's content and actions out of view. */
 function SourceList({ sources }: { sources?: readonly Source[] }) {
+  const [open, setOpen] = useState(false);
+  const id = useId();
   if (!sources || sources.length === 0) return null;
   return (
     <div className="sheet-sources">
-      <h3>Fuentes verificadas</h3>
-      <ul>
+      <h3>
+        <button type="button" className="sheet-sources-toggle" aria-expanded={open} aria-controls={id} onClick={() => setOpen((v) => !v)}>
+          Fuentes verificadas ({sources.length})
+        </button>
+      </h3>
+      <ul id={id} hidden={!open}>
         {sources.map((s, idx) => (
           <li key={idx}>
             {s.url ? (
@@ -34,13 +41,15 @@ function SourceList({ sources }: { sources?: readonly Source[] }) {
   );
 }
 
-export function PointSheet({ point, onClose, fallbackFocus, preview = false, reduced = false }: {
+export function PointSheet({ point, onClose, fallbackFocus, preview = false, reduced = false, action }: {
   point: MapPoint | SeaPoint;
   onClose: () => void;
   fallbackFocus: () => HTMLElement | null;
   /** Show the block model of the point (needs WebGL). */
   preview?: boolean;
   reduced?: boolean;
+  /** Extra map layer this point opens, such as the territorial claims from the South Pole. */
+  action?: { label: string; onClick: () => void };
 }) {
   const ref = useRef<HTMLElement>(null);
   useFocusReturn(true, ref, 'button', fallbackFocus);
@@ -108,6 +117,7 @@ export function PointSheet({ point, onClose, fallbackFocus, preview = false, red
           </>
         )}
         <div className="row" style={{ marginTop: 12 }}>
+          {action && <button type="button" className="btn" onClick={action.onClick}>{action.label}</button>}
           <button type="button" className="btn" onClick={onClose}>Volver al mapa</button>
         </div>
       </section>

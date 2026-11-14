@@ -93,6 +93,12 @@ test('a point with verified content shows its sources; Poncho stays provisional'
   await page.getByRole('button', { name: 'Ver como lista' }).click();
   await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Volcán en el hielo/ }).click();
   const erebus = page.getByRole('dialog', { name: 'Volcán en el hielo' });
+  // Sources start folded so they do not push the sheet's actions out of view.
+  const toggle = erebus.getByRole('button', { name: /^Fuentes verificadas/ });
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(erebus.getByRole('link', { name: 'Erebus Breaks Through' })).toHaveCount(0);
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
   await expect(erebus.getByRole('link', { name: 'Erebus Breaks Through' })).toHaveAttribute('href', /^https:\/\/science\.nasa\.gov\//);
   await page.keyboard.press('Escape');
 

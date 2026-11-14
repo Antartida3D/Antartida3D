@@ -56,7 +56,8 @@ test('dialogs close with Escape and return focus to their trigger', async ({ pag
   await tabTo(page, /^Océano/);
   await page.keyboard.press('Enter');
   const sheet = page.getByRole('dialog', { name: 'Océano' });
-  await expect(sheet).toContainText('[Pregunta provisional]');
+  await expect(sheet.getByRole('heading', { name: 'Fuentes verificadas' })).toBeVisible();
+  await expect(sheet).not.toContainText('[Contenido provisional]');
   await expectFocused(page, 'Cerrar ficha');
   await page.keyboard.press('Escape');
   await expect(sheet).toHaveCount(0);
@@ -74,6 +75,20 @@ test('Fósiles is displayed as Ampliación prevista and opens its point sheet', 
   await expect(sheet.locator('.tag.tb')).toHaveText('Ampliación prevista');
   await page.keyboard.press('Escape');
   await expect(sheet).toHaveCount(0);
+});
+
+test('a point with verified content shows its sources; Poncho stays provisional', async ({ page }) => {
+  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Volcán en el hielo/ }).click();
+  const erebus = page.getByRole('dialog', { name: 'Volcán en el hielo' });
+  await expect(erebus.getByRole('link', { name: 'Erebus Breaks Through' })).toHaveAttribute('href', /^https:\/\/science\.nasa\.gov\//);
+  await page.keyboard.press('Escape');
+
+  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Poncho/ }).click();
+  const poncho = page.getByRole('dialog', { name: 'Poncho' });
+  await expect(poncho).toContainText('[Contenido provisional]');
+  await expect(poncho.getByRole('heading', { name: 'Fuentes verificadas' })).toHaveCount(0);
 });
 
 test('has no horizontal scroll', async ({ page }) => {

@@ -12,7 +12,7 @@ description: Ante un bug, buscar si ya está registrado o arreglado en otra rama
    - Usa una o dos palabras sueltas por búsqueda y repite con otras (síntoma, archivo, mensaje de error). Una frase larga no encuentra nada, y un solo intento no alcanza para decir que no existe.
    - Si el script sale con código 3, no pudo buscar: no lo tomes como «no existe». Revisa a mano o avisa a quien te usa.
 2. Según lo que encuentres:
-   - **Issue abierto y asignado a otra persona:** no lo arregles. Comenta en el issue si aportas datos nuevos y avisa a quien te usa.
+   - **Issue abierto y asignado a otra persona:** no lo arregles. Avisa a quien te usa. Si aportas datos nuevos, propón el texto del comentario y publícalo solo después de su confirmación explícita.
    - **Issue abierto y asignado a quien te usa:** trabajalo en la rama de ese issue.
    - **Issue abierto sin asignar:** tómalo para quien te usa (`gh issue edit <N> --add-assignee @me` y el comentario «Lo tomo.») y avísale.
    - **PR abierto en otra rama:** no lo rehagas. Espera ese merge o avisa a quien te usa si te bloquea.

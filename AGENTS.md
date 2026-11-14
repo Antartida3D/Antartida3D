@@ -78,6 +78,7 @@ Un issue asignado sin actividad por más de 24 h se puede reclamar, previo aviso
   - si no existe, buscar duplicados (`.agents/scripts/bug-issue-check.sh`) y crearlo asignado solo a esa persona (`gh issue create --assignee @me`).
 - Crear issues, tomar issues sin asignar y abrir pull requests no requiere permiso previo. Avisar a la persona qué issue o PR se creó o se tomó. Para bugs, seguir la regla `15-bugs-and-issues.md`.
 - No reasignar ni cerrar issues de otras personas, ni tomar un issue que ya tiene otra persona asignada.
+- No comentar en un issue ni en un PR de otra persona sin permiso. Mostrar primero el texto del comentario a quien te usa y esperar su confirmación explícita.
 - Trabajar solo en la rama del issue. Nunca commitear en `main`.
 - No modificar archivos fuera del alcance del issue sin avisar a la persona.
 - Todo uso de IA se declara en el README (lo exigen las bases).

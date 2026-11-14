@@ -1,6 +1,7 @@
 import { METERS_PER_MAP_UNIT } from './relief.ts';
 import { stormAt } from './storm.ts';
 import { PTS } from './content/points.ts';
+import type { Vector3Like } from './camera.ts';
 
 /**
  * Tierra del Fuego, southern Patagonia and the Malvinas in map space: the land the Antarctic
@@ -50,10 +51,11 @@ export function inFuegia(x: number, y: number): boolean {
 /**
  * Closest the orbit camera of the 3D map may get to its target over Antarctica and its seas, the
  * same for the wheel, pinch, keys and buttons (#127). The target lies at sea level and the camera
- * tilts at most MAX_POLAR_DEG (60°), so it stays at least half this distance high: 15 world units,
- * more than twice the highest point of the relief (fuegia.test.ts measures it).
+ * tilts at most MAX_POLAR_DEG (60°), so it stays at least half this distance high: 12.5 world units,
+ * more than twice the highest point of the relief (fuegia.test.ts measures it). At 20 the user
+ * still ended up inside the white of the plateau.
  */
-export const ICE_MIN_DISTANCE = 30;
+export const ICE_MIN_DISTANCE = 25;
 
 /**
  * Closest the orbit camera may get to its target (map units). Over Antarctica `base` keeps it off
@@ -77,3 +79,29 @@ const CLOSE_UP_REACH = 4;
 /** The camera may come this fraction of the close-up distance to the model. */
 const CLOSE_UP_MIN = 0.5;
 const CLOSE_UP_POINTS = PTS.filter((p) => p.closeUp !== undefined);
+
+/**
+ * Highest an orbit target may float over sea level before it is put back on the ground: above the
+ * highest relief (about 5 world units) and the close-up of a model, which looks at its ground.
+ */
+export const GROUND_TARGET_MAX = 8;
+/** Lowest an orbit target may sink under sea level before it is put back. */
+export const GROUND_TARGET_MIN = -0.5;
+
+/**
+ * Where the orbit target of the map should be when it left the ground, or null when it is fine.
+ * Zooming towards the cursor moves the target across the screen plane, so it climbs into the air
+ * (cursor high up) or sinks under the map (cursor low down), and the camera, kept at its closest
+ * distance from that target, goes into the map: the zoom with no end (#127). The target slides
+ * along the line of sight back to sea level, so the picture does not change.
+ */
+export function groundTarget(pos: Vector3Like, target: Vector3Like): Vector3Like | null {
+  if (target.y >= GROUND_TARGET_MIN && target.y <= GROUND_TARGET_MAX) return null;
+  const dy = target.y - pos.y;
+  // The camera looks down at the ground: where the line of sight meets it.
+  if (pos.y > 0 && dy < 0) {
+    const s = pos.y / -dy;
+    return { x: pos.x + (target.x - pos.x) * s, y: 0, z: pos.z + (target.z - pos.z) * s };
+  }
+  return { x: target.x, y: 0, z: target.z };
+}

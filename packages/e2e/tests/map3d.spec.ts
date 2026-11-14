@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { ORCADAS_GUIDING_QUESTION } from '../../core/src/content/orcadas.ts';
-import { FUEGIA_MIN_DISTANCE, ICE_MIN_DISTANCE } from '../../core/src/fuegia.ts';
+import { FUEGIA_MIN_DISTANCE, GROUND_TARGET_MAX, GROUND_TARGET_MIN, ICE_MIN_DISTANCE } from '../../core/src/fuegia.ts';
 
 let consoleErrors: string[] = [];
 
@@ -107,6 +107,24 @@ test.describe('3D relief view', () => {
     await map.focus();
     for (let i = 0; i < 12; i++) await page.keyboard.press('+');
     expect(await closest()).toBeCloseTo(ICE_MIN_DISTANCE, 0);
+
+    // With the cursor low on the screen, zooming towards it used to sink the target under the map
+    // and take the camera in after it. It stays on the ground, and the camera above the plateau.
+    await page.evaluate(() => {
+      const cc = (window as any).__cameraControls;
+      cc.setLookAt(-159.6, 150, 250, -159.6, 0, -12.3, false);
+      (window as any).__invalidate();
+    });
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height * 0.7);
+    for (let i = 0; i < 40; i++) await page.mouse.wheel(0, -250);
+    expect(await closest()).toBeCloseTo(ICE_MIN_DISTANCE, 0);
+    const heights = await page.evaluate(() => {
+      const cc = (window as any).__cameraControls;
+      return { target: cc.getTarget().y as number, camera: cc.getPosition().y as number };
+    });
+    expect(heights.target).toBeGreaterThanOrEqual(GROUND_TARGET_MIN - 0.01);
+    expect(heights.target).toBeLessThanOrEqual(GROUND_TARGET_MAX);
+    expect(heights.camera - heights.target).toBeGreaterThan(ICE_MIN_DISTANCE / 2 - 0.1);
   });
 
   test('zoom buttons move the orbit camera from where it is, without resetting it', async ({ page }) => {

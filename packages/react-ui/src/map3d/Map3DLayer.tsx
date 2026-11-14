@@ -13,6 +13,7 @@ import {
   FOV,
   distanceFromK3D,
   generateSeaLifeInstances,
+  groundTarget,
   homeDistance3D,
   loadOceanDepth,
   poseFromView,
@@ -161,6 +162,7 @@ function SceneContent({
         geo={geo}
         command={command}
         onCameraRest={onCameraRest}
+        voyaging={Boolean(voyage)}
       />
       <ProjectMarkers
         markers={markers}
@@ -200,6 +202,7 @@ function ControlsBridge({
   geo,
   command,
   onCameraRest,
+  voyaging,
 }: {
   phase: Phase;
   diveTarget: MapPoint;
@@ -208,6 +211,8 @@ function ControlsBridge({
   geo: Geometry;
   command: Layer3DProps['command'];
   onCameraRest: (view: View) => void;
+  /** On a trip the target follows the vehicle, up in the air with the plane. */
+  voyaging: boolean;
 }) {
   const controlsRef = useRef<CameraControls>(null);
   const invalidate = useThree((s) => s.invalidate);
@@ -425,9 +430,16 @@ function ControlsBridge({
   }, [gl, invalidate]);
 
   const target = useRef(new Vector3());
+  const eye = useRef(new Vector3());
   useFrame(({ camera }) => {
     const cc = controlsRef.current;
     if (!cc) return;
+    // Zooming towards the cursor lifts the target into the air or sinks it under the map, and the
+    // camera follows it in (#127): slide it back to sea level along the line of sight.
+    if (!voyaging && phase !== 'approach' && phase !== 'dive') {
+      const ground = groundTarget(cc.getPosition(eye.current, true), cc.getTarget(target.current, true));
+      if (ground) void cc.setTarget(ground.x, ground.y, ground.z, !reduced);
+    }
     const at = fromWorld(cc.getTarget(target.current));
     cc.minDistance = minCameraDistance(at.x, at.y);
     // Panning out of Tierra del Fuego while close: back off before reaching the ice plateau.

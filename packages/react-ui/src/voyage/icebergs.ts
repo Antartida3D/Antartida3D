@@ -1,11 +1,11 @@
-import { BufferAttribute, BufferGeometry, Color, SRGBColorSpace } from 'three';
+import { BufferAttribute, BufferGeometry, Color, MeshBasicMaterial, SRGBColorSpace } from 'three';
 import { createSeededRng } from '@antartida/core';
 import { ICE, ICE_SHADE, ICE_WALL, WHITE } from './sightingModels.ts';
 import { chunk, groundField, type Tri } from './lowPoly.ts';
 
 /**
- * Low-poly icebergs of the open map (SeaLife) and of the iceberg card: faceted ice instead of the
- * columns of the block icebergs, which the Orcadas diorama still uses (SEA_MODELS). One unit long,
+ * Low-poly icebergs of the open map (SeaLife), of the Orcadas diorama (StationScene) and of the
+ * iceberg card: faceted ice instead of the columns of the old block icebergs. One unit long,
  * the water line at y = 0. Illustrations, not to scale.
  */
 type Height = (u: number, v: number, noise: number) => number;
@@ -138,6 +138,16 @@ export function waterline(kind: 'iceberg-lg' | 'iceberg-sm'): { glow: BufferGeom
     ripple: waterGeometry(bands(kind, [[1, FOAM, 0], [1.06, FOAM, 0.5], [1.14, FOAM, 0]])),
   };
 }
+
+/** How deep (model units) an iceberg sits in the water: its walls go into the sea, not onto it. */
+export const ICEBERG_DRAFT = 0.02;
+/** Heave of an iceberg on the swell, in model units: two slow waves, never in step with another berg. */
+export const icebergSwell = (time: number, phase: number) => 0.012 * Math.sin(time * 0.9 + phase * 6.3) + 0.006 * Math.sin(time * 2.1 + phase * 3.1);
+/** Material of the water round an iceberg (waterline): colors and alpha per corner, fading into the sea. */
+export const waterMaterial = () => new MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false });
+/** Two ripples per iceberg, half a cycle apart, each with its own fading material. */
+export const ICEBERG_RIPPLES = 2;
+export const ICEBERG_RIPPLE_SECONDS = 4.5;
 
 /** A ripple spreading from an iceberg: its scale and opacity at a phase 0..1. */
 export const rippleAt = (phase: number) => ({ scale: 1 + phase * 0.8, opacity: 0.55 * (1 - phase) ** 1.5 });

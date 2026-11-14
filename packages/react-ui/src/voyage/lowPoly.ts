@@ -34,21 +34,36 @@ export function normalOf([a, b, c]: Tri): Vec3 {
  */
 export const PRESHADED = 0x1000000;
 
+/**
+ * Fixed per-face shading matching `buildBoxGeometry` (vehicles.ts FACES), blended by the squared
+ * normal components so axis-aligned faces match block models in the same diorama.
+ */
+export function boxShade(n: Vec3): number {
+  return (
+    n[0] * n[0] * (n[0] > 0 ? 0.82 : 0.7) +
+    n[1] * n[1] * (n[1] > 0 ? 1 : 0.5) +
+    n[2] * n[2] * (n[2] > 0 ? 0.9 : 0.62)
+  );
+}
+
 /** Every face merged into one geometry with vertex colors: one draw call per model. */
-export function buildPolyGeometry(tris: readonly Tri[]): BufferGeometry {
+export function buildPolyGeometry(tris: readonly Tri[], shade?: (n: Vec3) => number): BufferGeometry {
   const positions = new Float32Array(tris.length * 9);
   const colors = new Float32Array(tris.length * 9);
   const color = new Color();
   tris.forEach((t, i) => {
     const n = normalOf(t);
-    // The light of the painted relief (reliefLight): the models are lit by the same sun as the map.
-    const light = Math.min(1, reliefLight(n) / RELIEF_FLAT_LIT);
     const preshaded = t[3] >= PRESHADED;
-    const shade = preshaded ? 1 : SHADE_MIN + (SHADE_MAX - SHADE_MIN) * light;
+    // Default to the light of the painted relief (reliefLight) so map models match the relief sun.
+    const faceShade = preshaded
+      ? 1
+      : shade
+        ? shade(n)
+        : SHADE_MIN + (SHADE_MAX - SHADE_MIN) * Math.min(1, reliefLight(n) / RELIEF_FLAT_LIT);
     color.setHex(preshaded ? t[3] - PRESHADED : t[3]);
     for (let k = 0; k < 3; k++) {
       positions.set(t[k] as Vec3, i * 9 + k * 3);
-      colors.set([color.r * shade, color.g * shade, color.b * shade], i * 9 + k * 3);
+      colors.set([color.r * faceShade, color.g * faceShade, color.b * faceShade], i * 9 + k * 3);
     }
   });
   const geometry = new BufferGeometry();

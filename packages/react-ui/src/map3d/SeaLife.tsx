@@ -16,7 +16,16 @@ import {
   type SeaLifeInstance,
 } from '@antartida/core';
 import { buildSeaGeometry, buildSpoutGeometry, SEA_MODELS, type SeaModelId } from '../voyage/sightingModels.ts';
-import { POLY_ICEBERGS, rippleAt, waterline } from '../voyage/icebergs.ts';
+import {
+  ICEBERG_DRAFT,
+  ICEBERG_RIPPLE_SECONDS as RIPPLE_SECONDS,
+  ICEBERG_RIPPLES as RIPPLES,
+  icebergSwell as swell,
+  POLY_ICEBERGS,
+  rippleAt,
+  waterline,
+  waterMaterial,
+} from '../voyage/icebergs.ts';
 import { buildPolyGeometry } from '../voyage/lowPoly.ts';
 import { heightOf } from '../voyage/Voyage3D.tsx';
 import type { VoyageBus } from '../voyage/useVoyage.ts';
@@ -39,17 +48,7 @@ const POSE_TAIL = 1;
 const WHALE_FLOAT = 0.1;
 const DIVE_PITCH = -0.75;
 
-/** How deep (model units) an iceberg sits in the water: its walls go into the sea, not onto it. */
-const ICEBERG_DRAFT = 0.02;
-/** Heave of an iceberg on the swell, in model units: two slow waves, never in step with another berg. */
-const swell = (time: number, phase: number) => 0.012 * Math.sin(time * 0.9 + phase * 6.3) + 0.006 * Math.sin(time * 2.1 + phase * 3.1);
-
-// The water round an iceberg (icebergs.ts): colors and alpha per corner, fading into the sea.
-const waterMaterial = () => new MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false });
 const glowMaterial = waterMaterial();
-/** Two ripples per iceberg, half a cycle apart, each with its own fading material. */
-const RIPPLES = 2;
-const RIPPLE_SECONDS = 4.5;
 
 const modelOf = (inst: SeaLifeInstance): SeaModelId | null => {
   if (inst.species === 'iceberg') return inst.sprite === 'iceberg-lg' ? 'iceberg-lg' : 'iceberg-sm';

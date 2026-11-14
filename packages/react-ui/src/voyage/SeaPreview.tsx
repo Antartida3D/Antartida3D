@@ -2,18 +2,20 @@ import type { SeaPoint } from '@antartida/core';
 import { ModelPreview, type PreviewMotion } from './ModelPreview.tsx';
 import { SEA_MODELS } from './sightingModels.ts';
 import { VEHICLE_MODELS, type Box } from './vehicles.ts';
+import { ICEBERG_TABULAR_POLY } from './icebergs.ts';
+import type { Tri } from './lowPoly.ts';
 
 type Species = NonNullable<SeaPoint['targetSpecies']>;
 
 /** Block model and movement of each sea point. The models do not turn: the animal is seen as on the map. */
-const PREVIEWS: Record<Species, { boxes: readonly Box[]; motion: PreviewMotion; lift?: number }> = {
+const PREVIEWS: Record<Species, { boxes?: readonly Box[]; tris?: readonly Tri[]; motion: PreviewMotion; lift?: number }> = {
   humpback: { boxes: SEA_MODELS.humpback, motion: 'swim' },
   penguins: { boxes: SEA_MODELS.emperor, motion: 'sway', lift: 0.22 },
   orca: { boxes: SEA_MODELS.orca, motion: 'swim' },
   minke: { boxes: SEA_MODELS.minke, motion: 'swim' },
   seal: { boxes: SEA_MODELS.seal, motion: 'still' },
   irizar: { boxes: VEHICLE_MODELS.irizar, motion: 'still' },
-  iceberg: { boxes: SEA_MODELS['iceberg-lg'], motion: 'still' },
+  iceberg: { tris: ICEBERG_TABULAR_POLY, motion: 'still' },
 };
 
 /** View of the block model of a sea point, for its card. */

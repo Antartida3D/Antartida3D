@@ -1,3 +1,6 @@
+import type { Source } from './sea.ts';
+import { POINT_DETAILS } from './point-details.ts';
+
 export type Tier = 'A' | 'B' | 'C';
 
 export interface MapPoint {
@@ -9,9 +12,18 @@ export interface MapPoint {
   x: number;
   y: number;
   q: string;
+  /** Verified first description of a point without expedition. Without it the card is provisional. */
+  desc?: string;
+  /** Sources of `desc`: every sentence of it rests on one of them. */
+  sources?: readonly Source[];
+  /**
+   * The point has a low-poly model on the 3D map: picking it flies the camera this close (world
+   * units, 1 = 8 km) and the camera may come this close around it.
+   */
+  closeUp?: number;
 }
 
-export const PTS: readonly MapPoint[] = [
+const POINTS: readonly MapPoint[] = [
   { id: 'fosiles', tier: 'B', title: 'Fósiles', place: 'Isla Marambio', x: 196, y: 300, q: '¿Cómo era la Antártida antes del hielo?' },
   { id: 'oceano', tier: 'B', title: 'Océano', place: 'Mar de Weddell', x: 322, y: 322, q: '¿Qué pasa debajo del hielo marino del Mar de Weddell?' },
   { id: 'poncho', tier: 'B', title: 'Poncho', place: 'Península Antártica · ubicación a definir', x: 196, y: 352, q: '¿Qué historia puede contar un poncho en la Antártida?' },
@@ -25,6 +37,11 @@ export const PTS: readonly MapPoint[] = [
   { id: 'belgrano', tier: 'C', title: 'Base Belgrano II', place: 'Sur del Mar de Weddell', x: 404, y: 361, q: '¿Cómo se trabaja tan cerca del Polo?' },
   { id: 'emperador', tier: 'C', title: 'Colonias de pingüino emperador', place: 'Costa de Tierra de la Reina Maud', x: 593, y: 245, q: '¿Cómo pasan el invierno polar los pingüinos emperador?' },
 ];
+
+/** Close-up camera distance of the points with a model (closeUp). Erebus is a whole summit, seen from farther. */
+const CLOSE_UP: Readonly<Record<string, number>> = { polo: 2.6, testigos: 2.6, vostok: 3.2, belgrano: 2.8, thwaites: 4.5, emperador: 2.2, erebus: 7 };
+
+export const PTS: readonly MapPoint[] = POINTS.map((p) => ({ ...p, ...POINT_DETAILS[p.id], ...(CLOSE_UP[p.id] ? { closeUp: CLOSE_UP[p.id] } : {}) }));
 
 export const TIER: Record<Tier, string> = { A: 'Expedición disponible', B: 'Ampliación prevista', C: 'Próximamente' };
 

@@ -1,23 +1,52 @@
 import { lazy, Suspense, useRef } from 'react';
-import { TIER, type MapPoint, type SeaPoint } from '@antartida/core';
+import { TIER, type MapPoint, type SeaPoint, type Source } from '@antartida/core';
 import { useFocusReturn } from '../hooks.ts';
 import { Icon } from '../ui.tsx';
+import { POINT_MODEL_IDS } from '../voyage/pointModelIds.ts';
 
 // Its own chunk: it needs WebGL, which the 2D map does not.
 const SeaPreview = lazy(() => import('../voyage/SeaPreview.tsx').then((m) => ({ default: m.SeaPreview })));
+const PointPreview = lazy(() => import('../voyage/PointPreview.tsx').then((m) => ({ default: m.PointPreview })));
+
+function SourceList({ sources }: { sources?: readonly Source[] }) {
+  if (!sources || sources.length === 0) return null;
+  return (
+    <div className="sheet-sources">
+      <h3>Fuentes verificadas</h3>
+      <ul>
+        {sources.map((s, idx) => (
+          <li key={idx}>
+            {s.url ? (
+              <a href={s.url} target="_blank" rel="noopener noreferrer">
+                {s.label}
+              </a>
+            ) : (
+              <span>{s.label}</span>
+            )}
+            <small>
+              {s.org}
+              {s.consulted ? ` · Consultado ${s.consulted}` : ''}
+            </small>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 export function PointSheet({ point, onClose, fallbackFocus, preview = false, reduced = false }: {
   point: MapPoint | SeaPoint;
   onClose: () => void;
   fallbackFocus: () => HTMLElement | null;
-  /** Show the block model of a sea point (needs WebGL). */
+  /** Show the block model of the point (needs WebGL). */
   preview?: boolean;
   reduced?: boolean;
 }) {
   const ref = useRef<HTMLElement>(null);
   useFocusReturn(true, ref, 'button', fallbackFocus);
 
-  const isSea = 'desc' in point;
+  const isSea = !('tier' in point);
+  const hasModel = preview && POINT_MODEL_IDS.has(point.id);
   const tagLabel = isSea ? point.tag ?? 'Vida en el mar' : TIER[point.tier];
   const tagClass = isSea ? 'tag tsea' : 'tag t' + point.tier.toLowerCase();
 
@@ -49,31 +78,25 @@ export function PointSheet({ point, onClose, fallbackFocus, preview = false, red
             <div className="q">
               <p>{point.desc}</p>
             </div>
-            {point.sources && point.sources.length > 0 && (
-              <div className="sheet-sources">
-                <h3>Fuentes verificadas</h3>
-                <ul>
-                  {point.sources.map((s, idx) => (
-                    <li key={idx}>
-                      {s.url ? (
-                        <a href={s.url} target="_blank" rel="noopener noreferrer">
-                          {s.label}
-                        </a>
-                      ) : (
-                        <span>{s.label}</span>
-                      )}
-                      <small>
-                        {s.org}
-                        {s.consulted ? ` · Consultado ${s.consulted}` : ''}
-                      </small>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            <SourceList sources={point.sources} />
             <p className="anno" style={{ marginTop: 12 }}>
               Ilustración representativa para el cuaderno de campo antártico.
             </p>
+          </>
+        ) : point.desc ? (
+          <>
+            {hasModel && (
+              <Suspense fallback={<div className="vpreview" />}>
+                <PointPreview id={point.id} reduced={reduced} />
+              </Suspense>
+            )}
+            <div className="q">
+              <p>{point.q}</p>
+            </div>
+            <p className="sheet-desc">{point.desc}</p>
+            <SourceList sources={point.sources} />
+            {hasModel && <p className="anno">Ilustración representativa, no a escala.</p>}
+            <p className="anno">Esta expedición todavía no está disponible. Se suma en una próxima etapa.</p>
           </>
         ) : (
           <>

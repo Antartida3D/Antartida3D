@@ -13,6 +13,7 @@ import {
   FOV,
   distanceFromK3D,
   generateSeaLifeInstances,
+  groundTarget,
   homeDistance3D,
   loadOceanDepth,
   poseFromView,
@@ -31,7 +32,7 @@ import {
   PAN_LIMIT,
   SEA_HINT_MIN_PX,
   screenPx,
-  FUEGIA_MIN_DISTANCE,
+  ICE_MIN_DISTANCE,
   irizarStateAtTime,
   SEA_POINTS,
   type Geometry,
@@ -161,6 +162,7 @@ function SceneContent({
         geo={geo}
         command={command}
         onCameraRest={onCameraRest}
+        voyaging={Boolean(voyage)}
       />
       <ProjectMarkers
         markers={markers}
@@ -177,19 +179,20 @@ function SceneContent({
 
 export type Map3DLayerProps = Layer3DProps;
 
-// Zoom range of the orbit camera, as a distance to its target. Closer than MIN_DISTANCE the camera
-// would graze the 4 km plateau (25 world units high at x50). The farthest view is the overview
-// (homeDistance3D: ~800 on desktop and ~2250 on a phone), where the whole continent fits; farther
-// the camera would see past the lands of the rest of the world (WORLD_FADE_END).
-const MIN_DISTANCE = 60;
+// Zoom range of the orbit camera, as a distance to its target. The closest is ICE_MIN_DISTANCE
+// (@antartida/core), lower only around Tierra del Fuego, the Drake and the points with a model
+// (minCameraDistance). The farthest view is the overview (homeDistance3D: ~800 on desktop and ~2250
+// on a phone), where the whole continent fits; farther the camera would see past the lands of the
+// rest of the world (WORLD_FADE_END).
 /** Angle from straight down of the close-up of a point with a model: the model is seen at a slant, on its ground. */
 const VISIT_POLAR = (52 * Math.PI) / 180;
 /** From this window width the point card is a side panel, not a bottom sheet (painted.css). */
 const VISIT_WIDE_PX = 820;
-// The camera only gets closer than MIN_DISTANCE around Tierra del Fuego; there the near plane must
-// come in too, or the land in front of the target would be clipped.
+// Closer than NEAR_FROM the near plane comes in too, or the land in front of the target would be clipped.
 const NEAR = 10;
-const NEAR_CLOSE = NEAR * (FUEGIA_MIN_DISTANCE / MIN_DISTANCE);
+const NEAR_FROM = 60;
+/** Near plane closer than NEAR_FROM: the close-up of a point with a model gets about 1 unit from it. */
+const NEAR_CLOSE = 0.5;
 
 function ControlsBridge({
   phase,
@@ -199,6 +202,7 @@ function ControlsBridge({
   geo,
   command,
   onCameraRest,
+  voyaging,
 }: {
   phase: Phase;
   diveTarget: MapPoint;
@@ -207,6 +211,8 @@ function ControlsBridge({
   geo: Geometry;
   command: Layer3DProps['command'];
   onCameraRest: (view: View) => void;
+  /** On a trip the target follows the vehicle, up in the air with the plane. */
+  voyaging: boolean;
 }) {
   const controlsRef = useRef<CameraControls>(null);
   const invalidate = useThree((s) => s.invalidate);
@@ -424,16 +430,23 @@ function ControlsBridge({
   }, [gl, invalidate]);
 
   const target = useRef(new Vector3());
+  const eye = useRef(new Vector3());
   useFrame(({ camera }) => {
     const cc = controlsRef.current;
     if (!cc) return;
+    // Zooming towards the cursor lifts the target into the air or sinks it under the map, and the
+    // camera follows it in (#127): slide it back to sea level along the line of sight.
+    if (!voyaging && phase !== 'approach' && phase !== 'dive') {
+      const ground = groundTarget(cc.getPosition(eye.current, true), cc.getTarget(target.current, true));
+      if (ground) void cc.setTarget(ground.x, ground.y, ground.z, !reduced);
+    }
     const at = fromWorld(cc.getTarget(target.current));
-    cc.minDistance = minCameraDistance(at.x, at.y, MIN_DISTANCE);
+    cc.minDistance = minCameraDistance(at.x, at.y);
     // Panning out of Tierra del Fuego while close: back off before reaching the ice plateau.
     if (cc.distance < cc.minDistance - 0.01) void cc.dollyTo(cc.minDistance, !reduced);
     // A narrower window has a farther overview: come back in when the window gets wider.
     if (cc.distance > cc.maxDistance + 0.01) void cc.dollyTo(cc.maxDistance, !reduced);
-    const near = cc.distance < MIN_DISTANCE ? NEAR_CLOSE : NEAR;
+    const near = cc.distance < NEAR_FROM ? NEAR_CLOSE : NEAR;
     if (camera.near !== near) {
       camera.near = near;
       camera.updateProjectionMatrix();
@@ -448,7 +461,7 @@ function ControlsBridge({
       dollyToCursor
       // The zoom into an expedition drives the camera on every frame: gestures would fight it.
       enabled={phase !== 'approach' && phase !== 'dive'}
-      minDistance={MIN_DISTANCE}
+      minDistance={ICE_MIN_DISTANCE}
       maxDistance={homeDistance3D(size.vw / size.vh)}
     />
   );

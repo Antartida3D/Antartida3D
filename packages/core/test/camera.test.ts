@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  GROUND_TARGET_MAX,
+  groundTarget,
   CAMERA_RETURN_SECONDS,
   FOV,
   MAX_POLAR_DEG,
@@ -257,5 +259,29 @@ describe('trip camera coming back to the vehicle from a place off the path', () 
     const { steps } = fly(0);
     const whole = steps.reduce((a, b) => a + b, 0);
     expect(Math.max(...steps)).toBeLessThan((2 * whole) / steps.length);
+  });
+});
+
+describe('groundTarget (#127)', () => {
+  it('leaves a target on the ground or at a model alone', () => {
+    expect(groundTarget({ x: 0, y: 20, z: 20 }, { x: 0, y: 0, z: 0 })).toBeNull();
+    expect(groundTarget({ x: 0, y: 20, z: 20 }, { x: 0, y: GROUND_TARGET_MAX, z: 0 })).toBeNull();
+  });
+
+  it('brings a target that sank under the map back to sea level, on the same line of sight', () => {
+    const pos = { x: 0, y: -37.6, z: 10 };
+    const sunk = groundTarget({ x: 0, y: 12.4, z: 10 }, { x: 0, y: -50, z: -40 })!;
+    expect(sunk.y).toBe(0);
+    // From (0, 12.4, 10) towards (0, -50, -40): sea level is a fifth of the way.
+    expect(sunk.z).toBeCloseTo(10 - 50 * (12.4 / 62.4), 6);
+    // Camera already under the map: straight up to sea level.
+    expect(groundTarget(pos, { x: 3, y: -50, z: -40 })).toEqual({ x: 3, y: 0, z: -40 });
+  });
+
+  it('brings a target that climbed into the air down along the line of sight', () => {
+    const t = groundTarget({ x: 0, y: 73.7, z: 12.5 }, { x: 0, y: 61.3, z: -9 })!;
+    expect(t.y).toBe(0);
+    const s = 73.7 / (73.7 - 61.3);
+    expect(t.z).toBeCloseTo(12.5 + (-9 - 12.5) * s, 6);
   });
 });

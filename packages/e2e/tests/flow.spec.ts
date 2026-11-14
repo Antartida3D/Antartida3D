@@ -1,6 +1,17 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type CDPSession, type Locator, type Page } from '@playwright/test';
 
 const log = (page: Page) => page.locator('.reg');
+
+/** One finger drags from the middle of `from` by (dx, dy) px, in eight steps. */
+async function touchDrag(cdp: CDPSession, from: Locator, dx: number, dy: number) {
+  const box = (await from.boundingBox())!;
+  const [x, y] = [box.x + box.width / 2, box.y + box.height / 2];
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
+  for (let i = 1; i <= 8; i++) {
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x + (dx * i) / 8, y: y + (dy * i) / 8 }] });
+  }
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+}
 
 /** Presses Tab until the focused element's accessible name matches. */
 async function tabTo(page: Page, name: RegExp, max = 60) {
@@ -146,4 +157,74 @@ test('on a phone the trip picker grows when its handle is dragged up, shrinks ba
   await expect(sheet).toHaveCount(0);
   await expect(page.locator('.vbar')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Ver como lista' })).toBeVisible();
+});
+
+test('on a phone the legend starts closed, and a swipe left or down closes it (#114)', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'on wide screens the legend starts open (next test)');
+  const button = page.getByRole('button', { name: /Leyenda/ });
+  const legend = page.locator('.legend');
+  await expect(button).toHaveAttribute('aria-expanded', 'false');
+  await expect(legend.locator('ul')).toHaveCount(0);
+
+  const cdp = await page.context().newCDPSession(page);
+  const swipe = (dx: number, dy: number) => touchDrag(cdp, button, dx, dy);
+
+  // Left and down both close it. The swipe starts on the button: it must not press it and open
+  // the legend again.
+  for (const [dx, dy] of [[-60, 0], [0, 100]] as const) {
+    await button.tap();
+    await expect(button).toHaveAttribute('aria-expanded', 'true');
+    await swipe(dx, dy);
+    await expect(button).toHaveAttribute('aria-expanded', 'false');
+    await expect(legend.locator('ul')).toHaveCount(0);
+  }
+
+  // A short swipe, or one to the right, leaves it open and back in its place.
+  await button.tap();
+  await swipe(-20, 0);
+  await swipe(80, 0);
+  await expect(button).toHaveAttribute('aria-expanded', 'true');
+  await expect(legend).not.toHaveAttribute('style', /translate/);
+});
+
+test('on a short phone screen the 3D legend notes scroll under the finger, and a pull down from their top closes it (#114)', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'a phone gesture');
+  // Short enough that the open notes outgrow the height the 3D legend gives its lists (painted.css).
+  await page.setViewportSize({ width: 390, height: 560 });
+  await page.getByRole('button', { name: 'Relieve 3D', exact: true }).click();
+  const button = page.getByRole('button', { name: 'Leyenda', exact: true });
+  await button.tap();
+  await page.locator('.legend summary').tap();
+  const notes = page.getByRole('list', { name: 'Fuentes y aclaraciones' });
+  const scrollTop = () => notes.evaluate((el) => el.scrollTop);
+  expect(await notes.evaluate((el) => el.scrollHeight - el.clientHeight)).toBeGreaterThan(10);
+
+  const cdp = await page.context().newCDPSession(page);
+  // Finger up: the notes scroll, the legend stays open.
+  await touchDrag(cdp, notes, 0, -80);
+  await expect.poll(scrollTop).toBeGreaterThan(0);
+  await expect(button).toHaveAttribute('aria-expanded', 'true');
+
+  // Finger down while they are scrolled: they scroll back, the legend stays open.
+  const scrolled = await scrollTop();
+  await touchDrag(cdp, notes, 0, 40);
+  await expect.poll(scrollTop).toBeLessThan(scrolled);
+  await expect(button).toHaveAttribute('aria-expanded', 'true');
+
+  // From their top, a pull down closes the legend.
+  await notes.evaluate((el) => (el.scrollTop = 0));
+  await touchDrag(cdp, notes, 0, 80);
+  await expect(button).toHaveAttribute('aria-expanded', 'false');
+});
+
+test('on a wide screen the legend starts open, with its sources and notes folded (#114)', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'on a phone it starts closed (previous test)');
+  await expect(page.getByRole('button', { name: /Leyenda/ })).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.locator('.legend').getByText('Expedición disponible')).toBeVisible();
+
+  // What is only an illustration stays one tap away, not off the screen.
+  const note = page.locator('.legend').getByText(/símbolo ilustrativo/);
+  await expect(note).toBeHidden();
+  await page.locator('.legend summary', { hasText: 'Fuentes y aclaraciones' }).click();
+  await expect(note).toBeVisible();
 });

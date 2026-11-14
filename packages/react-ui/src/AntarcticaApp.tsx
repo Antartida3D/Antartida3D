@@ -18,6 +18,7 @@ import {
 import { useReducedMotion, useTimers } from './hooks.ts';
 import { MapView, type Layer3DProps, type Phase, type ViewMode } from './map/MapView.tsx';
 import { Filters } from './ui.tsx';
+import { NARROW_PX } from './voyage/useVoyage.ts';
 
 const loadOrcadas = () => import('./orcadas/OrcadasExpedition.tsx');
 const OrcadasExpedition = lazy(() => loadOrcadas().then((m) => ({ default: m.OrcadasExpedition })));
@@ -51,7 +52,8 @@ export function AntarcticaApp() {
   const [voyaging, setVoyaging] = useState(false);
   const [activePoint, setActivePoint] = useState<MapPoint>(EXPEDITION_POINT);
   const [toast, setToast] = useState('');
-  const [legend, setLegend] = useState(true);
+  // On a phone the legend starts closed: open, it covers much of the map (#114).
+  const [legend, setLegend] = useState(() => typeof window === 'undefined' || window.innerWidth >= NARROW_PX);
   const [returned, setReturned] = useState(false);
   const [mode, setMode] = useState<ViewMode>('2d');
   const [webglSupported, setWebglSupported] = useState(false);

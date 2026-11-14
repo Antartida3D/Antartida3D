@@ -243,6 +243,15 @@ Plan: `.agents/plans/plan-helipuerto-orcadas.md`.
 - **Helicóptero en temporada de visitas:** Sea King voxel posado sobre la losa, visible solo entre noviembre y marzo (`helicopterOnPad(month)` en `@antartida/core`), según COMNAP (2017).
 - **Qué es ilustrativo:** el tipo de helicóptero, sus colores, su escala y su ubicación en el escenario. La leyenda de la escena lo declara.
 
+### Sin WebGL, «Relieve 3D» avisa cómo activarlo (#123, 14-11-2026)
+
+- **Problema:** en un navegador con WebGL apagado (por ejemplo Opera con la aceleración por hardware desactivada, o con la placa de video bloqueada), el selector «Mapa 2D / Relieve 3D» desaparecía entero. La persona no sabía que existía el 3D ni qué hacer para verlo. El toast «WebGL no está disponible» nunca se veía, porque no quedaba botón que lo disparara.
+- **Ahora:** el selector se ve siempre. Sin WebGL, el segundo botón dice «Relieve 3D · apagado» (borde punteado ocre, como lo ilustrativo) y al tocarlo abre un aviso que explica qué pasa y cómo activar la aceleración por hardware. El aviso se cierra con «Entendido» o con Escape, y el foco vuelve al botón (`useFocusReturn`). El mapa sigue en 2D.
+- **No es `disabled` ni `aria-disabled`:** el botón hace algo (abre el aviso), así que se anuncia como un botón común. Su nombre accesible es «Relieve 3D apagado: ver cómo activarlo», y `aria-expanded` dice si el aviso está abierto.
+- **Sin parpadeo:** `webglSupported` empieza en `null` y el selector espera a que se compruebe, para no mostrarse un instante como «apagado» en un navegador que sí tiene WebGL.
+- **Pasos genéricos:** los nombres del ajuste coinciden en Chrome, Edge y Opera («Usar aceleración por hardware cuando esté disponible»). No se detecta el navegador.
+- **Prueba e2e:** `no-webgl.spec.ts` apaga WebGL y comprueba el botón, el aviso, Escape, «Entendido» y que el flujo 2D sigue funcionando.
+
 ### Bienvenida: la primera visita empieza en «Desde Ushuaia» (#115, 14-11-2026)
 
 Pedido de quien lleva el issue: quien entra por primera vez se queda perdido y no sabe a dónde ir. Propuesta: que al entrar la cámara se acerque a «Desde Ushuaia», la primera expedición del orden sugerido (#75), para dejar claro que hay que tocar ahí.

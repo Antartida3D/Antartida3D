@@ -110,6 +110,13 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid #1E3E5C;outline-
 .iconbtn svg{width:22px;height:22px}
 .leftcol{display:flex;flex-direction:column;gap:10px;align-items:flex-start}
 .claims-control{position:relative;z-index:1}
+/* Without WebGL (#123): «Relieve 3D» stays, marked as off, and opens how to turn it on. */
+.chip.off{border:1.5px dashed #8A5A14;color:#6B430D;background:#FBF4E6}
+.webgl-note{background:rgba(251,244,230,.98);border:1.5px solid var(--ink);border-left:6px solid var(--ocre);border-radius:8px 14px 10px 12px;padding:10px 12px;max-width:min(300px,calc(100vw - 32px));font-size:14px;line-height:1.35;box-shadow:2px 3px 0 rgba(31,42,54,.15)}
+.webgl-note p{margin:0 0 6px}
+.webgl-note .wn-title{font-weight:700;font-size:15px}
+.webgl-note ol{margin:0 0 6px;padding-left:20px}
+.webgl-note .btn{min-height:40px;font-size:14px;padding:0 14px}
 .m3d .legend ul{max-height:min(250px,30dvh);overflow-y:auto;overscroll-behavior:contain}
 .claims-actions{display:flex;align-items:center;gap:6px}
 .claims-switch{width:26px;height:16px;border:1.5px solid var(--ink);border-radius:10px;background:var(--paper);position:relative;flex:none}

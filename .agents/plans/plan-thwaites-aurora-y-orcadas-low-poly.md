@@ -1,6 +1,6 @@
 # Plan: Pulido de Thwaites y la aurora, y Base Orcadas en low-poly
 
-Estado: **borrador, espera aprobación de Lk.** Viene de #58 (PR de fichas y modelos de puntos). Se ejecuta en una conversación nueva, en ramas nuevas.
+Estado: **aprobado; partes A y B hechas en #117 (B2: aurora fuera del mapa, en la ficha).** Viene de #58 (PR de fichas y modelos de puntos). Se ejecuta en una conversación nueva, en ramas nuevas.
 
 ## Contexto que el agente necesita (sin la conversación de #58)
 
@@ -48,11 +48,11 @@ Seguir construyendo desde el mapa, pero con la costa del mapa:
 
 ### Pasos
 
-- [ ] A1. Issue nuevo «Thwaites: el frente no sigue la costa del mapa» (asignado a Lk) y rama desde `main`. → verificar: `git branch --show-current` empieza con el número.
-- [ ] A2. Raycast del gris frente a Thwaites y anotar qué malla es. → verificar: nota en el issue.
-- [ ] A3. `coastSdfAt` en `map3d/` y test unitario puro de la lectura bilineal, con una `ImageData` armada a mano, en `packages/react-ui/test/coast.test.ts`. → verificar: `pnpm --filter @antartida/react-ui test`.
-- [ ] A4. `thwaitesFront` con `coastAt` (pasos 2 a 5). Ajustar `test/pointModels.test.ts`: en una costa sintética recta, ninguna cara del acantilado ni las grietas caen del lado del mar, y ningún hielo suelto cae del lado del hielo. → verificar: tests en verde.
-- [ ] A5. Capturas de la toma cercana (1440 y 390 px) y de lejos (distancia 60). Mostrárselas a Lk. → verificar: aprobación de Lk.
+- [x] A1. Issue nuevo «Thwaites: el frente no sigue la costa del mapa» (asignado a Lk) y rama desde `main`. → verificar: `git branch --show-current` empieza con el número.
+- [x] A2. Raycast del gris frente a Thwaites y anotar qué malla es. → verificar: nota en el issue.
+- [x] A3. `coastSdfAt` en `map3d/` y test unitario puro de la lectura bilineal, con una `ImageData` armada a mano, en `packages/react-ui/test/coast.test.ts`. → verificar: `pnpm --filter @antartida/react-ui test`.
+- [x] A4. `thwaitesFront` con `coastAt` (pasos 2 a 5). Ajustar `test/pointModels.test.ts`: en una costa sintética recta, ninguna cara del acantilado ni las grietas caen del lado del mar, y ningún hielo suelto cae del lado del hielo. → verificar: tests en verde.
+- [x] A5. Capturas de la toma cercana (1440 y 390 px) y de lejos (distancia 60). Mostrárselas a Lk. → verificar: aprobación de Lk.
 
 ## Parte B: Aurora de Belgrano II
 
@@ -62,8 +62,8 @@ Opciones (armar las dos y que Lk elija con capturas):
 - **B1. Cortina continua:** una tira de quads verticales unidos, con alfa por vértice (verde abajo, transparente arriba, como el agua de `icebergs.ts`), mezcla aditiva, opacidad máxima 0,25 y una onda lenta. Solo visible en la toma cercana (`screenPx` del modelo > 120 px).
 - **B2. Sacarla del mapa** y dejar la aurora en la ficha («Desde allí se observan abundantes auroras polares», Ejército Argentino, ya citado en `docs/puntos-proximamente-fuentes.md`).
 
-- [ ] B1. Implementar B1 detrás de una constante; capturas de B1 y B2. → verificar: Lk elige.
-- [ ] B2. Dejar solo la elegida y borrar el código de la otra. → verificar: `pnpm test && pnpm typecheck`.
+- [x] B1. Implementar B1 detrás de una constante; capturas de B1 y B2. → verificar: Lk elige.
+- [x] B2. Dejar solo la elegida y borrar el código de la otra. → verificar: `pnpm test && pnpm typecheck`.
 
 ## Parte C: Base Orcadas en low-poly (solo si se resolvió el choque con #104)
 

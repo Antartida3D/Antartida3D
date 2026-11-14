@@ -24,7 +24,7 @@ export const POINT_DETAILS: Readonly<Record<string, { desc: string; sources: rea
     ],
   },
   belgrano: {
-    desc: 'La Base Belgrano II se inauguró el 5 de febrero de 1979 sobre roca firme, en el nunatak Bertrab, al sur del Mar de Weddell. Es la base más austral de la Argentina, a 1.300 km del Polo Sur. Tiene cuatro meses de noche polar, vientos fuertes y temperaturas de hasta -54 °C, y se abastece una vez por año, sobre todo con el rompehielos Almirante Irízar. En el Laboratorio Belgrano (LABEL), científicos del Instituto Antártico Argentino estudian el ozono, el magnetismo, el clima y los sismos.',
+    desc: 'La Base Belgrano II se inauguró el 5 de febrero de 1979 sobre roca firme, en el nunatak Bertrab, al sur del Mar de Weddell. Es la base más austral de la Argentina, a 1.300 km del Polo Sur. Tiene cuatro meses de noche polar, vientos fuertes y temperaturas de hasta -54 °C, y se abastece una vez por año, sobre todo con el rompehielos Almirante Irízar. De noche se ven abundantes auroras polares. En el Laboratorio Belgrano (LABEL), científicos del Instituto Antártico Argentino estudian el ozono, el magnetismo, el clima y los sismos.',
     sources: [
       { label: 'Base Belgrano II', org: 'Cancillería Argentina · Dirección Nacional del Antártico (DNA)', url: 'https://cancilleria.gob.ar/es/iniciativas/dna/antartida-argentina/bases/belgrano-ii', consulted: '2026-11-13' },
       { label: 'Base Belgrano II', org: 'Ejército Argentino · Argentina.gob.ar', url: 'https://www.argentina.gob.ar/ejercito/antartida/base-belgrano2', consulted: '2026-11-13' },

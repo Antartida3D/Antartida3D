@@ -7,7 +7,8 @@ Una lista de cajas de color plano. No hay texturas, luces ni archivos de modelo:
 
 - Constructor: `buildBoxGeometry` (`packages/react-ui/src/voyage/vehicles.ts`).
 - Material: `vehicleMaterial` (colores por vértice).
-- Vehículos: `VEHICLE_MODELS` en `vehicles.ts`.
+- Vehículos: `VEHICLE_MODELS` en `vehicles.ts` (Irízar y Puerto Argentino).
+- Hércules C-130 (14-11-2026, issue #74): ya no es de bloques sino low-poly, una lista de triángulos de color plano en `packages/react-ui/src/voyage/herculesModel.ts`. `HERCULES_FLIGHT_POLY` es el avión en vuelo (mapa abierto, viaje y selector de vehículos) y `HERCULES_PARKED_POLY` el avión en tierra, con el tren abajo y las ruedas en `y = 0`. Conserva los colores aprobados en #103. Se registra en `VEHICLE_POLY_MODELS` y lo revisa `packages/react-ui/test/hercules.test.ts`. Es una ilustración: proporciones aproximadas y bandera más grande que la real.
 - Animales, hielo, faros, pingüinera y Ushuaia: `SCENE_MODELS` en `sightingModels.ts`.
 
 ## Mínimo de detalle
@@ -26,7 +27,7 @@ Una lista de cajas de color plano. No hay texturas, luces ni archivos de modelo:
 - **Marcadores, etiquetas y retícula:** son interfaz y no cambian de tamaño en pantalla. Con ellos se encuentra cada cosa, también con teclado.
 
 ## Vista previa en las fichas (13-11-2026, issue #50)
-- **Un solo lienzo:** `ModelPreview` (`packages/react-ui/src/voyage/ModelPreview.tsx`) dibuja cualquier modelo de bloques dentro de una ficha. Lo usan el selector de vehículos (`VehiclePreview`, sin cambios a la vista) y las fichas de «Vida en el mar» (`SeaPreview`).
+- **Un solo lienzo:** `ModelPreview` (`packages/react-ui/src/voyage/ModelPreview.tsx`) dibuja cualquier modelo de bloques o low-poly dentro de una ficha. Lo usan el selector de vehículos (`VehiclePreview`, sin cambios a la vista) y las fichas de «Vida en el mar» (`SeaPreview`).
 - **Movimiento** (`motion`): `turn` gira (solo vehículos del selector); `swim` sube y baja suave con leve balanceo (ballena); `sway` balanceo mínimo de pie (pingüino); `still` quieto (Irízar, témpano). En las fichas el modelo no gira. Los movimientos son ilustrativos, no datos.
 - **Movimiento reducido:** con «reducir movimiento» activo ningún modelo se mueve y el lienzo solo se dibuja a pedido.
 - **Qué modelo va en cada ficha:** se elige por `targetSpecies` del punto, en `SeaPreview.tsx`. No cambió nada en `@antartida/core`.

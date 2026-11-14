@@ -1,6 +1,6 @@
 # Plan: Pulido de Thwaites y la aurora, y Base Orcadas en low-poly
 
-Estado: **aprobado; partes A y B hechas en #117 (B2: aurora fuera del mapa, en la ficha).** Viene de #58 (PR de fichas y modelos de puntos). Se ejecuta en una conversación nueva, en ramas nuevas.
+Estado: **aprobado; partes A y B hechas en #117 (B2: aurora fuera del mapa, en la ficha); parte C en un solo PR de #116, a pedido de Lk.** Viene de #58 (PR de fichas y modelos de puntos). Se ejecuta en una conversación nueva, en ramas nuevas.
 
 ## Contexto que el agente necesita (sin la conversación de #58)
 
@@ -87,14 +87,14 @@ Opciones (armar las dos y que Lk elija con capturas):
 
 ### Pasos (un PR por grupo, para que se revise de a poco)
 
-- [ ] C0. Acuerdo del equipo registrado (ver «Choque»). → verificar: link al issue o comentario.
-- [ ] C1. Issue y rama. Línea base: `pnpm test` (conteo), `pnpm bench` (fps del diorama) y capturas de las 4 tomas del recorrido de Orcadas. → verificar: números anotados en el issue.
-- [ ] C2. Edificios y estructuras (módulos, Omond, torre, abrigo, mástil, helipuerto, bandera). → verificar: test nuevo, capturas lado a lado y e2e `orcadas.spec.ts` en desktop.
-- [ ] C3. Vehículos y utilería (helicóptero con rotor, bote Zodiac, placas de hielo, témpanos). → verificar: ídem.
-- [ ] C4. Animales (pingüinos de Adelia y de barbijo, focas de Weddell y elefante, skúa, petrel). Conservar la marca de especie (regla 30.3). → verificar: ídem, y las poses animadas se ven bien en 3 momentos del ciclo.
-- [ ] C5. Sitio del mapa (`ORCADAS_SITE`, `OrcadasSite.tsx`) con el mismo apoyo sobre el relieve que los puntos de #58 (`seatOf`/`seatTris`), o reutilizando `PointModels` si alcanza. → verificar: captura a distancia 60 y en la toma cercana.
-- [ ] C6. Borrar lo que quede sin uso en `stationModels.ts` y los getters de `SCENE_MODELS`. Actualizar la regla 30 (Orcadas ya en low-poly) y la declaración de IA del README. → verificar: `pnpm typecheck` sin exports huérfanos (buscar con `grep`).
-- [ ] C7. `pnpm bench` contra la línea base. Si los fps caen más de 10 %, unir geometrías estáticas en una sola malla por grupo. → verificar: número del bench en el PR.
+- [x] C0. Acuerdo del equipo registrado (ver «Choque»). → verificar: link al issue o comentario.
+- [x] C1. Issue y rama. Línea base: `pnpm test` (conteo), `pnpm bench` (fps del diorama) y capturas de las 4 tomas del recorrido de Orcadas. → verificar: números anotados en el issue.
+- [x] C2. Edificios y estructuras (módulos, Omond, torre, abrigo, mástil, helipuerto, bandera). → verificar: test nuevo, capturas lado a lado y e2e `orcadas.spec.ts` en desktop.
+- [x] C3. Vehículos y utilería (helicóptero con rotor, bote Zodiac, placas de hielo, témpanos). → verificar: ídem.
+- [x] C4. Animales (pingüinos de Adelia y de barbijo, focas de Weddell y elefante, skúa, petrel). Conservar la marca de especie (regla 30.3). → verificar: ídem, y las poses animadas se ven bien en 3 momentos del ciclo.
+- [x] C5. Sitio del mapa (`ORCADAS_SITE`, `OrcadasSite.tsx`) con el mismo apoyo sobre el relieve que los puntos de #58 (`seatOf`/`seatTris`), o reutilizando `PointModels` si alcanza. → verificar: captura a distancia 60 y en la toma cercana.
+- [x] C6. Borrar lo que quede sin uso en `stationModels.ts` y los getters de `SCENE_MODELS`. Actualizar la regla 30 (Orcadas ya en low-poly) y la declaración de IA del README. → verificar: `pnpm typecheck` sin exports huérfanos (buscar con `grep`).
+- [x] C7. `pnpm bench` contra la línea base. Si los fps caen más de 10 %, unir geometrías estáticas en una sola malla por grupo. → verificar: número del bench en el PR.
 
 ## Fuera de alcance
 

@@ -140,6 +140,8 @@ En cumplimiento con las bases de la hackatón, se declara el uso de herramientas
   > Planificación, revisión y ajustes visuales con Claude Code (modelo Claude Opus 5.5); implementación de partes delegada a Antigravity (Gemini 3.8 Flash) bajo revisión. Las siluetas salen de Natural Earth y su color de Natural Earth II (ambos de dominio público); son contexto geográfico, no datos.
 - **La lista de puntos tapa los cartelitos del mapa (#48):**
   > Diagnóstico, arreglo y prueba e2e con asistencia de IA, con revisión del equipo. No se agregaron datos ni fuentes.
+- **Fichas verificadas y modelos de los puntos «Próximamente» y «Ampliación prevista» (#58):**
+  > Plan, verificación de cada cita contra su fuente, redacción final de las fichas, diseño de los modelos low-poly apoyados sobre el relieve, la toma cercana de cada punto, animaciones y revisión con Claude Code (modelo Claude Opus 5.5). La búsqueda de fuentes y un primer borrador de la interfaz y de los modelos se delegaron a Antigravity (Gemini 4 Hydrogen); los modelos se rehicieron después en low-poly. La cumbre del Erebus se arma sobre el relieve real de Bedmap3 y toma sus colores; el cráter está exagerado unas 3 veces para que se vea. Cada oración de las fichas tiene su cita textual en `docs/puntos-proximamente-fuentes.md`. Los modelos y sus movimientos (humo y bombas del Erebus, desprendimiento en Thwaites, giro de los emperadores, banderas y aurora) son ilustraciones: no están a escala y su ritmo está acelerado.
 - **Documento de tecnologías (#82):**
   > Redactado con asistencia de IA a partir del código y la documentación del repositorio, con revisión del equipo. No agrega datos nuevos.
 - **Bordes del mapa 3D, resto del mundo hasta 60° N y gestos de la cámara (#46):**

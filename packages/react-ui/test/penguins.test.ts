@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import { buildPenguinPolyParts } from '../src/orcadas/lowPolyAnimals.ts';
 import { STATION_LAYOUT, footprintCorners, seaIceAt, worldCoastDistance } from '@antartida/core';
 import {
   PENGUIN_NECK,
   PENGUIN_SCALE,
   PENGUIN_SWIM_CLEARANCE,
   buildPenguinColony,
-  penguinParts,
   penguinSwimCorridor,
   residentPose,
   restPose,
@@ -119,7 +119,7 @@ describe('penguin colony (reconstruction)', () => {
 
   it('keeps body and feet resting on the terrain when landing, diving and walking', () => {
     const minGroundClearance = (p: PenguinPose, species: PenguinSpecies) => {
-      const parts = penguinParts(species);
+      const parts = buildPenguinPolyParts(species);
       const zRot = -p.lie * (Math.PI / 2) + p.slope;
       const cz = Math.cos(zRot);
       const sz = Math.sin(zRot);
@@ -132,32 +132,29 @@ describe('penguin colony (reconstruction)', () => {
       const chy = Math.cos(p.headYaw);
       const shy = Math.sin(p.headYaw);
       let minClear = Infinity;
-      const scan = (boxes: typeof parts.body, isHead: boolean) => {
-        for (const [bx, by, bz, bsx, bsy, bsz] of boxes) {
-          for (const ox of [-bsx / 2, bsx / 2]) {
-            for (const oy of [-bsy / 2, bsy / 2]) {
-              for (const oz of [-bsz / 2, bsz / 2]) {
-                let lx = bx + ox;
-                let ly = by + oy;
-                let lz = bz + oz;
-                if (isHead) {
-                  const rx = lx * chp - ly * shp;
-                  const ry = lx * shp + ly * chp;
-                  lx = rx * chy + lz * shy + PENGUIN_NECK[0];
-                  ly = ry + PENGUIN_NECK[1];
-                  lz = -rx * shy + lz * chy + PENGUIN_NECK[2];
-                }
-                ly *= p.stretch;
-                const x1 = lx * cz - ly * sz;
-                const y1 = lx * sz + ly * cz;
-                const y2 = y1 * cx - lz * sx;
-                const z2 = y1 * sx + lz * cx;
-                const wx = p.x + (x1 * cy + z2 * sy) * PENGUIN_SCALE;
-                const wz = p.z + (-x1 * sy + z2 * cy) * PENGUIN_SCALE;
-                const wy = p.y + y2 * PENGUIN_SCALE;
-                minClear = Math.min(minClear, wy - heightAt(wx, wz));
-              }
+      // The drawn low-poly model: every corner of its body and head faces.
+      const scan = (tris: typeof parts.body, isHead: boolean) => {
+        for (const t of tris) {
+          for (const [vx, vy, vz] of [t[0], t[1], t[2]]) {
+            let lx = vx;
+            let ly = vy;
+            let lz = vz;
+            if (isHead) {
+              const rx = lx * chp - ly * shp;
+              const ry = lx * shp + ly * chp;
+              lx = rx * chy + lz * shy + PENGUIN_NECK[0];
+              ly = ry + PENGUIN_NECK[1];
+              lz = -rx * shy + lz * chy + PENGUIN_NECK[2];
             }
+            ly *= p.stretch;
+            const x1 = lx * cz - ly * sz;
+            const y1 = lx * sz + ly * cz;
+            const y2 = y1 * cx - lz * sx;
+            const z2 = y1 * sx + lz * cx;
+            const wx = p.x + (x1 * cy + z2 * sy) * PENGUIN_SCALE;
+            const wz = p.z + (-x1 * sy + z2 * cy) * PENGUIN_SCALE;
+            const wy = p.y + y2 * PENGUIN_SCALE;
+            minClear = Math.min(minClear, wy - heightAt(wx, wz));
           }
         }
       };
@@ -178,7 +175,9 @@ describe('penguin colony (reconstruction)', () => {
             expect(clear).toBeGreaterThan(-0.005);
           }
           if (seg.mode !== 'swim' && seg.mode !== 'dive' && seg.mode !== 'leap') {
-            expect(clear).toBeLessThan(0.025);
+            // Rising from the belly, the round low-poly body rocks over its chest: up to 3 mm off the
+            // ground for an instant, where the corners of the old box body touched it.
+            expect(clear).toBeLessThan(seg.mode === 'standUp' ? 0.03 : 0.025);
           }
         }
       }

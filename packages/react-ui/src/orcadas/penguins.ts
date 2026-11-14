@@ -1,6 +1,5 @@
 import { worldCoastDistance } from '@antartida/core';
-import type { Box } from '../voyage/vehicles.ts';
-import { PENGUIN_KNOLL, SLIDE_DIRECTION, VOXEL_PALETTE } from './stationModels.ts';
+import { PENGUIN_KNOLL, SLIDE_DIRECTION } from './stationModels.ts';
 
 /**
  * Penguin colony of the Orcadas diorama: a reconstruction (no source places the colony) of
@@ -11,11 +10,6 @@ import { PENGUIN_KNOLL, SLIDE_DIRECTION, VOXEL_PALETTE } from './stationModels.t
  * can check the whole loop (no overlap, nobody walks on water or through a building).
  */
 
-const { BLACK, WHITE, ORANGE, RED, ROCK, ROCK_DARK, ROCK_LIGHT } = VOXEL_PALETTE;
-/** Pink-cream guano of a krill-eating colony. */
-const GUANO = 0xdcc2b4;
-const GUANO_LIGHT = 0xeee2d6;
-const PEBBLE = 0x5b605e;
 
 /** Animals are drawn larger than real so they can be seen (declared in the scene label). */
 export const PENGUIN_SCALE = 0.55;
@@ -25,82 +19,6 @@ export const PENGUIN_SHOULDER: readonly [number, number, number] = [-0.01, 0.47,
 
 export type PenguinSpecies = 'adelie' | 'chinstrap';
 
-export interface PenguinParts {
-  body: Box[];
-  /** Relative to PENGUIN_NECK. */
-  head: Box[];
-  /** One flipper relative to its shoulder; the scene places it on both sides. */
-  flipper: Box[];
-}
-
-const shift = (boxes: readonly Box[], dx: number, dy: number, dz: number): Box[] =>
-  boxes.map(([x, y, z, sx, sy, sz, c]) => [x + dx, y + dy, z + dz, sx, sy, sz, c] as Box);
-
-/** Standing penguin split in body, head and flippers so the scene can animate them. */
-export function penguinParts(species: PenguinSpecies): PenguinParts {
-  const body: Box[] = [
-    // Webbed feet
-    [0.05, 0.02, 0.075, 0.16, 0.04, 0.09, ORANGE],
-    [0.05, 0.02, -0.075, 0.16, 0.04, 0.09, ORANGE],
-    [0.12, 0.015, 0.075, 0.05, 0.028, 0.105, ORANGE],
-    [0.12, 0.015, -0.075, 0.05, 0.028, 0.105, ORANGE],
-    // Stiff tail
-    [-0.14, 0.07, 0, 0.12, 0.045, 0.11, BLACK],
-    [-0.19, 0.045, 0, 0.08, 0.03, 0.075, BLACK],
-    // Black back, stepped towards the shoulders
-    [-0.01, 0.19, 0, 0.23, 0.22, 0.26, BLACK],
-    [-0.01, 0.37, 0, 0.22, 0.2, 0.24, BLACK],
-    [-0.005, 0.5, 0, 0.19, 0.1, 0.21, BLACK],
-    // White belly and chest
-    [0.055, 0.19, 0, 0.14, 0.2, 0.245, WHITE],
-    [0.06, 0.36, 0, 0.135, 0.2, 0.225, WHITE],
-    [0.055, 0.48, 0, 0.12, 0.08, 0.19, WHITE],
-  ];
-  const crown: Box[] = [
-    [0.01, 0.61, 0, 0.18, 0.13, 0.19, BLACK],
-    [0.005, 0.685, 0, 0.14, 0.035, 0.15, BLACK],
-  ];
-  const face: Box[] =
-    species === 'adelie'
-      ? [
-          // Adélie: black head, wide white eye ring, red-based bill
-          [0.05, 0.625, 0.098, 0.07, 0.07, 0.014, WHITE],
-          [0.05, 0.625, -0.098, 0.07, 0.07, 0.014, WHITE],
-          [0.056, 0.625, 0.107, 0.028, 0.028, 0.008, BLACK],
-          [0.056, 0.625, -0.107, 0.028, 0.028, 0.008, BLACK],
-          [0.12, 0.6, 0, 0.06, 0.042, 0.056, RED],
-          [0.165, 0.595, 0, 0.055, 0.028, 0.038, BLACK],
-        ]
-      : [
-          // Chinstrap: white face, black cap and the thin black strap under the chin
-          [0.045, 0.59, 0, 0.14, 0.11, 0.196, WHITE],
-          [0.065, 0.625, 0.102, 0.028, 0.028, 0.01, BLACK],
-          [0.065, 0.625, -0.102, 0.028, 0.028, 0.01, BLACK],
-          [0.035, 0.56, 0.101, 0.026, 0.1, 0.01, BLACK],
-          [0.035, 0.56, -0.101, 0.026, 0.1, 0.01, BLACK],
-          [0.07, 0.535, 0, 0.05, 0.03, 0.206, BLACK],
-          [0.13, 0.6, 0, 0.075, 0.04, 0.052, BLACK],
-        ];
-  const flipper: Box[] = [
-    [0, -0.09, 0, 0.11, 0.18, 0.036, BLACK],
-    [0.02, -0.23, 0.003, 0.085, 0.15, 0.032, BLACK],
-    [0.04, -0.16, -0.002, 0.03, 0.24, 0.038, WHITE],
-  ];
-  const [nx, ny, nz] = PENGUIN_NECK;
-  return { body, head: shift([...crown, ...face], -nx, -ny, -nz), flipper };
-}
-
-/** The whole penguin at rest, for the voxel detail test. */
-export function assemblePenguinBoxes(species: PenguinSpecies): Box[] {
-  const { body, head, flipper } = penguinParts(species);
-  const [sx, sy, sz] = PENGUIN_SHOULDER;
-  return [
-    ...body,
-    ...shift(head, ...PENGUIN_NECK),
-    ...shift(flipper, sx, sy, sz),
-    ...shift(flipper, sx, sy, -sz),
-  ];
-}
 
 // ---------------------------------------------------------------------------------------------
 // Colony plan
@@ -132,37 +50,6 @@ const NESTS: readonly V2[] = [
 
 /** Where each nest is, in world x/z. */
 export const NEST_POSITIONS: readonly V2[] = NESTS.map(([s, p]) => knollPoint(s, p));
-
-/**
- * Flat guano-stained rock of the colony with a ring of pebbles for each nest, relative to the
- * knoll centre and its top height (y = 0).
- */
-export function buildRookeryBoxes(): Box[] {
-  // Irregular stains of guano and bare rock, thin and flush with the knoll top.
-  const boxes: Box[] = [
-    [0.1, 0.0, -0.15, 1.1, 0.03, 0.8, GUANO],
-    [-0.35, 0.0, 0.3, 0.8, 0.03, 0.6, GUANO],
-    [0.45, 0.0, 0.3, 0.5, 0.03, 0.45, GUANO_LIGHT],
-    [-0.6, 0.0, -0.45, 0.45, 0.03, 0.5, GUANO_LIGHT],
-    [0.3, 0.0, -0.75, 0.55, 0.03, 0.3, GUANO],
-    [-0.95, 0.0, 0.05, 0.3, 0.03, 0.55, GUANO_LIGHT],
-    [0.75, 0.02, -0.45, 0.28, 0.08, 0.22, ROCK_DARK],
-    [-0.85, 0.02, 0.6, 0.24, 0.07, 0.3, ROCK_LIGHT],
-    [0.95, 0.02, 0.5, 0.2, 0.06, 0.2, ROCK],
-  ];
-  for (const [s, p] of NESTS) {
-    const x = S[0] * s + P[0] * p;
-    const z = S[1] * s + P[1] * p;
-    // A low ring of pebbles: the nest the penguins build.
-    boxes.push(
-      [x + 0.11, 0.06, z, 0.06, 0.05, 0.2, PEBBLE],
-      [x - 0.11, 0.06, z, 0.06, 0.05, 0.2, PEBBLE],
-      [x, 0.06, z + 0.11, 0.16, 0.05, 0.06, PEBBLE],
-      [x, 0.06, z - 0.11, 0.16, 0.05, 0.06, PEBBLE]
-    );
-  }
-  return boxes;
-}
 
 /** Pose of one penguin at one instant. Angles in radians, lengths in world units. */
 export interface PenguinPose {

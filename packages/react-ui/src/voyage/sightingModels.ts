@@ -1,26 +1,7 @@
 import type { BufferGeometry, Object3D } from 'three';
-import { createSeededRng, layoutOf, type Sighting } from '@antartida/core';
+import { createSeededRng, type Sighting } from '@antartida/core';
 import { buildBoxGeometry, type Box } from './vehicles.ts';
-import {
-  buildHelipadBoxes,
-  buildModuleBoxes,
-  buildOmondBoxes,
-  buildRadioTowerBoxes,
-  FLAGPOLE_BASE_BOXES,
-  FLAG_SEGMENT_BOXES,
-  FLAG_SEGMENT_WIDTH,
-  HELICOPTER_BOXES,
-  HELICOPTER_ROTOR_BOXES,
-  HELICOPTER_ROTOR_ORIGIN,
-  offsetBoxes,
-  SEA_ICE_FLOE_A,
-  SEA_ICE_FLOE_B,
-  SEA_ICE_FLOE_C,
-  SEA_ICE_FLOE_D,
-  STATION_BOAT_BOXES,
-} from '../orcadas/stationModels.ts';
-import { assemblePenguinBoxes, buildRookeryBoxes } from '../orcadas/penguins.ts';
-import { assembleWeddellSealBoxes, assembleElephantSealBoxes } from '../orcadas/seals.ts';
+import { HELICOPTER_BOXES, HELICOPTER_ROTOR_BOXES, HELICOPTER_ROTOR_ORIGIN, offsetBoxes } from '../orcadas/stationModels.ts';
 import { MALVINAS_FLAG_BOXES } from '../map3d/malvinasFlagModel.ts';
 import { CLAIM_FLAG_MODELS } from '../map3d/claimFlagModels.ts';
 
@@ -40,10 +21,7 @@ const WHALE_GREY = 0x55606b;
 export const LAMP = 0xf2c14e;
 export const ZINC = 0x7d868c;
 export const SKY = 0x7fb6dc;
-const RED_DARK = 0x96351e;
 export const NAVY_ROOF = 0x1e3e5c;
-const ROCK_DARK = 0x656a68;
-const WOOD_LIGHT = 0xc49a6c;
 // Emperor penguin: the yellow of its ear patch and the pale yellow of its upper chest.
 const EMPEROR_YELLOW = 0xf2c14e;
 const EMPEROR_CHEST = 0xf6e7a8;
@@ -534,39 +512,6 @@ export const SEA_MODELS = {
 } as const satisfies Record<string, readonly Box[]>;
 export type SeaModelId = keyof typeof SEA_MODELS;
 
-/**
- * Minimal block model of Estación Orcadas on Laurie Island:
- * two houses (Casa Moneta and modern orange module), Argentine flagpole with waving flag,
- * and a pair of Adélie & Chinstrap penguins on the terrace. (42 boxes, 12 colors).
- */
-export const ORCADAS_SITE: Box[] = [
-  // Ground footing / rock terrace on Laurie Island isthmus
-  [0, 0.02, 0, 1.4, 0.04, 1.1, ROCK],
-  [-0.1, 0.05, 0.1, 0.8, 0.04, 0.6, ICE],
-  // House 1: Casa Moneta (historic timber cabin, stepped red roof, chimney, window)
-  [-0.32, 0.16, 0.08, 0.44, 0.22, 0.3, WOOD_LIGHT],
-  [-0.32, 0.29, 0.08, 0.48, 0.06, 0.34, RED],
-  [-0.32, 0.34, 0.08, 0.44, 0.04, 0.22, RED_DARK],
-  [-0.32, 0.38, 0.08, 0.44, 0.04, 0.1, RED],
-  [-0.18, 0.41, 0.02, 0.05, 0.12, 0.05, BLACK],
-  [-0.32, 0.16, 0.235, 0.07, 0.08, 0.01, LAMP],
-  // House 2: Modern orange container pavilion (orange walls, dark navy roof, radome, window)
-  [0.32, 0.15, -0.12, 0.42, 0.2, 0.26, ORANGE],
-  [0.32, 0.26, -0.12, 0.46, 0.05, 0.3, NAVY_ROOF],
-  [0.32, 0.15, 0.015, 0.07, 0.07, 0.01, LAMP],
-  [0.38, 0.31, -0.12, 0.08, 0.07, 0.08, WHITE],
-  // Argentine flagpole (stone cairn base, white mast, waving flag with Sol de Mayo)
-  [0.08, 0.1, 0.28, 0.14, 0.14, 0.14, ROCK_DARK],
-  [0.08, 0.38, 0.28, 0.02, 0.44, 0.02, WHITE],
-  [0.17, 0.54, 0.28, 0.16, 0.04, 0.01, SKY],
-  [0.17, 0.5, 0.28, 0.16, 0.04, 0.01, WHITE],
-  [0.17, 0.46, 0.28, 0.16, 0.04, 0.01, SKY],
-  [0.17, 0.5, 0.28, 0.04, 0.04, 0.012, LAMP],
-  // Two penguins standing on the rock terrace (Adélie and Chinstrap)
-  ...penguinAt(-0.15, 0.35, 0.32, 'ring'),
-  ...penguinAt(0.12, -0.32, 0.32, 'strap'),
-];
-
 /** Every model of this file by name, for the test of least detail. */
 export const SCENE_MODELS: Readonly<Record<string, readonly Box[]>> = {
   ...Object.fromEntries(Object.entries(CLAIM_FLAG_MODELS).map(([country, boxes]) => [`claimFlag:${country}`, boxes])),
@@ -574,65 +519,8 @@ export const SCENE_MODELS: Readonly<Record<string, readonly Box[]>> = {
   ...Object.fromEntries(Object.entries(MODELS).map(([id, m]) => [id, [...m.body, ...(m.wing ?? []), ...(m.wing ?? [])]])),
   ...Object.fromEntries(Object.entries(SEA_MODELS).map(([id, boxes]) => [`sea:${id}`, boxes])),
   ushuaia: TOWN,
-  orcadas: ORCADAS_SITE,
-  // Orcadas station models: getters, because stationModels.ts imports this module (cycle).
-  get moduleRound() {
-    return buildModuleBoxes(4.8, 1.7, 0.67, 'orange', 'round', false);
-  },
-  get moduleGabled() {
-    return buildModuleBoxes(3.2, 1.8, 0.5, 'orange', 'gabled', false);
-  },
-  get moduleFlat() {
-    return buildModuleBoxes(6.2, 1.6, 0.5, 'unknown', 'flat', false);
-  },
-  get omond() {
-    return buildOmondBoxes(false);
-  },
-  get radioTower() {
-    return buildRadioTowerBoxes(5);
-  },
-  get orcadasAdelie() {
-    return assemblePenguinBoxes('adelie');
-  },
-  get orcadasChinstrap() {
-    return assemblePenguinBoxes('chinstrap');
-  },
-  get orcadasFlag() {
-    // Pole and the 5 flag segments laid flat, side by side as at rest.
-    return [
-      ...FLAGPOLE_BASE_BOXES,
-      ...FLAG_SEGMENT_BOXES.flatMap((seg, i) =>
-        seg.map(([x, y, z, sx, sy, sz, c]) => [x + i * FLAG_SEGMENT_WIDTH, y + 3.95, z, sx, sy, sz, c] as Box)
-      ),
-    ];
-  },
-  get rookery() {
-    return buildRookeryBoxes();
-  },
-  get orcadasFloeA() {
-    return SEA_ICE_FLOE_A;
-  },
-  get orcadasFloeB() {
-    return SEA_ICE_FLOE_B;
-  },
-  get orcadasFloeC() {
-    return SEA_ICE_FLOE_C;
-  },
-  get orcadasFloeD() {
-    return SEA_ICE_FLOE_D;
-  },
-  get orcadasWeddellSeal() {
-    return assembleWeddellSealBoxes();
-  },
-  get orcadasElephantSeal() {
-    return assembleElephantSealBoxes();
-  },
-  get orcadasBoat() {
-    return STATION_BOAT_BOXES;
-  },
-  get helipad() {
-    return buildHelipadBoxes(layoutOf('helipad').footprint[0]);
-  },
+  // The Orcadas station models are low-poly (orcadas/lowPoly*.ts, tested in orcadas*.test.ts).
+  // The helicopter stays here in blocks: the voyage from Ushuaia (Voyage3D) still flies it.
   get helicopter() {
     return [
       ...HELICOPTER_BOXES,

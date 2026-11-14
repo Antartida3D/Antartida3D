@@ -15,6 +15,8 @@ import {
   Color,
   Group,
   InstancedMesh,
+  Mesh,
+  MeshBasicMaterial,
   Object3D,
   PlaneGeometry,
   Points,
@@ -42,7 +44,19 @@ import {
   type BuildingId,
 } from '@antartida/core';
 import { InkEffect } from '../map3d/InkEffect.ts';
-import { buildBoxGeometry, vehicleMaterial, type Box } from '../voyage/vehicles.ts';
+import {
+  ICEBERG_DRAFT,
+  ICEBERG_PEAKS_POLY,
+  ICEBERG_RIPPLE_SECONDS,
+  ICEBERG_RIPPLES,
+  ICEBERG_TABULAR_POLY,
+  icebergSwell,
+  rippleAt,
+  waterline,
+  waterMaterial,
+} from '../voyage/icebergs.ts';
+import { boxShade, buildPolyGeometry, type Tri } from '../voyage/lowPoly.ts';
+import { vehicleMaterial } from '../voyage/vehicles.ts';
 import {
   HOTSPOTS,
   VIEW_BEARING_DEG,
@@ -61,30 +75,40 @@ import {
   penguinSwimCorridor,
 } from './penguins.ts';
 import {
+  buildFlagSegmentsTris,
+  buildFlagpoleBaseTris,
+  buildHelipadTris,
+  buildModuleTris,
+  buildOmondTris,
+  buildRadioTowerTris,
+  buildStevensonScreenTris,
+  buildWindCupsTris,
+  buildWindMastBaseTris,
+  buildWindVaneTris,
+} from './lowPolyBuildings.ts';
+import {
+  SEA_ICE_FLOE_POLY_VARIANTS,
+  buildBoatChocksTris,
+  buildHelicopterRotorTris,
+  buildHelicopterTris,
+  buildZodiacTris,
+  buildZodiacWakeGeometry,
+  zodiacBottomY,
+} from './lowPolyProps.ts';
+import {
+  SKUA_POLY_MODEL,
+  SNOW_PETREL_POLY_MODEL,
+  buildElephantSealPolyParts,
+  buildSealContactGeometry,
+  buildWeddellSealPolyParts,
+  mirrorZTris,
+} from './lowPolyAnimals.ts';
+import {
   BIRD_WING_ROOT,
-  FLAGPOLE_BASE_BOXES,
-  FLAG_SEGMENT_BOXES,
   FLAG_SEGMENT_WIDTH,
-  HELICOPTER_BOXES,
-  HELICOPTER_ROTOR_BOXES,
   HELICOPTER_ROTOR_ORIGIN,
   HELIPAD_TOP_Y,
-  ICEBERG_PINNACLE_BOXES,
-  ICEBERG_TABULAR_BOXES,
-  SEA_ICE_FLOE_VARIANTS,
-  SKUA_MODEL,
-  SNOW_PETREL_MODEL,
-  STATION_BOAT_BOXES,
-  STEVENSON_SCREEN_BOXES,
-  VOXEL_PALETTE,
-  WIND_CUPS_BOXES,
-  WIND_MAST_BASE_BOXES,
-  WIND_VANE_BOXES,
-  buildHelipadBoxes,
-  buildModuleBoxes,
-  buildOmondBoxes,
-  buildRadioTowerBoxes,
-  buildStageDetailBoxes,
+  buildStageDetailTris,
   createIsthmusTerrainGeometry,
   evaluateIsthmusTerrain,
   generateIcebergs,
@@ -104,11 +128,9 @@ import {
   WEDDELL_NECK,
   WEDDELL_TAIL,
   buildSealColony,
-  elephantSealParts,
   residentPose as sealResidentPose,
   restPose as restSealPose,
   travellerPose as sealTravellerPose,
-  weddellSealParts,
   type SealPose,
 } from './seals.ts';
 import {
@@ -261,9 +283,9 @@ function SkyAndLighting({
   );
 }
 
-/** Paths, loose rocks and snow patches of the stage: static boxes in one geometry. */
+/** Paths, loose rocks and snow patches of the stage: low-poly ground details in one geometry. */
 function StageDetails() {
-  const geo = useMemo(() => buildBoxGeometry(buildStageDetailBoxes()), []);
+  const geo = useMemo(() => buildPolyGeometry(buildStageDetailTris(), boxShade), []);
   useEffect(() => () => geo.dispose(), [geo]);
   return <mesh geometry={geo} material={vehicleMaterial} />;
 }
@@ -308,6 +330,16 @@ function IsthmusTerrain({
   }, [sunDir, sunElevationDeg, uniforms]);
 
   return <mesh geometry={geo} material={mat} receiveShadow />;
+}
+
+/** Matches stationWaterVertexShader wave displacement at (x, z) and time t. */
+function bayWaveY(x: number, z: number, t: number, windKmh: number, seaIce: number): number {
+  const iceDamp = 1 - Math.min(1, Math.max(0, seaIce)) * 0.85;
+  const waveAmp = Math.min(0.22, Math.max(0.02, windKmh / 80)) * iceDamp;
+  const d = -worldCoastDistance(x, z);
+  const s = Math.min(1, Math.max(0, (d - 0.5) / 3.5));
+  const shoreMask = s * s * (3 - 2 * s);
+  return Math.sin(x * 0.45 + t * 1.8) * Math.cos(z * 0.38 + t * 1.4) * waveAmp * shoreMask;
 }
 
 function BayOcean({
@@ -364,9 +396,14 @@ function BayOcean({
     [swimCorridor]
   );
   const floeGeos = useMemo(
-    () => SEA_ICE_FLOE_VARIANTS.map((boxes) => buildBoxGeometry(boxes)),
+    () => SEA_ICE_FLOE_POLY_VARIANTS.map((v) => buildPolyGeometry(v.tris, boxShade)),
     []
   );
+  const floeWaterGeos = useMemo(
+    () => SEA_ICE_FLOE_POLY_VARIANTS.map((v) => v.createWaterline()),
+    []
+  );
+  const floeWaterMat = useMemo(waterMaterial, []);
   const variantPlates = useMemo(() => {
     const list: SeaIcePlate[][] = [[], [], [], []];
     for (const p of plates) {
@@ -375,23 +412,30 @@ function BayOcean({
     return list;
   }, [plates]);
   const platesRefs = useRef<(InstancedMesh | null)[]>([]);
+  const plateWaterRefs = useRef<(InstancedMesh | null)[]>([]);
 
   const icebergs = useMemo(
     () => generateIcebergs(190409, swimCorridor, PENGUIN_SWIM_CLEARANCE),
     [swimCorridor]
   );
-  const tabularBergs = useMemo(
-    () => icebergs.filter((b) => b.variant === 'tabular'),
-    [icebergs]
+  const tabularGeo = useMemo(() => buildPolyGeometry(ICEBERG_TABULAR_POLY, boxShade), []);
+  const pinnacleGeo = useMemo(() => buildPolyGeometry(ICEBERG_PEAKS_POLY, boxShade), []);
+  const waterlines = useMemo(
+    () => ({
+      'iceberg-lg': waterline('iceberg-lg'),
+      'iceberg-sm': waterline('iceberg-sm'),
+    }),
+    []
   );
-  const pinnacleBergs = useMemo(
-    () => icebergs.filter((b) => b.variant === 'pinnacle'),
-    [icebergs]
+  const glowMaterial = useMemo(waterMaterial, []);
+  const bergWaterMaterials = useMemo(
+    () => Array.from({ length: icebergs.length * (ICEBERG_RIPPLES + 1) }, waterMaterial),
+    [icebergs.length]
   );
-  const tabularGeo = useMemo(() => buildBoxGeometry(ICEBERG_TABULAR_BOXES), []);
-  const pinnacleGeo = useMemo(() => buildBoxGeometry(ICEBERG_PINNACLE_BOXES), []);
-  const tabularRef = useRef<InstancedMesh>(null);
-  const pinnacleRef = useRef<InstancedMesh>(null);
+  const bergGroups = useRef<(Group | null)[]>([]);
+  const bergBodies = useRef<(Group | null)[]>([]);
+  const bergFoams = useRef<(Mesh | null)[]>([]);
+  const bergRipples = useRef<(Mesh | null)[]>([]);
   const dummy = useMemo(() => new Object3D(), []);
 
   useEffect(() => {
@@ -399,10 +443,30 @@ function BayOcean({
       waterGeo.dispose();
       waterMat.dispose();
       for (const g of floeGeos) g.dispose();
+      for (const g of floeWaterGeos) g.dispose();
+      floeWaterMat.dispose();
       tabularGeo.dispose();
       pinnacleGeo.dispose();
+      for (const w of Object.values(waterlines)) {
+        w.glow.dispose();
+        w.foam.dispose();
+        w.ripple.dispose();
+      }
+      glowMaterial.dispose();
+      for (const m of bergWaterMaterials) m.dispose();
     };
-  }, [waterGeo, waterMat, floeGeos, tabularGeo, pinnacleGeo]);
+  }, [
+    waterGeo,
+    waterMat,
+    floeGeos,
+    floeWaterGeos,
+    floeWaterMat,
+    tabularGeo,
+    pinnacleGeo,
+    waterlines,
+    glowMaterial,
+    bergWaterMaterials,
+  ]);
 
   useLayoutEffect(() => {
     uniforms.uSunDir.value.copy(sunDir);
@@ -411,103 +475,218 @@ function BayOcean({
     uniforms.uSeaIce.value = seaIce;
   }, [sunDir, windKmh, windVec, seaIce, uniforms]);
 
-  // Update sea-ice pancake plates whenever seaIce changes
+  // Update sea-ice floe plates initially (t = 0) and whenever seaIce or windKmh changes
   useLayoutEffect(() => {
     const isClosed = seaIce >= 0.9;
     variantPlates.forEach((group, v) => {
       const mesh = platesRefs.current[v];
+      const waterMesh = plateWaterRefs.current[v];
       if (!mesh) return;
+      if (waterMesh) waterMesh.visible = !isClosed;
       for (let i = 0; i < group.length; i++) {
         const p = group[i];
         if (isClosed) {
           // On the closed sheet (seaIce >= 0.9) keep only about 1 in 6 as low rubble, rest hidden
           if (i % 6 === 0) {
-            dummy.position.set(p.x, 0.015, p.z);
+            dummy.position.set(p.x, 0.01, p.z);
             dummy.rotation.set(0, p.rotY, 0);
-            dummy.scale.set(p.sizeX * 0.65, 0.22, p.sizeZ * 0.65);
+            dummy.scale.set(p.sizeX * 0.65, 0.25, p.sizeZ * 0.65);
           } else {
             dummy.scale.set(0, 0, 0);
           }
         } else {
           const cov = floeVisibility(p.threshold, seaIce);
           const k = cov / 0.9;
-          dummy.position.set(p.x, 0.02, p.z);
+          const wy = cov > 0.01 ? bayWaveY(p.x, p.z, 0, windKmh, seaIce) : 0;
+          dummy.position.set(p.x, wy, p.z);
           dummy.rotation.set(0, p.rotY, 0);
-          dummy.scale.set(p.sizeX * k, cov > 0.01 ? 0.8 : 0, p.sizeZ * k);
+          dummy.scale.set(p.sizeX * k, cov > 0.01 ? 0.9 : 0, p.sizeZ * k);
         }
         dummy.updateMatrix();
         mesh.setMatrixAt(i, dummy.matrix);
+        if (waterMesh && !isClosed) waterMesh.setMatrixAt(i, dummy.matrix);
       }
       mesh.instanceMatrix.needsUpdate = true;
+      if (waterMesh && !isClosed) waterMesh.instanceMatrix.needsUpdate = true;
     });
-  }, [variantPlates, seaIce, dummy]);
+  }, [variantPlates, seaIce, windKmh, dummy]);
 
-  // Update icebergs initially and bob in useFrame when !reduced
+  // Initialize icebergs and waterlines (t = 0 so reduced mode starts settled and still)
   useLayoutEffect(() => {
-    const initBergs = (mesh: InstancedMesh | null, list: typeof tabularBergs) => {
-      if (!mesh) return;
-      for (let i = 0; i < list.length; i++) {
-        const b = list[i];
-        dummy.position.set(b.x, 0.35 - seaIce * 0.2, b.z);
-        dummy.rotation.set(0.08, b.rotY, -0.05);
-        dummy.scale.set(b.scaleX, b.scaleY, b.scaleZ);
-        dummy.updateMatrix();
-        mesh.setMatrixAt(i, dummy.matrix);
+    const openWater = Math.max(0, 1 - seaIce / 0.85);
+    glowMaterial.opacity = 0.85 * openWater;
+    icebergs.forEach((b, i) => {
+      const g = bergGroups.current[i];
+      const body = bergBodies.current[i];
+      if (g) {
+        g.position.set(b.x, bayWaveY(b.x, b.z, 0, windKmh, seaIce), b.z);
+        g.rotation.set(0, b.rotY, 0);
+        g.scale.set(b.scaleX, b.scaleY, b.scaleZ);
       }
-      mesh.instanceMatrix.needsUpdate = true;
-    };
-    initBergs(tabularRef.current, tabularBergs);
-    initBergs(pinnacleRef.current, pinnacleBergs);
-  }, [tabularBergs, pinnacleBergs, dummy, seaIce]);
+      if (body) {
+        body.position.y = -ICEBERG_DRAFT;
+        body.rotation.set(0, 0, 0);
+      }
+      const foam = bergFoams.current[i];
+      if (foam) {
+        foam.visible = openWater > 0.02;
+        (foam.material as MeshBasicMaterial).opacity = 0.55 * openWater;
+      }
+      for (let r = 0; r < ICEBERG_RIPPLES; r++) {
+        const m = bergRipples.current[i * ICEBERG_RIPPLES + r];
+        if (!m) continue;
+        m.visible = openWater > 0.02;
+        const { scale, opacity } = rippleAt((r / ICEBERG_RIPPLES + 0.15) % 1);
+        m.scale.set(scale, 1, scale);
+        (m.material as MeshBasicMaterial).opacity = opacity * openWater;
+      }
+    });
+  }, [icebergs, seaIce, windKmh, glowMaterial]);
 
   useFrame(({ clock }) => {
     if (reduced) return;
     const t = clock.getElapsedTime();
     uniforms.uTime.value = t;
 
-    // Icebergs stop rocking as the bay closes; frozen in, they sit lower in the ice.
+    const isClosed = seaIce >= 0.9;
+    if (!isClosed) {
+      variantPlates.forEach((group, v) => {
+        const mesh = platesRefs.current[v];
+        const waterMesh = plateWaterRefs.current[v];
+        if (!mesh) return;
+        let touched = false;
+        for (let i = 0; i < group.length; i++) {
+          const p = group[i];
+          const cov = floeVisibility(p.threshold, seaIce);
+          if (cov <= 0.01) continue;
+          const k = cov / 0.9;
+          const wy = bayWaveY(p.x, p.z, t, windKmh, seaIce);
+          dummy.position.set(p.x, wy, p.z);
+          dummy.rotation.set(0, p.rotY, 0);
+          dummy.scale.set(p.sizeX * k, 0.9, p.sizeZ * k);
+          dummy.updateMatrix();
+          mesh.setMatrixAt(i, dummy.matrix);
+          if (waterMesh) waterMesh.setMatrixAt(i, dummy.matrix);
+          touched = true;
+        }
+        if (touched) {
+          mesh.instanceMatrix.needsUpdate = true;
+          if (waterMesh) waterMesh.instanceMatrix.needsUpdate = true;
+        }
+      });
+    }
+
+    // Icebergs ride the swell: heave, gentle pitch/roll, foam thickening on dip, two ripples half a cycle apart.
     const damp = 1 - seaIce;
-    const updateBergs = (mesh: InstancedMesh | null, list: typeof tabularBergs) => {
-      if (!mesh) return;
-      for (let i = 0; i < list.length; i++) {
-        const b = list[i];
-        const bob = Math.sin(t * 1.1 + b.phase) * 0.08 * damp;
-        const tilt = Math.cos(t * 0.9 + b.phase) * 0.04 * damp;
-        dummy.position.set(b.x, 0.35 - seaIce * 0.2 + bob, b.z);
-        dummy.rotation.set(0.06 + tilt, b.rotY, -0.04 + tilt);
-        dummy.scale.set(b.scaleX, b.scaleY, b.scaleZ);
-        dummy.updateMatrix();
-        mesh.setMatrixAt(i, dummy.matrix);
+    const openWater = Math.max(0, 1 - seaIce / 0.85);
+    icebergs.forEach((b, i) => {
+      const g = bergGroups.current[i];
+      if (g) {
+        g.position.y = bayWaveY(b.x, b.z, t, windKmh, seaIce);
       }
-      mesh.instanceMatrix.needsUpdate = true;
-    };
-    updateBergs(tabularRef.current, tabularBergs);
-    updateBergs(pinnacleRef.current, pinnacleBergs);
+      const heave = icebergSwell(t, b.phase) * damp;
+      const sway = t * 0.4 + b.phase * Math.PI * 2;
+      const body = bergBodies.current[i];
+      if (body) {
+        body.position.y = heave - ICEBERG_DRAFT;
+        body.rotation.set(
+          Math.sin(sway) * 0.045 * damp,
+          0,
+          Math.sin(sway * 1.2 + 0.7) * 0.035 * damp
+        );
+      }
+      const foam = bergFoams.current[i];
+      if (foam) {
+        foam.visible = openWater > 0.02;
+        (foam.material as MeshBasicMaterial).opacity =
+          (0.55 + 0.45 * Math.min(1, Math.max(0, -heave / 0.012))) * openWater;
+      }
+      for (let r = 0; r < ICEBERG_RIPPLES; r++) {
+        const m = bergRipples.current[i * ICEBERG_RIPPLES + r];
+        if (!m) continue;
+        m.visible = openWater > 0.02;
+        const { scale, opacity } = rippleAt(
+          ((t + b.phase * 7) / ICEBERG_RIPPLE_SECONDS + r / ICEBERG_RIPPLES) % 1
+        );
+        m.scale.set(scale, 1, scale);
+        (m.material as MeshBasicMaterial).opacity = opacity * openWater;
+      }
+    });
   });
+
+  const openWater = Math.max(0, 1 - seaIce / 0.85);
 
   return (
     <group>
       <mesh geometry={waterGeo} material={waterMat} position={[0, 0, 0]} />
       {variantPlates.map((group, v) => (
-        <instancedMesh
-          key={v}
-          ref={(node) => {
-            platesRefs.current[v] = node;
-          }}
-          args={[floeGeos[v], vehicleMaterial, group.length]}
-          frustumCulled={false}
-        />
+        <group key={v}>
+          <instancedMesh
+            ref={(node) => {
+              platesRefs.current[v] = node;
+            }}
+            args={[floeGeos[v], vehicleMaterial, group.length]}
+            frustumCulled={false}
+          />
+          <instancedMesh
+            ref={(node) => {
+              plateWaterRefs.current[v] = node;
+            }}
+            args={[floeWaterGeos[v], floeWaterMat, group.length]}
+            renderOrder={1}
+            frustumCulled={false}
+          />
+        </group>
       ))}
-      <instancedMesh
-        ref={tabularRef}
-        args={[tabularGeo, vehicleMaterial, tabularBergs.length]}
-        frustumCulled={false}
-      />
-      <instancedMesh
-        ref={pinnacleRef}
-        args={[pinnacleGeo, vehicleMaterial, pinnacleBergs.length]}
-        frustumCulled={false}
-      />
+      {icebergs.map((b, i) => {
+        const kind = b.variant === 'tabular' ? 'iceberg-lg' : 'iceberg-sm';
+        const geo = b.variant === 'tabular' ? tabularGeo : pinnacleGeo;
+        const w = waterlines[kind];
+        return (
+          <group
+            key={`${b.variant}-${i}`}
+            ref={(node) => {
+              bergGroups.current[i] = node;
+            }}
+          >
+            <group
+              ref={(node) => {
+                bergBodies.current[i] = node;
+              }}
+            >
+              <mesh geometry={geo} material={vehicleMaterial} />
+            </group>
+            <mesh
+              geometry={w.glow}
+              material={glowMaterial}
+              position-y={0.012}
+              visible={openWater > 0.02}
+              renderOrder={1}
+            />
+            {Array.from({ length: ICEBERG_RIPPLES }, (_, r) => (
+              <mesh
+                key={r}
+                ref={(node) => {
+                  bergRipples.current[i * ICEBERG_RIPPLES + r] = node;
+                }}
+                geometry={w.ripple}
+                material={bergWaterMaterials[i * ICEBERG_RIPPLES + r]}
+                position-y={0.015}
+                renderOrder={2}
+              />
+            ))}
+            <mesh
+              ref={(node) => {
+                bergFoams.current[i] = node;
+              }}
+              geometry={w.foam}
+              material={bergWaterMaterials[icebergs.length * ICEBERG_RIPPLES + i]}
+              position-y={0.018}
+              renderOrder={3}
+            />
+          </group>
+        );
+      })}
     </group>
   );
 }
@@ -575,18 +754,6 @@ function clamp01(v: number): number {
 function smooth01(t: number): number {
   const c = clamp01(t);
   return c * c * (3 - 2 * c);
-}
-
-function zodiacBottomY(localX: number, localZ: number): number {
-  const az = Math.abs(localZ);
-  let base = 0;
-  if (localX > 0.98) base = 0.17;
-  else if (localX > 0.85) base = 0.095;
-  else if (localX > 0.65) base = 0.04;
-  if (az > 0.31) base = Math.max(base, 0.11);
-  else if (az > 0.21) base = Math.max(base, 0.085);
-  else if (az > 0.08) base = Math.max(base, 0.035);
-  return base;
 }
 
 const ERA_BUILDING_IDS: readonly BuildingId[] = [
@@ -672,20 +839,18 @@ function StationElements({
       }
     }
     const chockTopY = maxGroundY + 0.04;
-    const chockBoxes: Box[] = [];
-    for (const u of [0.35, -0.35]) {
+    const stations = [0.35, -0.35].map((u) => {
       const wx = rx + u * fwdX;
       const wz = rz + u * fwdZ;
       const gy = evaluateIsthmusTerrain(wx, wz).y;
-      const h = Math.max(0.04, chockTopY - gy);
-      const midY = gy + h / 2;
-      chockBoxes.push(
-        [wx, midY, wz, 0.12, h, 0.52, VOXEL_PALETTE.WOOD],
-        [wx + 0.03 * fwdX, chockTopY - 0.02, wz + 0.03 * fwdZ + 0.22, 0.14, 0.06, 0.1, VOXEL_PALETTE.WOOD_LIGHT],
-        [wx + 0.03 * fwdX, chockTopY - 0.02, wz + 0.03 * fwdZ - 0.22, 0.14, 0.06, 0.1, VOXEL_PALETTE.WOOD_LIGHT]
-      );
-    }
-    return { x: rx, z: rz, chockTopY, chockGeo: buildBoxGeometry(chockBoxes) };
+      return { wx, wz, gy, chockTopY };
+    });
+    return {
+      x: rx,
+      z: rz,
+      chockTopY,
+      chockGeo: buildPolyGeometry(buildBoatChocksTris(stations, fwdX, fwdZ, rightX, rightZ), boxShade),
+    };
   }, [boatLayout, fwdX, fwdZ, rightX, rightZ]);
 
   // Open-water stranded pose: bow resting on the gravel beach, stern floating in the bay.
@@ -715,25 +880,23 @@ function StationElements({
     return { x: sx, y, z: sz, pitch, roll };
   }, [bx, bz, fwdX, fwdZ, rightX, rightZ]);
 
-  const boatGeo = useMemo(() => buildBoxGeometry(STATION_BOAT_BOXES), []);
-  const wakeGeo = useMemo(
-    () => buildBoxGeometry([[0, 0, 0, 1, 1, 1, VOXEL_PALETTE.WHITE]]),
-    []
-  );
+  const boatGeo = useMemo(() => buildPolyGeometry(buildZodiacTris(), boxShade), []);
+  const wakeGeo = useMemo(() => buildZodiacWakeGeometry(), []);
+  const wakeMat = useMemo(waterMaterial, []);
   const wakeDummy = useMemo(() => new Object3D(), []);
 
   const geometries = useMemo(() => {
     const map = new Map<string, BufferGeometry>();
     for (const el of buildingElements) {
-      let boxes: readonly Box[];
+      let tris: readonly Tri[];
       const [length, width] = layoutOf(el.id).footprint;
       const height = el.heightM / DIORAMA_METERS_PER_UNIT;
       switch (el.kind) {
         case 'omond':
-          boxes = buildOmondBoxes(isNight);
+          tris = buildOmondTris(isNight);
           break;
         case 'module':
-          boxes = buildModuleBoxes(
+          tris = buildModuleTris(
             length,
             width,
             height,
@@ -743,34 +906,34 @@ function StationElements({
           );
           break;
         case 'radioTower':
-          boxes = buildRadioTowerBoxes(height);
+          tris = buildRadioTowerTris(height);
           break;
         case 'screen':
-          boxes = STEVENSON_SCREEN_BOXES;
+          tris = buildStevensonScreenTris();
           break;
         case 'windMast':
-          boxes = WIND_MAST_BASE_BOXES;
+          tris = buildWindMastBaseTris();
           break;
         case 'flag':
-          boxes = FLAGPOLE_BASE_BOXES;
+          tris = buildFlagpoleBaseTris();
           break;
         case 'helipad':
-          boxes = buildHelipadBoxes(length);
+          tris = buildHelipadTris(length);
           break;
         default:
-          boxes = [];
+          tris = [];
       }
-      map.set(el.id, buildBoxGeometry(boxes));
+      map.set(el.id, buildPolyGeometry(tris, boxShade));
     }
     return map;
   }, [buildingElements, isNight]);
 
-  const vaneGeo = useMemo(() => buildBoxGeometry(WIND_VANE_BOXES), []);
-  const cupsGeo = useMemo(() => buildBoxGeometry(WIND_CUPS_BOXES), []);
-  const heliGeo = useMemo(() => buildBoxGeometry(HELICOPTER_BOXES), []);
-  const heliRotorGeo = useMemo(() => buildBoxGeometry(HELICOPTER_ROTOR_BOXES), []);
+  const vaneGeo = useMemo(() => buildPolyGeometry(buildWindVaneTris(), boxShade), []);
+  const cupsGeo = useMemo(() => buildPolyGeometry(buildWindCupsTris(), boxShade), []);
+  const heliGeo = useMemo(() => buildPolyGeometry(buildHelicopterTris(), boxShade), []);
+  const heliRotorGeo = useMemo(() => buildPolyGeometry(buildHelicopterRotorTris(), boxShade), []);
 
-  const flagGeos = useMemo(() => FLAG_SEGMENT_BOXES.map((boxes) => buildBoxGeometry(boxes)), []);
+  const flagGeos = useMemo(() => buildFlagSegmentsTris().map((tris) => buildPolyGeometry(tris, boxShade)), []);
   const flagJointRefs = useRef<(Group | null)[]>([]);
 
   useEffect(() => {
@@ -786,8 +949,9 @@ function StationElements({
       boatBeachRest.chockGeo.dispose();
       boatGeo.dispose();
       wakeGeo.dispose();
+      wakeMat.dispose();
     };
-  }, [geometries, vaneGeo, cupsGeo, heliGeo, heliRotorGeo, flagGeos, boatBeachRest, boatGeo, wakeGeo]);
+  }, [geometries, vaneGeo, cupsGeo, heliGeo, heliRotorGeo, flagGeos, boatBeachRest, boatGeo, wakeGeo, wakeMat]);
 
   useLayoutEffect(() => {
     if (reduced) waveFlag(flagJointRefs.current, 0, windKmh);
@@ -1111,8 +1275,9 @@ function StationElements({
       {isFrozen && <mesh geometry={boatBeachRest.chockGeo} material={vehicleMaterial} />}
       <instancedMesh
         ref={wakeRef}
-        args={[wakeGeo, vehicleMaterial, WAKE_COUNT]}
+        args={[wakeGeo, wakeMat, WAKE_COUNT]}
         visible={false}
+        renderOrder={2}
         frustumCulled={false}
       />
       <group ref={boatRef}>
@@ -1132,12 +1297,13 @@ interface SealRig {
   flipR: Group | null;
   flipL: Group | null;
   tail: Group | null;
+  contact: Mesh | null;
 }
 
 const STILL_TIME = 2.0;
 
 function applySealPose(rig: SealRig, p: SealPose) {
-  const { root, tilt, neck, jaw, flipR, flipL, tail } = rig;
+  const { root, tilt, neck, jaw, flipR, flipL, tail, contact } = rig;
   if (!root || !tilt || !neck || !flipR || !flipL || !tail) return;
   root.position.set(p.x, p.y, p.z);
   root.rotation.y = p.yaw;
@@ -1148,6 +1314,7 @@ function applySealPose(rig: SealRig, p: SealPose) {
   flipR.rotation.set(p.flipRPitch, 0, p.flipRRoll);
   flipL.rotation.set(p.flipLPitch, 0, p.flipLRoll);
   tail.rotation.set(p.tailPitch, p.tailYaw, 0);
+  if (contact) contact.visible = p.y >= 0.005;
 }
 
 function StationFauna({
@@ -1170,30 +1337,42 @@ function StationFauna({
 
   const sealColony = useMemo(() => buildSealColony((x, z) => evaluateIsthmusTerrain(x, z).y), []);
 
-  const weddellParts = useMemo(() => weddellSealParts(), []);
-  const elephantParts = useMemo(() => elephantSealParts(), []);
+  const weddellGeos = useMemo(() => {
+    const parts = buildWeddellSealPolyParts();
+    return {
+      body: buildPolyGeometry(parts.body, boxShade),
+      head: buildPolyGeometry(parts.head, boxShade),
+      flipperR: buildPolyGeometry(parts.flipperR, boxShade),
+      flipperL: buildPolyGeometry(parts.flipperL, boxShade),
+      tail: buildPolyGeometry(parts.tail, boxShade),
+      contact: buildSealContactGeometry('weddell'),
+    };
+  }, []);
 
-  const weddellGeos = useMemo(
-    () => ({
-      body: buildBoxGeometry(weddellParts.body),
-      head: buildBoxGeometry(weddellParts.head),
-      flipperR: buildBoxGeometry(weddellParts.flipperR),
-      flipperL: buildBoxGeometry(weddellParts.flipperL),
-      tail: buildBoxGeometry(weddellParts.tail),
-    }),
-    [weddellParts]
-  );
+  const elephantGeos = useMemo(() => {
+    const parts = buildElephantSealPolyParts();
+    return {
+      body: buildPolyGeometry(parts.body, boxShade),
+      head: buildPolyGeometry(parts.head, boxShade),
+      jaw: parts.jaw ? buildPolyGeometry(parts.jaw, boxShade) : null,
+      flipperR: buildPolyGeometry(parts.flipperR, boxShade),
+      flipperL: buildPolyGeometry(parts.flipperL, boxShade),
+      tail: buildPolyGeometry(parts.tail, boxShade),
+      contact: buildSealContactGeometry('elephant'),
+    };
+  }, []);
 
-  const elephantGeos = useMemo(
-    () => ({
-      body: buildBoxGeometry(elephantParts.body),
-      head: buildBoxGeometry(elephantParts.head),
-      jaw: elephantParts.jaw ? buildBoxGeometry(elephantParts.jaw) : null,
-      flipperR: buildBoxGeometry(elephantParts.flipperR),
-      flipperL: buildBoxGeometry(elephantParts.flipperL),
-      tail: buildBoxGeometry(elephantParts.tail),
-    }),
-    [elephantParts]
+  const contactMat = useMemo(
+    () =>
+      new MeshBasicMaterial({
+        vertexColors: true,
+        transparent: true,
+        depthWrite: false,
+        polygonOffset: true,
+        polygonOffsetFactor: -1,
+        polygonOffsetUnits: -1,
+      }),
+    []
   );
 
   const seals = useMemo(
@@ -1222,20 +1401,30 @@ function StationFauna({
       flipR: null,
       flipL: null,
       tail: null,
+      contact: null,
     }))
   );
   const tempSealPose = useMemo(() => restSealPose(), []);
 
-  const mirrorZ = (boxes: readonly Box[]): Box[] =>
-    boxes.map(([x, y, z, ...rest]) => [x, y, -z, ...rest]);
+  const skuaBodyGeo = useMemo(() => buildPolyGeometry(SKUA_POLY_MODEL.body, boxShade), []);
+  const skuaRightWingGeo = useMemo(() => buildPolyGeometry(SKUA_POLY_MODEL.wing, boxShade), []);
+  const skuaLeftWingGeo = useMemo(
+    () => buildPolyGeometry(mirrorZTris(SKUA_POLY_MODEL.wing), boxShade),
+    []
+  );
 
-  const skuaBodyGeo = useMemo(() => buildBoxGeometry(SKUA_MODEL.body), []);
-  const skuaRightWingGeo = useMemo(() => buildBoxGeometry(SKUA_MODEL.wing), []);
-  const skuaLeftWingGeo = useMemo(() => buildBoxGeometry(mirrorZ(SKUA_MODEL.wing)), []);
-
-  const petrelBodyGeo = useMemo(() => buildBoxGeometry(SNOW_PETREL_MODEL.body), []);
-  const petrelRightWingGeo = useMemo(() => buildBoxGeometry(SNOW_PETREL_MODEL.wing), []);
-  const petrelLeftWingGeo = useMemo(() => buildBoxGeometry(mirrorZ(SNOW_PETREL_MODEL.wing)), []);
+  const petrelBodyGeo = useMemo(
+    () => buildPolyGeometry(SNOW_PETREL_POLY_MODEL.body, boxShade),
+    []
+  );
+  const petrelRightWingGeo = useMemo(
+    () => buildPolyGeometry(SNOW_PETREL_POLY_MODEL.wing, boxShade),
+    []
+  );
+  const petrelLeftWingGeo = useMemo(
+    () => buildPolyGeometry(mirrorZTris(SNOW_PETREL_POLY_MODEL.wing), boxShade),
+    []
+  );
 
   useEffect(() => {
     return () => {
@@ -1244,12 +1433,15 @@ function StationFauna({
       weddellGeos.flipperR.dispose();
       weddellGeos.flipperL.dispose();
       weddellGeos.tail.dispose();
+      weddellGeos.contact.dispose();
       elephantGeos.body.dispose();
       elephantGeos.head.dispose();
       elephantGeos.jaw?.dispose();
       elephantGeos.flipperR.dispose();
       elephantGeos.flipperL.dispose();
       elephantGeos.tail.dispose();
+      elephantGeos.contact.dispose();
+      contactMat.dispose();
 
       skuaBodyGeo.dispose();
       skuaRightWingGeo.dispose();
@@ -1261,6 +1453,7 @@ function StationFauna({
   }, [
     weddellGeos,
     elephantGeos,
+    contactMat,
     skuaBodyGeo,
     skuaRightWingGeo,
     skuaLeftWingGeo,
@@ -1286,7 +1479,7 @@ function StationFauna({
       for (let i = 0; i < nodes.length; i++) {
         const bird = nodes[i];
         const isPetrel = animals.includes('snowPetrel') && i % 2 === 0;
-        const model = isPetrel ? SNOW_PETREL_MODEL : SKUA_MODEL;
+        const model = isPetrel ? SNOW_PETREL_POLY_MODEL : SKUA_POLY_MODEL;
         const ang = t * (0.45 + i * 0.06) + i * 1.3;
         const radius = 12 + (i % 3) * 4.5;
         bird.position.set(
@@ -1330,6 +1523,13 @@ function StationFauna({
 
             return (
               <group key={i} ref={(n) => void (rig.root = n)}>
+                <mesh
+                  ref={(n) => void (rig.contact = n)}
+                  geometry={geos.contact}
+                  material={contactMat}
+                  position-y={0.005}
+                  renderOrder={1}
+                />
                 <group ref={(n) => void (rig.tilt = n)}>
                   <mesh geometry={geos.body} material={vehicleMaterial} />
                   <group ref={(n) => void (rig.neck = n)} position={neckPivot}>

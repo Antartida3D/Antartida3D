@@ -167,8 +167,8 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid #1E3E5C;outline-
 /* Small, a finger drags the whole sheet; tall, its text scrolls. It never hands the pull on to the page. */
 .sheet.grows{transition:max-height .28s cubic-bezier(.2,.8,.3,1);touch-action:none;overscroll-behavior:contain}
 .sheet.grows.full{touch-action:pan-y}
-/* Small on a phone, a finger drags the sheet instead of scrolling its text: a scrollbar there would promise a scroll that is not there. */
-@media (max-width:820px){.sheet.grows:not(.full){scrollbar-width:none}.sheet.grows:not(.full)::-webkit-scrollbar{display:none}}
+/* No scrollbar on these sheets: a finger drags or scrolls them and the mouse wheel still scrolls; the bar only took width from the text. */
+.sheet.grows{scrollbar-width:none}.sheet.grows::-webkit-scrollbar{display:none}
 /* Tall, it goes over the title and the log at the top of the screen: it must be on top of them to take presses. */
 .sheet.grows.full,.sheet.grows.dragging{max-height:92%;z-index:21}
 .sheet.grows.dragging{transition:none}

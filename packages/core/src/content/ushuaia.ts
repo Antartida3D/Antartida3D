@@ -17,6 +17,8 @@ export interface VoyageSource {
   url: string;
   /** Date it was read, when it is not VOYAGE_SOURCES_CONSULTED. */
   consulted?: string;
+  /** Short name shown in a citation with a page instead of the number (the book: «Libro · p. 9»). */
+  short?: string;
 }
 
 /** Date the sources below were read, unless one gives its own. */
@@ -56,7 +58,7 @@ export const VOYAGE_SOURCES = {
   // The page shows no date; its metadata says 25-11-2019.
   O46: { org: 'Armada Argentina', title: '«Cruzando el Pasaje de Drake a bordo del rompehielos ARA "Almirante Irízar"» (25-11-2019, según los metadatos de la página)', url: 'https://www.argentina.gob.ar/noticias/cruzando-el-pasaje-de-drake-bordo-del-rompehielos-ara-almirante-irizar', consulted: '2026-11-12' },
   // The book as a PDF of 25 pages: a fact of the book links to its page with `pages` (see VoyageFact). A secondary source.
-  P1: { org: 'Emilio Urruty (autor), Fundación Marambio (transcripción)', title: 'Libro de Urruty: «Poncho. La legendaria vida de un perro polar argentino», 2009 (PDF; fuente secundaria)', url: 'https://www.marambio.aq/pdf/poncho.pdf', consulted: '2026-11-12' },
+  P1: { org: 'Emilio Urruty (autor), Fundación Marambio (transcripción)', title: 'Libro de Urruty: «Poncho. La legendaria vida de un perro polar argentino», 2009 (PDF; fuente secundaria)', url: 'https://www.marambio.aq/pdf/poncho.pdf', consulted: '2026-11-12', short: 'Libro' },
   P2: { org: 'Carlos Alberto Montenegro (autor), Fundación Marambio (publicación)', title: '«El perro polar argentino»', url: 'https://www.marambio.aq/perropolar.html', consulted: '2026-11-12' },
   P3: { org: 'SCAR (Scientific Committee on Antarctic Research), servido por el Australian Antarctic Data Centre', title: 'Composite Gazetteer of Antarctica (topónimos y coordenadas)', url: 'https://placenames.aq/', consulted: '2026-11-12' },
   I1: { org: 'Secretaría del Tratado Antártico', title: 'Tratado Antártico (1959), art. VI', url: 'https://documents.ats.aq/keydocs/vol_1/vol1_2_AT_Antarctic_Treaty_e.pdf' },
@@ -80,6 +82,12 @@ export type VoyageSourceCode = keyof typeof VOYAGE_SOURCES;
 /** Sources in the order of the sources page; a fact cites them by their number there. */
 export const VOYAGE_SOURCE_CODES = Object.keys(VOYAGE_SOURCES) as VoyageSourceCode[];
 export const voyageSourceNumber = (code: VoyageSourceCode) => VOYAGE_SOURCE_CODES.indexOf(code) + 1;
+
+/** Text of a citation: «Libro · p. 9» for a source with a short name and a page, «32 · p. 9» with a page only, «32» without. */
+export function citationLabel(code: VoyageSourceCode, number: number, page?: number): string {
+  if (page === undefined) return String(number);
+  return `${(VOYAGE_SOURCES[code] as VoyageSource).short ?? number} · p. ${page}`;
+}
 
 /** One statement with what it is and where it comes from. Estimates explain their own calculation. */
 export interface VoyageFact {

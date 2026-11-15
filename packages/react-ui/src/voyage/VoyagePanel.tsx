@@ -5,6 +5,7 @@ import {
   findTransport,
   formatIsoDate,
   quizScore,
+  tripSources,
   FAUNA_COUNT,
   PLACES_COUNT,
   sightingNote,
@@ -26,7 +27,8 @@ import {
 } from '@antartida/core';
 import { BottomSheet } from '../BottomSheet.tsx';
 import { useFocusReturn } from '../hooks.ts';
-import { Fact, type OpenSources } from './Fact.tsx';
+import { Fact, TripContext, type OpenSources } from './Fact.tsx';
+import { PonchoIntro } from './PonchoIntro.tsx';
 import { SightingIcon } from './SightingIcon.tsx';
 import type { VoyageController } from './useVoyage.ts';
 
@@ -36,8 +38,10 @@ const VehiclePreview = lazy(() => import('./VehiclePreview.tsx').then((m) => ({ 
 /** Date a source was read, when it is not the date the page gives for all of them. */
 const sourceConsulted = (code: VoyageSourceCode) => (VOYAGE_SOURCES[code] as VoyageSource).consulted;
 
-/** Separate page with every source of the expedition, numbered as the facts cite them. */
-function SourcesPage({ focus, notice, onClose }: { focus: VoyageSourceCode; notice?: string; onClose: () => void }) {
+/** Separate page with the sources of the trip, numbered as the facts cite them. */
+function SourcesPage({ focus, transport, notice, onClose }: { focus: VoyageSourceCode; transport?: TransportId; notice?: string; onClose: () => void }) {
+  // Poncho lists only what it cites, numbered from 1; the trips from Ushuaia list the whole registry.
+  const codes = transport ? tripSources(transport) : VOYAGE_SOURCE_CODES;
   const ref = useRef<HTMLDivElement>(null);
   useFocusReturn(true, ref, `[data-source="${focus}"] a`);
   return (
@@ -61,7 +65,7 @@ function SourcesPage({ focus, notice, onClose }: { focus: VoyageSourceCode; noti
         <p className="gdesc">Cada dato del viaje lleva un número entre corchetes. Acá está de dónde sale. Consultadas el {formatIsoDate(VOYAGE_SOURCES_CONSULTED)}, salvo las que dan otra fecha.</p>
         {notice && <p className="gdesc">{notice}</p>}
         <ol className="vsrclist">
-          {VOYAGE_SOURCE_CODES.map((code) => (
+          {codes.map((code) => (
             <li key={code} data-source={code} className={code === focus ? 'on' : undefined}>
               <strong>{VOYAGE_SOURCES[code].org}</strong>
               <span>{VOYAGE_SOURCES[code].title}</span>
@@ -197,7 +201,6 @@ function MilestoneCard({ voyage, animated, onExit, onSource }: {
   useFocusReturn(true, ref, '.btn.primary');
   const { milestone } = voyageStops(state.kind)[state.card];
   const { notes, question } = expeditionAt(milestone.id, state.transport);
-  const notice = findTransport(state.transport).notice;
   const chosen = voyage.answers[milestone.id];
   const answered = chosen !== undefined;
   const score = quizScore(state.transport, voyage.answers);
@@ -220,7 +223,6 @@ function MilestoneCard({ voyage, animated, onExit, onSource }: {
         <Fact fact={milestone.essential} onSource={onSource} />
         {more && milestone.more.map((f) => <Fact key={f.text} fact={f} onSource={onSource} />)}
       </ul>
-      {state.card === 0 && notice && <p className="vsmall">{notice}</p>}
       {notes.length > 0 && (
         <div className="vexp" role="group" aria-label="Cómo funciona la expedición">
           {question && (
@@ -459,25 +461,24 @@ export function VoyagePanel({ voyage, transport, animated, webgl, reduced, onExi
   const { state } = voyage;
   // The source the sources page is open at, or null while it is closed.
   const [sources, setSources] = useState<VoyageSourceCode | null>(null);
-  useEffect(() => {
-    if (transport && !voyage.state) voyage.start(transport);
-  }, [transport, voyage.state]);
+  // A trip that is not picked (Poncho) opens with its start panel; «Comenzar» starts it.
   // The 3D scene opens a source from the card it shows next to an animal.
   voyage.bus.openSource = setSources;
   // On a wide screen an animal touched on the map opens beside it, and the trip controls stay put.
   const stage = voyage.sighting && !voyage.popover
     ? <SightingCard voyage={voyage} onSource={setSources} />
     : !state
-      ? transport ? null : <Picker onStart={voyage.start} onExit={() => onExit(false)} onSource={setSources} preview={webgl} reduced={reduced} />
+      ? transport ? <PonchoIntro transport={findTransport(transport)} onStart={() => voyage.start(transport)} onExit={() => onExit(false)} onSource={setSources} /> : <Picker onStart={voyage.start} onExit={() => onExit(false)} onSource={setSources} preview={webgl} reduced={reduced} />
     : voyage.transfer === 'flying'
       ? <TransferBar voyage={voyage} onSource={setSources} />
     : state.card >= 0
       ? <MilestoneCard key={state.card} voyage={voyage} animated={animated} onExit={onExit} onSource={setSources} />
       : <TravelBar voyage={voyage} animated={animated} onExit={() => onExit(false)} />;
+  const trip = state?.transport ?? transport;
   return (
-    <>
+    <TripContext.Provider value={trip && findTransport(trip).kind === 'dogs' ? trip : undefined}>
       {stage}
-      {sources && <SourcesPage focus={sources} notice={state ? findTransport(state.transport).notice : undefined} onClose={() => setSources(null)} />}
-    </>
+      {sources && <SourcesPage focus={sources} transport={trip} notice={trip ? findTransport(trip).notice : undefined} onClose={() => setSources(null)} />}
+    </TripContext.Provider>
   );
 }

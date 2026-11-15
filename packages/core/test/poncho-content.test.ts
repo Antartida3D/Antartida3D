@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { PONCHO_EXPEDITION, PONCHO_MILESTONES, PONCHO_TRANSPORT, VOYAGE_SOURCES, voyageStops } from '../src/index.ts';
+import {
+  PONCHO_MILESTONES, PONCHO_TRANSPORT, VOYAGE_SOURCES, VOYAGE_SOURCE_CODES, citationLabel, expeditionAt, quizScore, tripSourceNumber, tripSources, voyageSourceNumber, voyageStops,
+} from '../src/index.ts';
 
 const allFacts = [
   ...PONCHO_TRANSPORT.facts,
   ...PONCHO_MILESTONES.flatMap((m) => [m.essential, ...m.more]),
-  ...Object.values(PONCHO_EXPEDITION).flatMap((stop) => stop.notes.map((n) => n.fact)),
 ];
 const sentences = (text: string) => text.match(/[.!?](?=\s|$)/g)?.length ?? 0;
 const allTexts = [
   ...PONCHO_MILESTONES.map((m) => m.title),
   ...allFacts.map((f) => f.text),
-  ...Object.values(PONCHO_EXPEDITION).flatMap((stop) => (stop.question ? [stop.question.prompt, ...stop.question.options] : [])),
 ];
 
 describe('content of the expedition of Poncho', () => {
@@ -38,15 +38,10 @@ describe('content of the expedition of Poncho', () => {
     for (let i = 1; i < stops.length; i++) expect(stops[i].t).toBeGreaterThanOrEqual(stops[i - 1].t);
   });
 
-  it('keeps its questions inside the milestones it has', () => {
-    const ids = new Set(PONCHO_MILESTONES.map((m) => m.id));
-    for (const [id, stop] of Object.entries(PONCHO_EXPEDITION)) {
-      expect(ids.has(id), id).toBe(true);
-      if (stop.question) {
-        expect(stop.question.answer).toBeGreaterThanOrEqual(0);
-        expect(stop.question.answer).toBeLessThan(stop.question.options.length);
-      }
-    }
+  // The trip of Poncho has no questions or «así funciona» notes (issue #140): its closing card shows no score.
+  it('asks no questions and has no notes: nothing to score', () => {
+    for (const m of PONCHO_MILESTONES) expect(expeditionAt(m.id, 'poncho'), m.id).toEqual({ notes: [], question: null });
+    expect(quizScore('poncho', {})).toEqual({ right: 0, total: 0 });
   });
 
   it('names no person: the book leaves them out on purpose', () => {
@@ -104,5 +99,35 @@ describe('content of the expedition of Poncho', () => {
     for (const text of allTexts) expect(text, text).not.toMatch(/aproximad|ilustrativ|a definir|según el libro/i);
     expect(PONCHO_TRANSPORT.notice).toBe('El recorrido y los modelos son una ilustración, no una ruta real.');
     expect(allFacts.every((f) => f.kind === 'real')).toBe(true);
+  });
+
+  it('lists only the sources it cites, in order of first use, numbered from 1', () => {
+    const codes = tripSources('poncho');
+    expect(codes[0]).toBe('P1');
+    expect(new Set(codes).size).toBe(codes.length);
+    expect(codes.length).toBeLessThan(VOYAGE_SOURCE_CODES.length);
+    expect([...codes].sort()).toEqual([...new Set(allFacts.flatMap((f) => f.sources))].sort());
+    expect(tripSourceNumber('poncho', 'P1')).toBe(1);
+    expect(codes.map((c) => tripSourceNumber('poncho', c))).toEqual(codes.map((_, i) => i + 1));
+    expect(tripSourceNumber('poncho', 'U1')).toBe(0);
+  });
+
+  it('keeps the global registry and numbering for the trips from Ushuaia', () => {
+    for (const id of ['irizar', 'hercules'] as const) {
+      expect(tripSources(id)).toEqual(VOYAGE_SOURCE_CODES);
+      expect(tripSourceNumber(id, 'P1')).toBe(voyageSourceNumber('P1'));
+    }
+  });
+});
+
+describe('citationLabel', () => {
+  it('shows the short name with the page, so the book reads «Libro · p. 9»', () => {
+    expect(VOYAGE_SOURCES.P1.short).toBe('Libro');
+    expect(citationLabel('P1', 32, 9)).toBe('Libro · p. 9');
+  });
+
+  it('falls back to the number when the source has no short name, and shows only the number without a page', () => {
+    expect(citationLabel('P2', 33, 3)).toBe('33 · p. 3');
+    expect(citationLabel('P1', 32)).toBe('32');
   });
 });

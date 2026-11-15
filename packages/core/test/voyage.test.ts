@@ -10,7 +10,6 @@ import {
   MAX_POLAR_DEG,
   FUEGIA_LAND_MASK,
   GEAR_TAP_MS,
-  PONCHO_EXPEDITION,
   PONCHO_MILESTONES,
   PONCHO_TRANSPORT,
   IRIZAR_ARRIVAL_POSE,
@@ -91,7 +90,6 @@ const facts: VoyageFact[] = [
   // The trip of Poncho follows the same rules: a source for every real fact, and no source left uncited.
   ...PONCHO_TRANSPORT.facts,
   ...PONCHO_MILESTONES.flatMap((m) => [m.essential, ...m.more]),
-  ...Object.values(PONCHO_EXPEDITION).flatMap((stop) => stop.notes.map((n) => n.fact)),
   ...VOYAGE_TRANSFER.facts,
 ];
 

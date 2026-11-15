@@ -9,10 +9,10 @@
  * of its PDF where the fact is (`pages`): its citation links to that page.
  * Source codes point to VOYAGE_SOURCES.
  */
-import type { ExpeditionStop, Milestone, Transport, VoyageFact, VoyageSourceCode } from './ushuaia.ts';
+import type { Milestone, Transport, VoyageFact, VoyageSourceCode } from './ushuaia.ts';
 import { BELGRANO_AREA, BELGRANO_RETURN, DUSE_BAY, ESPERANZA, FOCA_NUNATAKS, SAN_MARTIN, SANTA_FE_PEAK, USHUAIA } from './poncho-route.ts';
 
-/** The only warning of the trip: shown once, on the first card and on the sources page. */
+/** The only warning of the trip: shown once, on the start panel and on the sources page. */
 export const PONCHO_NOTICE = 'El recorrido y los modelos son una ilustración, no una ruta real.';
 
 /** The team: Poncho in front, the sled and the pack behind. */
@@ -69,6 +69,7 @@ export const PONCHO_MILESTONES: readonly Milestone[] = [
       book(6, 'Era un perro polar argentino: una raza que el Ejército creó cruzando perros Malamute de Alaska, Groenlandeses y Husky.'),
       book(7, 'La raza empezó a formarse hacia 1951, cuando unos treinta suboficiales veterinarios del Ejército eligieron y cruzaron perros de forma sistemática.', 'P2'),
       book(8, 'A los seis meses de edad Poncho ocupó un lugar entre las yuntas (las parejas de perros) que tiraban de los trineos.'),
+      book(9, 'Con «Auk» el perro gira a la derecha y con «Quierr», a la izquierda. Su instructor lo practicó con Poncho atado a una cincha en su propia cintura, y después hicieron slalom entre postes durante una semana.'),
       real('Esperanza es una base permanente argentina, fundada el 17 de diciembre de 1952.', 'O2'),
     ],
   },
@@ -85,6 +86,7 @@ export const PONCHO_MILESTONES: readonly Milestone[] = [
       book(9, 'La primera escala fue la Base Matienzo, sobre uno de los nunataks Foca. «Nunatak» viene del inuktitut y significa «pico solitario»: una roca rodeada de hielo.'),
       book(9, 'Las dos bases están a unos 800 km en línea recta: ida y vuelta, el viaje pasó los 2.000 km.'),
       book(6, 'Las grietas ocultas bajo la nieve eran el peligro más traicionero: algunas eran tan anchas y hondas que podían tragarse un trineo entero. Según se dice, ciertos perros las detectaban con el olfato.'),
+      book(12, 'Poncho caminaba en zigzag para rodear lo que había descubierto. Los hombres clavaban sus bastones y piquetas en la nieve, y casi siempre encontraban una grieta ancha y honda.'),
     ],
   },
   {
@@ -144,6 +146,7 @@ export const PONCHO_MILESTONES: readonly Milestone[] = [
       book(15, 'El 18 de noviembre el grupo de tractores se separó de la patrulla de perros. La patrulla hizo tareas de cartografía y geología, y llegó más allá de los 83 grados de latitud sur.'),
       book(16, 'Frente al pico Santa Fe el trineo de Poncho desapareció tras un filo de nieve, al borde de un barranco de unos 200 metros. Poncho esperaba tranquilo, comiendo nieve, hasta que le dieron la orden y tiró hacia arriba.'),
       real('El pico Santa Fe está a unos 82°03′ S y 41°20′ O.', 'P3'),
+      book(17, 'Poncho no llegó al Polo Sur. Lo alcanzó el grupo de tractores el 10 de diciembre de 1965, después de 66 días de marcha.', 'O12'),
     ],
   },
   {
@@ -157,6 +160,7 @@ export const PONCHO_MILESTONES: readonly Milestone[] = [
     more: [
       book(18, 'Junto con los perros se lanzaron un trineo desarmable, víveres y elementos de supervivencia. Dos oficiales saltaron antes desde otro helicóptero.'),
       book(18, 'El helicóptero era uno de los dos S-55 del rompehielos «General San Martín». Nunca antes se había hecho algo así en la Antártida argentina.'),
+      book(19, 'Los perros aterrizaron sobre el hielo, a unos 30 km al sur de la Base Belgrano. En minutos armaron el trineo y salieron con Poncho al frente a rescatar a una patrulla perdida. Volvieron a la base esa misma noche.'),
     ],
   },
   {
@@ -171,6 +175,7 @@ export const PONCHO_MILESTONES: readonly Milestone[] = [
       book(19, 'Ocurrió un día de agosto de 1967, cuando la patrulla volvía a Esperanza cruzando la bahía Duse sobre mar congelado.'),
       book(20, 'Los vehículos a motor se frenaron en una cuesta de nieve blanda llamada «Cuesta de los Afligidos». El trineo de Poncho volvió a buscar a los hombres que habían quedado a pie.'),
       book(20, 'El oficial a cargo clavó tres cañas con banderolas donde habían volcado, para volver a buscar la brújula.'),
+      book(20, 'Después de dos horas de andar a ciegas, ya de noche, los hombres vieron las luces de la base: Poncho los había llevado hasta Esperanza. Tres días después, cuando pasó el temporal, recuperaron la brújula y los vehículos.'),
     ],
   },
   {
@@ -202,57 +207,3 @@ export const PONCHO_MILESTONES: readonly Milestone[] = [
     ],
   },
 ];
-
-/** What the team tells at each milestone, by milestone id: a question for kids and adults, answered in the card. */
-export const PONCHO_EXPEDITION: Readonly<Record<string, ExpeditionStop>> = {
-  nacimiento: {
-    notes: [
-      { fact: book(9, 'Con «Auk» el perro gira a la derecha y con «Quierr», a la izquierda. Su instructor lo practicó con Poncho atado a una cincha en su propia cintura, y después hicieron slalom entre postes durante una semana.') },
-    ],
-    question: {
-      prompt: '¿Qué voz de mando le indica a la yunta ir a la derecha?',
-      options: ['«Quierr»', '«Auk»', '«Alto»'],
-      answer: 1,
-    },
-  },
-  'expedicion-invernal-1962': {
-    notes: [
-      { fact: book(12, 'Poncho caminaba en zigzag para rodear lo que había descubierto. Los hombres clavaban sus bastones y piquetas en la nieve, y casi siempre encontraban una grieta ancha y honda.') },
-    ],
-    question: {
-      prompt: '¿Qué quería decirles Poncho cuando miró hacia atrás?',
-      options: ['Que había una grieta escondida bajo la nieve', 'Que tenía hambre', 'Que venía una tormenta'],
-      answer: 0,
-    },
-  },
-  'patrulla-paralelo-82': {
-    notes: [
-      { fact: book(17, 'Poncho no llegó al Polo Sur. Lo alcanzó el grupo de tractores el 10 de diciembre de 1965, después de 66 días de marcha.', 'O12') },
-    ],
-    question: {
-      prompt: '¿Poncho llegó al Polo Sur?',
-      options: ['Sí, fue el primer perro en llegar', 'No: su patrulla exploró por delante de los tractores', 'No: nunca salió de Esperanza'],
-      answer: 1,
-    },
-  },
-  paracaidas: {
-    notes: [
-      { fact: book(19, 'Los perros aterrizaron sobre el hielo, a unos 30 km al sur de la Base Belgrano. En minutos armaron el trineo y salieron con Poncho al frente a rescatar a una patrulla perdida. Volvieron a la base esa misma noche.') },
-    ],
-    question: {
-      prompt: '¿Qué hizo Poncho al llegar al hielo con su paracaídas?',
-      options: ['Se echó a dormir', 'Tiró del trineo para rescatar a una patrulla perdida', 'Volvió a la base en helicóptero'],
-      answer: 1,
-    },
-  },
-  'brujula-perdida': {
-    notes: [
-      { fact: book(20, 'Después de dos horas de andar a ciegas, ya de noche, los hombres vieron las luces de la base: Poncho los había llevado hasta Esperanza. Tres días después, cuando pasó el temporal, recuperaron la brújula y los vehículos.') },
-    ],
-    question: {
-      prompt: '¿Qué vio la patrulla después de dos horas de andar a ciegas?',
-      options: ['Las luces de la Base Esperanza', 'Un helicóptero', 'La luna'],
-      answer: 0,
-    },
-  },
-};

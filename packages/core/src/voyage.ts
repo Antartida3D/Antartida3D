@@ -1,10 +1,10 @@
 import { toWorld } from './camera.ts';
 import { ORCADAS_POINT } from './content/points.ts';
 import {
-  EXPEDITION, MILESTONES, SIGHTINGS, TRANSPORTS,
-  type Milestone, type Sighting, type Transport, type TransportId, type TransportKind, type VehicleKind, type VoyageFact, type VoyageQuestion,
+  EXPEDITION, MILESTONES, SIGHTINGS, TRANSPORTS, VOYAGE_SOURCE_CODES,
+  type Milestone, type Sighting, type Transport, type TransportId, type TransportKind, type VehicleKind, type VoyageFact, type VoyageQuestion, type VoyageSourceCode,
 } from './content/ushuaia.ts';
-import { PONCHO_EXPEDITION, PONCHO_MILESTONES, PONCHO_TRANSPORT } from './content/poncho.ts';
+import { PONCHO_MILESTONES, PONCHO_TRANSPORT } from './content/poncho.ts';
 import { PONCHO_SEGMENTS } from './content/poncho-route.ts';
 import { FLIGHT_GROUND_M } from './flight-ground.ts';
 import { FLIGHT_GROUND_STEP, flightAt } from './flight-path.ts';
@@ -21,7 +21,6 @@ type Point = { x: number; y: number };
 /** The transports of every trip: the ones of Ushuaia and the team of Poncho. */
 const ALL_TRANSPORTS: readonly Transport[] = [...TRANSPORTS, PONCHO_TRANSPORT];
 export const findTransport = (id: TransportId): Transport => ALL_TRANSPORTS.find((v) => v.id === id)!;
-const ALL_EXPEDITION = { ...EXPEDITION, ...PONCHO_EXPEDITION };
 
 export const clamp01 = (t: number) => Math.min(1, Math.max(0, t));
 /** Smoothstep on [0, 1], clamped. */
@@ -624,7 +623,7 @@ const kindOf = (transport: TransportId) => findTransport(transport).kind;
  * for it (nothing about the icebreaker on the plane), and the question if it is asked on it.
  */
 export function expeditionAt(milestoneId: string, transport: TransportId): { notes: VoyageFact[]; question: VoyageQuestion | null } {
-  const stop = ALL_EXPEDITION[milestoneId];
+  const stop = EXPEDITION[milestoneId];
   const kind = kindOf(transport);
   const notes = (stop?.notes ?? [])
     .filter((n) => (!n.kind || n.kind === kind) && (!n.only || n.only === transport))
@@ -641,6 +640,22 @@ export function quizScore(transport: TransportId, answers: Readonly<Record<strin
     .filter((q) => q.question);
   return { right: asked.filter((q) => answers[q.id] === q.question!.answer).length, total: asked.length };
 }
+
+/**
+ * Sources a trip lists, in the order it cites them. The trips from Ushuaia share the whole registry (numbered as
+ * `voyageSourceNumber`); the team of Poncho lists only what it cites, numbered from 1.
+ */
+export function tripSources(transport: TransportId): VoyageSourceCode[] {
+  if (kindOf(transport) !== 'dogs') return VOYAGE_SOURCE_CODES;
+  const codes = new Set<VoyageSourceCode>();
+  for (const fact of [...PONCHO_TRANSPORT.facts, ...PONCHO_MILESTONES.flatMap((m) => [m.essential, ...m.more])]) {
+    for (const code of fact.sources) codes.add(code);
+  }
+  return [...codes];
+}
+
+/** Number of a source in the list of the trip (see `tripSources`). */
+export const tripSourceNumber = (transport: TransportId, code: VoyageSourceCode) => tripSources(transport).indexOf(code) + 1;
 
 /** Seconds the whole trip takes while the user keeps advancing. Not a real duration. */
 export const VOYAGE_SECONDS: Record<TransportKind, number> = { ship: TRIPS.ship.seconds, plane: TRIPS.plane.seconds, dogs: TRIPS.dogs.seconds };

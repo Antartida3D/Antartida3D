@@ -1,16 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Group, Mesh, Quaternion, Vector3, type BufferGeometry } from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import {
-  MODEL_MIN_PX,
-  heightAt,
-  sceneCenter,
-  sceneOf,
   scenePathProgress,
   scenePersonPhase,
   sceneHop,
-  sceneUnit,
-  screenPx,
   printsShown,
   walkPhase,
   walkPosition,
@@ -18,39 +12,32 @@ import {
   type SceneElement,
   type ScenePath,
 } from '@antartida/core';
-import { reliefAt } from '../map3d/PointModels.tsx';
 import { OBSERVER_HIP_Y, OBSERVER_HIP_Z, OBSERVER_SHOULDER_Y, OBSERVER_SHOULDER_Z } from '../orcadas/lowPolyPeople.ts';
 import { VOXEL_PALETTE } from '../orcadas/stationModels.ts';
 import { buildPolyGeometry } from './lowPoly.ts';
 import { ponchoPersonParts, ponchoPoseLift, type PersonVariant } from './ponchoPeople.ts';
 import { PONCHO_MODELS } from './ponchoModels.ts';
 import { PONCHO_PROPS } from './ponchoProps.ts';
-import { DOG_SCALE, sceneFootprints, sceneStaticTris, type Ground, type ScenePrints } from './ponchoSceneBuild.ts';
-import { sceneFocusAt, sceneHeading } from './ponchoSceneFocus.ts';
+import { DOG_SCALE, sceneFootprints, sceneStaticTris, type Ground } from './ponchoSceneBuild.ts';
 import { TOOL_THICKNESS, heldTool, scenePose } from './ponchoTools.ts';
-import type { VoyageBus } from './useVoyage.ts';
 import { buildBoxGeometry, vehicleMaterial, type Box } from './vehicles.ts';
 
 /**
- * The living scenes of Poncho's stops (issue #142): beside the team, the people who work (they walk
- * leaving prints, hammer, probe, shovel, cheer), the tent, the poles, the plane and the dogs, drawn
- * low-poly (rule 30) on the real relief. What each scene shows is in `PONCHO_SCENES` (@antartida/core);
- * here only how it is drawn. All is illustration, as the panel of the departure says once.
+ * What happens in a diorama of Poncho (issue #146), at human scale and never scaled by the camera: the
+ * people who work (they walk leaving prints, hammer, probe, shovel, cheer), the tent, the poles, the plane
+ * and the dogs, drawn low-poly (rule 30). What each scene shows is in `PONCHO_SCENES` (@antartida/core);
+ * here only how it is drawn. All is illustration, and the screen says so once.
  *
- * Cost: the still parts (props, drifts) are ONE mesh per scene, rebuilt only when the zoom changes by a
- * step (SCALE_STEP) or the relief changes its detail; the prints are one more mesh revealed with the draw
- * range; each person is five meshes (torso, two arms, two legs) turned by their pose, plus two for the
- * tool; each dog and sled is one. No shadows, no per-frame geometry. With reduced motion nothing moves.
+ * Cost: the still parts (props, drifts) are ONE mesh per scene, built once; the prints are one more mesh
+ * revealed with the draw range; each person is five meshes (torso, two arms, two legs) turned by their
+ * pose, plus two for the tool; each dog and sled is one. No shadows, no per-frame geometry. With reduced
+ * motion nothing moves.
  */
 
-/** The scene is re-seated on the relief when the zoom changes its size by this factor: between, it only scales. */
-const SCALE_STEP = 1.25;
-/** Longest frame the clock of a scene advances, in seconds (as in Voyage3D). */
+/** Longest frame the clock of a scene advances, in seconds. */
 const MAX_FRAME = 0.1;
 /** With reduced motion, the clock rests here: the walks are over and nothing hops. */
 const REDUCED_CLOCK = 1e4;
-/** Below this width on screen the moving parts are too small to see move: no frames are asked for them. */
-const MOVING_MIN_PX = 40;
 
 // Colors of the tools and of the darker dogs of the team (rule 30, 5: named constants).
 const { WOOD_LIGHT, ZINC } = VOXEL_PALETTE;
@@ -226,77 +213,38 @@ function turnPerson(rig: PersonRig, st: Stance, scale: number, groundY: number, 
   rig.head.scale.set(...tool.head);
 }
 
-/** The scene's still parts, its seat on the relief and its moving parts. Mounted only while the scene is on show. */
-function SceneMesh({ scene, bus, reduced }: { scene: SceneDef; bus: VoyageBus; reduced: boolean }) {
-  const invalidateScene = useThree((st) => st.invalidate);
-  const root = useRef<Group>(null);
-  const still = useRef<Mesh>(null);
+
+/**
+ * The still and moving parts of a scene, in its own frame (x ahead, z to the left, y up) on `ground`.
+ * The canvas draws on demand: while something can move (not reduced, page in view) every frame asks for
+ * the next one; with reduced motion it draws once, everything at rest.
+ */
+export function DioramaActors({ scene, ground, reduced }: { scene: SceneDef; ground: Ground; reduced: boolean }) {
+  const invalidateAll = useThree((st) => st.invalidate);
   const printsMesh = useRef<Mesh>(null);
   const rigs = useRef<(PersonRig | null)[]>([]);
   const nodes = useRef<(Group | null)[]>([]);
-  const seat = useRef<{ key: string; ground: Ground; prints: ScenePrints | null } | null>(null);
   const clock = useRef(0);
-  const last = useRef('');
-  const centerV = useRef(new Vector3()).current;
-  const paths = useRef(new Map(scene.paths.map((p) => [p.id, p]))).current;
+  const paths = useMemo(() => new Map(scene.paths.map((p) => [p.id, p])), [scene]);
   const printed = scene.paths.find((p) => p.prints);
+  const still = useMemo(() => buildPolyGeometry(sceneStaticTris(scene, ground, () => 0)), [scene, ground]);
+  const prints = useMemo(() => sceneFootprints(scene, ground), [scene, ground]);
+  const printsGeometry = useMemo(() => buildPolyGeometry(prints?.tris ?? []), [prints]);
 
+  useEffect(() => () => still.dispose(), [still]);
+  useEffect(() => () => printsGeometry.dispose(), [printsGeometry]);
+  // With reduced motion switched on or off, draw once more so everything settles.
+  useEffect(() => invalidateAll(), [reduced, invalidateAll]);
+  // Back on the page, the loop that stopped while it was hidden starts again.
   useEffect(() => {
-    const a = still.current;
-    const b = printsMesh.current;
-    return () => {
-      a?.geometry.dispose();
-      b?.geometry.dispose();
-    };
-  }, []);
-  // With reduced motion switched on, draw once more so everything settles at rest.
-  useEffect(() => invalidateScene(), [reduced, invalidateScene]);
+    const wake = () => invalidateAll();
+    document.addEventListener('visibilitychange', wake);
+    return () => document.removeEventListener('visibilitychange', wake);
+  }, [invalidateAll]);
 
-  useFrame(({ camera, size, invalidate }, delta) => {
-    const g = root.current;
-    const m = still.current;
-    const pm = printsMesh.current;
-    if (!g || !m || !pm) return;
-    const focus = sceneFocusAt(bus.state);
-    if (!focus || focus.scene !== scene) return void (g.visible = false);
-    const heading = sceneHeading(focus.stop);
-    const c = sceneCenter(focus.stop.pin.x, focus.stop.pin.y, heading);
-    const relief = heightAt(c.x, c.y);
-    // Without the relief there is no ground to stand on (it loads after the scene).
-    if (relief === 0) return void (g.visible = false);
-    const cx = c.x - 500;
-    const cz = c.y - 500;
-    const gc = reliefAt(cx, cz);
-    const distance = camera.position.distanceTo(centerV.set(cx, gc, cz));
-    const unit = sceneUnit(distance);
-    const px = screenPx(scene.radius * 2 * unit * focus.amount, distance, size.height);
-    g.visible = px >= MODEL_MIN_PX;
-    if (!g.visible) return;
-
-    // The ground is sampled at the size of the zoom step the scene is in: between steps it only scales.
-    const step = Math.round(Math.log(unit) / Math.log(SCALE_STEP));
-    const unitQ = SCALE_STEP ** step;
-    const key = `${relief}|${step}`;
-    if (seat.current?.key !== key) {
-      const cosT = Math.cos(heading);
-      const sinT = Math.sin(heading);
-      const ground: Ground = (lx, lz) => (reliefAt(cx + (lx * cosT - lz * sinT) * unitQ, cz + (lx * sinT + lz * cosT) * unitQ) - gc) / unitQ;
-      const prints = sceneFootprints(scene, ground);
-      m.geometry.dispose();
-      m.geometry = buildPolyGeometry(sceneStaticTris(scene, ground, (y) => y * unitQ + gc));
-      pm.geometry.dispose();
-      pm.geometry = buildPolyGeometry(prints?.tris ?? []);
-      seat.current = { key, ground, prints };
-    }
-    const { ground, prints } = seat.current;
-    g.position.set(cx, gc, cz);
-    g.rotation.y = -heading;
-    g.scale.setScalar(unit * focus.amount);
-
-    // The scene's clock starts when it shows whole, and rests with reduced motion.
-    if (!reduced && focus.amount >= 1) clock.current += Math.min(MAX_FRAME, delta);
+  useFrame(({ invalidate }, delta) => {
+    if (!reduced) clock.current += Math.min(MAX_FRAME, delta);
     const t = reduced ? REDUCED_CLOCK : clock.current;
-
     scene.elements.forEach((e, i) => {
       const path = e.path ? paths.get(e.path) : undefined;
       const spot = placeOf(e, paths, t, reduced);
@@ -327,22 +275,18 @@ function SceneMesh({ scene, bus, reduced }: { scene: SceneDef; bus: VoyageBus; r
     });
 
     // The prints show as far as the walker has come.
-    if (printed && prints) {
-      const u = scenePathProgress(printed, t);
+    const pm = printsMesh.current;
+    if (printed && prints && pm) {
+      const u = reduced ? 1 : scenePathProgress(printed, t);
       pm.geometry.setDrawRange(0, (u > 0 ? printsShown(printed, u) : 0) * prints.perPrint * 3);
     }
-
-    // The canvas draws on demand: it is asked for frames only while something moves in view; at rest, once per change.
-    const signature = `${key}|${unit.toFixed(2)}|${focus.amount.toFixed(2)}`;
-    if (!reduced && !document.hidden && px >= MOVING_MIN_PX) invalidate();
-    else if (signature !== last.current) invalidate();
-    last.current = signature;
+    if (!reduced && !document.hidden) invalidate();
   });
 
   return (
-    <group ref={root} visible={false}>
-      <mesh ref={still} material={vehicleMaterial} frustumCulled={false} />
-      <mesh ref={printsMesh} material={vehicleMaterial} frustumCulled={false} />
+    <group>
+      <mesh geometry={still} material={vehicleMaterial} frustumCulled={false} />
+      <mesh ref={printsMesh} geometry={printsGeometry} material={vehicleMaterial} frustumCulled={false} />
       {scene.elements.map((e, i) => {
         if (e.kind === 'person') {
           return <Person key={i} variant={e.id as PersonVariant} onRig={(rig) => void (rigs.current[i] = rig)} />;
@@ -357,25 +301,4 @@ function SceneMesh({ scene, bus, reduced }: { scene: SceneDef; bus: VoyageBus; r
       })}
     </group>
   );
-}
-
-/**
- * The scene of the stop the team is at or near, on the trip of the dogs. It is mounted while one is in
- * focus (the card of its stop is open, or the team is within reach of it) and gone otherwise.
- */
-export function PonchoScenes3D({ bus, reduced }: { bus: VoyageBus; reduced: boolean }) {
-  const invalidate = useThree((st) => st.invalidate);
-  const [active, setActive] = useState<string | null>(null);
-  const shown = useRef<string | null>(null);
-
-  useFrame(() => {
-    const id = sceneFocusAt(bus.state)?.stop.milestone.id ?? null;
-    if (id === shown.current) return;
-    shown.current = id;
-    setActive(id);
-  });
-  useEffect(() => invalidate(), [active, invalidate]);
-
-  const scene = active ? sceneOf(active) : undefined;
-  return scene ? <SceneMesh key={active} scene={scene} bus={bus} reduced={reduced} /> : null;
 }

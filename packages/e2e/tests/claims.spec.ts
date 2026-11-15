@@ -1,5 +1,21 @@
 import { expect, test, type Page } from '@playwright/test';
 
+/**
+ * Hides the claims details (#148). On a phone they are a sheet over the bottom half, over their own
+ * button too: they hide dragged down, like the point sheets. On a wide screen, with their button.
+ */
+async function hideDetails(page: Page, isMobile: boolean) {
+  const panel = page.getByRole('region', { name: 'Reclamos antárticos' });
+  if (!isMobile) return page.getByRole('button', { name: 'Detalles de reclamos', exact: true }).click();
+  const box = (await panel.getByRole('heading', { name: 'Reclamos antárticos' }).boundingBox())!;
+  const [x, y] = [box.x + box.width / 2, box.y + box.height / 2];
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
+  for (let i = 1; i <= 8; i++) await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y: y + 25 * i }] });
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await expect(panel).toHaveCount(0);
+}
+
 /** The claims layer has no control in the map menu while off: it opens from the South Pole sheet (#128). */
 async function openFromPole(page: Page, key = false, beforeAction?: () => Promise<void>) {
   await page.getByRole('button', { name: 'Ver como lista', exact: true }).click();
@@ -12,7 +28,7 @@ async function openFromPole(page: Page, key = false, beforeAction?: () => Promis
   } else await action.click();
 }
 
-test('claims start off, toggle areas and flags together, and keep the map camera', async ({ page }, testInfo) => {
+test('claims start off, toggle areas and flags together, and keep the map camera', async ({ page, isMobile }, testInfo) => {
   test.setTimeout(60_000);
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
@@ -72,7 +88,8 @@ test('claims start off, toggle areas and flags together, and keep the map camera
   expect(content.borders.every((border) => border.dashed && border.dash > 0 && border.gap > border.dash && border.distances === border.vertices && border.vertices > 0)).toBe(true);
   expect(content.seaHeights.every((height) => height > -.05 && height < 0)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath('claims-all.png') });
-  await page.getByRole('button', { name: 'Ocultar detalles de reclamos' }).click();
+  // The sheet has no close button (#148).
+  await hideDetails(page, isMobile);
   await page.screenshot({ path: testInfo.outputPath('claims-map.png') });
   await page.getByRole('button', { name: 'Detalles de reclamos', exact: true }).click();
 
@@ -129,7 +146,7 @@ test('claims offer sea sectors and land coverage, with the full ocean extent', a
   expect(errors).toEqual([]);
 });
 
-test('claims controls fit the viewport and preserve selection when changing view mode', async ({ page }) => {
+test('claims controls fit the viewport and preserve selection when changing view mode', async ({ page, isMobile }) => {
   test.setTimeout(60_000);
   await page.goto('/');
   await page.getByRole('button', { name: 'Relieve 3D', exact: true }).click();
@@ -141,11 +158,14 @@ test('claims controls fit the viewport and preserve selection when changing view
   expect(bounds!.y).toBeGreaterThanOrEqual(0);
   expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(page.viewportSize()!.width);
   expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(page.viewportSize()!.height);
-  await page.getByRole('button', { name: 'Ocultar detalles de reclamos' }).click();
+  // The sheet has no close button (#148).
+  await hideDetails(page, isMobile);
   await page.getByRole('button', { name: 'Leyenda', exact: true }).click();
   await page.getByRole('button', { name: 'Detalles de reclamos', exact: true }).click();
   const withLegend = await page.getByRole('region', { name: 'Reclamos antárticos' }).boundingBox();
   expect(withLegend!.y).toBeGreaterThanOrEqual(0);
+  // On a phone the details cover the view buttons: hidden first, shown again in 3D below.
+  if (isMobile) await hideDetails(page, isMobile);
   await page.getByRole('button', { name: 'Mapa 2D', exact: true }).click();
   await expect(page.getByRole('switch', { name: 'Reclamos territoriales' })).toHaveCount(0);
   // The 2D map has no claims layer, so the South Pole sheet does not offer it.
@@ -155,5 +175,6 @@ test('claims controls fit the viewport and preserve selection when changing view
   await page.getByRole('dialog').getByRole('button', { name: 'Volver al mapa', exact: true }).click();
   await page.getByRole('button', { name: 'Relieve 3D', exact: true }).click();
   await expect(page.getByRole('switch', { name: 'Reclamos territoriales' })).toHaveAttribute('aria-checked', 'true');
+  if (isMobile) await page.getByRole('button', { name: 'Detalles de reclamos', exact: true }).click();
   await expect(page.getByRole('group', { name: 'País reclamante' }).getByRole('button', { name: 'Noruega', exact: true })).toHaveAttribute('aria-pressed', 'true');
 });

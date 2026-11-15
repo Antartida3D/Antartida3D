@@ -11,6 +11,7 @@ import {
   type CameraPose,
   divePose3D,
   FOV,
+  liftToward,
   distanceFromK3D,
   generateSeaLifeInstances,
   groundTarget,
@@ -59,6 +60,7 @@ import { SeaTimeContext, useAnimationClock } from './useAnimationClock.ts';
 import { Town3D } from '../voyage/Town3D.tsx';
 import { Storm3D } from '../voyage/Storm3D.tsx';
 import { OrcadasSite } from './OrcadasSite.tsx';
+import { MarambioSite } from './MarambioSite.tsx';
 import { PointModels, pointFocus } from './PointModels.tsx';
 import { OrcadasTravel3D } from '../voyage/OrcadasTravel3D.tsx';
 import { Voyage3D } from '../voyage/Voyage3D.tsx';
@@ -148,8 +150,9 @@ function SceneContent({
       <SeaLife visible={phase !== 'dive' && phase !== 'travel'} timeUniform={seaTime} instances={seaLifeInstances} voyage={voyage} />
       <Town3D reduced={reduced} wide={wide} overlay={overlayRef} />
       <OrcadasSite reduced={reduced} />
+      <MarambioSite reduced={reduced} hidden={Boolean(voyage)} />
       <PointModels reduced={reduced} />
-      <Storm3D reduced={reduced} />
+      <Storm3D />
       {phase === 'travel' && <OrcadasTravel3D arrival={arrival ?? 'ship'} reduced={reduced} />}
       {voyage && <Voyage3D bus={voyage} reduced={reduced} overlay={overlayRef} />}
       {enablePost && (
@@ -191,6 +194,11 @@ export type Map3DLayerProps = Layer3DProps;
 const VISIT_POLAR = (52 * Math.PI) / 180;
 /** From this window width the point card is a side panel, not a bottom sheet (painted.css). */
 const VISIT_WIDE_PX = 820;
+/**
+ * On a phone the point sheet opens at half the screen (painted.css, #148): the model is seen this
+ * high on screen (-1 bottom, 1 top), in the middle of the free half above the sheet.
+ */
+const VISIT_PHONE_NDC_Y = 0.5;
 // Closer than NEAR_FROM the near plane comes in too, or the land in front of the target would be clipped.
 const NEAR = 10;
 const NEAR_FROM = 60;
@@ -341,7 +349,7 @@ function ControlsBridge({
       // the model sits in the free part (to the left, or higher up, seen from the camera).
       const wide = size.vw >= VISIT_WIDE_PX;
       const across = wide ? 0.14 * 2 * cmd.distance * Math.tan((FOV * Math.PI) / 360) * aspect : 0;
-      const toward = wide ? 0 : 0.22 * cmd.distance;
+      const toward = wide ? 0 : liftToward(cmd.distance, VISIT_POLAR, VISIT_PHONE_NDC_Y);
       const az = cc.azimuthAngle;
       void cc.moveTo(
         at.x + Math.cos(az) * across + Math.sin(az) * toward,

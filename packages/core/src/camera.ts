@@ -23,6 +23,21 @@ export function placeModelSize(distance: number, sizePerDistance: number, minSiz
   return Math.max(minSize, Math.min(MODEL_REFERENCE_DISTANCE, distance) * sizePerDistance);
 }
 
+/**
+ * How far (world units, over the ground) to move the camera target toward the camera so that a point
+ * on the target plane is seen `ndcY` above the middle of the screen (-1 bottom, 1 top), with the
+ * camera `distance` from the target at `polar` radians from straight down. A phone point sheet
+ * covers the bottom half: with `ndcY` 0.5 the point sits in the middle of the free half above it.
+ */
+export function liftToward(distance: number, polar: number, ndcY: number, fovDeg = FOV): number {
+  const height = distance * Math.cos(polar);
+  const across = distance * Math.sin(polar);
+  const tilt = Math.atan(ndcY * Math.tan((fovDeg * Math.PI) / 360));
+  // Angle below the horizon at which the camera sees the point; the view axis is at PI/2 - polar.
+  const below = Math.PI / 2 - polar - tilt;
+  return height / Math.tan(below) - across;
+}
+
 /** Viewport height the sizes in px of the sea models are given for. */
 const SEA_MODEL_VIEWPORT = 900;
 /** Smallest world size of a sea model: closer than the camera ever gets it would be a speck. */

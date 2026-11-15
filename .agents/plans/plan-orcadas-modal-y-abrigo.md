@@ -102,6 +102,8 @@ Estado: **aprobado por Lk (14 nov 2026).** Rama `125-orcadas-modal-y-puerta-del-
   - → verificar: `pnpm --filter @antartida/react-ui test`.
 - [x] 10. `OrcadasExpedition.tsx` (y `Observation.tsx` si hace falta): calcular `screenOpen` según S4 y pasarlo a `StationScene` (`:420-434`). → verificar: e2e `orcadas-observation.spec.ts` en desktop y mobile, más una aserción nueva de que la cámara del diorama queda en la toma del abrigo durante la lectura (por ejemplo con `window.__orcadasCamera.getTarget`).
 - [x] 3a. > Enmienda: si el panel «Desde Ushuaia» está abierto (por ejemplo tras la bienvenida), tocar Orcadas lo cierra antes de abrir el panel de inicio (`onEndVoyage(false)`), para no apilar dos paneles. Antes, Orcadas arrancaba directo y también lo abandonaba.
+- [x] 3b. > Enmienda (pedido de Lk, 14 nov): el panel de inicio suma el modelo 3D de la base que gira (`OrcadasSitePreview`, solo con WebGL) y tres datos reales con fuente (`introFacts`). Lk descartó las tarjetas por capítulo por sobrecarga.
+- [x] 3c. > Enmienda (pedido de Lk, 14 nov): las fichas de puntos (`PointSheet`) no se cerraban deslizando hacia abajo porque no usaban `BottomSheet`. Ahora lo usan; en el teléfono, el panel chico oculta su barra de scroll. e2e `flow` «point sheet closes when dragged down».
 - [ ] 11. Capturas en Chromium con `--use-angle=vulkan` a 1440 y 390 px:
   - el panel de inicio desde el mapa 2D y desde el 3D;
   - el abrigo durante la lectura (puerta abierta con los instrumentos);

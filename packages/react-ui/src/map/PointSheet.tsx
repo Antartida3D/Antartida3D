@@ -1,5 +1,6 @@
 import { lazy, Suspense, useId, useRef, useState } from 'react';
 import { TIER, type MapPoint, type SeaPoint, type Source } from '@antartida/core';
+import { BottomSheet } from '../BottomSheet.tsx';
 import { useFocusReturn } from '../hooks.ts';
 import { Icon } from '../ui.tsx';
 import { POINT_MODEL_IDS } from '../voyage/pointModelIds.ts';
@@ -52,7 +53,7 @@ export function PointSheet({ point, onClose, fallbackFocus, preview = false, red
   action?: { label: string; onClick: () => void };
 }) {
   const ref = useRef<HTMLElement>(null);
-  useFocusReturn(true, ref, 'button', fallbackFocus);
+  useFocusReturn(true, ref, '.iconbtn', fallbackFocus);
 
   const isSea = !('tier' in point);
   const hasModel = preview && POINT_MODEL_IDS.has(point.id);
@@ -62,15 +63,8 @@ export function PointSheet({ point, onClose, fallbackFocus, preview = false, red
   return (
     <>
       <div className="scrim" onClick={onClose} />
-      <section
-        className="sheet"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="sheet-title"
-        ref={ref}
-        onKeyDown={(e) => e.key === 'Escape' && onClose()}
-      >
-        <div className="grab" />
+      {/* Dragged down on a phone, the sheet closes like the other sheets of the map. */}
+      <BottomSheet labelledBy="sheet-title" sheetRef={ref} onClose={onClose}>
         <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
           <span className={tagClass}>{tagLabel}</span>
           <button type="button" className="iconbtn" onClick={onClose} aria-label="Cerrar ficha">{Icon.close}</button>
@@ -120,7 +114,7 @@ export function PointSheet({ point, onClose, fallbackFocus, preview = false, red
           {action && <button type="button" className="btn" onClick={action.onClick}>{action.label}</button>}
           <button type="button" className="btn" onClick={onClose}>Volver al mapa</button>
         </div>
-      </section>
+      </BottomSheet>
     </>
   );
 }

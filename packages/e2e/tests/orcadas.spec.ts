@@ -1,7 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { clearStorage } from '../storage.ts';
-import { CHAPTER_NAMES, ORCADAS_GUIDING_QUESTION, ORCADAS_INTRO_DESC } from '../../core/src/content/orcadas.ts';
-import { answerFor, CHAPTERS } from '../../core/src/orcadas.ts';
+import { ORCADAS_GUIDING_QUESTION, ORCADAS_INTRO_DESC } from '../../core/src/content/orcadas.ts';
+import { answerFor } from '../../core/src/orcadas.ts';
 import { clickOrcadasMarker, openOrcadasFromMap } from './orcadas-helpers.ts';
 
 const log = (page: Page) => page.locator('.reg');
@@ -823,13 +823,24 @@ test('Orcadas intro modal opens from marker and list, traps focus, returns focus
   await clickOrcadasMarker(page);
   const intro = page.getByRole('dialog', { name: 'Estación Orcadas' });
   await expect(intro).toBeVisible();
-  await expect(intro.getByText(ORCADAS_GUIDING_QUESTION)).toBeVisible();
-  await expect(intro.getByText(ORCADAS_INTRO_DESC)).toBeVisible();
-  for (const ch of CHAPTERS) {
-    await expect(intro.getByText(CHAPTER_NAMES[ch])).toBeVisible();
-  }
-
   const startBtn = intro.getByRole('button', { name: 'Comenzar expedición' });
+  await expect(startBtn).toBeFocused();
+  await expect(intro.locator('.place')).toHaveText(ORCADAS_GUIDING_QUESTION);
+  await expect(intro.getByText(ORCADAS_INTRO_DESC)).toBeVisible();
+  // On the 2D map there is no WebGL: the turning model of the station is left out (map3d.spec covers it in 3D).
+  await expect(intro.locator('.vpreview')).toHaveCount(0);
+
+  await expect(intro.getByText('El registro mensual de temperatura empieza en abril de 1903 y sigue hasta hoy.')).toBeVisible();
+  const readerBtn = intro.getByRole('button', { name: 'SCAR READER' });
+  await expect(readerBtn).toBeVisible();
+  await readerBtn.click();
+  const sourcesDialog = page.getByRole('dialog', { name: 'Fuentes' });
+  await expect(sourcesDialog).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(sourcesDialog).toHaveCount(0);
+  await expect(readerBtn).toBeFocused();
+
+  await startBtn.focus();
   await expect(startBtn).toBeFocused();
   for (let i = 0; i < 4; i++) {
     await page.keyboard.press('Tab');
@@ -850,6 +861,7 @@ test('Orcadas intro modal opens from marker and list, traps focus, returns focus
   await listBtn.click();
   await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Estación Orcadas/ }).click();
   await expect(intro).toBeVisible();
+  await expect(intro.getByRole('button', { name: 'Comenzar expedición' })).toBeFocused();
 
   await page.setViewportSize({ width: 390, height: 844 });
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);

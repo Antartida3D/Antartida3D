@@ -508,6 +508,8 @@ export function MapView({
             }}
             onExit={() => setPendingOrcadas(null)}
             fallbackFocus={() => vpRef.current}
+            preview={is3D}
+            reduced={reduced}
           />
         )}
       </div>

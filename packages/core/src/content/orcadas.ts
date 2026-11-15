@@ -22,6 +22,13 @@ export const CHAPTER_HEADINGS: Record<Chapter, string> = {
   answer: 'La respuesta',
 };
 
+/** Real, sourced facts highlighted in the pre-expedition intro sheet. */
+export const ORCADAS_INTRO_FACT_IDS = [
+  'arrival-antiguedad',
+  'obs-registro-1903',
+  'eras-traspaso-1904',
+] as const;
+
 export type FactKind = 'real' | 'sim' | 'recon' | 'calc';
 
 export const FACT_KIND_LABEL: Record<FactKind, string> = {
@@ -609,6 +616,13 @@ const TOUR_FACT_IDS = new Set(ORCADAS_TOUR.flatMap((stop) => [stop.factId, ...st
 
 export function factById(id: string): OrcadasFact | null {
   return FACT_MAP.get(id) ?? null;
+}
+
+/** Publishable real facts highlighted on the pre-expedition intro sheet. */
+export function introFacts(): OrcadasFact[] {
+  return ORCADAS_INTRO_FACT_IDS.map((id) => FACT_MAP.get(id)).filter(
+    (f): f is OrcadasFact => f !== undefined && f.kind === 'real' && isPublishable(f)
+  );
 }
 
 /** Publishable guided-tour stops for a chapter, in declared order. */

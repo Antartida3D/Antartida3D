@@ -13,7 +13,7 @@ Estado: **espera aprobación de Lk.** Rama `135-orcadas-llegada-inmersiva-...`, 
    - Con el Zodiac, el bote entra desde la bahía y atraca en la playa, con estela y espuma.
    - Con el helicóptero, la aeronave baja y se posa en el helipuerto, con el rotor girando y nieve levantada.
    - El otro transporte ya está quieto en su lugar. El helicóptero solo está en el helipuerto si el mes lo permite (`helicopterOnPad`, de noviembre a marzo).
-   - Si se elige helicóptero en un mes sin temporada, se resuelve como diga la decisión P1 (ver Preguntas abiertas).
+   - **D1 (Lk):** el mes del diorama se elige solo según el vehículo. El helicóptero y el Zodiac, que baja del Irízar, llegan en la temporada de visitas, de noviembre a marzo (`arrival-transporte` y `helicopterOnPad`). Si el mes actual está fuera de temporada, la expedición arranca en el mes de temporada más cercano. El panel lo dice en una línea.
 5. **Movimiento reducido:** sin viaje animado ni aterrizaje. Se entra directo al diorama, con el transporte elegido ya quieto en su lugar.
 6. **Honestidad:** todo lo animado se marca como ilustración, como el resto del diorama («Reconstrucción ilustrada»). Ningún dato sin fuente: lo que se diga del Irízar, del Zodiac y del helicóptero sale de hechos con fuente que ya existen. Por ejemplo `arrival-transporte` en `packages/core/src/content/orcadas.ts`: la llegada en buque o helicóptero, los dos Zodiac y unas 25 visitas por año entre noviembre y marzo.
 7. **Detalles inmersivos:** se suman los que Lk elija de la lista de Propuestas, en la línea de la puerta del abrigo.
@@ -48,16 +48,14 @@ Estado: **espera aprobación de Lk.** Rama `135-orcadas-llegada-inmersiva-...`, 
 - **Panel de inicio:** `packages/react-ui/src/orcadas/OrcadasIntro.tsx` (de #125). El selector se modela en el `Picker` de `voyage/VoyagePanel.tsx:75-123`.
 - **Animación con suavizado y movimiento reducido:** `screenDoorAngle` y `smooth01` en `orcadas/lowPolyBuildings.ts`; el patrón de prop, `useFrame` e `invalidate` de la puerta del abrigo en `StationScene.tsx`.
 
-## Coordinación con otros issues (no comentar sin OK de Lk)
+## Dueño de la expedición
 
-- **#66** (majo-fflores) generaliza el viaje de Ushuaia para que lo use Poncho. El viaje a Orcadas debe reutilizar lo que salga de ahí, no rehacerlo. Antes del paso 5, revisar el estado de #66 (`gh issue view 66`, `gh pr list --search 66`). Si está en curso, avisar a Lk antes de tocar `useVoyage.ts`, `Voyage3D.tsx` o `core/voyage.ts`.
-- **#111** (GiulianoPoeta99) agrega un selector Exploración/Quiz al panel de inicio de Orcadas. El selector de llegada va como un componente propio y chico dentro de `OrcadasIntro`, para que los dos convivan.
+- **D2 (Lk):** Lk es el responsable de la expedición Orcadas y tiene prioridad sobre sus archivos. #66 y #111 son otros temas y no condicionan este plan.
 
 ## Fuera de alcance
 
 - Sonido: Lk lo descartó (decisión de projectmem del 11 nov).
 - Cambiar los modelos del viaje de Ushuaia a low-poly.
-- El selector de #111.
 
 ## Archivos
 
@@ -69,7 +67,7 @@ Estado: **espera aprobación de Lk.** Rama `135-orcadas-llegada-inmersiva-...`, 
   - `orcadas/stationModels.ts`: el camino.
   - `orcadas/StationScene.tsx`: el prop `arrival` y las animaciones de llegada.
   - `orcadas/OrcadasIntro.tsx`, `map/MapView.tsx` y `AntarcticaApp.tsx`: pasar la elección y encadenar viaje, acercamiento y diorama.
-  - El módulo de viaje que corresponda según #66.
+  - El módulo de viaje que haga falta (`core/voyage.ts`, `voyage/Voyage3D.tsx` o `voyage/trail.ts`).
   - `packages/core/src/content/orcadas.ts`: solo textos con fuente o descriptivos.
   - Las pruebas de `packages/react-ui/test/`.
   - `README.md`: la declaración de IA.
@@ -88,17 +86,18 @@ Estado: **espera aprobación de Lk.** Rama `135-orcadas-llegada-inmersiva-...`, 
   - Capturas a 1440 y 390 px del camino de cerca y de lejos, aprobadas por Lk.
 - [ ] 3. **Lógica pura de la llegada** en `packages/core/src/orcadas-arrival.ts`:
   - `type ArrivalId = 'ship' | 'helicopter'`;
+  - `arrivalMonth(arrival, today)`: el mes de temporada (noviembre a marzo) más cercano al actual, o el actual si ya es de temporada (D1);
   - `arrivalScene(arrival, month)`: qué llega, qué está quieto y si hay helicóptero en el helipuerto;
   - `zodiacApproach(t)` y `helicopterLanding(t)`: posición, rumbo y altura en función del tiempo, con suavizado;
   - `ARRIVAL_SECONDS`;
   - con movimiento reducido, directo a la pose final.
-  - → verificar: `pnpm --filter @antartida/core test`, con casos de cada transporte, de mes con y sin temporada, del inicio y el final de cada curva, y del movimiento reducido.
+  - → verificar: `pnpm --filter @antartida/core test`, con casos de cada transporte, de `arrivalMonth` con el mes dentro y fuera de temporada (incluido el cambio de año), del inicio y el final de cada curva, y del movimiento reducido.
 - [ ] 4. **Selector de llegada** (`ArrivalPicker.tsx`) dentro de `OrcadasIntro`.
   - Dos opciones con `aria-pressed` y vista previa 3D del vehículo elegido (solo con WebGL). Debajo, un dato con fuente (`arrival-transporte`) y el rótulo de ilustración.
   - «Comenzar expedición» pasa la llegada elegida a `onStart`.
   - → verificar: `pnpm typecheck` y un e2e de teclado (Tab y Enter eligen; el foco queda atrapado y Escape cierra y devuelve el foco).
 - [ ] 5. **Viaje en el mapa** antes del acercamiento.
-  - Encadenar en `AntarcticaApp.start`: la fase nueva `travel` (o la que permita #66) anima en el mapa 3D el tramo hasta la isla Laurie con el vehículo elegido; después vienen `approach` y la escena.
+  - Encadenar en `AntarcticaApp.start`: la fase nueva `travel` anima en el mapa 3D el tramo hasta la isla Laurie con el vehículo elegido; después vienen `approach` y la escena.
   - Reutilizar `Voyage3D` o `trail.ts` y las curvas de `core/voyage.ts`.
   - Sin WebGL o con movimiento reducido no hay viaje: se va directo, como hoy.
   - Se puede saltear con un botón «Saltar viaje», alcanzable con teclado.
@@ -140,7 +139,6 @@ Todas son ilustraciones, sin datos nuevos. Las que dependen del tiempo usan la o
 - `packages/react-ui/test/orcadasPath.test.ts`: continuidad y apoyo del camino.
 - `packages/e2e/tests/orcadas-arrival.spec.ts`: selector con teclado, viaje y llegada con cada transporte y entrada directa con movimiento reducido.
 
-## Preguntas abiertas: 2
+## Preguntas abiertas: 1
 
-- **P1:** si se elige el helicóptero en un mes sin temporada (abril a octubre), ¿se deshabilita la opción con una explicación, o el viaje fija un mes de temporada?
 - **P2:** ¿cuáles de las 10 propuestas entran? Recomendación: 1, 2, 4 y 6, que se apoyan en lo que ya existe y suman más a la sensación de haber llegado.

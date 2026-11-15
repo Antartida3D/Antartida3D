@@ -42,13 +42,19 @@ export function partAtRest(part: Part): Box[] {
 
 // --- Ammonite -------------------------------------------------------------------------------
 
-/** A continuous stepped spiral in the xy plane, with ribs and a visible outer aperture. */
+const TURNS = Math.PI * 4.6;
+/**
+ * Where the spiral starts, so that it ends straight down: the last whorl, the body chamber where the
+ * animal lived, opens at the bottom of the shell, facing forward (+x), with the arms coming out there.
+ */
+const START = Math.PI * 1.5 - TURNS;
+
+/** A continuous stepped spiral in the xy plane, with ribs and a visible outer aperture at the bottom. */
 export function ammoniteShell(stripes: boolean): Box[] {
   const boxes: Box[] = [];
-  const turns = Math.PI * 4.6;
   for (let i = 0; i < 110; i++) {
     const t = i / 109;
-    const angle = turns * t;
+    const angle = START + TURNS * t;
     const radius = 0.035 + t * 0.39;
     const width = 0.045 + t * 0.065;
     const ribbed = i % 6 === 0;
@@ -57,8 +63,7 @@ export function ammoniteShell(stripes: boolean): Box[] {
   }
   return boxes;
 }
-const TURNS = Math.PI * 4.6;
-export const AMMONITE_APERTURE: readonly [number, number, number] = [Math.cos(TURNS) * 0.425, 0.48 + Math.sin(TURNS) * 0.425, 0.025];
+export const AMMONITE_APERTURE: readonly [number, number, number] = [Math.cos(START + TURNS) * 0.425, 0.48 + Math.sin(START + TURNS) * 0.425, 0.025];
 
 export const AMMONITE_FOSSIL: readonly Box[] = [
   ...ammoniteShell(false),

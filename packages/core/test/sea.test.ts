@@ -49,7 +49,7 @@ describe('sea (fauna, icebergs, and ARA Almirante Irizar)', () => {
 
   it('starts the Irizar route at Ushuaia and ends at Marambio with unit tangents', () => {
     const ushuaia = PTS.find((p) => p.id === 'campana')!;
-    const marambio = PTS.find((p) => p.id === 'fosiles')!;
+    const marambio = PTS.find((p) => p.id === 'marambio')!;
 
     const start = routePointAt(0);
     const end = routePointAt(1);

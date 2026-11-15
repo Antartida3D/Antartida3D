@@ -1,4 +1,5 @@
 import type { Source } from './sea.ts';
+import { MARAMBIO_GUIDING_QUESTION } from './marambio.ts';
 import { POINT_DETAILS } from './point-details.ts';
 
 export type Tier = 'A' | 'B' | 'C';
@@ -24,7 +25,7 @@ export interface MapPoint {
 }
 
 const POINTS: readonly MapPoint[] = [
-  { id: 'fosiles', tier: 'B', title: 'Fósiles', place: 'Isla Marambio', x: 196, y: 300, q: '¿Cómo era la Antártida antes del hielo?' },
+  { id: 'marambio', tier: 'A', title: 'Base Marambio', place: 'Isla Marambio', x: 196, y: 300, q: MARAMBIO_GUIDING_QUESTION },
   { id: 'oceano', tier: 'B', title: 'Océano', place: 'Mar de Weddell', x: 322, y: 322, q: '¿Qué pasa debajo del hielo marino del Mar de Weddell?' },
   { id: 'poncho', tier: 'B', title: 'Poncho', place: 'Península Antártica · ubicación a definir', x: 196, y: 352, q: '¿Qué historia puede contar un poncho en la Antártida?' },
   { id: 'campana', tier: 'A', title: 'Desde Ushuaia', place: 'Ushuaia', x: 31.4, y: 313.5, q: '¿Cómo se llega desde Ushuaia hasta la Antártida?' },
@@ -46,6 +47,7 @@ export const PTS: readonly MapPoint[] = POINTS.map((p) => ({ ...p, ...POINT_DETA
 export const TIER: Record<Tier, string> = { A: 'Expedición disponible', B: 'Ampliación prevista', C: 'Punto de interés' };
 
 export const ORCADAS_POINT = PTS.find((p) => p.id === 'orcadas')!;
+export const MARAMBIO_POINT = PTS.find((p) => p.id === 'marambio')!;
 export const EXPEDITION_POINT = ORCADAS_POINT;
 /** The trip from Ushuaia happens on the map itself, not on a separate screen. */
 export const VOYAGE_POINT = PTS.find((p) => p.id === 'campana')!;

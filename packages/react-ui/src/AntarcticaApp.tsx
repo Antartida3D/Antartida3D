@@ -28,6 +28,14 @@ import { NARROW_PX } from './voyage/useVoyage.ts';
 const loadOrcadas = () => import('./orcadas/OrcadasExpedition.tsx');
 const OrcadasExpedition = lazy(() => loadOrcadas().then((m) => ({ default: m.OrcadasExpedition })));
 
+const loadMarambio = () => import('./marambio/MarambioExpedition.tsx');
+const MarambioExpedition = lazy(() => loadMarambio().then((m) => ({ default: m.MarambioExpedition })));
+
+/** Expeditions with a screen of their own, by the id of their point on the map. */
+const EXPEDITIONS = { orcadas: loadOrcadas, marambio: loadMarambio } as const;
+type ExpeditionId = keyof typeof EXPEDITIONS;
+const isExpedition = (id: string): id is ExpeditionId => id in EXPEDITIONS;
+
 const loadMap3D = () => import('./map3d/Map3DLayer.tsx');
 const Map3DLayerLazy = lazy(() => loadMap3D().then((m) => ({ default: m.Map3DLayer })));
 
@@ -51,7 +59,7 @@ function hasWebGL(): boolean {
 }
 
 export function AntarcticaApp() {
-  const [screen, setScreen] = useState<'map' | 'orcadas'>('map');
+  const [screen, setScreen] = useState<'map' | ExpeditionId>('map');
   const [phase, setPhase] = useState<Phase>('idle');
   const [arrival, setArrival] = useState<ArrivalId>('ship');
   const [explored, setExplored] = useState<string[]>([]);
@@ -120,12 +128,12 @@ export function AntarcticaApp() {
     saveViewMode(next);
   };
 
-  const enterApproach = () => {
+  const enterApproach = (id: ExpeditionId) => {
     setPhase('approach');
     later(
       'enter',
       () => {
-        setScreen('orcadas');
+        setScreen(id);
         setPhase('idle');
       },
       APPROACH_MS
@@ -133,29 +141,37 @@ export function AntarcticaApp() {
   };
 
   const skipTravel = () => {
-    if (phase !== 'travel') return;
+    // Only the way to Orcadas is a trip on the map (#135).
+    if (phase !== 'travel' || !isExpedition(activePoint.id)) return;
     later('travel', () => {}, 0);
-    enterApproach();
+    enterApproach(activePoint.id);
   };
 
   const start = (point: MapPoint, chosenArrival: ArrivalId = 'ship') => {
-    if (phase !== 'idle' || point.id !== 'orcadas') return;
-    setArrival(chosenArrival);
+    const id = point.id;
+    if (phase !== 'idle' || !isExpedition(id)) return;
     setToast('');
     setActivePoint(point);
-    void loadOrcadas();
-    // Orcadas on the 3D map: animate the final Scotia Sea leg first, then zoom down to the island.
+    void EXPEDITIONS[id]();
     const can3D = !reduced && mode === '3d' && document.querySelector('.stage.m3d canvas') !== null;
-    if (can3D) {
-      setPhase('travel');
-      later('travel', enterApproach, orcadasTravelMs(chosenArrival));
+    if (id === 'orcadas') {
+      setArrival(chosenArrival);
+      // Orcadas on the 3D map: animate the final Scotia Sea leg first, then zoom down to the island.
+      if (can3D) {
+        setPhase('travel');
+        later('travel', () => enterApproach(id), orcadasTravelMs(chosenArrival));
+        return;
+      }
+    } else if (can3D) {
+      // Any other expedition: the camera zooms all the way down to the place, like the trip from Ushuaia.
+      enterApproach(id);
       return;
     }
     setPhase(reduced ? 'fade' : 'dive');
     later(
       'enter',
       () => {
-        setScreen('orcadas');
+        setScreen(id);
         setPhase('idle');
       },
       reduced ? FADE_MS : DIVE_MS
@@ -220,7 +236,11 @@ export function AntarcticaApp() {
         />
       ) : (
         <Suspense fallback={null}>
-          <OrcadasExpedition reduced={reduced} arrival={arrival} onLeave={leave} />
+          {screen === 'marambio' ? (
+            <MarambioExpedition reduced={reduced} onLeave={leave} />
+          ) : (
+            <OrcadasExpedition reduced={reduced} arrival={arrival} onLeave={leave} />
+          )}
         </Suspense>
       )}
     </div>

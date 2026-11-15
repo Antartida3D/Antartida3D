@@ -58,6 +58,7 @@ import { SeaTimeContext, useAnimationClock } from './useAnimationClock.ts';
 import { Town3D } from '../voyage/Town3D.tsx';
 import { Storm3D } from '../voyage/Storm3D.tsx';
 import { OrcadasSite } from './OrcadasSite.tsx';
+import { MarambioSite } from './MarambioSite.tsx';
 import { PointModels, pointFocus } from './PointModels.tsx';
 import { OrcadasTravel3D } from '../voyage/OrcadasTravel3D.tsx';
 import { Voyage3D } from '../voyage/Voyage3D.tsx';
@@ -147,6 +148,7 @@ function SceneContent({
       <SeaLife visible={phase !== 'dive' && phase !== 'travel'} timeUniform={seaTime} instances={seaLifeInstances} voyage={voyage} />
       <Town3D reduced={reduced} wide={wide} overlay={overlayRef} />
       <OrcadasSite reduced={reduced} />
+      <MarambioSite reduced={reduced} hidden={Boolean(voyage)} />
       <PointModels reduced={reduced} />
       <Storm3D reduced={reduced} />
       {phase === 'travel' && <OrcadasTravel3D arrival={arrival ?? 'ship'} reduced={reduced} />}

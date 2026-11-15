@@ -11,8 +11,8 @@ describe('point models (#58, docs/diseno/estilo-voxel.md)', () => {
     expect([...POINT_MODEL_IDS].sort()).toEqual(Object.keys(POINT_MODELS).sort());
   });
 
-  it('leaves Fósiles without a model: its expedition (#7) chooses what to show', () => {
-    expect(POINT_MODELS.fosiles).toBeUndefined();
+  it('gives no model to the points with an expedition: the expedition is what they show', () => {
+    for (const p of PTS.filter((q) => q.tier === 'A')) expect(POINT_MODELS[p.id], p.id).toBeUndefined();
   });
 
   for (const [id, m] of Object.entries(POINT_MODELS)) {

@@ -47,7 +47,7 @@ test.beforeEach(async ({ page }) => {
   await page.goto('/');
   await clearStorage(page);
   await page.reload();
-  await expect(log(page)).toContainText('0/2');
+  await expect(log(page)).toContainText('0/3');
 });
 
 test.afterEach(() => {
@@ -78,13 +78,13 @@ test('dialogs close with Escape and return focus to their trigger', async ({ pag
   await expectFocused(page, 'Ver como lista');
 });
 
-test('Fósiles is displayed as Ampliación prevista and opens its point sheet', async ({ page }) => {
+test('Océano is displayed as Ampliación prevista and opens its point sheet', async ({ page }) => {
   await tabTo(page, /^Ver como lista$/);
   await page.keyboard.press('Enter');
-  const fosilesBtn = page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Fósiles/ });
-  await expect(fosilesBtn).toBeVisible();
-  await fosilesBtn.click();
-  const sheet = page.getByRole('dialog', { name: 'Fósiles' });
+  const oceanoBtn = page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Océano/ });
+  await expect(oceanoBtn).toBeVisible();
+  await oceanoBtn.click();
+  const sheet = page.getByRole('dialog', { name: 'Océano' });
   await expect(sheet).toBeVisible();
   await expect(sheet.locator('.tag.tb')).toHaveText('Ampliación prevista');
   await page.keyboard.press('Escape');

@@ -20,6 +20,7 @@ import {
   flightClearance,
   heightAt,
   planeTurbulence,
+  sceneOf,
   shipDeckPose,
   shipWaterY,
   sightingsInView,
@@ -42,6 +43,8 @@ import { HELICOPTER_BOXES, HELICOPTER_ROTOR_BOXES, HELICOPTER_ROTOR_ORIGIN } fro
 import { buildPinGeometry, pinMaterial } from './pins.ts';
 import { buildBoxGeometry, buildVehicleGeometry, vehicleMaterial, vehicleModel } from './vehicles.ts';
 import { Sighting3D } from './Sighting3D.tsx';
+import { PonchoScenes3D } from './PonchoScenes3D.tsx';
+import { sceneLookAt } from './ponchoSceneFocus.ts';
 import { buildTrailGeometry, trailMaterial, updateTrail } from './trail.ts';
 import { NARROW_PX, type VoyageBus } from './useVoyage.ts';
 
@@ -417,9 +420,12 @@ export function Voyage3D({ bus, reduced, overlay }: {
         const arrived = voyageArrived(s);
         const place = !stop?.milestone.place || (arrived && s.kind === 'plane') ? null
           : arrived ? { x: (stop.pin.x + p.x) / 2, y: (stop.pin.y + p.y) / 2 } : stop.pin;
+        // A stop of Poncho with a living scene: its card brings the camera close, to look at the scene beside the team.
+        const scene = stop && s.kind === 'dogs' ? sceneOf(stop.milestone.id) : undefined;
         const far = open?.sighting.place && Math.hypot(open.x - p.x, open.y - p.y) > VISIT_DISTANCE
           ? { id: open.sighting.id, x: open.x, y: open.y }
-          : stop && place ? { id: stop.milestone.id, ...place } : null;
+          : stop && place ? { id: stop.milestone.id, ...place }
+          : stop && scene ? { id: stop.milestone.id, x: stop.pin.x, y: stop.pin.y, scene } : null;
         const vehicle = { x: g.position.x, y: Math.max(0, height), z: g.position.z };
         if (far) {
           // Opening a far place takes the camera there, to see it; the trip waits.
@@ -427,7 +433,13 @@ export function Voyage3D({ bus, reduced, overlay }: {
             visit.current = { id: far.id, back: null };
             moved = true;
             sight.current = 0;
-            void controls.moveTo(far.x - 500, 0, far.y - 500, !reduced);
+            if (far.scene) {
+              // Closest the map allows (minCameraDistance), low, from the side: the scene scales with that distance (sceneUnit).
+              const look = sceneLookAt(stop!, far.scene);
+              void controls.setLookAt(...look.eye, ...look.target, !reduced);
+            } else {
+              void controls.moveTo(far.x - 500, 0, far.y - 500, !reduced);
+            }
           }
         } else {
           if (visit.current.id) {
@@ -493,6 +505,7 @@ export function Voyage3D({ bus, reduced, overlay }: {
           overlay={overlay}
         />
       ))}
+      {kind === 'dogs' && <PonchoScenes3D bus={bus} reduced={reduced} />}
       <primitive object={route} />
       {pins.map((_, i) => (
         <group key={i} ref={(g) => void (pinGroups.current[i] = g)}>

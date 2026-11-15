@@ -75,6 +75,8 @@ test.describe('3D relief view', () => {
     // Click cluster containing orcadas or directly orcadas marker
     const clusterOrMarker = page.locator('.ov [data-key*="orcadas"] button');
     await expect(clusterOrMarker).toBeVisible();
+    await clusterOrMarker.focus();
+    await expect(clusterOrMarker).toBeFocused();
     await clusterOrMarker.click();
 
     // If it was in a cluster, clicking it zooms in and separates the points; then click the marker.

@@ -1,4 +1,5 @@
 import { expect, test, type CDPSession, type Locator, type Page } from '@playwright/test';
+import { AVAILABLE_COUNT } from '../../core/src/content/points.ts';
 import { clearStorage } from '../storage.ts';
 import { mockOpenMeteo } from './weather-helpers.ts';
 
@@ -49,7 +50,7 @@ test.beforeEach(async ({ page }) => {
   await page.goto('/');
   await clearStorage(page);
   await page.reload();
-  await expect(log(page)).toContainText('0/3');
+  await expect(log(page)).toContainText(`0/${AVAILABLE_COUNT}`);
 });
 
 test.afterEach(() => {
@@ -91,6 +92,18 @@ test('Océano is displayed as Ampliación prevista and opens its point sheet', a
   await expect(sheet.locator('.tag.tb')).toHaveText('Ampliación prevista');
   await page.keyboard.press('Escape');
   await expect(sheet).toHaveCount(0);
+});
+
+test('Fósiles is available and opens its own expedition', async ({ page }) => {
+  await tabTo(page, /^Ver como lista$/);
+  await page.keyboard.press('Enter');
+  const fosilesBtn = page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Fósiles/ });
+  await expect(fosilesBtn).toBeVisible();
+  await fosilesBtn.click();
+  await expect(page.getByRole('region', { name: 'Expedición Fósiles' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Las rocas recuerdan' })).toBeVisible();
+  await page.getByRole('button', { name: 'Mapa', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Expedición Fósiles' })).toHaveCount(0);
 });
 
 test('a point with verified content shows its sources; Poncho stays provisional', async ({ page }) => {

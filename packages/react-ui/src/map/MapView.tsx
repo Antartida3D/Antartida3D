@@ -164,6 +164,8 @@ export function MapView({
   // Key of the marker whose label a first touch brought into view.
   const [shown, setShown] = useState<string | null>(null);
   const [list, setList] = useState(false);
+  // Points of a group that zooming no longer separates, while the visitor picks one of them.
+  const [picking, setPicking] = useState<readonly MapPoint[] | null>(null);
   const [claimsEnabled, setClaimsEnabled] = useState(false);
   const [claimsSelection, setClaimsSelection] = useState<ClaimsSelection>('all');
   const [claimsCoverage, setClaimsCoverage] = useState<ClaimsCoverage>('sectors');
@@ -508,7 +510,8 @@ export function MapView({
     setWelcoming(false);
     if (m.kind === 'cluster') {
       setShown(null);
-      if (is3D) send3D({ type: 'focus', view: m.target });
+      if (m.pick) setPicking(m.points);
+      else if (is3D) send3D({ type: 'focus', view: m.target });
       else animateTo(m.target);
     } else if (markerPress(shown, m.key, touch) === 'show') setShown(m.key);
     else {
@@ -617,6 +620,15 @@ export function MapView({
             explored={explored}
             onClose={() => setList(false)}
             onPick={(p) => { setList(false); openPoint(p); }}
+          />
+        )}
+        {picking && (
+          <ListView
+            explored={explored}
+            points={picking}
+            title="Puntos en este lugar"
+            onClose={() => setPicking(null)}
+            onPick={(p) => { setPicking(null); openPoint(p); }}
           />
         )}
         {voyaging && onEndVoyage && (

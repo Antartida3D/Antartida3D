@@ -21,6 +21,7 @@ import {
   saveWelcomeSeen,
   showsWelcome,
   map3dLoadingStore,
+  PTS,
   type ArrivalId,
   type MapPoint,
 } from '@antartida/core';
@@ -36,10 +37,19 @@ const OrcadasExpedition = lazy(() => loadOrcadas().then((m) => ({ default: m.Orc
 const loadMarambio = () => import('./marambio/MarambioExpedition.tsx');
 const MarambioExpedition = lazy(() => loadMarambio().then((m) => ({ default: m.MarambioExpedition })));
 
+const loadFossils = () => import('./fossils/FossilExpedition.tsx');
+const FossilExpedition = lazy(() => loadFossils().then((m) => ({ default: m.FossilExpedition })));
+
 /** Expeditions with a screen of their own, by the id of their point on the map. */
-const EXPEDITIONS = { orcadas: loadOrcadas, marambio: loadMarambio } as const;
+const EXPEDITIONS = { orcadas: loadOrcadas, marambio: loadMarambio, fosiles: loadFossils } as const;
 type ExpeditionId = keyof typeof EXPEDITIONS;
 const isExpedition = (id: string): id is ExpeditionId => id in EXPEDITIONS;
+/** `?expedicion=fosiles` opens Fósiles directly, to share it or review it. */
+const directScreen = (): 'map' | ExpeditionId => {
+  if (typeof window === 'undefined') return 'map';
+  const id = new URLSearchParams(window.location.search).get('expedicion');
+  return id === 'fosiles' ? id : 'map';
+};
 
 const loadMap3D = () =>
   import('./map3d/Map3DLayer.tsx').then(
@@ -74,14 +84,14 @@ function hasWebGL(): boolean {
 }
 
 export function AntarcticaApp() {
-  const [screen, setScreen] = useState<'map' | ExpeditionId>('map');
+  const [screen, setScreen] = useState<'map' | ExpeditionId>(directScreen);
   const [phase, setPhase] = useState<Phase>('idle');
   const [arrival, setArrival] = useState<ArrivalId>('ship');
   const [explored, setExplored] = useState<string[]>([]);
   const [voyaging, setVoyaging] = useState(false);
   // The point whose trip is on the map: Ushuaia (the traveller picks a vehicle) or Poncho (one team, no picking).
   const [voyagePoint, setVoyagePoint] = useState<MapPoint>(VOYAGE_POINT);
-  const [activePoint, setActivePoint] = useState<MapPoint>(EXPEDITION_POINT);
+  const [activePoint, setActivePoint] = useState<MapPoint>(() => PTS.find((p) => p.id === directScreen()) ?? EXPEDITION_POINT);
   const [toast, setToast] = useState('');
   // On a phone the legend starts closed: open, it covers much of the map (#114).
   const [legend, setLegend] = useState(() => typeof window === 'undefined' || window.innerWidth >= NARROW_PX);
@@ -291,6 +301,8 @@ export function AntarcticaApp() {
         <Suspense fallback={null}>
           {screen === 'marambio' ? (
             <MarambioExpedition reduced={reduced} onLeave={leave} onTravelToOrcadas={travelFromMarambio} />
+          ) : screen === 'fosiles' ? (
+            <FossilExpedition reduced={reduced} webgl={webglSupported === true} onLeave={leave} />
           ) : (
             <OrcadasExpedition reduced={reduced} arrival={arrival} onLeave={leave} />
           )}

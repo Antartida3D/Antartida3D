@@ -12,6 +12,14 @@ Equipo **DOT ENV**, hackatón SoberaníaTech (Ushuaia, 2026), Eje 2: Antártida,
 
 **`apps/dibujado`** (puerto 5103): mapa dibujado estilo acuarela con relieve (2D y 3D) y expediciones interactivas en Marambio («¿Cómo era la Antártida antes del hielo?») y Estación Orcadas («¿Cuánto cambió el clima de la isla Laurie en 120 años?»). Máxima optimización de interacción, foco en accesibilidad completa por teclado y zoom fluido.
 
+## Boceto de Fósiles (#7)
+
+La expedición **Fósiles** recorre cuatro hallazgos de Eduardo Olivero y sus equipos, ordenados por edad: amonites gigantes, el plesiosaurio de la isla Vega, Antarctopelta y las estrellas de mar del Eoceno de la isla Marambio. Se abre desde el mapa, la lista o directamente con `http://localhost:5103/?expedicion=fosiles`. Seis capítulos: Llegar, Amonites, Plesiosaurio, Dinosaurio, Estrellas y El pasado. Incluye escenas de bloques animadas (campo actual, mar y bosque del Cretácico, fondo del Eoceno), interacciones opcionales, fotos del archivo familiar, fuentes y una alternativa sin WebGL.
+
+Es un boceto para revisar con Eduardo. Especie, medidas e historia particular de los amonites elegidos siguen pendientes. [Diseño](docs/expediciones/fosiles-diseno.md) y [fuentes, créditos y permisos](docs/expediciones/fosiles-fuentes.md). La familia autorizó publicar las fotografías del archivo de Eduardo usadas aquí. No se redistribuyen los PDFs o la presentación aportados por la familia.
+
+La primera versión de este boceto se realizó con asistencia de Codex. La segunda iteración (escenas, animaciones y arte alineados con Orcadas; plesiosaurio y estrellas de mar; archivo fotográfico) se realizó con asistencia de Claude Code (Anthropic). Ambas partieron de las decisiones del usuario, los documentos aportados y las fuentes registradas. Las escenas se identifican como ilustrativas y la limpieza como simulación educativa.
+
 ## Estructura del repositorio
 
 ```

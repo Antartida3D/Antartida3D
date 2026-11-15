@@ -96,6 +96,8 @@ describe('Ushuaia–Marambio route', () => {
     expect(dist(routeAt(1), MARAMBIO)).toBeLessThan(0.01);
     expect(dist(routeAt(0), pt('campana'))).toBeLessThan(1);
     expect(dist(routeAt(1), pt('marambio'))).toBeLessThan(1);
+    // Fósiles (#7) is now a separate regional destination; the voyage still ends at Marambio.
+    expect(dist(routeAt(1), pt('fosiles'))).toBeGreaterThan(5);
   });
 
   it('draws the SVG path from the same endpoints', () => {

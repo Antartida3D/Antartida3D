@@ -2,7 +2,7 @@ import { PTS, TIER, type MapPoint } from './content/points.ts';
 import type { SeaPoint } from './content/sea.ts';
 import { centroid, clusterPoints, separationZoom } from './clustering.ts';
 import { labelSide, type LabelSide } from './labels.ts';
-import { focusWorld, geometry, toScreen, type Size, type View } from './viewport.ts';
+import { MAX_K, focusWorld, geometry, toScreen, type Size, type View } from './viewport.ts';
 
 /**
  * What a press on a marker does. Labels are closed: a finger has no hover, so its first press
@@ -44,6 +44,14 @@ export interface ClusterMarker extends MarkerBase {
   count: number;
   /** View that separates the cluster when tapped. */
   target: View;
+  /** The points in it. */
+  points: readonly MapPoint[];
+  /**
+   * Zooming no longer separates it: the view is already at the closest zoom, or its points are so
+   * close (Base Marambio, Fósiles and Poncho, #7) that they stay together even there. Tapping it lets
+   * the visitor pick one of its points instead.
+   */
+  pick: boolean;
 }
 
 export type Marker = PointMarker | SeaMarker | ClusterMarker;
@@ -68,7 +76,10 @@ export function buildMarkers(
       const c = centroid(group);
       const pos = projector(c.x, c.y);
       if (pos.visible === false) continue;
-      const nk = Math.max(view.k * 1.8, separationZoom(group, geo.S));
+      const apart = separationZoom(group, geo.S);
+      const nk = Math.max(view.k * 1.8, apart);
+      // Zooming in all the way would not split it (Base Marambio, Fósiles and, on a phone, Poncho): pick instead.
+      const pick = view.k >= MAX_K || clusterPoints(group, (geo.S * MAX_K) / 1000).length === 1;
       markers.push({
         kind: 'cluster',
         key: 'c:' + group.map((g) => g.id).join(','),
@@ -78,8 +89,10 @@ export function buildMarkers(
         y: c.y,
         count: group.length,
         cls: 'mk cluster' + (group.some((g) => g.tier === 'A') ? ' has-a' : ''),
-        aria: 'Grupo de ' + group.length + ' puntos: ' + group.map((g) => g.title).join(', ') + '. Tocá para acercar.',
+        aria: 'Grupo de ' + group.length + ' puntos: ' + group.map((g) => g.title).join(', ') + (pick ? '. Tocá para elegir uno.' : '. Tocá para acercar.'),
         target: focusWorld(size, c.x, c.y, nk),
+        points: group,
+        pick,
       });
       continue;
     }

@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { AVAILABLE_COUNT } from '../../core/src/content/points.ts';
 import { clearStorage } from '../storage.ts';
 import { ORCADAS_GUIDING_QUESTION, ORCADAS_INTRO_DESC } from '../../core/src/content/orcadas.ts';
 import { answerFor } from '../../core/src/orcadas.ts';
@@ -55,7 +56,7 @@ test.beforeEach(async ({ page }) => {
   await page.goto('/');
   await clearStorage(page);
   await page.reload();
-  await expect(log(page)).toContainText('0/3');
+  await expect(log(page)).toContainText(`0/${AVAILABLE_COUNT}`);
 });
 
 test.afterEach(() => {
@@ -147,9 +148,9 @@ test('completes all chapters and stops of Orcadas with the keyboard only (deskto
   await tabTo(page, /^Terminar expedición$/);
   await page.keyboard.press('Enter');
 
-  await expect(log(page)).toContainText('1/3');
+  await expect(log(page)).toContainText(`1/${AVAILABLE_COUNT}`);
   await expect(page.locator('.toast')).toHaveText(
-    'Estación Orcadas quedó explorado. Registro de exploración: 1/3'
+    `Estación Orcadas quedó explorado. Registro de exploración: 1/${AVAILABLE_COUNT}`
   );
   await expect.poll(() => focusedName(page)).toContain('Estación Orcadas');
 });
@@ -229,7 +230,7 @@ test('completes the full mobile tour without typing any numbers (390x844 and 360
   await expect(checklist.locator('.orc-check:not(.is-done)')).toContainText('Presión, viento y nubes: 0 de 3 (opcional)');
 
   await primary(page).click();
-  await expect(log(page)).toContainText('1/3');
+  await expect(log(page)).toContainText(`1/${AVAILABLE_COUNT}`);
 });
 
 test('opens Orcadas from the 2D map, completes it, and updates the log', async ({ page }) => {
@@ -240,9 +241,9 @@ test('opens Orcadas from the 2D map, completes it, and updates the log', async (
     .click();
   await page.getByRole('button', { name: 'Terminar expedición' }).click();
 
-  await expect(log(page)).toContainText('1/3');
+  await expect(log(page)).toContainText(`1/${AVAILABLE_COUNT}`);
   await expect(page.locator('.toast')).toHaveText(
-    'Estación Orcadas quedó explorado. Registro de exploración: 1/3'
+    `Estación Orcadas quedó explorado. Registro de exploración: 1/${AVAILABLE_COUNT}`
   );
   await expect(page.locator('.stage.ret')).toHaveCount(0);
 

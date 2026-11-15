@@ -16,6 +16,7 @@ export * from './route.ts';
 export * from './storm.ts';
 export * from './voyage.ts';
 export * from './poncho-log.ts';
+export * from './poncho-scenes.ts';
 export * from './clustering.ts';
 export * from './labels.ts';
 export * from './viewport.ts';

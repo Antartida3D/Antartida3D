@@ -1,4 +1,4 @@
-import { worldCoastDistance } from '@antartida/core';
+import { ARRIVAL_SECONDS, type ArrivalId, worldCoastDistance } from '@antartida/core';
 import { PENGUIN_KNOLL, SLIDE_DIRECTION } from './stationModels.ts';
 
 /**
@@ -673,4 +673,73 @@ export function buildPenguinColony(heightAt: HeightAt): {
     };
   });
   return { residents, route, travellers, frozenTravellers };
+}
+
+/** Seconds after `ARRIVAL_SECONDS` for coastal penguins to return to the beach. */
+export const PENGUIN_RETURN_SECONDS = 3.5;
+
+/**
+ * Retreat envelope in `[0, 1]` while the Zodiac approaches and lands on the beach.
+ * Active only for boat arrival (`arrival === 'ship'`), open water (`seaIce < 0.5`), and `!reduced`.
+ */
+export function zodiacAvoidanceEnvelope(
+  elapsed: number,
+  arrival: ArrivalId,
+  seaIce: number,
+  reduced: boolean,
+): number {
+  if (reduced || arrival !== 'ship' || seaIce >= 0.5) return 0;
+  if (elapsed <= 0 || elapsed >= ARRIVAL_SECONDS + PENGUIN_RETURN_SECONDS) return 0;
+  if (elapsed < ARRIVAL_SECONDS) return smooth(0.2, 1.8, elapsed);
+  return 1 - smooth(ARRIVAL_SECONDS + 0.3, ARRIVAL_SECONDS + PENGUIN_RETURN_SECONDS, elapsed);
+}
+
+/**
+ * Shifts coastal/beach/water penguins uphill away from the landing Zodiac during arrival,
+ * standing them up and keeping their feet/body supported on the terrain.
+ */
+export function applyZodiacAvoidance(
+  pose: PenguinPose,
+  elapsed: number,
+  arrival: ArrivalId,
+  seaIce: number,
+  reduced: boolean,
+  t: number,
+  heightAt: HeightAt,
+): PenguinPose {
+  const env = zodiacAvoidanceEnvelope(elapsed, arrival, seaIce, reduced);
+  if (env <= 1e-4) return pose;
+
+  const coastD = worldCoastDistance(pose.x, pose.z);
+  const prox = 1 - smooth(0.8, 2.2, coastD);
+  const factor = env * prox;
+  if (factor <= 1e-4) return pose;
+
+  const dx = CX - pose.x;
+  const dz = CZ - pose.z;
+  const len = Math.hypot(dx, dz) || 1;
+  const dirX = dx / len;
+  const dirZ = dz / len;
+  // Move enough uphill so even wading/near-shore penguins clear the landing beach.
+  const retreatDist = factor * (0.9 + Math.max(0, 1.2 - coastD) * 0.75);
+
+  const out: PenguinPose = { ...pose };
+  out.x += dirX * retreatDist;
+  out.z += dirZ * retreatDist;
+  out.lie = pose.lie * (1 - factor);
+  out.slope = pose.slope * (1 - factor);
+  const retreatYaw = yawOf(dirX, dirZ);
+  out.yaw = lerpAngle(pose.yaw, retreatYaw, smooth(0, 0.45, factor));
+
+  // Add a brisk waddle while actively retreating or returning.
+  const movingWeight = Math.sin(factor * Math.PI);
+  out.roll += Math.sin(t * 11) * 0.08 * movingWeight;
+  out.flipL = Math.max(out.flipL, 0.12 + movingWeight * 0.25);
+  out.flipR = Math.max(out.flipR, 0.12 + movingWeight * 0.25);
+
+  const supportY = groundSupportY(heightAt, out);
+  const newCoast = worldCoastDistance(out.x, out.z);
+  const swimFloor = SWIM_Y + 0.125 * PENGUIN_SCALE;
+  out.y = newCoast < 0.05 ? Math.max(supportY, swimFloor) : supportY;
+  return out;
 }

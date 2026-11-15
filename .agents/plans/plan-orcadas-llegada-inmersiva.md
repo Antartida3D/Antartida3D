@@ -1,6 +1,6 @@
 # Plan: llegada inmersiva a Orcadas, camino entre las casas y detalles vivos del diorama (#135)
 
-Estado: **espera aprobación de Lk.** Rama `135-orcadas-llegada-inmersiva-...`, creada desde `main`. Issue #135 asignado a Lk.
+Estado: **aprobado y ejecutado.** Rama `135-orcadas-llegada-inmersiva-...`, creada desde `main`. Issue #135 asignado a Lk.
 
 **Requisito previo:** este plan se apoya en el panel de inicio de Orcadas (`OrcadasIntro.tsx`), en la puerta del abrigo y en `useMapGestures`, todo de #125. Antes de empezar, #125 tiene que estar mergeado en `main`. Después: `git fetch && git rebase origin/main`.
 
@@ -74,8 +74,8 @@ Estado: **espera aprobación de Lk.** Rama `135-orcadas-llegada-inmersiva-...`, 
 
 ## Pasos
 
-- [ ] 1. **Línea base** (después del rebase sobre `main` con #125). Correr `pnpm test` (anotar los conteos de core y react-ui), `pnpm typecheck` y los e2e `orcadas*`, `map3d` y `flow` con GPU. → verificar: conteos anotados en #135.
-- [ ] 2. **Camino:** rehacer el trazado en `stationModels.ts`.
+- [x] 1. **Línea base** (después del rebase sobre `main` con #125). Correr `pnpm test` (anotar los conteos de core y react-ui), `pnpm typecheck` y los e2e `orcadas*`, `map3d` y `flow` con GPU. → verificar: conteos anotados en #135.
+- [x] 2. **Camino:** rehacer el trazado en `stationModels.ts`.
   - Una sola franja de triángulos con vértices compartidos a lo largo de una curva suave. Puede reutilizar `pathZAt`, o mejor una spline por puntos de control que pase frente a las puertas de las casas.
   - Ancho con variación leve, bordes con ripio suelto y piedras chicas (las de `chunk`), y cada vértice apoyado en la altura del suelo (`seatY` o la función de altura del terreno), sin flotar ni hundirse.
   - Ramales cortos hasta cada puerta, unidos a la franja sin solaparse. Colores `PATH_GRAVEL*` con variación por tramo, no por triángulo suelto.
@@ -84,7 +84,7 @@ Estado: **espera aprobación de Lk.** Rama `135-orcadas-llegada-inmersiva-...`, 
     - apoyo: cada vértice queda a menos de ε de la altura del suelo;
     - ningún triángulo degenerado o vuelto hacia abajo.
   - Capturas a 1440 y 390 px del camino de cerca y de lejos, aprobadas por Lk.
-- [ ] 3. **Lógica pura de la llegada** en `packages/core/src/orcadas-arrival.ts`:
+- [x] 3. **Lógica pura de la llegada** en `packages/core/src/orcadas-arrival.ts`:
   - `type ArrivalId = 'ship' | 'helicopter'`;
   - `arrivalMonth(arrival, today)`: el mes de temporada (noviembre a marzo) más cercano al actual, o el actual si ya es de temporada (D1);
   - `arrivalScene(arrival, month)`: qué llega, qué está quieto y si hay helicóptero en el helipuerto;
@@ -92,17 +92,17 @@ Estado: **espera aprobación de Lk.** Rama `135-orcadas-llegada-inmersiva-...`, 
   - `ARRIVAL_SECONDS`;
   - con movimiento reducido, directo a la pose final.
   - → verificar: `pnpm --filter @antartida/core test`, con casos de cada transporte, de `arrivalMonth` con el mes dentro y fuera de temporada (incluido el cambio de año), del inicio y el final de cada curva, y del movimiento reducido.
-- [ ] 4. **Selector de llegada** (`ArrivalPicker.tsx`) dentro de `OrcadasIntro`.
+- [x] 4. **Selector de llegada** (`ArrivalPicker.tsx`) dentro de `OrcadasIntro`.
   - Dos opciones con `aria-pressed` y vista previa 3D del vehículo elegido (solo con WebGL). Debajo, un dato con fuente (`arrival-transporte`) y el rótulo de ilustración.
   - «Comenzar expedición» pasa la llegada elegida a `onStart`.
   - → verificar: `pnpm typecheck` y un e2e de teclado (Tab y Enter eligen; el foco queda atrapado y Escape cierra y devuelve el foco).
-- [ ] 5. **Viaje en el mapa** antes del acercamiento.
+- [x] 5. **Viaje en el mapa** antes del acercamiento.
   - Encadenar en `AntarcticaApp.start`: la fase nueva `travel` anima en el mapa 3D el tramo hasta la isla Laurie con el vehículo elegido; después vienen `approach` y la escena.
   - Reutilizar `Voyage3D` o `trail.ts` y las curvas de `core/voyage.ts`.
   - Sin WebGL o con movimiento reducido no hay viaje: se va directo, como hoy.
   - Se puede saltear con un botón «Saltar viaje», alcanzable con teclado.
   - → verificar: e2e en desktop y mobile: con cada transporte se ve el viaje y después el diorama; con movimiento reducido se entra directo.
-- [ ] 6. **Llegada en el diorama** (`StationScene.tsx`).
+- [x] 6. **Llegada en el diorama** (`StationScene.tsx`).
   - Prop `arrival`. Durante `ARRIVAL_SECONDS`:
     - con el Zodiac, el bote entra con estela y espuma (efectos de la regla 30.9) y atraca;
     - con el helicóptero, baja con el rotor girando, nieve levantada (partículas de cajas o triángulos, sin texturas) y se posa en el helipuerto.
@@ -110,13 +110,14 @@ Estado: **espera aprobación de Lk.** Rama `135-orcadas-llegada-inmersiva-...`, 
   - `invalidate()` mientras dura; geometrías liberadas en el cleanup.
   - La cámara arranca en una toma que muestra la llegada y después vuelve a la toma de entrada.
   - → verificar: `pnpm --filter @antartida/react-ui test` (mínimos de detalle si hay modelos nuevos) y un e2e: al terminar, el transporte elegido queda en su lugar (por ejemplo un `window.__orcadasArrival` de prueba, o la pose de la cámara), y con movimiento reducido no hay animación.
-- [ ] 7. **Detalles inmersivos:** las 10 propuestas (D3), en tres tandas que se pueden delegar en paralelo porque tocan partes distintas. Cada detalle lleva su test de lógica pura si la tiene, un `invalidate` acotado (sin render continuo cuando nada se mueve), el rótulo de ilustración y su versión con movimiento reducido (quieto o apagado).
+- [x] 7. **Detalles inmersivos:** las 10 propuestas (D3), en tres tandas que se pueden delegar en paralelo porque tocan partes distintas. Cada detalle lleva su test de lógica pura si la tiene, un `invalidate` acotado (sin render continuo cuando nada se mueve), el rótulo de ilustración y su versión con movimiento reducido (quieto o apagado).
   - 7a. Viento y casa: 1 (bandera, veleta y anemómetro según el viento de la lectura), 2 (humo de la chimenea con el mismo viento) y 3 (ventanas encendidas en los meses de pocas horas de luz). El viento sale de una sola función de `core` que usan los tres (regla 04).
   - 7b. Gente y fauna: 4 (el observador camina hasta el abrigo y la puerta se abre cuando llega), 5 (huellas en la nieve), 6 (pingüinos que se apartan cuando llega el Zodiac) y 8 (aves planeando). La 4 encadena con la puerta del abrigo de #125, y la 6 con la llegada del paso 6.
   - 7c. Clima, mar y salida: 7 (nieve o ventisca según el mes), 9 (témpanos que derivan según el mes) y 10 (al salir, el transporte de llegada se va). La 10 reutiliza las curvas del paso 3 al revés.
   - → verificar: `pnpm test`, capturas de cada detalle a 1440 y 390 px, y `pnpm bench` para confirmar que no cae la fluidez del diorama.
-- [ ] 8. **Capturas** en Chromium con `--use-angle=vulkan` a 1440 y 390 px: el camino, el selector de llegada, el viaje en el mapa y la llegada con cada transporte (en un mes con temporada y en uno sin). Mostrárselas a Lk antes del PR. → verificar: aprobación de Lk.
-- [ ] 9. **`README.md`:** la declaración de IA de #135. → verificar: `git diff README.md`.
+- [x] 8. **Capturas** en Chromium con `--use-angle=vulkan` a 1440 y 390 px: el camino, el selector de llegada, el viaje en el mapa y la llegada con cada transporte (en un mes con temporada y en uno sin). Mostrárselas a Lk antes del PR. → verificar: aprobación de Lk.
+  > Enmienda (revisión de Lk sobre las capturas, 14-15 nov 2026): el panel de inicio muestra solo la vista 3D del vehículo elegido (se quitó la de la estación); el helicóptero del panel y del viaje es el low-poly del diorama; el viaje sale de la pose final del Irízar del viaje desde Ushuaia (`IRIZAR_ARRIVAL_POSE`), se ve de costado, y el Irízar fondea y despliega el Zodiac por estribor, a escala 1/8; la bandera es una sola malla con el sol completo y usa el viento simulado del día desde el inicio; el observador se rehízo low-poly, camina lo que dura el zoom al abrigo y no aparece en épocas sin la casa; las aves vuelan más rápido; al salir, el transporte gira y se va de frente (`zodiacDeparture`, `helicopterDeparture`) en vez de reproducir la llegada al revés.
+- [x] 9. **`README.md`:** la declaración de IA de #135. → verificar: `git diff README.md`.
 - [ ] 10. **Cierre:**
   - `git rebase origin/main`, `pnpm test && pnpm typecheck && pnpm build` y los e2e `orcadas*`, `map3d`, `no-webgl` y `flow` con GPU, en desktop y mobile.
   - Commit y PR con `Closes #135`. El push lo corre Lk.

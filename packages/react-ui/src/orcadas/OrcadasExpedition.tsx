@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import {
   CHAPTERS,
   CHAPTER_HEADINGS,
@@ -6,6 +6,7 @@ import {
   ORCADAS_CLIMATE,
   ORCADAS_FAUNA,
   ORCADAS_GUIDING_QUESTION,
+  arrivalMonth,
   chapterIndex,
   eraAt,
   factsFor,
@@ -15,11 +16,13 @@ import {
   orcadasProgress,
   orcadasReducer,
   readingFor,
+  sceneWindFor,
   seaIceAt,
   sunsetHour,
   tourAtEnd,
   tourStop,
   tourStops,
+  type ArrivalId,
   type Chapter,
 } from '@antartida/core';
 import { BottomSheet, type OpenSheetSize } from '../BottomSheet.tsx';
@@ -96,16 +99,19 @@ function SceneBadge({ onOpenSource }: { onOpenSource?: (id: string) => void }) {
 }
 
 export function OrcadasExpedition({
+  arrival = 'ship',
   reduced,
   onLeave,
 }: {
+  arrival?: ArrivalId;
   reduced: boolean;
   onLeave: (done: boolean) => void;
 }) {
   const [initDate] = useState(() => {
     const now = new Date();
+    const month = arrivalMonth(arrival, now);
     return {
-      month: now.getMonth() + 1,
+      month,
       year: now.getFullYear(),
       seed:
         now.getFullYear() * 10000 +
@@ -142,6 +148,28 @@ export function OrcadasExpedition({
   const focusTargetRef = useRef<'show' | 'heading' | null>(null);
   const isPanelHiddenRef = useRef(isPanelHidden);
   isPanelHiddenRef.current = isPanelHidden;
+  const [leaving, setLeaving] = useState<boolean | null>(null);
+  const leavingRef = useRef<boolean | null>(null);
+  const onLeaveRef = useRef(onLeave);
+  onLeaveRef.current = onLeave;
+
+  const beginLeave = (done: boolean) => {
+    if (reduced) {
+      onLeaveRef.current(done);
+      return;
+    }
+    if (leavingRef.current !== null) return;
+    leavingRef.current = done;
+    setLeaving(done);
+  };
+
+  const handleDepartureDone = useCallback(() => {
+    const done = leavingRef.current;
+    if (done === null) return;
+    leavingRef.current = null;
+    setLeaving(null);
+    onLeaveRef.current(done);
+  }, []);
 
   // Move focus to the chapter h2 heading and reset panel scroll whenever chapter changes
   useEffect(() => {
@@ -224,12 +252,14 @@ export function OrcadasExpedition({
     [s.month]
   );
 
-  const sceneWindKmh =
-    s.chapter === 'observation'
-      ? reading.windKmh
-      : Math.round(climate?.windMeanKmh ?? 22);
-  const sceneWindDirDeg =
-    s.chapter === 'observation' ? reading.windDirDeg : 270;
+  const { windKmh: sceneWindKmh, windDirDeg: sceneWindDirDeg } = useMemo(
+    () =>
+      sceneWindFor({
+        reading,
+        windGuess: s.guesses.wind,
+      }),
+    [reading, s.guesses.wind],
+  );
   const sceneCloudOktas =
     s.chapter === 'observation'
       ? reading.cloudOktas
@@ -389,7 +419,7 @@ export function OrcadasExpedition({
                 if (!atTourEnd) {
                   dispatch({ type: 'tourNext' });
                 } else if (s.chapter === 'answer') {
-                  onLeave(true);
+                  beginLeave(true);
                 } else {
                   dispatch({ type: 'next' });
                 }
@@ -421,6 +451,7 @@ export function OrcadasExpedition({
       >
         {/* Full-bleed 3D Diorama (or SVG fallback when WebGL is unavailable) */}
         <StationScene
+          arrival={arrival}
           month={s.month}
           hour={sceneHour}
           windKmh={sceneWindKmh}
@@ -429,11 +460,13 @@ export function OrcadasExpedition({
           seaIce={sceneSeaIce}
           buildings={sceneBuildings}
           animals={activeAnimals}
-          focus={focus}
+          focus={leaving !== null ? 'overview' : focus}
           reduced={reduced}
           screenOpen={screenOpen}
+          leaving={leaving !== null}
           panelExpanded={panelExpanded}
           panelHidden={isPanelHidden}
+          onDepartureDone={handleDepartureDone}
           overlayRef={hotspotsRef}
         />
 
@@ -489,7 +522,7 @@ export function OrcadasExpedition({
             <button
               type="button"
               className="pill orc-top-btn"
-              onClick={() => onLeave(false)}
+              onClick={() => beginLeave(false)}
               aria-label="Volver al mapa"
             >
               {Icon.back}

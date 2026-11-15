@@ -1,3 +1,5 @@
+import { toWorld } from './camera.ts';
+import { ORCADAS_POINT } from './content/points.ts';
 import {
   EXPEDITION, MILESTONES, SIGHTINGS, TRANSPORTS,
   type Milestone, type Sighting, type TransportId, type TransportKind, type VoyageFact, type VoyageQuestion,
@@ -5,6 +7,7 @@ import {
 import { FLIGHT_GROUND_M } from './flight-ground.ts';
 import { FLIGHT_GROUND_STEP, flightAt } from './flight-path.ts';
 import { fuegiaWorldHeight } from './fuegia.ts';
+import type { ArrivalId } from './orcadas-arrival.ts';
 import { project, unproject } from './projection.ts';
 import { worldHeight } from './relief.ts';
 import { ROUTE_LENGTH, routeAt } from './route.ts';
@@ -13,8 +16,9 @@ import { heightAt, type TerrainMesh } from './terrain.ts';
 
 type Point = { x: number; y: number };
 
-const clamp01 = (t: number) => Math.min(1, Math.max(0, t));
-const smooth01 = (v: number) => {
+export const clamp01 = (t: number) => Math.min(1, Math.max(0, t));
+/** Smoothstep on [0, 1], clamped. */
+export const smooth01 = (v: number) => {
   const c = clamp01(v);
   return c * c * (3 - 2 * c);
 };
@@ -110,6 +114,14 @@ export function voyageAt(kind: TransportKind, t: number): Point {
   return kind === 'plane' ? flightAt(clamp01(t)) : routeAt(SHIP_START + clamp01(t) * (SHIP_END - SHIP_START));
 }
 
+/** Direction of travel at `t` in map space, as an angle from +x towards +y (radians). */
+export function voyageHeading(kind: TransportKind, t: number): number {
+  const step = 0.002;
+  const from = voyageAt(kind, Math.max(0, clamp01(t) - step));
+  const to = voyageAt(kind, Math.min(1, clamp01(t) + step));
+  return Math.atan2(to.y - from.y, to.x - from.x);
+}
+
 /** Seconds the helicopter takes from the ship to the base. Not a real duration. */
 export const TRANSFER_SECONDS = 6;
 /** Fraction of the hop the helicopter spends going straight up at the start, and straight down at the end. */
@@ -127,22 +139,40 @@ export interface TransferPose extends Point {
   heading: number;
 }
 
+export interface TransferOptions {
+  /** Destination point in map space; defaults to Base Marambio (`routeAt(1)`). */
+  to?: Point;
+  /** Fraction of the hop spent hovering horizontally at the start; defaults to `TRANSFER_HOVER`. */
+  startHover?: number;
+  /** Minimum cruise height in world units; when set, cruise stays at least `minTop`. */
+  minTop?: number;
+}
+
 /**
- * Where the helicopter is at fraction `u` of its hop to Base Marambio from `from`, the flight deck
- * of the ship as it is drawn. It lifts off, turns to the base, flies level over the highest ground
- * on its way and comes down on the plateau, never under the relief. ILLUSTRATIVE: source O24 says
- * the transfer is made by Sea King, not the path the helicopter flies.
+ * Where the helicopter is at fraction `u` of its hop to Base Marambio (or `options.to`) from `from`,
+ * the flight deck of the ship as it is drawn. It lifts off, turns to the base, flies level over
+ * the highest ground on its way and comes down on the plateau, never under the relief. ILLUSTRATIVE:
+ * source O24 says the transfer is made by Sea King, not the path the helicopter flies.
  */
-export function transferAt(from: TransferPose, u: number, mesh?: TerrainMesh): TransferPose {
+export function transferAt(
+  from: TransferPose,
+  u: number,
+  mesh?: TerrainMesh,
+  options?: TransferOptions,
+): TransferPose {
   const c = clamp01(u);
-  const base = routeAt(1);
+  const base = options?.to ?? routeAt(1);
+  const startHover = options?.startHover ?? TRANSFER_HOVER;
   const along = (k: number): Point => ({ x: from.x + (base.x - from.x) * k, y: from.y + (base.y - from.y) * k });
   const ground = (p: Point) => Math.max(0, worldHeight(heightAt(p.x, p.y, mesh)));
-  let top = from.height;
-  for (let i = 0; i <= TRANSFER_SAMPLES; i++) top = Math.max(top, ground(along(i / TRANSFER_SAMPLES)));
-  top += TRANSFER_MARGIN;
+  let maxGround = 0;
+  for (let i = 0; i <= TRANSFER_SAMPLES; i++) maxGround = Math.max(maxGround, ground(along(i / TRANSFER_SAMPLES)));
+  const top = options?.minTop !== undefined
+    ? Math.max(options.minTop, maxGround + TRANSFER_MARGIN)
+    : Math.max(from.height, maxGround) + TRANSFER_MARGIN;
   const pad = ground(base);
-  const at = along(smooth01((c - TRANSFER_HOVER) / (1 - 2 * TRANSFER_HOVER)));
+  const moveSpan = Math.max(1e-6, 1 - startHover - TRANSFER_HOVER);
+  const at = along(smooth01((c - startHover) / moveSpan));
   const height = c < 0.5
     ? from.height + (top - from.height) * smooth01(c / TRANSFER_CLIMB)
     : pad + (top - pad) * smooth01((1 - c) / TRANSFER_CLIMB);
@@ -150,6 +180,228 @@ export function transferAt(from: TransferPose, u: number, mesh?: TerrainMesh): T
   const bearing = Math.atan2(base.y - from.y, base.x - from.x);
   const turn = Math.atan2(Math.sin(bearing - from.heading), Math.cos(bearing - from.heading));
   return { ...at, height: Math.max(height, ground(at)), heading: from.heading + turn * smooth01(c / TRANSFER_CLIMB) };
+}
+
+/** Vehicle length as a fraction of the camera distance: a 120 m ship is invisible on a 4000 km map. */
+export const VEHICLE_SIZE_PER_DISTANCE = 0.075;
+export const VEHICLE_MIN_SIZE = 0.5;
+/** Ship draft below water surface in ship lengths. */
+export const SHIP_DRAFT = 0.02;
+/** Flight deck of the icebreaker in its model: how far aft of the middle and how high, in ship lengths. */
+export const IRIZAR_DECK_AFT = 0.33;
+export const IRIZAR_DECK_TOP = 0.091;
+/** Half-beam of the Irízar hull (including lifeboats) in ship lengths. */
+export const IRIZAR_HALF_BEAM = 0.11;
+/**
+ * Length of the helicopter in ship lengths. ILLUSTRATIVE: drawn larger than real scale so it
+ * stays visible from the map camera.
+ */
+export const HELICOPTER_SHIP_RATIO = 0.55;
+/**
+ * Zodiac length as a fraction of the Irízar's length. ILLUSTRATIVE: exaggerated from real
+ * proportions so the boat remains visible on the 3D map.
+ */
+export const ZODIAC_SHIP_RATIO = 1 / 8;
+
+/** World length of a voyage vehicle at `distance` from the camera. */
+export function vehicleSize(distance: number): number {
+  return Math.max(VEHICLE_MIN_SIZE, distance * VEHICLE_SIZE_PER_DISTANCE);
+}
+
+/** World Y height of a ship sitting slightly into the water, given its world length `size`. */
+export function shipWaterY(size: number): number {
+  return -size * SHIP_DRAFT;
+}
+
+/** Flight-deck takeoff pose for a ship at `{ x, y, height, heading }` with world length `size`. */
+export function shipDeckPose(
+  ship: { x: number; y: number; height: number; heading: number },
+  size: number,
+): TransferPose {
+  return {
+    x: ship.x - Math.cos(ship.heading) * IRIZAR_DECK_AFT * size,
+    y: ship.y - Math.sin(ship.heading) * IRIZAR_DECK_AFT * size,
+    height: ship.height + IRIZAR_DECK_TOP * size,
+    heading: ship.heading,
+  };
+}
+
+/** Map-space pose where the Irízar comes to rest at the end of the trip from Ushuaia off Isla Marambio. */
+export const IRIZAR_ARRIVAL_POSE: Readonly<{ x: number; y: number; heading: number }> = {
+  ...voyageAt('ship', 1),
+  heading: voyageHeading('ship', 1),
+};
+
+/**
+ * World-space pose of the Irízar and its flight deck at the end of the Ushuaia trip, given its
+ * camera-scaled world length `size` and optional vertical heave `lift`.
+ */
+export function irizarArrivalWorldPose(size: number, lift = 0) {
+  const world = toWorld(IRIZAR_ARRIVAL_POSE.x, IRIZAR_ARRIVAL_POSE.y, shipWaterY(size) + lift * size);
+  const mapPose = { ...IRIZAR_ARRIVAL_POSE, height: world.y };
+  return {
+    ...mapPose,
+    world,
+    size,
+    deck: shipDeckPose(mapPose, size),
+  };
+}
+
+/** Duration of each Orcadas travel leg on the 3D map, in seconds. ILLUSTRATIVE: not real trip times. */
+export const ORCADAS_SHIP_SECONDS = 7;
+export const ORCADAS_ZODIAC_SECONDS = 4;
+export const ORCADAS_HELICOPTER_SECONDS = 8;
+export const ORCADAS_TRAVEL_SECONDS: Readonly<Record<ArrivalId, number>> = {
+  ship: ORCADAS_SHIP_SECONDS + ORCADAS_ZODIAC_SECONDS,
+  helicopter: ORCADAS_HELICOPTER_SECONDS,
+};
+/** Fraction of the ship travel phase spent aboard the Irízar before deploying the Zodiac. */
+export const ORCADAS_SHIP_PHASE = ORCADAS_SHIP_SECONDS / ORCADAS_TRAVEL_SECONDS.ship;
+
+/** Total duration in milliseconds of the Orcadas travel phase for the chosen transport. */
+export function orcadasTravelMs(arrival: ArrivalId): number {
+  return ORCADAS_TRAVEL_SECONDS[arrival] * 1000;
+}
+
+/**
+ * Map units short of `ORCADAS_POINT` where the Zodiac stops off the shore of Laurie Island.
+ * ILLUSTRATIVE: keeps the boat on water right at the coastline without climbing onto land.
+ */
+export const ORCADAS_SHORE = 1;
+
+/** Default Irízar world length when `orcadasTravelAt` is called without camera context (e.g. unit tests). */
+export const ORCADAS_DEFAULT_SHIP_SIZE = 4;
+/** Fraction of the Zodiac leg spent lowering the boat down from the Irízar's side into the water. */
+export const ZODIAC_LOWER_PHASE = 0.2;
+/** Zodiac launch position relative to the anchored Irízar (in ship lengths): waist, starboard outside hull, rail height. */
+export const ZODIAC_LAUNCH_ALONG = 0.05;
+export const ZODIAC_LAUNCH_SIDE = 0.2;
+export const ZODIAC_LAUNCH_HEIGHT = 0.11;
+/** Distance along the approach centerline from the Irízar's anchorage to the Laurie Island shore. */
+export const ORCADAS_ZODIAC_WATER_LENGTH = Math.max(0, SHIP_ANCHORAGE - ORCADAS_SHORE);
+
+// From the Marambio arrival pose, the Irízar turns cleanly to port over open water onto the tangent
+// bearing toward Laurie Island (`ORCADAS_POINT`) and sails to `SHIP_ANCHORAGE`.
+const ORCADAS_TURN_RADIUS = 3;
+const ORCADAS_TURN_CENTER: Point = {
+  x: IRIZAR_ARRIVAL_POSE.x + ORCADAS_TURN_RADIUS * Math.sin(IRIZAR_ARRIVAL_POSE.heading),
+  y: IRIZAR_ARRIVAL_POSE.y - ORCADAS_TURN_RADIUS * Math.cos(IRIZAR_ARRIVAL_POSE.heading),
+};
+const ORCADAS_TURN_THETA0 = IRIZAR_ARRIVAL_POSE.heading + Math.PI / 2;
+const ORCADAS_TURN_DIST = Math.hypot(ORCADAS_POINT.x - ORCADAS_TURN_CENTER.x, ORCADAS_POINT.y - ORCADAS_TURN_CENTER.y);
+const ORCADAS_TURN_PHI = Math.atan2(ORCADAS_POINT.y - ORCADAS_TURN_CENTER.y, ORCADAS_POINT.x - ORCADAS_TURN_CENTER.x);
+const ORCADAS_TURN_THETA1 = ORCADAS_TURN_PHI + Math.acos(ORCADAS_TURN_RADIUS / ORCADAS_TURN_DIST);
+const ORCADAS_TURN_RAW_DELTA = Math.atan2(
+  Math.sin(ORCADAS_TURN_THETA1 - ORCADAS_TURN_THETA0),
+  Math.cos(ORCADAS_TURN_THETA1 - ORCADAS_TURN_THETA0),
+);
+const ORCADAS_TURN_DELTA = ORCADAS_TURN_RAW_DELTA > 0 ? ORCADAS_TURN_RAW_DELTA - Math.PI * 2 : ORCADAS_TURN_RAW_DELTA;
+const ORCADAS_SHIP_ARC_LENGTH = ORCADAS_TURN_RADIUS * -ORCADAS_TURN_DELTA;
+const ORCADAS_SHIP_TANGENT_START: Point = {
+  x: ORCADAS_TURN_CENTER.x + ORCADAS_TURN_RADIUS * Math.cos(ORCADAS_TURN_THETA1),
+  y: ORCADAS_TURN_CENTER.y + ORCADAS_TURN_RADIUS * Math.sin(ORCADAS_TURN_THETA1),
+};
+const ORCADAS_SHIP_ANCHOR_HEADING = ORCADAS_TURN_THETA1 - Math.PI / 2;
+const ORCADAS_SHIP_LINE_LENGTH = Math.max(
+  0,
+  Math.hypot(ORCADAS_POINT.x - ORCADAS_SHIP_TANGENT_START.x, ORCADAS_POINT.y - ORCADAS_SHIP_TANGENT_START.y) -
+    SHIP_ANCHORAGE,
+);
+/** Map-space length of the Irízar's sailing leg from Marambio anchorage to Laurie anchorage. */
+export const ORCADAS_SHIP_LENGTH = ORCADAS_SHIP_ARC_LENGTH + ORCADAS_SHIP_LINE_LENGTH;
+
+/** Pose along the Irízar's Marambio-to-Laurie sailing path at arc-length `distance` in map units. */
+export function orcadasShipAtDistance(distance: number): { x: number; y: number; heading: number } {
+  const s = Math.min(ORCADAS_SHIP_LENGTH, Math.max(0, distance));
+  if (s <= ORCADAS_SHIP_ARC_LENGTH) {
+    const theta = ORCADAS_TURN_THETA0 - s / ORCADAS_TURN_RADIUS;
+    return {
+      x: ORCADAS_TURN_CENTER.x + ORCADAS_TURN_RADIUS * Math.cos(theta),
+      y: ORCADAS_TURN_CENTER.y + ORCADAS_TURN_RADIUS * Math.sin(theta),
+      heading: theta - Math.PI / 2,
+    };
+  }
+  const d = s - ORCADAS_SHIP_ARC_LENGTH;
+  return {
+    x: ORCADAS_SHIP_TANGENT_START.x + Math.cos(ORCADAS_SHIP_ANCHOR_HEADING) * d,
+    y: ORCADAS_SHIP_TANGENT_START.y + Math.sin(ORCADAS_SHIP_ANCHOR_HEADING) * d,
+    heading: ORCADAS_SHIP_ANCHOR_HEADING,
+  };
+}
+
+const ORCADAS_SHIP_ANCHOR = orcadasShipAtDistance(ORCADAS_SHIP_LENGTH);
+
+/** Pose on water of the deployed Zodiac at fraction `u` (0..1) from alongside the Irízar to Laurie shore. */
+export function orcadasZodiacWaterAt(
+  u: number,
+  shipSize = ORCADAS_DEFAULT_SHIP_SIZE,
+): { x: number; y: number; heading: number } {
+  const c = clamp01(u);
+  const cosH = Math.cos(ORCADAS_SHIP_ANCHOR.heading);
+  const sinH = Math.sin(ORCADAS_SHIP_ANCHOR.heading);
+  const f0 = ZODIAC_LAUNCH_ALONG * shipSize;
+  const f1 = ORCADAS_ZODIAC_WATER_LENGTH;
+  const l0 = ZODIAC_LAUNCH_SIDE * shipSize;
+  const f = f0 + (f1 - f0) * c;
+  const l = l0 * (1 - smooth01(c));
+  const df = f1 - f0;
+  const dl = -l0 * 6 * c * (1 - c);
+  return {
+    x: ORCADAS_SHIP_ANCHOR.x + cosH * f - sinH * l,
+    y: ORCADAS_SHIP_ANCHOR.y + sinH * f + cosH * l,
+    heading: Math.atan2(sinH * df + cosH * dl, cosH * df - sinH * dl),
+  };
+}
+
+export interface OrcadasTravelOptions {
+  /** World length of the Irízar used to locate its flight deck and side-deployed Zodiac. */
+  shipSize?: number;
+}
+
+/** Map-space length of the Orcadas travel leg from Isla Marambio to Laurie Island. */
+export function orcadasTravelLength(arrival: ArrivalId, options?: OrcadasTravelOptions): number {
+  if (arrival === 'ship') return ORCADAS_SHIP_LENGTH + ORCADAS_ZODIAC_WATER_LENGTH;
+  const deck = irizarArrivalWorldPose(options?.shipSize ?? ORCADAS_DEFAULT_SHIP_SIZE).deck;
+  return Math.hypot(ORCADAS_POINT.x - deck.x, ORCADAS_POINT.y - deck.y);
+}
+
+/**
+ * Pose at fraction `t` (0..1) of the Orcadas travel leg from Isla Marambio to Laurie Island
+ * (`ORCADAS_POINT`). Both transports depart from the Irízar's exact Ushuaia arrival pose
+ * (`IRIZAR_ARRIVAL_POSE`):
+ * - By ship (`t <= ORCADAS_SHIP_PHASE`), the Irízar turns smoothly onto the Laurie bearing and
+ *   sails to `SHIP_ANCHORAGE`; then (`t > ORCADAS_SHIP_PHASE`), the Zodiac deploys outside the
+ *   starboard hull, lowers to the water, and motors to the shore (`ORCADAS_SHORE`).
+ * - By helicopter, the aircraft lifts off the Irízar's aft flight deck (`shipDeckPose`), cruises
+ *   over `FLIGHT_CRUISE`, and descends onto Laurie Island via `transferAt`. ILLUSTRATIVE: not a real track.
+ */
+export function orcadasTravelAt(
+  arrival: ArrivalId,
+  t: number,
+  mesh?: TerrainMesh,
+  options?: OrcadasTravelOptions,
+): TransferPose {
+  const c = clamp01(t);
+  const shipSize = options?.shipSize ?? ORCADAS_DEFAULT_SHIP_SIZE;
+  if (arrival === 'ship') {
+    if (c <= ORCADAS_SHIP_PHASE) {
+      const p = orcadasShipAtDistance(smooth01(c / ORCADAS_SHIP_PHASE) * ORCADAS_SHIP_LENGTH);
+      return { ...p, height: 0 };
+    }
+    const z = (c - ORCADAS_SHIP_PHASE) / (1 - ORCADAS_SHIP_PHASE);
+    if (z <= ZODIAC_LOWER_PHASE) {
+      const start = orcadasZodiacWaterAt(0, shipSize);
+      const drop = smooth01(z / ZODIAC_LOWER_PHASE);
+      return {
+        ...start,
+        height: ZODIAC_LAUNCH_HEIGHT * shipSize * (1 - drop),
+      };
+    }
+    const u = smooth01((z - ZODIAC_LOWER_PHASE) / (1 - ZODIAC_LOWER_PHASE));
+    return { ...orcadasZodiacWaterAt(u, shipSize), height: 0 };
+  }
+  const deck = irizarArrivalWorldPose(shipSize).deck;
+  return transferAt(deck, c, mesh, { to: ORCADAS_POINT, minTop: FLIGHT_CRUISE });
 }
 
 const PATH_SAMPLES = 400;
@@ -207,14 +459,6 @@ export function voyageProgress(transport: TransportId, t: number): VoyageProgres
   const i = Math.min(PATH_SAMPLES - 1, Math.floor(at));
   const km = KM[kind][i] + (KM[kind][i + 1] - KM[kind][i]) * (at - i);
   return { km, totalKm: KM[kind][PATH_SAMPLES], hours: km / cruiseKmh };
-}
-
-/** Direction of travel at `t` in map space, as an angle from +x towards +y (radians). */
-export function voyageHeading(kind: TransportKind, t: number): number {
-  const step = 0.002;
-  const from = voyageAt(kind, Math.max(0, clamp01(t) - step));
-  const to = voyageAt(kind, Math.min(1, clamp01(t) + step));
-  return Math.atan2(to.y - from.y, to.x - from.x);
 }
 
 export interface VoyageStop {

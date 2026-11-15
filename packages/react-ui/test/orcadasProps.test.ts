@@ -14,12 +14,15 @@ import {
   buildBoatChocksTris,
   buildHelicopterRotorTris,
   buildHelicopterTris,
+  buildSnowPuffTris,
   buildZodiacTris,
   buildZodiacWakeGeometry,
+  buildZodiacWaterlineGeometry,
   zodiacBottomY,
 } from '../src/orcadas/lowPolyProps.ts';
 import {
   HELICOPTER_ROTOR_ORIGIN,
+  VOXEL_PALETTE,
   floeVisibility,
   seaIcePlateRadius,
 } from '../src/orcadas/stationModels.ts';
@@ -154,19 +157,49 @@ describe('Orcadas low-poly Zodiac RIB, chocks and wake', () => {
     expect(chocks.length).toBeGreaterThan(0);
     expect(inward(chocks, bboxCenter(triBBox(chocks))) / chocks.length).toBeLessThan(0.4);
 
-    const wake = buildZodiacWakeGeometry();
-    const col = wake.getAttribute('color');
-    expect(col.itemSize).toBe(4);
-    let hasOpaque = false;
-    let hasZeroAlpha = false;
-    for (let i = 0; i < col.count; i++) {
-      const a = col.getW(i);
-      if (a > 0.5) hasOpaque = true;
-      if (a === 0) hasZeroAlpha = true;
+    for (const geo of [buildZodiacWakeGeometry(), buildZodiacWaterlineGeometry()]) {
+      const pos = geo.getAttribute('position');
+      const col = geo.getAttribute('color');
+      expect(col.itemSize).toBe(4);
+      let hasOpaque = false;
+      let hasZeroAlpha = false;
+      for (let i = 0; i < col.count; i++) {
+        const a = col.getW(i);
+        if (a > 0.5) hasOpaque = true;
+        if (a === 0) hasZeroAlpha = true;
+      }
+      expect(hasOpaque).toBe(true);
+      expect(hasZeroAlpha).toBe(true);
+      for (let i = 0; i < pos.count; i += 3) {
+        const ax = pos.getX(i),
+          az = pos.getZ(i);
+        const bx = pos.getX(i + 1),
+          bz = pos.getZ(i + 1);
+        const cx = pos.getX(i + 2),
+          cz = pos.getZ(i + 2);
+        expect((bz - az) * (cx - ax) - (bx - ax) * (cz - az)).toBeGreaterThanOrEqual(-1e-9);
+      }
+      geo.dispose();
     }
-    expect(hasOpaque).toBe(true);
-    expect(hasZeroAlpha).toBe(true);
-    wake.dispose();
+  });
+});
+
+describe('Orcadas arrival effects (snow downdraft)', () => {
+  it('snow puff effect uses named palette colours, outward winding and builds valid geometry', () => {
+    const tris = buildSnowPuffTris();
+    expect(tris.length).toBeGreaterThan(0);
+    const colors = new Set(tris.map((t) => t[3]));
+    expect(colors.size).toBeGreaterThanOrEqual(POLY_MIN_COLORS);
+    expect(colors.has(VOXEL_PALETTE.WHITE)).toBe(true);
+    expect(colors.has(VOXEL_PALETTE.ICE)).toBe(true);
+    for (const t of tris) {
+      expect(t.slice(0, 3).flat().every(Number.isFinite)).toBe(true);
+    }
+    expect(inward(tris, bboxCenter(triBBox(tris))) / tris.length).toBeLessThan(0.25);
+
+    const geo = buildPolyGeometry(tris, boxShade);
+    expect(geo.getAttribute('position').count).toBe(tris.length * 3);
+    geo.dispose();
   });
 });
 

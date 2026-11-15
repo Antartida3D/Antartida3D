@@ -1155,75 +1155,77 @@ export function buildFlagpoleBaseTris(): Tri[] {
   ];
 }
 
+/** Total width of the continuous Argentine flag cloth in model units (matches 5 x FLAG_SEGMENT_WIDTH). */
+export const FLAG_LENGTH = FLAG_SEGMENT_WIDTH * 5;
+/** Half-height of the Argentine flag cloth in model units. */
+export const FLAG_HALF_HEIGHT = 0.54;
+/** Number of horizontal cloth columns in the continuous flag mesh. */
+export const FLAG_COLS = 20;
+
 /**
- * 6b. Argentine flag in 5 vertical wavy cloth segments, each hinged at x = 0 for `FlagChain`.
+ * 6b. Argentine flag as one continuous closed low-poly cloth mesh with shared column vertices
+ * and a full 360-degree Sol de Mayo on both faces, anchored at x = 0 for vertex-wave deformation.
  */
-export function buildFlagSegmentsTris(): Tri[][] {
-  const w = FLAG_SEGMENT_WIDTH;
-  const cx = w / 2;
-  const cols = 3;
-  const stripes: readonly [number, number, number][] = [
-    [0.18, 0.54, SKY],
-    [-0.18, 0.18, WHITE],
-    [-0.54, -0.18, SKY],
+export function buildFlagTris(): Tri[] {
+  const halfT = 0.008;
+  const sunClearance = 0.012;
+  const bands: readonly [number, number, number][] = [
+    [0.18, FLAG_HALF_HEIGHT, SKY],
+    [0, 0.18, WHITE],
+    [-0.18, 0, WHITE],
+    [-FLAG_HALF_HEIGHT, -0.18, SKY],
   ];
+  const tris: Tri[] = [];
 
-  // Sinusoidal cloth ripple that vanishes at both hinge edges (x = 0 and x = w)
-  const waveZ = (x: number, y: number, idx: number) =>
-    0.02 * Math.sin((x / w) * Math.PI) * Math.cos((x / w) * Math.PI * 1.4 + y * 2.2 + idx * 1.1);
-
-  return [0, 1, 2, 3, 4].map((idx) => {
-    const halfT = idx === 0 ? 0.015 : 0.008;
-    const tris: Tri[] = [];
-
-    for (const [y0, y1, color] of stripes) {
-      for (let i = 0; i < cols; i++) {
-        const x0 = (i / cols) * w - (i === 0 ? 0.005 : 0);
-        const x1 = ((i + 1) / cols) * w + (i === cols - 1 ? 0.005 : 0);
-        const z00 = waveZ(x0, y0, idx);
-        const z10 = waveZ(x1, y0, idx);
-        const z11 = waveZ(x1, y1, idx);
-        const z01 = waveZ(x0, y1, idx);
-        // Front (+z) and back (-z) faceted cloth surfaces
-        tris.push(
-          ...quad([x0, y0, z00 + halfT], [x1, y0, z10 + halfT], [x1, y1, z11 + halfT], [x0, y1, z01 + halfT], color),
-          ...quad([x1, y0, z10 - halfT], [x0, y0, z00 - halfT], [x0, y1, z01 - halfT], [x1, y1, z11 - halfT], color),
-        );
-        if (y1 === 0.54) {
-          tris.push(...quad([x0, y1, z01 + halfT], [x1, y1, z11 + halfT], [x1, y1, z11 - halfT], [x0, y1, z01 - halfT], ICE));
-        }
-        if (y0 === -0.54) {
-          tris.push(...quad([x1, y0, z10 + halfT], [x0, y0, z00 + halfT], [x0, y0, z00 - halfT], [x1, y0, z10 - halfT], color));
-        }
+  for (let i = 0; i < FLAG_COLS; i++) {
+    const x0 = (i / FLAG_COLS) * FLAG_LENGTH;
+    const x1 = ((i + 1) / FLAG_COLS) * FLAG_LENGTH;
+    for (const [y0, y1, color] of bands) {
+      // Front (+z) and back (-z) cloth faces sharing exact column boundary vertices
+      tris.push(
+        ...quad([x0, y0, halfT], [x1, y0, halfT], [x1, y1, halfT], [x0, y1, halfT], color),
+        ...quad([x1, y0, -halfT], [x0, y0, -halfT], [x0, y1, -halfT], [x1, y1, -halfT], color)
+      );
+      if (y1 === FLAG_HALF_HEIGHT) {
+        tris.push(...quad([x0, y1, halfT], [x1, y1, halfT], [x1, y1, -halfT], [x0, y1, -halfT], ICE));
+      }
+      if (y0 === -FLAG_HALF_HEIGHT) {
+        tris.push(...quad([x1, y0, halfT], [x0, y0, halfT], [x0, y0, -halfT], [x1, y0, -halfT], color));
       }
     }
-    // Hoist reinforcement band on segment 0
-    if (idx === 0) {
-      tris.push(...block(0.01, 0, 0, 0.03, 1.08, 0.036, ICE));
-    }
-    // Top heading tape
-    tris.push(...block(cx, 0.532, 0, w, 0.024, halfT * 2 + 0.006, ICE));
+  }
 
-    // Sol de Mayo on the middle segment, on both faces of the cloth: a gold disc ringed by 16 rays,
-    // straight and wavy ones taking turns (long and short here), flat on the cloth.
-    if (idx === 2) {
-      const zMid = waveZ(cx, 0, idx);
-      const RAYS = 16;
-      for (const side of [-1, 1] as const) {
-        const z = zMid + side * (halfT + 0.004);
-        const at = (r: number, a: number): Vec3 => [cx + Math.cos(a) * r, Math.sin(a) * r, z];
-        const face = (t: Tri): Tri => (side > 0 ? t : [t[0], t[2], t[1], t[3]]);
-        for (let k = 0; k < RAYS; k++) {
-          const a0 = (k / RAYS) * Math.PI * 2;
-          const a1 = ((k + 1) / RAYS) * Math.PI * 2;
-          tris.push(face([[cx, 0, z], at(0.06, a0), at(0.06, a1), ORANGE]));
-          const half = Math.PI / RAYS / 2;
-          tris.push(face([at(0.065, a0 - half), at(k % 2 ? 0.12 : 0.15, a0), at(0.065, a0 + half), ORANGE]));
-        }
-      }
+  // Hoist (x = 0) and fly (x = FLAG_LENGTH) edge caps closing the continuous cloth slab
+  for (const [y0, y1, color] of bands) {
+    tris.push(
+      ...quad([0, y0, -halfT], [0, y0, halfT], [0, y1, halfT], [0, y1, -halfT], ICE),
+      ...quad([FLAG_LENGTH, y0, halfT], [FLAG_LENGTH, y0, -halfT], [FLAG_LENGTH, y1, -halfT], [FLAG_LENGTH, y1, halfT], color)
+    );
+  }
+
+  // Hoist reinforcement sleeve sitting behind x = 0 so it stays anchored without overlapping cloth
+  tris.push(...block(-0.008, 0, 0, 0.016, FLAG_HALF_HEIGHT * 2, 0.032, ICE));
+
+  // Complete 360-degree Sol de Mayo centered in the white stripe on both faces, offset clear of cloth
+  const sunX = FLAG_LENGTH / 2;
+  const RAYS = 16;
+  const discR = 0.064;
+  const rayBaseR = 0.06;
+  for (const side of [-1, 1] as const) {
+    const z = side * (halfT + sunClearance);
+    const at = (r: number, a: number): Vec3 => [sunX + Math.cos(a) * r, Math.sin(a) * r, z];
+    const face = (t: Tri): Tri => (side > 0 ? t : [t[0], t[2], t[1], t[3]]);
+    for (let k = 0; k < RAYS; k++) {
+      const a0 = (k / RAYS) * Math.PI * 2;
+      const a1 = ((k + 1) / RAYS) * Math.PI * 2;
+      tris.push(face([[sunX, 0, z], at(discR, a0), at(discR, a1), ORANGE]));
+      const half = Math.PI / RAYS / 2;
+      const rayTip = k % 2 ? 0.12 : 0.155;
+      tris.push(face([at(rayBaseR, a0 - half), at(rayTip, a0), at(rayBaseR, a0 + half), ORANGE]));
     }
-    return tris;
-  });
+  }
+
+  return tris;
 }
 
 /**

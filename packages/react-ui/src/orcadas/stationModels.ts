@@ -1,11 +1,14 @@
 import { BufferAttribute, BufferGeometry, PlaneGeometry } from 'three';
 import {
   createSeededRng,
+  DIORAMA_PROP_SCALE,
+  layoutOf,
   STAGE_HALF_EXTENT,
   STATION_GROUND_Y,
   STATION_LAYOUT,
   worldCoastDistance,
   type SiteColour,
+  type StationLayoutEntry,
 } from '@antartida/core';
 import type { Box } from '../voyage/vehicles.ts';
 import { chunk, type Tri, type Vec3 } from '../voyage/lowPoly.ts';
@@ -501,18 +504,323 @@ export function generateIcebergs(
 /** Light grey gravel of the paths between the buildings (photos: grey gravel ground). */
 const PATH_GRAVEL = 0xa8a49b;
 const PATH_GRAVEL_LIGHT = 0xbdb9af;
-const PATH_GRAVEL_DARK = 0x8c887f;
+export const PATH_GRAVEL_DARK = 0x8c887f;
+
+const PATH_EDGE_Y = 0.008;
+export const PATH_CROWN_Y = 0.014;
+
+export type StationPathSpurId = 'screen' | 'omond' | 'module-360745961' | 'module-360745962';
+
+export interface StationPathSpur {
+  readonly id: StationPathSpurId;
+  readonly mainSegmentIndex: number;
+  /** Centerline waypoints from the main strip attachment point to the doorway, in world [x, z]. */
+  readonly centerline: readonly Point2[];
+}
+
+export interface StationPathData {
+  /** All triangles of the path surface (main strip + connected door spurs). */
+  readonly tris: Tri[];
+  /** Main continuous strip, grouped per segment along the spline. */
+  readonly mainSegments: readonly (readonly Tri[])[];
+  /** Door spurs, each grouped per segment from the main-strip edge to the door. */
+  readonly spurSegments: readonly (readonly (readonly Tri[])[])[];
+  /** Centerline waypoints of the main gravel path in world [x, z]. */
+  readonly mainCenterline: readonly Point2[];
+  /** Centerline waypoints of each doorway spur from the main path to the doorway. */
+  readonly spurCenterlines: readonly StationPathSpur[];
+}
+
+type Point2 = readonly [number, number];
+type StripRow = readonly [Vec3, Vec3, Vec3];
+
+function localToWorldXZ(e: StationLayoutEntry, lx: number, lz: number): Point2 {
+  const c = Math.cos(e.rotationY);
+  const s = Math.sin(e.rotationY);
+  return [e.position[0] + lx * c + lz * s, e.position[2] - lx * s + lz * c];
+}
+
+function catmullRom1D(p0: number, p1: number, p2: number, p3: number, t: number): number {
+  const t2 = t * t;
+  const t3 = t2 * t;
+  return (
+    0.5 *
+    (2 * p1 +
+      (-p0 + p2) * t +
+      (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 +
+      (-p0 + 3 * p1 - 3 * p2 + p3) * t3)
+  );
+}
+
+/** Sample a Catmull-Rom spline through `controls` at roughly uniform `step` arc-length intervals. */
+function sampleCatmullRomPath(controls: readonly Point2[], step: number): Point2[] {
+  const n = controls.length;
+  const padded: Point2[] = [
+    [2 * controls[0][0] - controls[1][0], 2 * controls[0][1] - controls[1][1]],
+    ...controls,
+    [2 * controls[n - 1][0] - controls[n - 2][0], 2 * controls[n - 1][1] - controls[n - 2][1]],
+  ];
+  const dense: Point2[] = [];
+  const subSteps = 24;
+  for (let i = 1; i < padded.length - 2; i++) {
+    const [p0, p1, p2, p3] = [padded[i - 1], padded[i], padded[i + 1], padded[i + 2]];
+    const count = i === padded.length - 3 ? subSteps + 1 : subSteps;
+    for (let s = 0; s < count; s++) {
+      const t = s / subSteps;
+      dense.push([
+        catmullRom1D(p0[0], p1[0], p2[0], p3[0], t),
+        catmullRom1D(p0[1], p1[1], p2[1], p3[1], t),
+      ]);
+    }
+  }
+  const arc: number[] = [0];
+  for (let i = 1; i < dense.length; i++) {
+    arc.push(arc[i - 1] + Math.hypot(dense[i][0] - dense[i - 1][0], dense[i][1] - dense[i - 1][1]));
+  }
+  const total = arc[arc.length - 1];
+  const segments = Math.max(2, Math.round(total / step));
+  const out: Point2[] = [dense[0]];
+  let cursor = 1;
+  for (let k = 1; k < segments; k++) {
+    const target = (k / segments) * total;
+    while (cursor < arc.length - 1 && arc[cursor] < target) cursor++;
+    const a0 = arc[cursor - 1];
+    const a1 = arc[cursor];
+    const u = a1 > a0 ? (target - a0) / (a1 - a0) : 0;
+    out.push([
+      dense[cursor - 1][0] + (dense[cursor][0] - dense[cursor - 1][0]) * u,
+      dense[cursor - 1][1] + (dense[cursor][1] - dense[cursor - 1][1]) * u,
+    ]);
+  }
+  out.push(dense[dense.length - 1]);
+  return out;
+}
+
+/** Emit one segment between two 3-vertex cross-sections `[north/left, center, south/right]`. */
+function emitStripSegment(
+  r0: StripRow,
+  r1: StripRow,
+  col: number,
+  flipDiag: boolean,
+  splitNorth?: Vec3
+): Tri[] {
+  const seg: Tri[] = [];
+  if (splitNorth) {
+    seg.push(
+      [r0[0], r0[1], splitNorth, col],
+      [splitNorth, r0[1], r1[1], col],
+      [splitNorth, r1[1], r1[0], col]
+    );
+  } else if (flipDiag) {
+    seg.push([r0[0], r0[1], r1[0], col], [r0[1], r1[1], r1[0], col]);
+  } else {
+    seg.push([r0[0], r0[1], r1[1], col], [r0[0], r1[1], r1[0], col]);
+  }
+  if (flipDiag) {
+    seg.push([r0[1], r0[2], r1[1], col], [r0[2], r1[2], r1[1], col]);
+  } else {
+    seg.push([r0[1], r0[2], r1[2], col], [r0[1], r1[2], r1[1], col]);
+  }
+  return seg;
+}
+
+interface InternalPathGeometry extends StationPathData {
+  readonly edgeSamples: readonly { pos: Point2; outNormal: Point2 }[];
+  readonly centerlineSamples: readonly Point2[];
+}
+
+function createStationPathGeometry(seed = 190415): InternalPathGeometry {
+  const rng = createSeededRng(seed);
+  const groundAt = (x: number, z: number) => evaluateIsthmusTerrain(x, z).y;
+  const seatVertex = (x: number, z: number, dy: number): Vec3 => [x, groundAt(x, z) + dy, z];
+
+  const screen = layoutOf('screen');
+  const omond = layoutOf('omond');
+  const flag = layoutOf('flag');
+  const mod1 = layoutOf('module-360745961');
+  const mod2 = layoutOf('module-360745962');
+  const helipad = layoutOf('helipad');
+
+  const screenDoor = localToWorldXZ(screen, 0, 0.8);
+  const omondDoor = localToWorldXZ(omond, 0.01, omond.footprint[1] / 2 + 0.16);
+  const mod1Door = localToWorldXZ(mod1, mod1.footprint[0] / 2 + 0.3, 0);
+  const mod2Door = localToWorldXZ(mod2, mod2.footprint[0] / 2 + 0.34, 0);
+
+  // Smooth spline passing in front of every station doorway/alley and meeting the helipad edge.
+  const mainControls: Point2[] = [
+    [-5.35, 1.42],
+    [screenDoor[0], screenDoor[1] + 0.44],
+    [omondDoor[0], omondDoor[1] + 1.0],
+    [flag.position[0], flag.position[2] + 0.88],
+    [mod1.position[0] + 0.1, mod1.position[2] + mod1.footprint[1] / 2 + 0.78],
+    [mod1Door[0] + 0.03, 1.24],
+    [mod2.position[0], mod2.position[2] + mod2.footprint[1] / 2 + 0.68],
+    [helipad.position[0] - helipad.footprint[0] / 2 - 0.02, 1.3],
+  ];
+
+  const centerPts = sampleCatmullRomPath(mainControls, 0.32);
+  const edgeSamples: { pos: Point2; outNormal: Point2 }[] = [];
+  const mainRows: StripRow[] = centerPts.map(([x, z], idx) => {
+    const prev = centerPts[Math.max(0, idx - 1)];
+    const next = centerPts[Math.min(centerPts.length - 1, idx + 1)];
+    const dx = next[0] - prev[0];
+    const dz = next[1] - prev[1];
+    const len = Math.hypot(dx, dz) || 1;
+    // Left normal (-dz/len, dx/len) points toward +z (south/seaward); -normal points toward -z (buildings).
+    const nx = -dz / len;
+    const nz = dx / len;
+    const endTaper = idx === 0 ? 0.84 : 1;
+    const wNorth = (0.23 + 0.03 * Math.sin(idx * 0.85 + 0.4) + (rng() - 0.5) * 0.025) * endTaper;
+    const wSouth = (0.24 + 0.03 * Math.cos(idx * 0.72 + 1.1) + (rng() - 0.5) * 0.025) * endTaper;
+    const nX = x - nx * wNorth;
+    const nZ = z - nz * wNorth;
+    const sX = x + nx * wSouth;
+    const sZ = z + nz * wSouth;
+    edgeSamples.push({ pos: [nX, nZ], outNormal: [-nx, -nz] }, { pos: [sX, sZ], outNormal: [nx, nz] });
+    return [seatVertex(nX, nZ, PATH_EDGE_Y), seatVertex(x, z, PATH_CROWN_Y), seatVertex(sX, sZ, PATH_EDGE_Y)];
+  });
+
+  // Match each door spur to a unique segment on the main strip (without overlapping).
+  const doorConfigs: readonly { id: StationPathSpurId; target: Point2; halfW: number; minStep: number }[] = [
+    { id: 'screen', target: screenDoor, halfW: 0.16, minStep: 0.18 },
+    { id: 'omond', target: omondDoor, halfW: 0.16, minStep: 0.26 },
+    { id: 'module-360745961', target: mod1Door, halfW: 0.14, minStep: 0.28 },
+    { id: 'module-360745962', target: mod2Door, halfW: 0.14, minStep: 0.28 },
+  ];
+
+  const spurByMainSeg = new Map<
+    number,
+    { id: StationPathSpurId; target: Point2; halfW: number; minStep: number; mid: Vec3 }
+  >();
+  for (const cfg of doorConfigs) {
+    let bestIdx = -1;
+    let bestDist = Infinity;
+    for (let i = 0; i < mainRows.length - 1; i++) {
+      if (spurByMainSeg.has(i)) continue;
+      const mx = (mainRows[i][0][0] + mainRows[i + 1][0][0]) / 2;
+      const mz = (mainRows[i][0][2] + mainRows[i + 1][0][2]) / 2;
+      const d = Math.hypot(cfg.target[0] - mx, cfg.target[1] - mz);
+      if (d < bestDist) {
+        bestDist = d;
+        bestIdx = i;
+      }
+    }
+    if (bestIdx >= 0) {
+      const mx = (mainRows[bestIdx][0][0] + mainRows[bestIdx + 1][0][0]) / 2;
+      const mz = (mainRows[bestIdx][0][2] + mainRows[bestIdx + 1][0][2]) / 2;
+      spurByMainSeg.set(bestIdx, { ...cfg, mid: seatVertex(mx, mz, PATH_EDGE_Y) });
+    }
+  }
+
+  // Gravel palette varied per segment ("tramo"), never per individual triangle.
+  const gravelTones = [PATH_GRAVEL, PATH_GRAVEL_LIGHT, PATH_GRAVEL, PATH_GRAVEL_DARK] as const;
+  let toneCursor = 0;
+  const nextSegmentTone = () => {
+    const col = gravelTones[toneCursor % gravelTones.length];
+    toneCursor += rng() < 0.65 ? 1 : 2;
+    return col;
+  };
+
+  const mainSegments: Tri[][] = [];
+  const tris: Tri[] = [];
+  for (let i = 0; i < mainRows.length - 1; i++) {
+    const col = nextSegmentTone();
+    const spur = spurByMainSeg.get(i);
+    const seg = emitStripSegment(mainRows[i], mainRows[i + 1], col, i % 2 === 1, spur?.mid);
+    mainSegments.push(seg);
+    tris.push(...seg);
+  }
+
+  // Build each spur directly from its attached main-strip north edge [north[j], mid, north[j+1]].
+  const spurSegments: Tri[][][] = [];
+  const spurCenterlines: StationPathSpur[] = [];
+  const centerlineSamples: Point2[] = [...centerPts];
+  for (const [segIdx, spur] of spurByMainSeg.entries()) {
+    const leftBase = mainRows[segIdx][0];
+    const rightBase = mainRows[segIdx + 1][0];
+    const p0: Point2 = [spur.mid[0], spur.mid[2]];
+    const ex = rightBase[0] - leftBase[0];
+    const ez = rightBase[2] - leftBase[2];
+    const eLen = Math.hypot(ex, ez) || 1;
+    // Outward normal from the north edge points toward -z (buildings).
+    const outX = ez / eLen;
+    const outZ = -ex / eLen;
+    const dist = Math.hypot(spur.target[0] - p0[0], spur.target[1] - p0[1]);
+    const ctrl: Point2 = [p0[0] + outX * dist * 0.45, p0[1] + outZ * dist * 0.45];
+    const steps = Math.max(1, Math.round(dist / spur.minStep));
+
+    const rows: StripRow[] = [[leftBase, spur.mid, rightBase]];
+    const spurCenterline: Point2[] = [p0];
+    for (let s = 1; s <= steps; s++) {
+      const t = s / steps;
+      const omt = 1 - t;
+      const cx = omt * omt * p0[0] + 2 * omt * t * ctrl[0] + t * t * spur.target[0];
+      const cz = omt * omt * p0[1] + 2 * omt * t * ctrl[1] + t * t * spur.target[1];
+      centerlineSamples.push([cx, cz]);
+      spurCenterline.push([cx, cz]);
+      // Tangent of quadratic Bezier
+      const tx = 2 * omt * (ctrl[0] - p0[0]) + 2 * t * (spur.target[0] - ctrl[0]);
+      const tz = 2 * omt * (ctrl[1] - p0[1]) + 2 * t * (spur.target[1] - ctrl[1]);
+      const tLen = Math.hypot(tx, tz) || 1;
+      // Left normal (-tz/tLen, tx/tLen) points east (+x) when heading north (-z).
+      const rx = -tz / tLen;
+      const rz = tx / tLen;
+      const wL = spur.halfW * (0.94 + rng() * 0.12);
+      const wR = spur.halfW * (0.94 + rng() * 0.12);
+      const lx = cx - rx * wL;
+      const lz = cz - rz * wL;
+      const rgtX = cx + rx * wR;
+      const rgtZ = cz + rz * wR;
+      if (s < steps) {
+        edgeSamples.push({ pos: [lx, lz], outNormal: [-rx, -rz] }, { pos: [rgtX, rgtZ], outNormal: [rx, rz] });
+      }
+      rows.push([
+        seatVertex(lx, lz, PATH_EDGE_Y),
+        seatVertex(cx, cz, PATH_CROWN_Y),
+        seatVertex(rgtX, rgtZ, PATH_EDGE_Y),
+      ]);
+    }
+
+    const thisSpur: Tri[][] = [];
+    for (let s = 0; s < rows.length - 1; s++) {
+      const col = nextSegmentTone();
+      const seg = emitStripSegment(rows[s], rows[s + 1], col, (segIdx + s) % 2 === 1);
+      thisSpur.push(seg);
+      tris.push(...seg);
+    }
+    spurSegments.push(thisSpur);
+    spurCenterlines.push({ id: spur.id, mainSegmentIndex: segIdx, centerline: spurCenterline });
+  }
+
+  return {
+    tris,
+    mainSegments,
+    spurSegments,
+    mainCenterline: centerPts,
+    spurCenterlines,
+    edgeSamples,
+    centerlineSamples,
+  };
+}
+
+/** Continuous ground-hugging gravel path and connected doorway spurs of the station stage. */
+export function buildStationPath(seed = 190415): StationPathData {
+  const { tris, mainSegments, spurSegments, mainCenterline, spurCenterlines } =
+    createStationPathGeometry(seed);
+  return { tris, mainSegments, spurSegments, mainCenterline, spurCenterlines };
+}
 
 /** True when (x, z) is inside a building footprint grown by `margin` (world units). */
 function nearBuilding(x: number, z: number, margin: number): boolean {
   return STATION_LAYOUT.some((e) => {
+    const s = e.id === 'screen' || e.id === 'windMast' || e.id === 'flag' ? DIORAMA_PROP_SCALE : 1;
     const dx = x - e.position[0];
     const dz = z - e.position[2];
     const c = Math.cos(e.rotationY);
     const sn = Math.sin(e.rotationY);
     const u = dx * c - dz * sn;
     const v = dx * sn + dz * c;
-    return Math.abs(u) < e.footprint[0] / 2 + margin && Math.abs(v) < e.footprint[1] / 2 + margin;
+    return Math.abs(u) < (e.footprint[0] * s) / 2 + margin && Math.abs(v) < (e.footprint[1] * s) / 2 + margin;
   });
 }
 
@@ -522,7 +830,8 @@ function nearBuilding(x: number, z: number, margin: number): boolean {
  */
 export function buildStageDetailTris(seed = 190415): Tri[] {
   const rng = createSeededRng(seed);
-  const tris: Tri[] = [];
+  const path = createStationPathGeometry(seed);
+  const tris: Tri[] = [...path.tris];
   const groundAt = (x: number, z: number) => evaluateIsthmusTerrain(x, z).y;
   const [kx, kz] = PENGUIN_KNOLL.center;
   const onKnoll = (x: number, z: number) => Math.hypot(x - kx, z - kz) < PENGUIN_KNOLL.footRadius + 0.3;
@@ -531,98 +840,24 @@ export function buildStageDetailTris(seed = 190415): Tri[] {
   const seatY = (x: number, z: number, sx: number, sy: number, sz: number) =>
     Math.min(groundAt(x, z), groundAt(x - sx / 2, z), groundAt(x + sx / 2, z), groundAt(x, z - sz / 2), groundAt(x, z + sz / 2)) + sy * 0.05;
 
-  const gravelPalette = [PATH_GRAVEL, PATH_GRAVEL_LIGHT, PATH_GRAVEL_DARK];
-  const pickGravel = () => gravelPalette[Math.floor(rng() * gravelPalette.length)];
-
-  // Continuous faceted gravel ribbon hugging the terrain height at every cross-section vertex.
-  const addGravelRibbon = (points: readonly (readonly [number, number])[], halfW: number) => {
-    if (points.length < 2) return;
-    const rows: Vec3[][] = points.map(([x, z], idx) => {
-      const prev = points[Math.max(0, idx - 1)];
-      const next = points[Math.min(points.length - 1, idx + 1)];
-      const dx = next[0] - prev[0];
-      const dz = next[1] - prev[1];
-      const len = Math.hypot(dx, dz) || 1;
-      const nx = -dz / len;
-      const nz = dx / len;
-      const wJit = halfW * (0.92 + rng() * 0.16);
-      const offsets: readonly [number, number][] = [
-        [-wJit - 0.08, -0.032],
-        [-wJit, 0.015],
-        [0, 0.022],
-        [wJit, 0.015],
-        [wJit + 0.08, -0.032],
-      ];
-      return offsets.map(([off, dy]): Vec3 => {
-        const px = x + nx * off;
-        const pz = z + nz * off;
-        return [px, groundAt(px, pz) + dy, pz];
-      });
-    });
-
-    for (let i = 0; i < rows.length - 1; i++) {
-      for (let k = 0; k < 4; k++) {
-        const a = rows[i][k];
-        const b = rows[i][k + 1];
-        const c = rows[i + 1][k + 1];
-        const d = rows[i + 1][k];
-        const col1 = k === 0 || k === 3 ? PATH_GRAVEL_DARK : pickGravel();
-        const col2 = k === 0 || k === 3 ? PATH_GRAVEL : pickGravel();
-        if ((i + k) % 2 === 0) {
-          tris.push([a, b, c, col1], [a, c, d, col2]);
-        } else {
-          tris.push([a, b, d, col1], [b, c, d, col2]);
-        }
-      }
-    }
-
-    // Scattered cobbles along the track edges
-    for (let i = 0; i < points.length; i += 2) {
-      if (rng() > 0.65) continue;
-      const [px, pz] = points[i];
-      const side = rng() < 0.5 ? -1 : 1;
-      const ex = px + (rng() - 0.5) * 0.16;
-      const ez = pz + side * (halfW + 0.04 + rng() * 0.06);
-      const sz = 0.055 + rng() * 0.055;
-      tris.push(
-        ...chunk(ex, seatY(ex, ez, sz * 1.15, sz * 0.55, sz * 0.9), ez, sz * 1.15, sz * 0.55, sz * 0.9, Math.floor(rng() * 1e6), rng() < 0.5 ? ROCK_DARK : PATH_GRAVEL_DARK)
-      );
-    }
+  const nearPathCenter = (x: number, z: number, radius: number) => {
+    const r2 = radius * radius;
+    return path.centerlineSamples.some(([px, pz]) => (x - px) ** 2 + (z - pz) ** 2 < r2);
   };
 
-  // Main gravel track along the front of the station, split into contiguous runs around buildings.
-  const pathZ = 2.35;
-  const pathZAt = (x: number) => pathZ + Math.sin(x * 0.7) * 0.18;
-  const PATH_STEP = 0.34;
-  const PATH_HALF = 0.25;
-  let run: [number, number][] = [];
-  for (let x = -5.6; x <= 6.6; x += PATH_STEP) {
-    const z = pathZAt(x);
-    if (nearBuilding(x, z, 0.1)) {
-      addGravelRibbon(run, PATH_HALF);
-      run = [];
-    } else {
-      run.push([x, z + (rng() - 0.5) * 0.03]);
-    }
-  }
-  addGravelRibbon(run, PATH_HALF);
-
-  // Spurs from the main track to the doors of the buildings that face it.
-  const spurs: [number, number, number][] = [];
-  for (const id of ['screen', 'omond', 'module-360745961', 'module-360745962']) {
-    const e = STATION_LAYOUT.find((l) => l.id === id);
-    if (!e) continue;
-    const x0 = e.position[0];
-    const zFront = e.position[2] + e.footprint[1] / 2 + 0.08;
-    const zEnd = pathZAt(x0);
-    spurs.push([x0, zFront, zEnd]);
-    const spurPts: [number, number][] = [];
-    const steps = Math.max(2, Math.ceil((zEnd - zFront) / PATH_STEP));
-    for (let s = 0; s <= steps; s++) {
-      const z = zFront + (s / steps) * (zEnd - zFront);
-      spurPts.push([x0 + (rng() - 0.5) * 0.025, z]);
-    }
-    addGravelRibbon(spurPts, 0.18);
+  // Loose gravel pebbles and small cobbles tucked along the irregular edges of the path.
+  for (let i = 0; i < path.edgeSamples.length; i++) {
+    if (rng() > 0.55) continue;
+    const { pos, outNormal } = path.edgeSamples[i];
+    const outDist = 0.04 + rng() * 0.06;
+    const ex = pos[0] + outNormal[0] * outDist + (rng() - 0.5) * 0.04;
+    const ez = pos[1] + outNormal[1] * outDist + (rng() - 0.5) * 0.04;
+    if (nearBuilding(ex, ez, 0.06) || nearPathCenter(ex, ez, 0.24)) continue;
+    const sz = 0.045 + rng() * 0.045;
+    const col = rng() < 0.5 ? PATH_GRAVEL_DARK : ROCK_DARK;
+    tris.push(
+      ...chunk(ex, seatY(ex, ez, sz * 1.15, sz * 0.52, sz * 0.9), ez, sz * 1.15, sz * 0.52, sz * 0.9, Math.floor(rng() * 1e6), col)
+    );
   }
 
   // Faceted rocks of varied sizes and low-poly snow mounds across the isthmus.
@@ -631,8 +866,7 @@ export function buildStageDetailTris(seed = 190415): Tri[] {
     const x = -13 + rng() * 26;
     const z = -3.6 + rng() * 7.4;
     const d = worldCoastDistance(x, z);
-    const onSpur = spurs.some(([sx, z0, z1]) => Math.abs(x - sx) < 0.4 && z > z0 - 0.2 && z < z1);
-    if (d < 0.3 || onKnoll(x, z) || nearBuilding(x, z, 0.5) || onSpur || Math.abs(z - pathZAt(x)) < 0.45) continue;
+    if (d < 0.3 || onKnoll(x, z) || nearBuilding(x, z, 0.5) || nearPathCenter(x, z, 0.45)) continue;
 
     if (rng() < 0.72) {
       const sz = 0.08 + rng() ** 1.8 * 0.28;

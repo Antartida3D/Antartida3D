@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { ORCADAS_GUIDING_QUESTION } from '../../core/src/content/orcadas.ts';
 import { FUEGIA_MIN_DISTANCE, GROUND_TARGET_MAX, GROUND_TARGET_MIN, ICE_MIN_DISTANCE } from '../../core/src/fuegia.ts';
+import { project } from '../../core/src/projection.ts';
 
 /**
  * Waits until the camera has reached where it was heading. `active` turns false as soon as the
@@ -545,5 +546,82 @@ test.describe('3D relief view', () => {
     }
     await open('sea-drake');
     await expect(sheet.locator('.vpreview')).toHaveCount(0);
+  });
+
+  test('markers stay locked to their 3D world point while the camera moves (#152)', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.goto('/');
+    const toggle = page.getByRole('group', { name: 'Modo de vista' });
+    await toggle.getByRole('button', { name: 'Relieve 3D' }).click();
+    await page.waitForSelector('canvas');
+    await page.waitForFunction(() => Boolean((window as any).__cameraControls));
+
+    const gw = project(0, -57);
+    const wPos = { x: gw.x - 500, y: 0.2, z: gw.y - 500 };
+    await expect(page.locator('.ov [data-graticule="greenwich"]')).toBeVisible();
+
+    const samples: Array<{ frame: number; wf: number; sx: number; sy: number; ex: number; ey: number; drift: number }> = [];
+    const collect = page.evaluate(
+      (targetWorld) =>
+        new Promise<Array<{ frame: number; wf: number; sx: number; sy: number; ex: number; ey: number; drift: number }>>((resolve) => {
+          const cc = (window as any).__cameraControls;
+          const rect = document.querySelector('canvas')!.getBoundingClientRect();
+          const div = document.querySelector<HTMLElement>('.ov [data-graticule="greenwich"]')!;
+          const out: Array<{ frame: number; wf: number; sx: number; sy: number; ex: number; ey: number; drift: number }> = [];
+          let frames = 0;
+
+          const sample = () => {
+            setTimeout(() => {
+              const match = /translate3d\(([-\d.]+)px,\s*([-\d.]+)px/.exec(div.style.transform);
+              if (match && div.style.display !== 'none') {
+                const sx = Number(match[1]);
+                const sy = Number(match[2]);
+                const cam = cc.camera;
+                const v = cam.position.clone().set(targetWorld.x, targetWorld.y, targetWorld.z);
+                v.project(cam);
+                const ex = ((v.x + 1) * rect.width) / 2;
+                const ey = ((-v.y + 1) * rect.height) / 2;
+                out.push({
+                  frame: frames,
+                  wf: (window as any).__frames,
+                  camX: cam.position.x,
+                  sx,
+                  sy,
+                  ex,
+                  ey,
+                  drift: Math.hypot(sx - ex, sy - ey),
+                });
+              }
+              frames++;
+              if (frames < 35) requestAnimationFrame(sample);
+              else resolve(out);
+            }, 0);
+          };
+          requestAnimationFrame(sample);
+        }),
+      wPos
+    );
+
+    const box = (await page.locator('canvas').boundingBox())!;
+    await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.5);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width * 0.5 + 120, box.y + box.height * 0.5 + 60, { steps: 10 });
+    await page.mouse.up();
+    await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.5);
+    await page.mouse.down({ button: 'right' });
+    await page.mouse.move(box.x + box.width * 0.5 + 150, box.y + box.height * 0.5 - 80, { steps: 10 });
+    await page.mouse.up({ button: 'right' });
+    await page.mouse.move(box.x + box.width * 0.8, box.y + box.height * 0.8);
+    await page.mouse.wheel(0, -300);
+
+    samples.push(...(await collect));
+    const maxDrift = Math.max(...samples.map((s) => s.drift));
+    const totalMove = Math.hypot(
+      samples[samples.length - 1].ex - samples[0].ex,
+      samples[samples.length - 1].ey - samples[0].ey
+    );
+    expect(samples.length).toBeGreaterThan(2);
+    expect(totalMove, `samples=${JSON.stringify(samples.slice(0, 3))}`).toBeGreaterThan(20);
+    expect(maxDrift, `bad=${JSON.stringify(samples.filter((s) => s.drift > 0.5).slice(0, 8))}`).toBeLessThan(0.5);
   });
 });

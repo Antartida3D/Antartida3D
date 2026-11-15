@@ -2,7 +2,6 @@ import { lazy, Suspense, useId, useRef, useState } from 'react';
 import { TIER, type MapPoint, type SeaPoint, type Source } from '@antartida/core';
 import { BottomSheet } from '../BottomSheet.tsx';
 import { useFocusReturn } from '../hooks.ts';
-import { Icon } from '../ui.tsx';
 import { POINT_MODEL_IDS } from '../voyage/pointModelIds.ts';
 
 // Its own chunk: it needs WebGL, which the 2D map does not.
@@ -42,34 +41,43 @@ function SourceList({ sources }: { sources?: readonly Source[] }) {
   );
 }
 
-export function PointSheet({ point, onClose, fallbackFocus, preview = false, reduced = false, action }: {
+export function PointSheet({ point, onClose, fallbackFocus, preview = false, onMap = false, reduced = false, action }: {
   point: MapPoint | SeaPoint;
   onClose: () => void;
   fallbackFocus: () => HTMLElement | null;
   /** Show the block model of the point (needs WebGL). */
   preview?: boolean;
+  /**
+   * The camera flies down to the model of the point on the map (MapPoint.closeUp): the model is seen
+   * above the sheet, so the sheet does not repeat it.
+   */
+  onMap?: boolean;
   reduced?: boolean;
   /** Extra map layer this point opens, such as the territorial claims from the South Pole. */
   action?: { label: string; onClick: () => void };
 }) {
   const ref = useRef<HTMLElement>(null);
-  useFocusReturn(true, ref, '.iconbtn', fallbackFocus);
+  // The title takes the focus: it names the sheet, and the sheet does not scroll to a button further down.
+  useFocusReturn(true, ref, '#sheet-title', fallbackFocus);
 
   const isSea = !('tier' in point);
   const hasModel = preview && POINT_MODEL_IDS.has(point.id);
+  const showPreview = hasModel && !onMap;
   const tagLabel = isSea ? point.tag ?? 'Vida en el mar' : TIER[point.tier];
   const tagClass = isSea ? 'tag tsea' : 'tag t' + point.tier.toLowerCase();
 
   return (
     <>
-      <div className="scrim" onClick={onClose} />
-      {/* Dragged down on a phone, the sheet closes like the other sheets of the map. */}
-      <BottomSheet labelledBy="sheet-title" sheetRef={ref} onClose={onClose}>
-        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-          <span className={tagClass}>{tagLabel}</span>
-          <button type="button" className="iconbtn" onClick={onClose} aria-label="Cerrar ficha">{Icon.close}</button>
-        </div>
-        <h2 id="sheet-title">{point.title}</h2>
+      {/* A tap on the map around the sheet closes it; light, so the point stays in sight above the sheet. */}
+      <div className="scrim clear" onClick={onClose} />
+      {/*
+        On a phone it opens at half the screen, with the point on the map above it. Dragged up it shows
+        more text; dragged down it closes, like the other sheets of the map. No close button: a tap
+        outside, dragging it down, Escape and «Volver al mapa» close it.
+      */}
+      <BottomSheet className="point half" labelledBy="sheet-title" sheetRef={ref} onClose={onClose}>
+        <span className={tagClass}>{tagLabel}</span>
+        <h2 id="sheet-title" tabIndex={-1}>{point.title}</h2>
         <p className="place">{point.place}</p>
         {isSea ? (
           <>
@@ -88,7 +96,7 @@ export function PointSheet({ point, onClose, fallbackFocus, preview = false, red
           </>
         ) : point.desc ? (
           <>
-            {hasModel && (
+            {showPreview && (
               <Suspense fallback={<div className="vpreview" />}>
                 <PointPreview id={point.id} reduced={reduced} />
               </Suspense>
@@ -99,7 +107,7 @@ export function PointSheet({ point, onClose, fallbackFocus, preview = false, red
             <p className="sheet-desc">{point.desc}</p>
             <SourceList sources={point.sources} />
             {hasModel && <p className="anno">Ilustración representativa, no a escala.</p>}
-            <p className="anno">Esta expedición todavía no está disponible. Se suma en una próxima etapa.</p>
+            {point.tier === 'B' && <p className="anno">Esta expedición todavía no está disponible. Se suma en una próxima etapa.</p>}
           </>
         ) : (
           <>
@@ -107,7 +115,7 @@ export function PointSheet({ point, onClose, fallbackFocus, preview = false, red
               <p>{point.q}</p>
               <small>[Pregunta provisional] · [Contenido provisional]</small>
             </div>
-            <p className="anno">Esta expedición todavía no está disponible. Se suma en una próxima etapa.</p>
+            {point.tier === 'B' && <p className="anno">Esta expedición todavía no está disponible. Se suma en una próxima etapa.</p>}
           </>
         )}
         <div className="row" style={{ marginTop: 12 }}>

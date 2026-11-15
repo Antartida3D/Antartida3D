@@ -23,7 +23,7 @@ const SHEET_MIN_PX = 56;
  * dialog: it is a labelled region and Escape does not close it. Pass `size` and `onSize` to let the
  * page know and set the size (for example, to frame the scene above the sheet).
  */
-export function BottomSheet({ className = '', labelledBy, sheetRef, onClose, floor = 'closed', size: sizeProp, onSize, children }: {
+export function BottomSheet({ className = '', labelledBy, sheetRef, onClose, floor = 'closed', modal = true, size: sizeProp, onSize, children }: {
   /** Extra classes for the sheet, next to `sheet grows`. */
   className?: string;
   /** Id of the heading that names the dialog. */
@@ -33,6 +33,11 @@ export function BottomSheet({ className = '', labelledBy, sheetRef, onClose, flo
   onClose?: () => void;
   /** Smallest size: 'closed' (dragging down from small closes it) or 'peek' (it never closes). */
   floor?: 'closed' | 'peek';
+  /**
+   * False for a panel beside the map that the map stays usable with (the claims details): a
+   * labelled region, not a dialog, that still closes with Escape or dragged down.
+   */
+  modal?: boolean;
   /** Size set by the page; without it the sheet keeps its own, starting small. */
   size?: OpenSheetSize;
   onSize?: (size: OpenSheetSize) => void;
@@ -149,8 +154,8 @@ export function BottomSheet({ className = '', labelledBy, sheetRef, onClose, flo
   return (
     <section
       className={`sheet grows${expanded ? ' full' : ''}${size === 'peek' ? ' peek' : ''}${dragging ? ' dragging' : ''} ${className}`}
-      role={persistent ? 'region' : 'dialog'}
-      aria-modal={persistent ? undefined : true}
+      role={persistent || !modal ? 'region' : 'dialog'}
+      aria-modal={persistent || !modal ? undefined : true}
       aria-labelledby={labelledBy}
       ref={sheetRef}
       onKeyDown={persistent ? undefined : (e) => e.key === 'Escape' && onClose?.()}

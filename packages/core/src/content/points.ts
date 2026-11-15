@@ -43,7 +43,7 @@ const CLOSE_UP: Readonly<Record<string, number>> = { polo: 2.6, testigos: 2.6, v
 
 export const PTS: readonly MapPoint[] = POINTS.map((p) => ({ ...p, ...POINT_DETAILS[p.id], ...(CLOSE_UP[p.id] ? { closeUp: CLOSE_UP[p.id] } : {}) }));
 
-export const TIER: Record<Tier, string> = { A: 'Expedición disponible', B: 'Ampliación prevista', C: 'Próximamente' };
+export const TIER: Record<Tier, string> = { A: 'Expedición disponible', B: 'Ampliación prevista', C: 'Punto de interés' };
 
 export const ORCADAS_POINT = PTS.find((p) => p.id === 'orcadas')!;
 export const EXPEDITION_POINT = ORCADAS_POINT;

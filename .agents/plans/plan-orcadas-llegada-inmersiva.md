@@ -16,7 +16,7 @@ Estado: **espera aprobación de Lk.** Rama `135-orcadas-llegada-inmersiva-...`, 
    - **D1 (Lk):** el mes del diorama se elige solo según el vehículo. El helicóptero y el Zodiac, que baja del Irízar, llegan en la temporada de visitas, de noviembre a marzo (`arrival-transporte` y `helicopterOnPad`). Si el mes actual está fuera de temporada, la expedición arranca en el mes de temporada más cercano. El panel lo dice en una línea.
 5. **Movimiento reducido:** sin viaje animado ni aterrizaje. Se entra directo al diorama, con el transporte elegido ya quieto en su lugar.
 6. **Honestidad:** todo lo animado se marca como ilustración, como el resto del diorama («Reconstrucción ilustrada»). Ningún dato sin fuente: lo que se diga del Irízar, del Zodiac y del helicóptero sale de hechos con fuente que ya existen. Por ejemplo `arrival-transporte` en `packages/core/src/content/orcadas.ts`: la llegada en buque o helicóptero, los dos Zodiac y unas 25 visitas por año entre noviembre y marzo.
-7. **Detalles inmersivos:** se suman los que Lk elija de la lista de Propuestas, en la línea de la puerta del abrigo.
+7. **Detalles inmersivos:** entran las 10 propuestas (D3, Lk, 14 nov 2026), en la línea de la puerta del abrigo.
 8. **Verificación:** `pnpm test && pnpm typecheck && pnpm build` y los e2e afectados en verde. Los e2e se corren con la GPU, desde `apps/dibujado`, con `env E2E_GPU=1 E2E_WORKERS=4 E2E_PORT=5113 pnpm exec playwright test -c ../../packages/e2e/playwright.config.ts <specs>`.
 
 ## Entorno detectado
@@ -110,7 +110,11 @@ Estado: **espera aprobación de Lk.** Rama `135-orcadas-llegada-inmersiva-...`, 
   - `invalidate()` mientras dura; geometrías liberadas en el cleanup.
   - La cámara arranca en una toma que muestra la llegada y después vuelve a la toma de entrada.
   - → verificar: `pnpm --filter @antartida/react-ui test` (mínimos de detalle si hay modelos nuevos) y un e2e: al terminar, el transporte elegido queda en su lugar (por ejemplo un `window.__orcadasArrival` de prueba, o la pose de la cámara), y con movimiento reducido no hay animación.
-- [ ] 7. **Detalles inmersivos elegidos por Lk** (ver Propuestas). Uno por paso, cada uno con su test de lógica pura si la tiene, `invalidate` acotado y el rótulo de ilustración. → verificar: tests, capturas y sin caída de fps visible (`pnpm bench` si toca el render continuo).
+- [ ] 7. **Detalles inmersivos:** las 10 propuestas (D3), en tres tandas que se pueden delegar en paralelo porque tocan partes distintas. Cada detalle lleva su test de lógica pura si la tiene, un `invalidate` acotado (sin render continuo cuando nada se mueve), el rótulo de ilustración y su versión con movimiento reducido (quieto o apagado).
+  - 7a. Viento y casa: 1 (bandera, veleta y anemómetro según el viento de la lectura), 2 (humo de la chimenea con el mismo viento) y 3 (ventanas encendidas en los meses de pocas horas de luz). El viento sale de una sola función de `core` que usan los tres (regla 04).
+  - 7b. Gente y fauna: 4 (el observador camina hasta el abrigo y la puerta se abre cuando llega), 5 (huellas en la nieve), 6 (pingüinos que se apartan cuando llega el Zodiac) y 8 (aves planeando). La 4 encadena con la puerta del abrigo de #125, y la 6 con la llegada del paso 6.
+  - 7c. Clima, mar y salida: 7 (nieve o ventisca según el mes), 9 (témpanos que derivan según el mes) y 10 (al salir, el transporte de llegada se va). La 10 reutiliza las curvas del paso 3 al revés.
+  - → verificar: `pnpm test`, capturas de cada detalle a 1440 y 390 px, y `pnpm bench` para confirmar que no cae la fluidez del diorama.
 - [ ] 8. **Capturas** en Chromium con `--use-angle=vulkan` a 1440 y 390 px: el camino, el selector de llegada, el viaje en el mapa y la llegada con cada transporte (en un mes con temporada y en uno sin). Mostrárselas a Lk antes del PR. → verificar: aprobación de Lk.
 - [ ] 9. **`README.md`:** la declaración de IA de #135. → verificar: `git diff README.md`.
 - [ ] 10. **Cierre:**
@@ -118,7 +122,7 @@ Estado: **espera aprobación de Lk.** Rama `135-orcadas-llegada-inmersiva-...`, 
   - Commit y PR con `Closes #135`. El push lo corre Lk.
   - → verificar: todo en verde y el link del PR.
 
-## Propuestas de detalles inmersivos (Lk elige cuáles entran en el paso 7)
+## Detalles inmersivos (entran los 10, D3)
 
 Todas son ilustraciones, sin datos nuevos. Las que dependen del tiempo usan la observación simulada del día, que ya está marcada como simulación.
 
@@ -139,6 +143,4 @@ Todas son ilustraciones, sin datos nuevos. Las que dependen del tiempo usan la o
 - `packages/react-ui/test/orcadasPath.test.ts`: continuidad y apoyo del camino.
 - `packages/e2e/tests/orcadas-arrival.spec.ts`: selector con teclado, viaje y llegada con cada transporte y entrada directa con movimiento reducido.
 
-## Preguntas abiertas: 1
-
-- **P2:** ¿cuáles de las 10 propuestas entran? Recomendación: 1, 2, 4 y 6, que se apoyan en lo que ya existe y suman más a la sensación de haber llegado.
+## Preguntas abiertas: 0

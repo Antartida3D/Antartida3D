@@ -285,7 +285,8 @@ export function Voyage3D({ bus, reduced, overlay }: {
       pin.position.set(at.x - 500, Math.max(0, worldHeight(heightAt(at.x, at.y))), at.y - 500);
       pin.scale.setScalar(Math.max(MIN_PIN, camera.position.distanceTo(pin.position) * PIN_PER_DISTANCE));
       pin.quaternion.copy(camera.quaternion); // always facing the camera
-      (pin.children[0] as Mesh).material = i + 1 < s.reached ? pinMaterial.reached : pinMaterial.ahead;
+      // Grey once its milestone was read, not just passed: the ones left unread stand out (#157).
+      (pin.children[0] as Mesh).material = bus.opened.includes(stops[i + 1].milestone.id) ? pinMaterial.read : pinMaterial.unread;
       // A pin is drawn over everything: the one of the base would cover the helicopter that lands on it.
       pin.visible = bus.transfer === null || i < pins.length - 1;
     });
@@ -396,7 +397,7 @@ export function Voyage3D({ bus, reduced, overlay }: {
       <primitive object={route} />
       {pins.map((_, i) => (
         <group key={i} ref={(g) => void (pinGroups.current[i] = g)}>
-          <mesh geometry={pinGeometry.fill} material={pinMaterial.ahead} renderOrder={1001} />
+          <mesh geometry={pinGeometry.fill} material={pinMaterial.unread} renderOrder={1001} />
           <mesh geometry={pinGeometry.line} material={pinMaterial.line} renderOrder={1000} />
           <mesh geometry={pinGeometry.dot} material={pinMaterial.dot} renderOrder={1002} />
           {/* A pin passed opens its milestone: the trip does not stop at it (#157). A real button, over its head. */}

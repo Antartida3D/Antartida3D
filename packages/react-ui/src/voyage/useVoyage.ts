@@ -22,6 +22,8 @@ export interface VoyageBus {
   /** Fraction flown of the helicopter hop from the ship to the base (1 once it landed), or null before it. */
   transfer: number | null;
   closeSighting: () => void;
+  /** Ids of the milestones whose card was opened on this trip: their pins turn grey. */
+  opened: readonly string[];
   /** The user touched the pin of a milestone already passed: opens its card. */
   openStop: (index: number) => void;
   openSource: (code: VoyageSourceCode) => void;
@@ -81,7 +83,7 @@ export interface VoyageController {
 
 export function useVoyage(): VoyageController {
   const [state, setState] = useState<VoyageState | null>(null);
-  const bus = useRef<VoyageBus>({ state: null, seen: [], spot: () => {}, beside: null, open: null, back: false, transfer: null, closeSighting: () => {}, openStop: () => {}, openSource: () => {}, listeners: new Set() }).current;
+  const bus = useRef<VoyageBus>({ state: null, seen: [], spot: () => {}, beside: null, open: null, back: false, transfer: null, closeSighting: () => {}, opened: [], openStop: () => {}, openSource: () => {}, listeners: new Set() }).current;
   const frame = useRef(0);
   const [gear, setGear] = useState(0);
   const press = useRef({ gear: 0, at: -Infinity });
@@ -101,6 +103,7 @@ export function useVoyage(): VoyageController {
     const { id } = voyageStops(next.kind)[next.card].milestone;
     if (opened.current.includes(id)) return;
     opened.current = [...opened.current, id];
+    bus.opened = opened.current;
     setOpened(opened.current);
   };
   const commit = (next: VoyageState | null) => {
@@ -219,6 +222,7 @@ export function useVoyage(): VoyageController {
     setSighting(null);
     setAnswers({});
     opened.current = [];
+    bus.opened = [];
     setOpened([]);
     setAsking(false);
     endTransfer(null);

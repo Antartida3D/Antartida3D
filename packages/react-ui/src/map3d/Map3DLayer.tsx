@@ -441,6 +441,10 @@ function ProjectMarkers({
     const el = overlayRef.current;
     if (!el || phase === 'dive' || phase === 'approach' || phase === 'travel') return;
 
+    // CameraControls updates camera.position/quaternion in useFrame(-1) without updating matrixWorldInverse;
+    // WebGLRenderer.render() updates it later, so project() here would lag behind the rendered frame.
+    camera.updateMatrixWorld();
+
     // 1. Position expedition & fossil markers
     for (const m of markers) {
       const btn = el.querySelector<HTMLElement>(`[data-key="${m.key}"]`);

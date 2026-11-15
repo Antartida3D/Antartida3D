@@ -2153,6 +2153,7 @@ function StationCameraAndProjection({
     const panelTop = panelRect && isPortrait ? panelRect.top - overlayRect.top - 28 : null;
     const panelLeft = panelRect && !isPortrait ? panelRect.left - overlayRect.left - 28 : null;
 
+    camera.updateMatrixWorld();
     for (const spot of HOTSPOTS) {
       const btn = map.get(spot.id);
       if (!btn) continue;

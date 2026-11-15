@@ -284,6 +284,7 @@ function CameraAndDots({ focus, reduced, sheetTall, sidePanel, overlayRef }: Mar
     const minY = 96;
     const maxY = panel && !sidePanel ? panel.top - box.top - 26 : size.height - 60;
     const maxX = panel && sidePanel ? panel.left - box.left - 30 : size.width - 30;
+    camera.updateMatrixWorld();
     for (const spot of MARAMBIO_SPOTS) {
       const btn = map.get(spot.id);
       if (!btn) continue;

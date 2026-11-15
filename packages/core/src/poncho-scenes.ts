@@ -91,8 +91,8 @@ export const SCENE_FADE_START = 14;
 export const SCENE_FADE_END = 5;
 /** Distance between two boot prints and the pace of the walk (a pose cycle covers two prints). */
 export const SCENE_STRIDE = 0.55;
-/** Pose cycles per second of the people who work (radians per second = this * 2 pi). */
-export const SCENE_WORK_RATE = 1.7;
+/** Pose cycles per second of the people who work (radians per second = this * 2 pi): a strike or a shovelful about every 1.4 s. */
+export const SCENE_WORK_RATE = 0.7;
 /** Height of the hop of someone who cheers, in scene units. */
 export const SCENE_HOP = 0.16;
 

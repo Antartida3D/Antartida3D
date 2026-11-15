@@ -37,3 +37,4 @@ export * from './camera.ts';
 export * from './gestures.ts';
 export * from './ocean.ts';
 export * from './sea.ts';
+export * from './loading.ts';

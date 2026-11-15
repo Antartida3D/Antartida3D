@@ -17,6 +17,7 @@ import {
 import { useThree } from '@react-three/fiber';
 import {
   FAR_LAND_COLOR_HEX,
+  map3dLoadingStore,
   SOUTHERN_LANDS,
   SOUTHERN_LANDS_TEXTURE_BOX,
   WORLD_FADE_END,
@@ -109,14 +110,14 @@ export function SouthernLands() {
     let alive = true;
     const loaded: Texture[] = [];
     const u = material.uniforms as ReturnType<typeof farLandUniforms> & Record<string, { value: unknown }>;
-    loadFarLandTexture(u)
+    const p1 = loadFarLandTexture(u)
       .then((t) => {
         loaded.push(t);
         if (alive) invalidate();
       })
       // Without it the silhouettes keep the flat FAR_LAND_COLOR_HEX tone.
       .catch((e: unknown) => console.warn('Southern lands color unavailable', e));
-    loadLandColor(worldColorUrl)
+    const p2 = loadLandColor(worldColorUrl)
       .then((t) => {
         loaded.push(t);
         material.uniforms.uWorldLandTex.value = t;
@@ -124,7 +125,7 @@ export function SouthernLands() {
         if (alive) invalidate();
       })
       .catch((e: unknown) => console.warn('World lands color unavailable', e));
-    new TextureLoader()
+    const p3 = new TextureLoader()
       .loadAsync(paper512Url)
       .then((t) => {
         loaded.push(t);
@@ -136,6 +137,9 @@ export function SouthernLands() {
         if (alive) invalidate();
       })
       .catch((e: unknown) => console.warn('Southern lands paper texture unavailable', e));
+    Promise.allSettled([p1, p2, p3]).then(() => {
+      if (alive) map3dLoadingStore.markStepDone('lands');
+    });
     return () => {
       alive = false;
       loaded.forEach((t) => t.dispose());

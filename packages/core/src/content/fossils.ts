@@ -118,14 +118,14 @@ export const FOSSIL_STOPS: readonly FossilStop[] = [
     title: 'Las rocas recuerdan',
     line: 'Eduardo Olivero y sus compañeros salieron a estudiar las rocas. Entre ellas apareció una historia que nadie había encontrado antes en la Antártida.',
     more: 'La campaña estudiaba la estratigrafía: las relaciones entre las capas de roca y los acontecimientos que registran. La expedición de Fósiles recorre el archipiélago James Ross; la visita a la Base Marambio tiene su propio recorrido.',
-    sources: ['interview', 'paper'], photos: ['olivero', 'dino-site'],
+    sources: ['interview', 'paper'], photos: ['olivero'],
   },
   {
     id: 'looking', chapter: 'camp', view: 'camp', place: 'Isla James Ross', eyebrow: 'Un cuaderno, muchas campañas',
     title: 'Aprender a mirar',
     line: 'Olivero hizo su primera campaña antártica en 1974. Años de observar rocas lo acompañaban en cada caminata.',
     more: 'Las investigaciones continuaron en el Laboratorio de Geología Andina del CADIC, en Ushuaia. El descubrimiento fue un trabajo de equipo, con apoyo del Instituto Antártico Argentino.',
-    sources: ['conicet'], photos: ['olivero'],
+    sources: ['conicet'],
   },
   {
     id: 'spiral', chapter: 'ammonites', view: 'ammonite-rock', place: 'Isla James Ross', eyebrow: 'Primera pista · la conchilla',
@@ -174,14 +174,14 @@ export const FOSSIL_STOPS: readonly FossilStop[] = [
     title: 'El hallazgo llevó años',
     line: 'El suelo congelado dificultaba la extracción. El equipo recuperó los restos durante varias campañas.',
     more: 'Encontrar una pieza fue el comienzo. En su testimonio, Olivero relata que rescataron lo que estaba descongelado y regresaron después por los demás restos.',
-    sources: ['interview'], photos: ['olivero'],
+    sources: ['interview'], photos: ['dino-site'],
   },
   {
     id: 'animal', chapter: 'dinosaur', view: 'dinosaur', place: 'Isla James Ross', eyebrow: 'Antarctopelta oliveroi',
     title: 'De los restos al animal',
     line: 'Los huesos y las placas de armadura permitieron reconocer un dinosaurio herbívoro acorazado.',
     more: 'El artículo de 1991 documenta un esqueleto parcial, con mandíbula, vértebras, costillas, fragmentos de extremidades y placas óseas. CONICET identifica al animal como Antarctopelta oliveroi. La forma completa, los colores y los movimientos de esta escena son una reconstrucción ilustrativa.',
-    sources: ['paper', 'conicet'], photos: ['dino-remains'],
+    sources: ['paper', 'conicet'],
   },
   {
     id: 'slab', chapter: 'stars', view: 'star-slab', place: 'Isla Marambio · Bill Hill', eyebrow: 'Isla Marambio · Eoceno medio tardío',

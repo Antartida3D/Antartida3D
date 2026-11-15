@@ -36,11 +36,19 @@ test('explores the four fossils and three habitats, opens sources and records co
   await expect(page.getByRole('button', { name: 'Siguiendo la columna' })).toHaveAttribute('aria-pressed', 'true');
 
   await chapters.getByRole('button', { name: /Dinosaurio/ }).click();
+  // The tooth is examined on its own stop, not on the find before it.
+  await expect(page.getByRole('heading', { name: 'Algo asomaba de la roca' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Examinar el diente' })).toHaveCount(0);
+  await page.locator('.fossil-next').click();
+  await expect(page.getByRole('heading', { name: 'Una pista muy pequeña' })).toBeVisible();
   await page.getByRole('button', { name: 'Examinar el diente' }).click();
   await expect(page.getByRole('button', { name: 'El diente, más cerca' })).toHaveAttribute('aria-pressed', 'true');
-  for (let i = 0; i < 3; i++) await page.getByRole('button', { name: /Seguir explorando/ }).click();
+  for (let i = 0; i < 2; i++) await page.getByRole('button', { name: /Seguir explorando/ }).click();
   await page.getByRole('button', { name: 'Imaginar el animal completo' }).click();
   await expect(page.getByRole('button', { name: 'Volver a los restos' })).toHaveAttribute('aria-pressed', 'true');
+  // Back to the remains: the reconstruction still counts as seen in the final checklist.
+  await page.getByRole('button', { name: 'Volver a los restos' }).click();
+  await expect(page.getByRole('button', { name: 'Imaginar el animal completo' })).toHaveAttribute('aria-pressed', 'false');
 
   await page.getByRole('button', { name: /Seguir a Estrellas/ }).click();
   await page.getByRole('button', { name: 'Medir una estrella' }).click();
@@ -66,6 +74,7 @@ test('explores the four fossils and three habitats, opens sources and records co
   const log = page.getByRole('list', { name: 'Tu registro de la expedición' });
   await expect(log).toContainText('Seguiste la columna');
   await expect(log).toContainText('Observaste el diente');
+  await expect(log).toContainText('Imaginaste el dinosaurio completo');
   await expect(log).toContainText('Mediste una estrella');
   await page.getByRole('button', { name: 'Terminar expedición' }).click();
   await expect(page.locator('.reg')).toContainText(`1/${AVAILABLE_COUNT}`);

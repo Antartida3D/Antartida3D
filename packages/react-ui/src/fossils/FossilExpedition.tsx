@@ -114,7 +114,8 @@ export function FossilExpedition({ reduced, webgl, onLeave }: {
         <small>Disposición ilustrativa de los huesos.</small>
       </div>}
 
-      {(stop.id === 'detour' || stop.id === 'tooth') && <div className="fossil-interaction">
+      {/* Only on «Una pista muy pequeña», the stop about the shape of the tooth: «Algo asomaba de la roca» is the find itself. */}
+      {stop.id === 'tooth' && <div className="fossil-interaction">
         <button className="btn fossil-action" aria-pressed={state.tooth} onClick={() => dispatch({ type: 'tooth' })}>{state.tooth ? 'El diente, más cerca' : 'Examinar el diente'}</button>
         {state.tooth && <p className="fossil-observation" role="status">Observá la corona baja y ancha, con forma de hoja. No es cónica como la de un reptil marino.</p>}
       </div>}
@@ -140,7 +141,7 @@ export function FossilExpedition({ reduced, webgl, onLeave }: {
         <li><span>{state.cleaned === FOSSIL_CLEAN_STEPS ? '✓' : '○'}</span>{state.cleaned === FOSSIL_CLEAN_STEPS ? 'Descubriste la espiral del amonite' : 'Limpieza del amonite: opcional'}</li>
         <li><span>{state.column ? '✓' : '○'}</span>{state.column ? 'Seguiste la columna del plesiosaurio' : 'Columna del plesiosaurio: opcional'}</li>
         <li><span>{state.tooth ? '✓' : '○'}</span>{state.tooth ? 'Observaste el diente de cerca' : 'Observación del diente: opcional'}</li>
-        <li><span>{state.reconstructed ? '✓' : '○'}</span>{state.reconstructed ? 'Comparaste los restos y la reconstrucción' : 'Reconstrucción del animal: opcional'}</li>
+        <li><span>{state.imagined ? '✓' : '○'}</span>{state.imagined ? 'Imaginaste el dinosaurio completo' : 'Imaginar el animal completo: opcional'}</li>
         <li><span>{state.measured ? '✓' : '○'}</span>{state.measured ? 'Mediste una estrella de mar' : 'Medición de la estrella: opcional'}</li>
         <li><span>✓</span>Recorriste {state.visited.length} de {FOSSIL_STOPS.length} paradas</li>
       </ul>}
@@ -182,7 +183,7 @@ export function FossilExpedition({ reduced, webgl, onLeave }: {
         {stop.id === 'giants' && <div className="fossil-found">01 · Amonite gigante<small>Forma y movimiento ilustrativos</small></div>}
         {stop.id === 'vega' && state.column && <div className="fossil-found">02 · Una columna, de la cabeza a la cola</div>}
         {stop.id === 'swimmer' && <div className="fossil-found">02 · Un reptil marino<small>Forma, color y nado ilustrativos</small></div>}
-        {(stop.id === 'tooth' || stop.id === 'detour') && state.tooth && <div className="fossil-found">03 · Una mandíbula. Un diente.</div>}
+        {stop.id === 'tooth' && state.tooth && <div className="fossil-found">03 · Una mandíbula. Un diente.</div>}
         {stop.id === 'slab' && state.measured && <div className="fossil-found">04 · 17 mm, del centro a la punta</div>}
       </div>
       {desktop ? <section className="fossil-panel" ref={panel} aria-labelledby="fossil-title">{content}</section> : <BottomSheet className="fossil-panel" labelledBy="fossil-title" sheetRef={panel} floor="peek" size={sheetSize} onSize={setSheetSize}>{content}</BottomSheet>}

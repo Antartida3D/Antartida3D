@@ -32,6 +32,9 @@ describe('fossil expedition', () => {
     const reconstructed = fossilsReducer(INITIAL_FOSSILS, { type: 'reconstruct' });
     expect(reconstructed.reconstructed).toBe(true);
     expect(fossilsReducer(reconstructed, { type: 'reconstruct' }).reconstructed).toBe(false);
+    // Going back to the remains still counts the reconstruction as seen.
+    expect(fossilsReducer(reconstructed, { type: 'reconstruct' }).imagined).toBe(true);
+    expect(INITIAL_FOSSILS.imagined).toBe(false);
     for (const { id } of FOSSIL_HABITATS) expect(fossilsReducer(reconstructed, { type: 'habitat', habitat: id }).habitat).toBe(id);
   });
 
@@ -56,6 +59,11 @@ describe('fossil expedition', () => {
       }
     }
     for (const chapter of FOSSIL_CHAPTERS) expect(FOSSIL_STOPS.some((s) => s.chapter === chapter.id)).toBe(true);
+  });
+
+  it('shows each archive photo in one stop only', () => {
+    const shown = FOSSIL_STOPS.flatMap((s) => s.photos ?? []);
+    expect(shown.length).toBe(new Set(shown).size);
   });
 
   it('marks the Tierra del Fuego forest as a modern comparison, not the Antarctic past', () => {

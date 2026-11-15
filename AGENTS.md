@@ -59,6 +59,9 @@ Si hay dos asignados, gana el primer comentario "Lo tomo." en el issue. El otro 
 - El PR incluye `Closes #<N>` en la descripción.
 - PRs chicos. Un issue, un PR.
 - Otra persona del equipo revisa y mergea. Nadie mergea su propio PR, salvo urgencia del día de entrega.
+- Todo PR completa la declaración de impacto documental de la plantilla: documentos actualizados y decisiones registradas, o justificación de que no hay impacto. Quien revisa confirma esa declaración.
+- Si cambia una decisión anterior, actualizar su vigencia y enlazar el reemplazo en el mismo PR. Las decisiones nuevas usan el formato de [control de documentación](docs/control-documentacion.md). No borrar sus registros históricos.
+- Antes de entregar, ejecutar `pnpm docs:test` y `pnpm docs:check --body-file <cuerpo-del-PR.md> --base origin/main`. El control automático y la revisión humana son parte de la definición de terminado. El bloqueo de merge requiere activar **Impacto documental** en las reglas de `main`.
 
 ### 4. Liberar
 

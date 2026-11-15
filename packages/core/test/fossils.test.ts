@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FOSSIL_CHAPTERS, FOSSIL_HABITATS, FOSSIL_PHOTOS, FOSSIL_SOURCES, FOSSIL_STOPS } from '../src/content/fossils.ts';
+import { FOSSIL_CHAPTERS, FOSSIL_HABITATS, FOSSIL_PHOTOS, FOSSIL_SOURCES, FOSSIL_STOPS, FOSSIL_STORY } from '../src/content/fossils.ts';
 import { FOSSIL_CLEAN_STEPS, INITIAL_FOSSILS, fossilsReducer } from '../src/fossils.ts';
 
 describe('fossil expedition', () => {
@@ -59,6 +59,14 @@ describe('fossil expedition', () => {
       }
     }
     for (const chapter of FOSSIL_CHAPTERS) expect(FOSSIL_STOPS.some((s) => s.chapter === chapter.id)).toBe(true);
+  });
+
+  it('the anecdote of 1986 sits on an existing stop, with its source and a credit that tells quote from summary', () => {
+    expect(FOSSIL_STOPS.some((stop) => stop.id === FOSSIL_STORY.stop)).toBe(true);
+    expect(FOSSIL_SOURCES[FOSSIL_STORY.source].url).toMatch(/^https:\/\/www\.infobae\.com\//);
+    expect(FOSSIL_STORY.credit).toMatch(/textuales/);
+    // Every quote opens and closes.
+    for (const p of FOSSIL_STORY.paragraphs) expect((p.match(/«/g) ?? []).length).toBe((p.match(/»/g) ?? []).length);
   });
 
   it('shows each archive photo in one stop only', () => {

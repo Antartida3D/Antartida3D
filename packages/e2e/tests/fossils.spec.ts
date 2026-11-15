@@ -39,6 +39,14 @@ test('explores the four fossils and three habitats, opens sources and records co
   // The tooth is examined on its own stop, not on the find before it.
   await expect(page.getByRole('heading', { name: 'Algo asomaba de la roca' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Examinar el diente' })).toHaveCount(0);
+  // The note with the anecdote of 1986 opens from this stop, with its credit, and closes with Escape.
+  await page.getByRole('button', { name: 'Abrir nota: El desvío de 1986' }).click();
+  const note = page.getByRole('dialog', { name: 'El desvío de 1986' });
+  await expect(note).toContainText('veo un pedacito de huesos saliendo de una roca');
+  await expect(note).toContainText('Las frases entre comillas son textuales');
+  await expect(note.getByRole('link', { name: /Eduardo Olivero cuenta el hallazgo/ })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(note).not.toBeVisible();
   await page.locator('.fossil-next').click();
   await expect(page.getByRole('heading', { name: 'Una pista muy pequeña' })).toBeVisible();
   await page.getByRole('button', { name: 'Examinar el diente' }).click();

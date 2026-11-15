@@ -212,3 +212,23 @@ export const FOSSIL_STOPS: readonly FossilStop[] = [
     sources: ['lupa', 'interview', 'paper', 'asteroids'],
   },
 ];
+
+/**
+ * A note the visitor can open: how the first dinosaur of Antarctica was found, told by Eduardo
+ * Olivero to Infobae (source `interview`). Our own summary; the words between «» are his, word for
+ * word, checked against the article on 2026-11-15. The eleven metres the article mentions are left
+ * out on purpose (docs/expediciones/fosiles-fuentes.md).
+ */
+export const FOSSIL_STORY = {
+  stop: 'detour',
+  title: 'El desvío de 1986',
+  paragraphs: [
+    'En enero de 1986, después de una década sin pisar la Antártida, Eduardo volvió a la isla James Ross para estudiar las capas de roca. Quería acampar donde en otras campañas habían aparecido amonites, pero ese lugar estaba ocupado por un campamento británico, y el grupo se instaló a 15 km.',
+    'Camino a la zona de trabajo, se apartó del grupo para mirar el terreno: «Habré hecho 100 pasos y, entre las huellas que dejaban los cuatriciclos de los investigadores británicos, veo un pedacito de huesos saliendo de una roca.» Cuenta que la luz de ese día le hizo acordar al paisaje del Parque Provincial Ischigualasto.',
+    '«Me acerco y encuentro un fragmento de mandíbula con un diente». No era un diente cónico de reptil marino: «Este era un diente aplanado con la corona dispuesta como para masticar vegetales.» Entonces: «Rápidamente me fui a buscar a mis compañeros y volvimos lo más rápido posible.»',
+    'Los británicos pasaban por ahí con sus vehículos: «Es decir que pasaban todos los días por ahí, pero nunca los vieron». El equipo guardó el secreto: «Lo ocultamos hasta tenerlo publicado.»',
+    'El suelo congelado era muy duro: «rescatamos lo que en ese momento estaba descongelado, y el resto lo fuimos recuperando a lo largo de varios años». En 1989, al ver llegar el buque británico John Biscoe, armaron una carpa sobre su zona de trabajo para reservar el lugar.',
+  ],
+  credit: 'Relato de Eduardo Olivero en una entrevista de Florencia Illbele (Infobae, 22/04/2021). Las frases entre comillas son textuales de la nota; el resto es un resumen.',
+  source: 'interview',
+} as const satisfies { stop: string; title: string; paragraphs: readonly string[]; credit: string; source: FossilSourceId };

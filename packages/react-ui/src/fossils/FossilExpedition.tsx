@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useReducer, useRef, useState, type CSSProperties } from 'react';
 import {
-  FOSSIL_CHAPTERS, FOSSIL_CLEAN_STEPS, FOSSIL_HABITATS, FOSSIL_PHOTOS, FOSSIL_QUESTION, FOSSIL_SOURCES, FOSSIL_STOPS,
+  FOSSIL_CHAPTERS, FOSSIL_CLEAN_STEPS, FOSSIL_HABITATS, FOSSIL_PHOTOS, FOSSIL_QUESTION, FOSSIL_SOURCES, FOSSIL_STOPS, FOSSIL_STORY,
   INITIAL_FOSSILS, fossilsReducer, type FossilPhotoId, type FossilSourceId,
 } from '@antartida/core';
 import oliveroPhoto from '@antartida/core/assets/fossils/olivero-campana.webp';
@@ -37,7 +37,7 @@ function SourceLink({ id }: { id: FossilSourceId }) {
   return source.url ? <a href={source.url} target="_blank" rel="noopener noreferrer">{source.title} ↗</a> : <span>{source.title}</span>;
 }
 
-type Modal = { kind: 'sources' } | { kind: 'photo'; id: FossilPhotoId } | null;
+type Modal = { kind: 'sources' } | { kind: 'story' } | { kind: 'photo'; id: FossilPhotoId } | null;
 
 export function FossilExpedition({ reduced, webgl, onLeave }: {
   reduced: boolean; webgl: boolean; onLeave: (done: boolean) => void;
@@ -148,6 +148,9 @@ export function FossilExpedition({ reduced, webgl, onLeave }: {
 
       <div className="fossil-source-line"><span>Fuente</span>{stop.sources.map((id) => <SourceLink key={id} id={id} />)}</div>
       <details className="fossil-more" key={stop.id}><summary>Saber más</summary><p>{stop.more}</p></details>
+      {stop.id === FOSSIL_STORY.stop && <button className="fossil-note" onClick={() => setModal({ kind: 'story' })} aria-label={`Abrir nota: ${FOSSIL_STORY.title}`}>
+        <small>Nota de campo · relato de Eduardo</small><b>{FOSSIL_STORY.title}</b><span>Leer la anécdota ↗</span>
+      </button>}
       {stop.photos && <div className="fossil-archive-list" role="group" aria-label="Archivo fotográfico">
         {stop.photos.map((id, i) => {
           const photo = FOSSIL_PHOTOS[id];
@@ -189,12 +192,15 @@ export function FossilExpedition({ reduced, webgl, onLeave }: {
       {desktop ? <section className="fossil-panel" ref={panel} aria-labelledby="fossil-title">{content}</section> : <BottomSheet className="fossil-panel" labelledBy="fossil-title" sheetRef={panel} floor="peek" size={sheetSize} onSize={setSheetSize}>{content}</BottomSheet>}
     </div>
     <dialog className="fossil-dialog" ref={dialog} aria-labelledby="fossil-dialog-title" onClose={() => setModal(null)} onClick={(e) => { if (e.target === e.currentTarget) setModal(null); }}>
-      <div className="fossil-dialog-heading"><h2 id="fossil-dialog-title">{modal?.kind === 'sources' ? 'Fuentes del recorrido' : 'Archivo de campo'}</h2><button className="iconbtn" aria-label="Cerrar archivo y fuentes" onClick={() => setModal(null)}>{Icon.close}</button></div>
+      <div className="fossil-dialog-heading"><h2 id="fossil-dialog-title">{modal?.kind === 'sources' ? 'Fuentes del recorrido' : modal?.kind === 'story' ? FOSSIL_STORY.title : 'Archivo de campo'}</h2><button className="iconbtn" aria-label="Cerrar archivo y fuentes" onClick={() => setModal(null)}>{Icon.close}</button></div>
       {modal?.kind === 'sources' ? <>
         <p>{FOSSIL_QUESTION}</p><p>Las escenas son ilustrativas. Cada parada identifica la fuente de su relato y de sus evidencias.</p>
         {Object.entries(FOSSIL_SOURCES).map(([id, source]) => <article className="fossil-source-entry" key={id}><h3><SourceLink id={id as FossilSourceId} /></h3><p>{source.org}</p><p>{source.detail}</p><small>Consultado: {source.date.split('-').reverse().join('/')}</small></article>)}
         <p className="fossil-pending">Para seguir completando con Eduardo: especie y medidas de los amonites elegidos, relato de su hallazgo, fecha y lugar de cada fotografía del archivo y nuevos testimonios. Los modelos de los animales son una primera interpretación visual.</p>
-      </> : <figure className="fossil-archive-full"><img src={PHOTO_URL[shown]} alt={photo.alt} /><figcaption><b>{photo.caption}</b>{photo.note && <span className="fossil-photo-note">{photo.note}</span>}<span>{photo.credit}</span><SourceLink id={photo.source} /></figcaption></figure>}
+      </> : modal?.kind === 'story' ? <article className="fossil-story">
+        {FOSSIL_STORY.paragraphs.map((text) => <p key={text}>{text}</p>)}
+        <footer><span>{FOSSIL_STORY.credit}</span><SourceLink id={FOSSIL_STORY.source} /></footer>
+      </article> : <figure className="fossil-archive-full"><img src={PHOTO_URL[shown]} alt={photo.alt} /><figcaption><b>{photo.caption}</b>{photo.note && <span className="fossil-photo-note">{photo.note}</span>}<span>{photo.credit}</span><SourceLink id={photo.source} /></figcaption></figure>}
     </dialog>
   </section>;
 }

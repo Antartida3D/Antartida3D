@@ -12,6 +12,10 @@ Se consultó la entrevista para la motivación estratigráfica de la campaña, l
 
 Los once metros que menciona la nota no se trasladan al modelo ni al texto del dinosaurio. La fuente institucional habla de unos cuatro metros; el boceto no da una longitud del animal. Tampoco se incorporan inferencias a partir de las fotos de un plesiosaurio como si fueran de Antarctopelta.
 
+### Nota «El desvío de 1986» (consulta del 15/11/2026)
+
+La parada «Algo asomaba de la roca» abre una nota con la anécdota del hallazgo (`FOSSIL_STORY` en `packages/core/src/content/fossils.ts`). Es un resumen propio de la entrevista; las frases entre comillas son textuales de Eduardo y se cotejaron una por una con la nota el 15/11/2026: el campamento británico en el sitio elegido y la instalación a 15 km; los «100 pasos» entre las huellas de los cuatriciclos británicos; el recuerdo del Parque Provincial Ischigualasto; la mandíbula con un diente aplanado «como para masticar vegetales»; el regreso por los compañeros; el secreto hasta la publicación; la extracción en varios años por el suelo congelado; y la carpa armada en 1989 al llegar el buque británico John Biscoe. La nota lo aclara en la interfaz. No se usan los once metros ni las fotos del artículo.
+
 ## Fuente institucional y fotografía de Eduardo
 
 CONICET, Mariela López Cordero, 29/03/2021: «Homenaje al científico del CADIC que encontró el primer dinosaurio de Antártida».

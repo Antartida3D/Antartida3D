@@ -31,6 +31,12 @@
 .fossil-more { margin-top: 17px; border-bottom: 1px solid color-mix(in srgb, var(--ink) 18%, transparent); padding-bottom: 18px; }
 .fossil-more summary { cursor: pointer; font-size: 14px; }
 .fossil-more p { font-size: 14px; line-height: 1.6; margin: 14px 0 0; }
+.fossil-note { display: flex; flex-direction: column; gap: 5px; width: 100%; margin: 20px 0 0; padding: 14px 16px; text-align: left; font: inherit; color: var(--ink); background: color-mix(in srgb, var(--ice) 35%, var(--paper)); border: 1px dashed color-mix(in srgb, var(--ink) 40%, transparent); transform: rotate(-.6deg); }
+.fossil-note small { font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--pencil); }
+.fossil-note b { font: 18px 'Fraunces', serif; }
+.fossil-note span { font-size: 11px; text-decoration: underline; text-underline-offset: 3px; }
+.fossil-story p { margin: 14px 0 0; }
+.fossil-story footer { display: flex; flex-direction: column; gap: 7px; margin-top: 18px; font-size: 12px; line-height: 1.5; color: var(--pencil); }
 .fossil-archive-list { display: flex; flex-direction: column; gap: 14px; margin: 20px 0 0; }
 .fossil-archive { margin: 0; display: flex; gap: 15px; align-items: center; width: 100%; text-align: left; padding: 0; border: 0; background: transparent; color: var(--ink); font: inherit; }
 .fossil-archive img { width: 78px; height: 88px; object-fit: cover; filter: saturate(.65); border: 4px solid color-mix(in srgb, var(--ice) 60%, var(--paper)); box-shadow: 0 1px 4px color-mix(in srgb, var(--ink) 22%, transparent); transform: rotate(var(--tilt, -3deg)); flex-shrink: 0; }

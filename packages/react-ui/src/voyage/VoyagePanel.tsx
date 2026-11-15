@@ -7,6 +7,7 @@ import {
   logLineAt,
   ponchoActOpeningAt,
   quizScore,
+  sceneOf,
   tripSources,
   FAUNA_COUNT,
   PLACES_COUNT,
@@ -29,11 +30,12 @@ import {
   type VoyageSourceCode,
 } from '@antartida/core';
 import { BottomSheet } from '../BottomSheet.tsx';
-import { useFocusReturn } from '../hooks.ts';
+import { useFocusReturn, useMediaQuery } from '../hooks.ts';
 import { Fact, TripContext, type OpenSources } from './Fact.tsx';
+import { PonchoDiorama, type DioramaTour } from './PonchoDiorama.tsx';
 import { PonchoIntro } from './PonchoIntro.tsx';
 import { SightingIcon } from './SightingIcon.tsx';
-import type { VoyageController } from './useVoyage.ts';
+import { NARROW_PX, type VoyageController } from './useVoyage.ts';
 
 // Its own chunk: it needs WebGL, which the 2D fallback of the trip does not.
 const VehiclePreview = lazy(() => import('./VehiclePreview.tsx').then((m) => ({ default: m.VehiclePreview })));
@@ -192,16 +194,23 @@ function Notebook({ voyage, animated }: { voyage: VoyageController; animated: bo
   );
 }
 
-function MilestoneCard({ voyage, animated, onExit, onSource }: {
+/**
+ * Card of a milestone. With `tour` (the diorama of the stop, voyage/PonchoDiorama.tsx) it tells the stop
+ * a sentence at a time: «Atrás» and «Siguiente» move the tour; the hook and «Saber más» wait for the
+ * last sentence; it is a side panel on a wide screen and a bottom sheet on a phone.
+ */
+function MilestoneCard({ voyage, animated, onExit, onSource, tour }: {
   voyage: VoyageController;
   animated: boolean;
   onExit: (done: boolean) => void;
   onSource: OpenSources;
+  tour?: DioramaTour;
 }) {
   const state = voyage.state!;
   const ref = useRef<HTMLElement>(null);
   const [more, setMore] = useState(false);
-  useFocusReturn(true, ref, '.btn.primary');
+  const wide = useMediaQuery(`(min-width: ${NARROW_PX + 1}px)`);
+  useFocusReturn(true, ref, tour ? '#voyage-title' : '.btn.primary');
   const { milestone } = voyageStops(state.kind)[state.card];
   const { notes, question } = expeditionAt(milestone.id, state.transport);
   const chosen = voyage.answers[milestone.id];
@@ -213,21 +222,26 @@ function MilestoneCard({ voyage, animated, onExit, onSource }: {
   const transfer = animated && last && answered && state.transport === VOYAGE_TRANSFER.transport;
   // The trip of Poncho is told in acts: the first stop of each one shows its title above its own.
   const act = state.kind === 'dogs' ? ponchoActOpeningAt(milestone.id) : undefined;
-  return (
-    <section
-      className="sheet voyage"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="voyage-title"
-      ref={ref}
-      onKeyDown={(e) => e.key === 'Escape' && next()}
-    >
+  const body = (
+    <>
       <small className="vstep">Hito {state.card + 1} de {voyageStops(state.kind).length}</small>
       {act && <small className="vact">Acto {act.number} · {act.act.title}</small>}
-      <h2 id="voyage-title">{milestone.title}</h2>
-      <ul className="vfacts">
-        <Fact fact={milestone.essential} onSource={onSource} />
-        {more && milestone.more.map((f) => <Fact key={f.text} fact={f} onSource={onSource} />)}
+      <h2 id="voyage-title" tabIndex={tour ? -1 : undefined}>{milestone.title}</h2>
+      {tour && (
+        <div className="vdots" role="img" aria-label={`Toma ${tour.view.step + 1} de ${tour.sentences.length}`}>
+          {tour.sentences.map((_, i) => <i key={i} className={i <= tour.view.step ? 'on' : undefined} />)}
+        </div>
+      )}
+      <ul className="vfacts" aria-live={tour ? 'polite' : undefined}>
+        {tour ? (
+          // The sentences told so far; the citation of the book goes with the last one told.
+          tour.sentences.slice(0, tour.view.shown).map((text, i) => (
+            <Fact key={text} fact={{ ...milestone.essential, text, sources: i === tour.view.shown - 1 ? milestone.essential.sources : [] }} onSource={onSource} />
+          ))
+        ) : (
+          <Fact fact={milestone.essential} onSource={onSource} />
+        )}
+        {more && (!tour || tour.view.showsMore) && milestone.more.map((f) => <Fact key={f.text} fact={f} onSource={onSource} />)}
       </ul>
       {notes.length > 0 && (
         <div className="vexp" role="group" aria-label="Cómo funciona la expedición">
@@ -264,7 +278,7 @@ function MilestoneCard({ voyage, animated, onExit, onSource }: {
       )}
       {last && voyageSightings(state.kind).length > 0 && <Notebook voyage={voyage} animated={animated} />}
       {last && <p className="anno">{state.kind === 'dogs' ? 'Podés volver a recorrer su historia cuando quieras.' : 'Si te quedó curiosidad por otro medio, volvé a hacer la expedición.'}</p>}
-      {milestone.hook && <p className="vhook">{milestone.hook}</p>}
+      {milestone.hook && (!tour || tour.view.showsHook) && <p className="vhook">{milestone.hook}</p>}
       <div className="row vactions">
         {/* With the buttons that stay in view, not under the notes. The main one until the hop was seen. */}
         {transfer && (
@@ -272,12 +286,45 @@ function MilestoneCard({ voyage, animated, onExit, onSource }: {
             Ver el traslado
           </button>
         )}
-        <button type="button" className="btn primary" onClick={next}>{last ? 'Terminar el viaje' : state.kind === 'dogs' && state.card === 0 ? 'Partir' : 'Continuar'}</button>
-        <button type="button" className="btn ghost" aria-expanded={more} onClick={() => setMore((m) => !m)}>
-          {more ? 'Ver menos' : 'Saber más'}
-        </button>
+        {tour && <button type="button" className="btn" disabled={tour.view.first} onClick={tour.onBack}>Atrás</button>}
+        {tour && !tour.view.last ? (
+          <button type="button" className="btn primary" onClick={tour.onNext}>Siguiente</button>
+        ) : (
+          <button type="button" className="btn primary" onClick={tour ? tour.onLeave : next}>
+            {last ? 'Terminar el viaje' : tour ? 'Seguir con Poncho' : state.kind === 'dogs' && state.card === 0 ? 'Partir' : 'Continuar'}
+          </button>
+        )}
+        {(!tour || tour.view.showsMore) && (
+          <button type="button" className="btn ghost" aria-expanded={more} onClick={() => setMore((m) => !m)}>
+            {more ? 'Ver menos' : 'Saber más'}
+          </button>
+        )}
       </div>
+    </>
+  );
+  if (!tour) {
+    return (
+      <section
+        className="sheet voyage"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="voyage-title"
+        ref={ref}
+        onKeyDown={(e) => e.key === 'Escape' && next()}
+      >
+        {body}
+      </section>
+    );
+  }
+  // The diorama screen handles the keys (arrows, Escape). Wide: a side panel; a phone: a sheet that can be dragged down to see the scene.
+  return wide ? (
+    <section className="sheet voyage vdiorama" role="dialog" aria-modal="true" aria-labelledby="voyage-title" ref={ref}>
+      {body}
     </section>
+  ) : (
+    <BottomSheet className="voyage vdiorama" labelledBy="voyage-title" sheetRef={ref} floor="peek">
+      {body}
+    </BottomSheet>
   );
 }
 
@@ -490,9 +537,30 @@ export function VoyagePanel({ voyage, transport, animated, webgl, reduced, onExi
   const { state } = voyage;
   // The source the sources page is open at, or null while it is closed.
   const [sources, setSources] = useState<VoyageSourceCode | null>(null);
+  // Stops whose diorama lost its WebGL context for good: they show the common card from then on.
+  const [lost, setLost] = useState<readonly string[]>([]);
   // A trip that is not picked (Poncho) opens with its start panel; «Comenzar» starts it.
   // The 3D scene opens a source from the card it shows next to an animal.
   voyage.bus.openSource = setSources;
+  // A stop of Poncho with a scene opens its diorama (a screen of its own) when WebGL is on; the rest, and every fallback, show the card.
+  const diorama = (at: VoyageState) => {
+    const { milestone } = voyageStops(at.kind)[at.card];
+    const scene = at.kind === 'dogs' && webgl && !lost.includes(milestone.id) ? sceneOf(milestone.id) : undefined;
+    const card = (tour?: DioramaTour) => <MilestoneCard key={at.card} voyage={voyage} animated={animated} onExit={onExit} onSource={setSources} tour={tour} />;
+    if (!scene) return card();
+    return (
+      <PonchoDiorama
+        key={at.card}
+        scene={scene}
+        essential={milestone.essential.text}
+        reduced={reduced}
+        onDone={() => (voyageArrived(at) ? onExit(true) : voyage.closeCard())}
+        onLost={() => setLost((l) => [...l, milestone.id])}
+      >
+        {card}
+      </PonchoDiorama>
+    );
+  };
   // On a wide screen an animal touched on the map opens beside it, and the trip controls stay put.
   const stage = voyage.sighting && !voyage.popover
     ? <SightingCard voyage={voyage} onSource={setSources} />
@@ -501,7 +569,7 @@ export function VoyagePanel({ voyage, transport, animated, webgl, reduced, onExi
     : voyage.transfer === 'flying'
       ? <TransferBar voyage={voyage} onSource={setSources} />
     : state.card >= 0
-      ? <MilestoneCard key={state.card} voyage={voyage} animated={animated} onExit={onExit} onSource={setSources} />
+      ? diorama(state)
       : <TravelBar voyage={voyage} animated={animated} onExit={() => onExit(false)} onSource={setSources} />;
   const trip = state?.transport ?? transport;
   return (

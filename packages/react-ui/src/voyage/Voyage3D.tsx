@@ -43,7 +43,6 @@ import { HELICOPTER_BOXES, HELICOPTER_ROTOR_BOXES, HELICOPTER_ROTOR_ORIGIN } fro
 import { buildPinGeometry, pinMaterial } from './pins.ts';
 import { buildBoxGeometry, buildVehicleGeometry, vehicleMaterial, vehicleModel } from './vehicles.ts';
 import { Sighting3D } from './Sighting3D.tsx';
-import { PonchoScenes3D } from './PonchoScenes3D.tsx';
 import { sceneLookAt } from './ponchoSceneFocus.ts';
 import { buildTrailGeometry, trailMaterial, updateTrail } from './trail.ts';
 import { NARROW_PX, type VoyageBus } from './useVoyage.ts';
@@ -420,7 +419,7 @@ export function Voyage3D({ bus, reduced, overlay }: {
         const arrived = voyageArrived(s);
         const place = !stop?.milestone.place || (arrived && s.kind === 'plane') ? null
           : arrived ? { x: (stop.pin.x + p.x) / 2, y: (stop.pin.y + p.y) / 2 } : stop.pin;
-        // A stop of Poncho with a living scene: its card brings the camera close, to look at the scene beside the team.
+        // A stop of Poncho with a diorama: its card brings the camera down to the stop, under the screen that fades in over the map (#146).
         const scene = stop && s.kind === 'dogs' ? sceneOf(stop.milestone.id) : undefined;
         const far = open?.sighting.place && Math.hypot(open.x - p.x, open.y - p.y) > VISIT_DISTANCE
           ? { id: open.sighting.id, x: open.x, y: open.y }
@@ -434,7 +433,7 @@ export function Voyage3D({ bus, reduced, overlay }: {
             moved = true;
             sight.current = 0;
             if (far.scene) {
-              // Closest the map allows (minCameraDistance), low, from the side: the scene scales with that distance (sceneUnit).
+              // Closest the map allows (minCameraDistance), low, from the side of the team.
               const look = sceneLookAt(stop!, far.scene);
               void controls.setLookAt(...look.eye, ...look.target, !reduced);
             } else {
@@ -505,7 +504,6 @@ export function Voyage3D({ bus, reduced, overlay }: {
           overlay={overlay}
         />
       ))}
-      {kind === 'dogs' && <PonchoScenes3D bus={bus} reduced={reduced} />}
       <primitive object={route} />
       {pins.map((_, i) => (
         <group key={i} ref={(g) => void (pinGroups.current[i] = g)}>

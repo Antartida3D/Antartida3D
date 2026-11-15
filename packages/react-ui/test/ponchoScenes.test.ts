@@ -4,20 +4,15 @@ import '../src/voyage/sightingModels.ts';
 import {
   MAX_POLAR_DEG,
   PONCHO_SCENES,
-  SCENE_FADE_END,
-  TRANSPORTS,
   minCameraDistance,
   sceneUnit,
-  startVoyage,
-  voyageLength,
   voyageStops,
-  type VoyageState,
 } from '@antartida/core';
 import { PERSON_VARIANTS } from '../src/voyage/ponchoPeople.ts';
 import { PONCHO_PROP_IDS } from '../src/voyage/ponchoProps.ts';
 import { PONCHO_MODELS } from '../src/voyage/ponchoModels.ts';
 import { sceneFootprints, sceneStaticTris } from '../src/voyage/ponchoSceneBuild.ts';
-import { sceneFocusAt, sceneLookAt } from '../src/voyage/ponchoSceneFocus.ts';
+import { sceneLookAt } from '../src/voyage/ponchoSceneFocus.ts';
 import type { Tri } from '../src/voyage/lowPoly.ts';
 
 const scenes = Object.entries(PONCHO_SCENES);
@@ -65,41 +60,8 @@ describe('scenes of Poncho: ids against the models', () => {
   }
 });
 
-describe('scenes of Poncho: focus and camera', () => {
+describe('scenes of Poncho: camera of the descent to the stop', () => {
   const stops = voyageStops('dogs');
-  const length = voyageLength('dogs');
-  const at = (index: number, card: number, shiftUnits = 0): VoyageState => ({
-    ...startVoyage('poncho'),
-    t: stops[index].t + shiftUnits / length,
-    reached: index + 1,
-    card,
-  });
-
-  it('shows the scene of the stop whose card is open, whole', () => {
-    const i = stops.findIndex((s) => s.milestone.id === 'rescate-ae-205');
-    const f = sceneFocusAt(at(i, i))!;
-    expect(f.stop.milestone.id).toBe('rescate-ae-205');
-    expect(f.amount).toBe(1);
-    expect(f.cardOpen).toBe(true);
-  });
-
-  it('shows nothing for a card of a stop without scene, even near one with it', () => {
-    const i = stops.findIndex((s) => s.milestone.id === 'rumbo-a-belgrano');
-    expect(sceneFocusAt(at(i, i))).toBeNull();
-  });
-
-  it('shows the scene when the team gets near its stop and not when it is far', () => {
-    const i = stops.findIndex((s) => s.milestone.id === 'expedicion-invernal-1962');
-    expect(sceneFocusAt(at(i, -1, -SCENE_FADE_END))?.stop.milestone.id).toBe('expedicion-invernal-1962');
-    expect(sceneFocusAt(at(i, -1, 0))?.amount).toBe(1);
-    expect(sceneFocusAt(at(i, -1, 40))).toBeNull();
-  });
-
-  it('is nothing for another kind of trip or no trip', () => {
-    expect(sceneFocusAt(null)).toBeNull();
-    expect(sceneFocusAt(startVoyage(TRANSPORTS.find((v) => v.kind === 'ship')!.id))).toBeNull();
-  });
-
   for (const [id, scene] of scenes) {
     it(`${id}: the camera is at least the closest the map allows and above its polar limit`, () => {
       const stop = stops.find((s) => s.milestone.id === id)!;

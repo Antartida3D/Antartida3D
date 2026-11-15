@@ -62,12 +62,10 @@ test.describe('arrival at Base Marambio on the trip from Ushuaia', () => {
   test('on the Irízar it asks how people and cargo reach the base, and tells it after the answer', async ({ page }) => {
     const card = await arriveAtMarambio(page, /Irízar/);
     const quiz = card.getByRole('group', { name: /¿Cómo pasan del Irízar a la base las personas y la carga\?/ });
-    // The question is optional (#157): it waits behind a button.
-    await expect(quiz).toHaveCount(0);
-    await expect(card.getByText(/no respondiste ninguna de las 3/)).toBeVisible();
-    await card.getByRole('button', { name: 'Responder una pregunta' }).click();
+    // On arrival the question is asked at once, without a button to open it.
+    await expect(card.getByRole('button', { name: 'Responder una pregunta' })).toHaveCount(0);
     await expect(quiz.getByRole('button')).toHaveText(['Por un puente', 'En botes', 'En helicóptero']);
-    await expect(quiz.getByRole('button').first()).toBeFocused();
+    await expect(card.getByText(/no respondiste ninguna de las 3/)).toBeVisible();
     // The notes answer the question: they wait for it.
     await expect(card.getByText(/un Sea King va y viene/)).toHaveCount(0);
 
@@ -77,12 +75,12 @@ test.describe('arrival at Base Marambio on the trip from Ushuaia', () => {
     // Where the ship waits is a drawing, and the card says so.
     await expect(card.getByText(/frente a la isla es ilustrativo/)).toBeVisible();
     await expect(card.getByText(/respondiste 1 de 3 y acertaste 1/)).toBeVisible();
+    // The helicopter hop is an animation of the 3D map: with reduced motion the card ends the trip at once.
     await expect(card.getByRole('button', { name: 'Terminar el viaje' })).toBeVisible();
-    // The helicopter hop is an animation of the 3D map: with reduced motion the notes give the answer.
-    await expect(card.getByRole('button', { name: 'Ver el traslado' })).toHaveCount(0);
+    await expect(card.getByRole('button', { name: 'Continuar' })).toHaveCount(0);
   });
 
-  test('with motion, on the Irízar the helicopter hop plays after the answer and can be skipped', async ({ page }) => {
+  test('with motion, on the Irízar «Continuar» always plays the helicopter hop, which cannot be skipped', async ({ page }) => {
     // The trip travels to each milestone and the hop lasts 6 s: slow without a GPU.
     test.setTimeout(240_000);
     await page.emulateMedia({ reducedMotion: 'no-preference' });
@@ -92,30 +90,29 @@ test.describe('arrival at Base Marambio on the trip from Ushuaia', () => {
     await expect(page.locator('canvas').first()).toBeVisible();
 
     const card = await arriveAtMarambio(page, /Irízar/);
-    const watch = card.getByRole('button', { name: 'Ver el traslado' });
-    // Whoever skips the question can watch the hop; whoever opens it answers first: the hop shows the answer.
-    await expect(watch).toBeVisible();
-    await card.getByRole('button', { name: 'Responder una pregunta' }).click();
-    await expect(watch).toHaveCount(0);
-    await card.getByRole('button', { name: 'En helicóptero' }).click();
-    await watch.click();
+    // Before the hop the card asks its question and has one way on: «Continuar». No summary yet.
+    await expect(card.getByRole('group', { name: /¿Cómo pasan del Irízar a la base/ })).toBeVisible();
+    await expect(card.locator('.vactions').getByRole('button')).toHaveText(['Continuar']);
+    await expect(card.getByText('Hitos del viaje')).toHaveCount(0);
+    await expect(card.getByRole('button', { name: 'Continuar' })).toBeFocused();
+    // Left unanswered: the hop shows the answer.
+    await card.getByRole('button', { name: 'Continuar' }).click();
 
-    // The card steps aside. The bar says what the hop is and that it is a drawing.
+    // The card steps aside. The bar says what the hop is and that it is a drawing, with nothing to skip it.
     const bar = page.getByRole('group', { name: 'Del Irízar a la base' });
     await expect(bar.getByText(/Sea King lleva la carga y el personal/)).toBeVisible();
     await expect(bar.getByText(/La animación es ilustrativa/)).toBeVisible();
-    await expect(bar.getByRole('button', { name: 'Saltar' })).toBeFocused();
+    // Its only button is the source of the fact.
+    await expect(bar.getByRole('button')).toHaveText(['[18]']);
     await expect(card).toBeHidden();
 
-    // The helicopter lands by itself and the card comes back with the answer kept.
+    // The helicopter lands by itself and the card comes back: the notes tell the answer, and the summary is there.
     await expect(card).toBeVisible({ timeout: 90_000 });
-    await expect(card.getByText('Correcto.')).toBeVisible();
+    await expect(card.getByText(/un Sea King va y viene/)).toBeVisible();
+    await expect(card.locator('fieldset')).toHaveCount(0);
+    await expect(card.getByText('Hitos del viaje')).toBeVisible();
     await expect(card.getByRole('button', { name: 'Terminar el viaje' })).toBeFocused();
-
-    // It plays again, and «Saltar» lands it at once.
-    await watch.click();
-    await bar.getByRole('button', { name: 'Saltar' }).click();
-    await expect(card.getByRole('button', { name: 'Terminar el viaje' })).toBeVisible();
+    await expect(card.getByRole('button', { name: 'Continuar' })).toHaveCount(0);
   });
 
   test('on the Hércules it asks nothing: the plane lands on the runway of the base', async ({ page }) => {

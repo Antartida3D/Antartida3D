@@ -76,8 +76,6 @@ export interface VoyageController {
   /** The helicopter hop from the ship to the base: not started, flying (the arrival card steps aside) or landed. */
   transfer: 'none' | 'flying' | 'landed';
   startTransfer: () => void;
-  /** Lands the helicopter on the base at once: the user skipped the rest of the hop. */
-  skipTransfer: () => void;
   reset: () => void;
 }
 
@@ -245,7 +243,6 @@ export function useVoyage(): VoyageController {
     answer: (id, option) => setAnswers((a) => (id in a ? a : { ...a, [id]: option })),
     transfer,
     startTransfer,
-    skipTransfer: () => endTransfer(1),
     start: (transport) => {
       bus.back = false;
       clearSightings();

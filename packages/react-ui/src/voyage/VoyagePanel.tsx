@@ -231,16 +231,20 @@ function MilestoneCard({ voyage, animated, onExit, onSource }: {
   const { notes, question } = expeditionAt(milestone.id, state.transport);
   const chosen = voyage.answers[milestone.id];
   const answered = chosen !== undefined;
-  // The question is optional (#157): it waits behind a button, unless the card was opened for it.
   const [asked, setAsked] = useState(voyage.asking);
-  const quiz = !!question && (asked || answered);
   const score = quizScore(state.transport, voyage.answers);
   const arrived = voyageArrived(state);
   // The card of the arrival. Once arrived, the other milestones open again from it, and close back to it.
   const last = state.card === stops.length - 1;
-  const next = () => (last ? onExit(true) : voyage.closeCard());
-  // The hop of the helicopter shows the answer of the arrival: not offered while its question waits for one.
-  const transfer = animated && last && (answered || !quiz) && state.transport === VOYAGE_TRANSFER.transport;
+  // On the Irízar the arrival ends with the helicopter hop to the base, always shown: «Continuar» plays it.
+  const hop = animated && last && state.transport === VOYAGE_TRANSFER.transport;
+  const beforeHop = hop && voyage.transfer === 'none';
+  const afterHop = hop && voyage.transfer === 'landed';
+  // The question is optional (#157): on the way it waits behind a button, unless the card was opened
+  // for it. On arrival it is asked at once, with no extra button. The hop answers it: once seen, an
+  // unanswered question gives way to the notes.
+  const quiz = !!question && (answered || (!afterHop && (asked || last)));
+  const next = () => (beforeHop ? voyage.startTransfer() : last ? onExit(true) : voyage.closeCard());
   return (
     <section
       className="sheet voyage"
@@ -258,7 +262,7 @@ function MilestoneCard({ voyage, animated, onExit, onSource }: {
       </ul>
       {notes.length > 0 && (
         <div className="vexp" role="group" aria-label="Cómo funciona la expedición">
-          {question && !quiz && (
+          {question && !quiz && !last && (
             <button
               type="button"
               className="btn vask"
@@ -291,60 +295,56 @@ function MilestoneCard({ voyage, animated, onExit, onSource }: {
               </p>
             </fieldset>
           )}
-          {/* The notes answer the question: they wait for it. */}
-          {(!question || answered) && (
+          {/* The notes answer the question: they wait for it, or for the hop that shows the answer. */}
+          {(!question || answered || afterHop) && (
             <ul className="vfacts">{notes.map((f) => <Fact key={f.text} fact={f} onSource={onSource} />)}</ul>
           )}
         </div>
       )}
-      {last && score.total > 0 && (
-        <p>
-          <strong>Preguntas del viaje:</strong>{' '}
-          {score.answered === 0
-            ? `no respondiste ninguna de las ${score.total}. Se abren desde los hitos de abajo.`
-            : `respondiste ${score.answered} de ${score.total} y acertaste ${score.right}.${score.right === score.total ? ' ¡Todas!' : ''}`}
-        </p>
+      {/* The summary of the trip waits for the hop: before it, the card only asks and goes on. */}
+      {last && !beforeHop && (
+        <>
+          {score.total > 0 && (
+            <p>
+              <strong>Preguntas del viaje:</strong>{' '}
+              {score.answered === 0
+                ? `no respondiste ninguna de las ${score.total}. Se abren desde los hitos de abajo.`
+                : `respondiste ${score.answered} de ${score.total} y acertaste ${score.right}.${score.right === score.total ? ' ¡Todas!' : ''}`}
+            </p>
+          )}
+          <MilestoneLog voyage={voyage} />
+          {voyageSightings(state.kind).length > 0 && <Notebook voyage={voyage} animated={animated} />}
+          <p className="anno">Si te quedó curiosidad por otro medio, volvé a hacer la expedición.</p>
+        </>
       )}
-      {last && <MilestoneLog voyage={voyage} />}
-      {last && voyageSightings(state.kind).length > 0 && <Notebook voyage={voyage} animated={animated} />}
-      {last && <p className="anno">Si te quedó curiosidad por otro medio, volvé a hacer la expedición.</p>}
       <div className="row vactions">
-        {/* With the buttons that stay in view, not under the notes. The main one until the hop was seen. */}
-        {transfer && (
-          <button type="button" className={'btn vwatch' + (voyage.transfer === 'none' ? ' primary' : '')} onClick={voyage.startTransfer}>
-            Ver el traslado
+        <button type="button" className="btn primary" onClick={next}>
+          {beforeHop ? 'Continuar' : last ? 'Terminar el viaje' : arrived ? 'Volver a la llegada' : 'Seguir viaje'}
+        </button>
+        {!beforeHop && (
+          <button type="button" className="btn ghost" aria-expanded={more} onClick={() => setMore((m) => !m)}>
+            {more ? 'Ver menos' : 'Saber más'}
           </button>
         )}
-        <button type="button" className="btn primary" onClick={next}>
-          {last ? 'Terminar el viaje' : arrived ? 'Volver a la llegada' : 'Seguir viaje'}
-        </button>
-        <button type="button" className="btn ghost" aria-expanded={more} onClick={() => setMore((m) => !m)}>
-          {more ? 'Ver menos' : 'Saber más'}
-        </button>
       </div>
     </section>
   );
 }
 
-/** Shown while the helicopter flies from the ship to the base: the arrival card steps aside, so the map shows. */
-function TransferBar({ voyage, onSource }: { voyage: VoyageController; onSource: OpenSources }) {
+/**
+ * Shown while the helicopter flies from the ship to the base: the arrival card steps aside, so the
+ * map shows. The hop is part of the arrival and cannot be skipped: it lasts a few seconds.
+ */
+function TransferBar({ onSource }: { onSource: OpenSources }) {
   const ref = useRef<HTMLDivElement>(null);
-  useFocusReturn(true, ref, '.btn.primary');
+  // No button to take the focus: the title holds it, so it is not lost while the hop plays.
+  useFocusReturn(true, ref, '.vnext');
   return (
-    <div
-      className="vbar"
-      role="group"
-      aria-label={VOYAGE_TRANSFER.title}
-      ref={ref}
-      onKeyDown={(e) => e.key === 'Escape' && voyage.skipTransfer()}
-    >
-      <p className="vnext"><strong>{VOYAGE_TRANSFER.title}</strong></p>
+    <div className="vbar" role="group" aria-label={VOYAGE_TRANSFER.title} ref={ref}>
+      <p className="vnext" tabIndex={-1}><strong>{VOYAGE_TRANSFER.title}</strong></p>
       <ul className="vfacts">
         {VOYAGE_TRANSFER.facts.map((f) => <Fact key={f.text} fact={f} onSource={onSource} />)}
       </ul>
-      <div className="row">
-        <button type="button" className="btn primary" onClick={voyage.skipTransfer}>Saltar</button>
-      </div>
     </div>
   );
 }
@@ -549,7 +549,7 @@ export function VoyagePanel({ voyage, animated, webgl, reduced, onExit }: {
     : !state
       ? <Picker onStart={voyage.start} onExit={() => onExit(false)} onSource={setSources} preview={webgl} reduced={reduced} />
     : voyage.transfer === 'flying'
-      ? <TransferBar voyage={voyage} onSource={setSources} />
+      ? <TransferBar onSource={setSources} />
     : state.card >= 0
       ? <MilestoneCard key={state.card} voyage={voyage} animated={animated} onExit={onExit} onSource={setSources} />
       : <TravelBar voyage={voyage} animated={animated} onExit={() => onExit(false)} />;

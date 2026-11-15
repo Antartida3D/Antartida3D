@@ -17,10 +17,12 @@ import {
   loadWelcomeSeen,
   saveWelcomeSeen,
   showsWelcome,
+  map3dLoadingStore,
   type ArrivalId,
   type MapPoint,
 } from '@antartida/core';
 import { useReducedMotion, useTimers } from './hooks.ts';
+import { LoadingScreen } from './loading/LoadingScreen.tsx';
 import { MapView, type Layer3DProps, type Phase, type ViewMode } from './map/MapView.tsx';
 import { Filters } from './ui.tsx';
 import { NARROW_PX } from './voyage/useVoyage.ts';
@@ -36,7 +38,17 @@ const EXPEDITIONS = { orcadas: loadOrcadas, marambio: loadMarambio } as const;
 type ExpeditionId = keyof typeof EXPEDITIONS;
 const isExpedition = (id: string): id is ExpeditionId => id in EXPEDITIONS;
 
-const loadMap3D = () => import('./map3d/Map3DLayer.tsx');
+const loadMap3D = () =>
+  import('./map3d/Map3DLayer.tsx').then(
+    (m) => {
+      map3dLoadingStore.markStepDone('chunk');
+      return m;
+    },
+    (err: unknown) => {
+      map3dLoadingStore.setError('No pudimos cargar el mapa 3D.');
+      throw err;
+    }
+  );
 const Map3DLayerLazy = lazy(() => loadMap3D().then((m) => ({ default: m.Map3DLayer })));
 
 // Module-level so its identity is stable: an inline arrow would be a new component type on every
@@ -74,6 +86,7 @@ export function AntarcticaApp() {
   const [webglSupported, setWebglSupported] = useState<boolean | null>(null);
   // First visit: the map comes close to «Desde Ushuaia» (#115). True until MapView has shown it.
   const [welcome, setWelcome] = useState(false);
+  const [map3dLoaderDismissed, setMap3dLoaderDismissed] = useState(false);
 
   const reduced = useReducedMotion();
   const later = useTimers();
@@ -212,28 +225,36 @@ export function AntarcticaApp() {
     <div className="app">
       <Filters />
       {screen === 'map' ? (
-        <MapView
-          phase={phase}
-          arrival={arrival}
-          explored={explored}
-          voyaging={voyaging}
-          diveTarget={activePoint}
-          toast={toast}
-          legend={legend}
-          focusExpedition={returned}
-          welcome={welcome}
-          onWelcomeShown={welcomeShown}
-          mode={mode}
-          showToggle={webglSupported !== null}
-          available3D={webglSupported === true}
-          Layer3D={Layer3D}
-          onToggleLegend={() => setLegend((l) => !l)}
-          onToggleMode={toggleMode}
-          onStart={start}
-          onSkipTravel={skipTravel}
-          onStartVoyage={startVoyage}
-          onEndVoyage={endVoyage}
-        />
+        <>
+          <MapView
+            phase={phase}
+            arrival={arrival}
+            explored={explored}
+            voyaging={voyaging}
+            diveTarget={activePoint}
+            toast={toast}
+            legend={legend}
+            focusExpedition={returned}
+            welcome={welcome}
+            onWelcomeShown={welcomeShown}
+            mode={mode}
+            showToggle={webglSupported !== null}
+            available3D={webglSupported === true}
+            Layer3D={Layer3D}
+            onToggleLegend={() => setLegend((l) => !l)}
+            onToggleMode={toggleMode}
+            onStart={start}
+            onSkipTravel={skipTravel}
+            onStartVoyage={startVoyage}
+            onEndVoyage={endVoyage}
+          />
+          {mode === '3d' && !map3dLoaderDismissed && (
+            <LoadingScreen
+              onDone={() => setMap3dLoaderDismissed(true)}
+              onFallback2D={() => toggleMode('2d')}
+            />
+          )}
+        </>
       ) : (
         <Suspense fallback={null}>
           {screen === 'marambio' ? (

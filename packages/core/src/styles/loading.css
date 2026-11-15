@@ -1,0 +1,374 @@
+.ld {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  overflow: hidden;
+  background: var(--paper, #f3ebdd);
+  color: var(--ink, #1f2a36);
+  font-family: 'Atkinson Hyperlegible', system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.45;
+  transition: opacity 0.55s ease;
+}
+
+.ld[data-leaving='true'] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ld * {
+  box-sizing: border-box;
+}
+
+.ld-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.ld-grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: url(../assets/paper-512.webp) repeat;
+  background-size: 512px;
+  mix-blend-mode: multiply;
+  opacity: 0.38;
+}
+
+.ld-sea {
+  position: absolute;
+  inset: 0;
+  transition: opacity 1.8s ease;
+}
+
+.ld-card {
+  background: rgba(251, 244, 230, 0.97);
+  border: 1.5px solid var(--ink, #1f2a36);
+  border-radius: 8px 14px 10px 12px;
+  box-shadow: 2px 3px 0 rgba(31, 42, 54, 0.18);
+}
+
+.ld-eyebrow {
+  display: block;
+  font-size: 11px;
+  line-height: 1.1;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #3b4651;
+  font-weight: 700;
+}
+
+.ld-serif {
+  font-family: 'Fraunces', Georgia, serif;
+}
+
+.ld-hand {
+  font-family: 'Caveat', cursive;
+}
+
+.ld-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: #e3d6bf;
+  overflow: hidden;
+}
+
+.ld-bar i {
+  display: block;
+  height: 100%;
+  background: #c0862f;
+  transition: width 0.9s ease;
+}
+
+.ld-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ld-step {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  column-gap: 10px;
+  align-items: center;
+  padding: 6px 0;
+  border-top: 1px dashed rgba(31, 42, 54, 0.18);
+}
+
+.ld-step:first-child {
+  border-top: 0;
+}
+
+.ld-step .ld-lbl {
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.ld-step .ld-what {
+  grid-column: 2;
+  font-size: 12px;
+  line-height: 1.25;
+  color: #5e656c;
+}
+
+.ld-mark {
+  grid-row: span 2;
+  position: relative;
+  width: 22px;
+  height: 22px;
+  justify-self: center;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ld-step.done .ld-mark {
+  background: #f7fafb;
+  border: 2px solid var(--ink, #1f2a36);
+}
+
+.ld-step.done .ld-mark svg {
+  width: 12px;
+  height: 12px;
+}
+
+.ld-step.now .ld-mark {
+  background: #c0862f;
+  border: 2.5px solid var(--ink, #1f2a36);
+  box-shadow: 0 0 0 3px rgba(243, 235, 221, 0.9);
+}
+
+.ld-step.now .ld-lbl {
+  font-weight: 700;
+}
+
+.ld-step.todo .ld-mark {
+  width: 16px;
+  height: 16px;
+  background: rgba(247, 250, 251, 0.55);
+  border: 1.6px dashed #5e656c;
+}
+
+.ld-step.todo .ld-lbl {
+  color: #4a525a;
+}
+
+.ld-pulse {
+  position: absolute;
+  inset: -9px;
+  border-radius: 50%;
+  border: 2px solid #c0862f;
+  animation: ld-pulse 2.4s ease-out infinite;
+}
+
+@keyframes ld-pulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+
+.ld-src {
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: #3b4651;
+}
+
+.ld-src a {
+  color: #1e3e5c;
+  text-underline-offset: 2px;
+}
+
+.ld-wash {
+  position: relative;
+  isolation: isolate;
+}
+
+.ld-wash::before {
+  content: '';
+  position: absolute;
+  inset: -34px -80px -40px -50px;
+  z-index: -1;
+  background: radial-gradient(
+    closest-side,
+    rgba(243, 235, 221, 0.86),
+    rgba(243, 235, 221, 0.62) 40%,
+    rgba(243, 235, 221, 0.22) 70%,
+    rgba(243, 235, 221, 0)
+  );
+  pointer-events: none;
+}
+
+.ld-fade {
+  transition: opacity 1.2s ease;
+}
+
+.ld-ink {
+  transition: stroke-dashoffset 1.5s cubic-bezier(0.45, 0.05, 0.3, 1);
+}
+
+.ld-grow {
+  transition: transform 1.8s cubic-bezier(0.3, 0.6, 0.3, 1);
+}
+
+.ld-move {
+  transition: transform 1.5s cubic-bezier(0.45, 0.05, 0.3, 1);
+}
+
+.ld-factbox {
+  transition: opacity 0.5s ease;
+}
+
+.ld-cam {
+  position: absolute;
+  perspective: 1500px;
+  perspective-origin: 50% 22%;
+}
+
+.ld-plane {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transform-origin: 50% 62%;
+  transition: transform 2.4s cubic-bezier(0.45, 0.05, 0.3, 1);
+}
+
+.ld-plane svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.ld-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at 60% 55%,
+    rgba(28, 64, 97, 0) 55%,
+    rgba(16, 40, 64, 0.55) 100%
+  );
+  transition: opacity 1.8s ease;
+}
+
+.ld-compact .ld-what {
+  display: none;
+}
+
+.ld-compact .ld-step {
+  padding: 3px 0;
+}
+
+.ld-divide {
+  border-top: 1px dashed rgba(31, 42, 54, 0.3);
+  padding-top: 10px;
+}
+
+/* Desktop layout */
+.ld-desktop-header {
+  position: absolute;
+  left: 52px;
+  top: 44px;
+  max-width: 440px;
+  z-index: 2;
+}
+
+.ld-desktop-progress {
+  position: absolute;
+  left: 52px;
+  bottom: 48px;
+  width: 390px;
+  padding: 18px 20px;
+  z-index: 2;
+}
+
+.ld-desktop-fact {
+  position: absolute;
+  right: 48px;
+  bottom: 48px;
+  width: 360px;
+  padding: 16px 18px;
+  z-index: 2;
+}
+
+.ld-cam-map {
+  left: 50%;
+  top: 50%;
+  width: min(860px, 82vmin);
+  height: min(860px, 82vmin);
+  transform: translate(-50%, -50%);
+}
+
+@media (max-width: 819px) {
+  .ld-cam-map {
+    top: 27%;
+    width: min(400px, 88vw);
+    height: min(400px, 88vw);
+  }
+}
+
+/* Mobile compact layout */
+.ld-mobile-wrap {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  padding: 18px 14px 16px;
+}
+
+.ld-mobile-cam {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 180px;
+}
+
+.ld-mobile-card {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ld-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ld,
+  .ld-ink,
+  .ld-grow,
+  .ld-move,
+  .ld-fade,
+  .ld-sea,
+  .ld-bar i,
+  .ld-plane,
+  .ld-vignette {
+    transition: none;
+  }
+
+  .ld-pulse {
+    animation: none;
+    opacity: 0;
+  }
+}

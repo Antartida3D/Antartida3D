@@ -19,6 +19,7 @@ import {
   MAX_WHALE_RIPPLES,
   OCEAN_SIZE,
   computeWhaleRipples,
+  map3dLoadingStore,
   sunDirection,
   type SeaLifeInstance,
 } from '@antartida/core';
@@ -64,26 +65,31 @@ export function Ocean({
       loader.loadAsync(paper512Url),
       loader.loadAsync(oceanWavesAUrl),
       loader.loadAsync(oceanWavesBUrl),
-    ]).then(([bathy, paper, waveA, waveB]) => {
-      if (!alive) return;
-      bathy.colorSpace = NoColorSpace;
-      bathy.flipY = false;
+    ])
+      .then(([bathy, paper, waveA, waveB]) => {
+        if (!alive) return;
+        bathy.colorSpace = NoColorSpace;
+        bathy.flipY = false;
 
-      paper.colorSpace = SRGBColorSpace;
-      paper.wrapS = RepeatWrapping;
-      paper.wrapT = RepeatWrapping;
+        paper.colorSpace = SRGBColorSpace;
+        paper.wrapS = RepeatWrapping;
+        paper.wrapT = RepeatWrapping;
 
-      waveA.colorSpace = NoColorSpace;
-      waveA.wrapS = RepeatWrapping;
-      waveA.wrapT = RepeatWrapping;
+        waveA.colorSpace = NoColorSpace;
+        waveA.wrapS = RepeatWrapping;
+        waveA.wrapT = RepeatWrapping;
 
-      waveB.colorSpace = NoColorSpace;
-      waveB.wrapS = RepeatWrapping;
-      waveB.wrapT = RepeatWrapping;
+        waveB.colorSpace = NoColorSpace;
+        waveB.wrapS = RepeatWrapping;
+        waveB.wrapT = RepeatWrapping;
 
-      setTextures({ bathy, paper, waveA, waveB });
-      invalidate();
-    });
+        setTextures({ bathy, paper, waveA, waveB });
+        map3dLoadingStore.markStepDone('ocean');
+        invalidate();
+      })
+      .catch(() => {
+        if (alive) map3dLoadingStore.setError('No pudimos cargar las texturas del océano.');
+      });
 
     return () => {
       alive = false;

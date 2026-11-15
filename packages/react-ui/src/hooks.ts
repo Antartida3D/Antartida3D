@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, type RefObject } from 'react';
-import { prefersReducedMotion, settleTracker } from '@antartida/core';
+import { useEffect, useRef, useState, useSyncExternalStore, type RefObject } from 'react';
+import { prefersReducedMotion, settleTracker, type LoadingSnapshot, type LoadingStore } from '@antartida/core';
 
 /**
  * While `open`, focuses the first element matching `initial` inside the container.
@@ -102,4 +102,8 @@ export function useTimers() {
     clearTimeout(timers.current.get(name));
     timers.current.set(name, setTimeout(fn, ms));
   };
+}
+
+export function useLoadingStore<S extends string>(store: LoadingStore<S>): LoadingSnapshot<S> {
+  return useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
 }

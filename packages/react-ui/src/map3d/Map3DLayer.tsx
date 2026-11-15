@@ -40,10 +40,12 @@ import {
   type SeaMarker,
   type Size,
   type View,
+  map3dLoadingStore,
 } from '@antartida/core';
 import { MarkerButton } from '../map/Markers.tsx';
-import { useReducedMotion } from '../hooks.ts';
+import { useLoadingStore, useReducedMotion } from '../hooks.ts';
 import type { Layer3DProps, Phase } from '../map/MapView.tsx';
+import { ShaderWarmup } from './ShaderWarmup.tsx';
 import { Ocean } from './Ocean.tsx';
 import { SeaLife } from './SeaLife.tsx';
 import { Terrain } from './Terrain.tsx';
@@ -555,6 +557,8 @@ export function Map3DLayer({
   onClaimsStatus,
 }: Map3DLayerProps) {
   const reduced = useReducedMotion();
+  const loadingSnapshot = useLoadingStore(map3dLoadingStore);
+  const shadersReady = loadingSnapshot.done.terrain && loadingSnapshot.done.ocean && loadingSnapshot.done.lands;
   const overlayRef = useRef<HTMLDivElement>(null);
   const [dpr, setDpr] = useState(1.5);
   const [enablePost, setEnablePost] = useState(true);
@@ -625,6 +629,11 @@ export function Map3DLayer({
             setDpr(1);
             setEnablePost(false);
           }}
+        />
+        <ShaderWarmup
+          ready={shadersReady}
+          onCompiled={() => map3dLoadingStore.markStepDone('shaders')}
+          onError={(msg) => map3dLoadingStore.setError(msg)}
         />
         <SceneContent
           wide={size.vw > 820}

@@ -5,6 +5,7 @@ import {
   FADE_MS,
   AVAILABLE_COUNT,
   EXPEDITION_POINT,
+  orcadasTravelMs,
   RETURN_MS,
   VOYAGE_POINT,
   returnToast,
@@ -16,6 +17,7 @@ import {
   loadWelcomeSeen,
   saveWelcomeSeen,
   showsWelcome,
+  type ArrivalId,
   type MapPoint,
 } from '@antartida/core';
 import { useReducedMotion, useTimers } from './hooks.ts';
@@ -51,6 +53,7 @@ function hasWebGL(): boolean {
 export function AntarcticaApp() {
   const [screen, setScreen] = useState<'map' | 'orcadas'>('map');
   const [phase, setPhase] = useState<Phase>('idle');
+  const [arrival, setArrival] = useState<ArrivalId>('ship');
   const [explored, setExplored] = useState<string[]>([]);
   const [voyaging, setVoyaging] = useState(false);
   const [activePoint, setActivePoint] = useState<MapPoint>(EXPEDITION_POINT);
@@ -117,21 +120,45 @@ export function AntarcticaApp() {
     saveViewMode(next);
   };
 
-  const start = (point: MapPoint) => {
-    if (phase !== 'idle' || point.id !== 'orcadas') return;
-    setToast('');
-    setActivePoint(point);
-    void loadOrcadas();
-    // Orcadas on the 3D map: the camera zooms all the way down to the island, like the trip from Ushuaia.
-    const approach = !reduced && mode === '3d' && document.querySelector('.stage.m3d canvas') !== null;
-    setPhase(reduced ? 'fade' : approach ? 'approach' : 'dive');
+  const enterApproach = () => {
+    setPhase('approach');
     later(
       'enter',
       () => {
         setScreen('orcadas');
         setPhase('idle');
       },
-      reduced ? FADE_MS : approach ? APPROACH_MS : DIVE_MS
+      APPROACH_MS
+    );
+  };
+
+  const skipTravel = () => {
+    if (phase !== 'travel') return;
+    later('travel', () => {}, 0);
+    enterApproach();
+  };
+
+  const start = (point: MapPoint, chosenArrival: ArrivalId = 'ship') => {
+    if (phase !== 'idle' || point.id !== 'orcadas') return;
+    setArrival(chosenArrival);
+    setToast('');
+    setActivePoint(point);
+    void loadOrcadas();
+    // Orcadas on the 3D map: animate the final Scotia Sea leg first, then zoom down to the island.
+    const can3D = !reduced && mode === '3d' && document.querySelector('.stage.m3d canvas') !== null;
+    if (can3D) {
+      setPhase('travel');
+      later('travel', enterApproach, orcadasTravelMs(chosenArrival));
+      return;
+    }
+    setPhase(reduced ? 'fade' : 'dive');
+    later(
+      'enter',
+      () => {
+        setScreen('orcadas');
+        setPhase('idle');
+      },
+      reduced ? FADE_MS : DIVE_MS
     );
   };
 
@@ -171,6 +198,7 @@ export function AntarcticaApp() {
       {screen === 'map' ? (
         <MapView
           phase={phase}
+          arrival={arrival}
           explored={explored}
           voyaging={voyaging}
           diveTarget={activePoint}
@@ -186,12 +214,13 @@ export function AntarcticaApp() {
           onToggleLegend={() => setLegend((l) => !l)}
           onToggleMode={toggleMode}
           onStart={start}
+          onSkipTravel={skipTravel}
           onStartVoyage={startVoyage}
           onEndVoyage={endVoyage}
         />
       ) : (
         <Suspense fallback={null}>
-          <OrcadasExpedition reduced={reduced} onLeave={leave} />
+          <OrcadasExpedition reduced={reduced} arrival={arrival} onLeave={leave} />
         </Suspense>
       )}
     </div>

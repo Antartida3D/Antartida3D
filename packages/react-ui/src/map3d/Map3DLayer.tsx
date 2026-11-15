@@ -58,12 +58,14 @@ import { Town3D } from '../voyage/Town3D.tsx';
 import { Storm3D } from '../voyage/Storm3D.tsx';
 import { OrcadasSite } from './OrcadasSite.tsx';
 import { PointModels, pointFocus } from './PointModels.tsx';
+import { OrcadasTravel3D } from '../voyage/OrcadasTravel3D.tsx';
 import { Voyage3D } from '../voyage/Voyage3D.tsx';
 
 function SceneContent({
   wide,
   lowQuality,
   phase,
+  arrival,
   diveTarget,
   reduced,
   size,
@@ -81,6 +83,7 @@ function SceneContent({
   wide: boolean;
   lowQuality: boolean;
   phase: Phase;
+  arrival: Layer3DProps['arrival'];
   diveTarget: MapPoint;
   reduced: boolean;
   size: Size;
@@ -140,11 +143,12 @@ function SceneContent({
       <Fuegia wide={wide} />
       <MalvinasFlag wide={wide} />
       <Graticule3D />
-      <SeaLife visible={phase !== 'dive'} timeUniform={seaTime} instances={seaLifeInstances} voyage={voyage} />
+      <SeaLife visible={phase !== 'dive' && phase !== 'travel'} timeUniform={seaTime} instances={seaLifeInstances} voyage={voyage} />
       <Town3D reduced={reduced} wide={wide} overlay={overlayRef} />
       <OrcadasSite reduced={reduced} />
       <PointModels reduced={reduced} />
       <Storm3D reduced={reduced} />
+      {phase === 'travel' && <OrcadasTravel3D arrival={arrival ?? 'ship'} reduced={reduced} />}
       {voyage && <Voyage3D bus={voyage} reduced={reduced} overlay={overlayRef} />}
       {enablePost && (
         <EffectComposer multisampling={0}>
@@ -372,7 +376,7 @@ function ControlsBridge({
     if (!cc) return;
     // Zooming towards the cursor lifts the target into the air or sinks it under the map, and the
     // camera follows it in (#127): slide it back to sea level along the line of sight.
-    if (!voyaging && phase !== 'approach' && phase !== 'dive') {
+    if (!voyaging && phase !== 'approach' && phase !== 'dive' && phase !== 'travel') {
       const ground = groundTarget(cc.getPosition(eye.current, true), cc.getTarget(target.current, true));
       if (ground) void cc.setTarget(ground.x, ground.y, ground.z, !reduced);
     }
@@ -396,7 +400,7 @@ function ControlsBridge({
       makeDefault
       dollyToCursor
       // The zoom into an expedition drives the camera on every frame: gestures would fight it.
-      enabled={phase !== 'approach' && phase !== 'dive'}
+      enabled={phase !== 'approach' && phase !== 'dive' && phase !== 'travel'}
       minDistance={ICE_MIN_DISTANCE}
       maxDistance={homeDistance3D(size.vw / size.vh)}
     />
@@ -425,7 +429,7 @@ function ProjectMarkers({
 
   useFrame(() => {
     const el = overlayRef.current;
-    if (!el || phase === 'dive' || phase === 'approach') return;
+    if (!el || phase === 'dive' || phase === 'approach' || phase === 'travel') return;
 
     // 1. Position expedition & fossil markers
     for (const m of markers) {
@@ -531,6 +535,7 @@ export function Map3DLayer({
   size,
   geo,
   phase,
+  arrival,
   diveTarget,
   markers,
   shown,
@@ -617,6 +622,7 @@ export function Map3DLayer({
           wide={size.vw > 820}
           lowQuality={lowQuality}
           phase={phase}
+          arrival={arrival}
           diveTarget={diveTarget}
           reduced={reduced}
           size={size}
@@ -633,11 +639,11 @@ export function Map3DLayer({
         />
       </Canvas>
       <div
-        className={'ov' + (phase === 'dive' || phase === 'approach' ? ' hide' : '')}
+        className={'ov' + (phase === 'dive' || phase === 'approach' || phase === 'travel' ? ' hide' : '')}
         ref={overlayRef}
         style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
       >
-        {phase !== 'dive' && phase !== 'approach' && (
+        {phase !== 'dive' && phase !== 'approach' && phase !== 'travel' && (
           <>
             <span
               data-graticule="greenwich"

@@ -5,15 +5,21 @@ import type { CameraControls } from '@react-three/drei';
 import {
   CAMERA_RETURN_SECONDS,
   DRAKE_STORM,
+  HELICOPTER_SHIP_RATIO,
   TRANSPORTS,
+  VEHICLE_MIN_SIZE,
+  VEHICLE_SIZE_PER_DISTANCE,
   VOYAGE_TRANSFER,
   cameraReturn,
   flightClearance,
   heightAt,
   planeTurbulence,
+  shipDeckPose,
+  shipWaterY,
   sightingsInView,
   stormAt,
   transferAt,
+  vehicleSize,
   voyageArrived,
   voyageAt,
   voyageHeading,
@@ -32,8 +38,8 @@ import { buildTrailGeometry, trailMaterial, updateTrail } from './trail.ts';
 import { NARROW_PX, type VoyageBus } from './useVoyage.ts';
 
 /** Vehicle length as a fraction of the camera distance: a 120 m ship is invisible on a 4000 km map. */
-const SIZE_PER_DISTANCE = 0.075;
-const MIN_SIZE = 0.5;
+export const SIZE_PER_DISTANCE = VEHICLE_SIZE_PER_DISTANCE;
+export const MIN_SIZE = VEHICLE_MIN_SIZE;
 /** Height of a milestone pin as a fraction of its distance to the camera. */
 const PIN_PER_DISTANCE = 0.042;
 const MIN_PIN = 0.2;
@@ -77,7 +83,7 @@ function clearanceAt(t: number): number {
  * farther the camera is, to stay readable; a ship sits slightly into the water.
  */
 export function heightOf(kind: TransportKind, t: number, size: number): number {
-  if (kind === 'ship') return -size * 0.02;
+  if (kind === 'ship') return shipWaterY(size);
   return Math.max(clearanceAt(t), Math.sin(Math.PI * Math.min(1, Math.max(0, t))) ** 0.6 * size * 0.9) + size * 0.07;
 }
 
@@ -93,18 +99,26 @@ const FOLLOW_EPSILON = 1e-4;
 const followGoal = new Vector3();
 const followTarget = new Vector3();
 
-/** Flight deck of the icebreaker in its model: how far aft of the middle it is and how high, in ship lengths. */
-const DECK_AFT = 0.33;
-const DECK_TOP = 0.091;
-/**
- * Length of the helicopter that flies to the base, in ship lengths. A real Sea King is about a
- * seventh of the ship: it is drawn larger, as every model of the map, to be seen from the trip camera.
- */
-const HELICOPTER_SIZE = 0.55;
 /** Nose down while it flies forward, in radians at the middle of the hop. */
-const HELICOPTER_TILT = 0.14;
+export const HELICOPTER_TILT = 0.14;
 /** Turns of the main rotor, in radians per second. */
-const ROTOR_SPEED = 22;
+export const ROTOR_SPEED = 22;
+
+/** Builds body and main rotor geometries for the Sea King helicopter model. */
+const buildSeaKingGeometry = () => ({
+  body: buildBoxGeometry(HELICOPTER_BOXES),
+  rotor: buildBoxGeometry(HELICOPTER_ROTOR_BOXES),
+});
+
+/** Gentle roll, pitch and vertical heave for a ship on water, amplified by `rough` storm factor. */
+export function shipSway(time: number, rough = 0) {
+  const wave = time * 2.1;
+  return {
+    roll: Math.sin(time * 1.1) * 0.04 + rough * Math.sin(wave * 0.63 + 1) * 0.22,
+    pitch: Math.sin(time * 0.8) * 0.025 + rough * Math.sin(wave) * 0.24,
+    lift: Math.sin(time * 1.3) * 0.012 + rough * Math.sin(wave - 0.9) * 0.1,
+  };
+}
 
 const routeMaterial = new LineDashedMaterial({ color: 0x1f2a36, dashSize: 0.8, gapSize: 0.6, transparent: true, opacity: 0.75 });
 
@@ -179,9 +193,7 @@ export function Voyage3D({ bus, reduced, overlay }: {
 
   // The Sea King that takes people and cargo from the icebreaker to the base: the model of the Orcadas helipad.
   const seaKing = useMemo(
-    () => (transport === VOYAGE_TRANSFER.transport
-      ? { body: buildBoxGeometry(HELICOPTER_BOXES), rotor: buildBoxGeometry(HELICOPTER_ROTOR_BOXES) }
-      : null),
+    () => (transport === VOYAGE_TRANSFER.transport ? buildSeaKingGeometry() : null),
     [transport],
   );
   useEffect(() => () => {
@@ -204,7 +216,7 @@ export function Voyage3D({ bus, reduced, overlay }: {
     if (!s) storm.current = { inside: false };
     if (!s || !g) return;
     const p = voyageAt(s.kind, s.t);
-    const size = Math.max(MIN_SIZE, camera.position.distanceTo(g.position) * SIZE_PER_DISTANCE);
+    const size = vehicleSize(camera.position.distanceTo(g.position));
     const height = heightOf(s.kind, s.t, size);
     const heading = voyageHeading(s.kind, s.t) + (bus.back ? Math.PI : 0);
     const length = voyageLength(s.kind);
@@ -217,18 +229,12 @@ export function Voyage3D({ bus, reduced, overlay }: {
     }
     // A gentle sway, so the vehicle is alive even when the trip is paused.
     const time = reduced ? 0 : performance.now() / 1000;
-    const sway = s.kind === 'plane'
-      ? { roll: Math.sin(time * 0.9) * 0.05, pitch: Math.sin(time * 0.7) * 0.015, lift: Math.sin(time * 1.4) * 0.035 }
-      : { roll: Math.sin(time * 1.1) * 0.04, pitch: Math.sin(time * 0.8) * 0.025, lift: Math.sin(time * 1.3) * 0.012 };
-    // In the storm the waves throw the ship about; the deeper in, the more.
     const rough = stormAt(p.x, p.y);
-    // Bow up and down over each wave; the hull rises with it and rolls out of step.
     const wave = time * 2.1;
-    if (s.kind === 'ship') {
-      sway.pitch += rough * Math.sin(wave) * 0.24;
-      sway.roll += rough * Math.sin(wave * 0.63 + 1) * 0.22;
-      sway.lift += rough * Math.sin(wave - 0.9) * 0.1;
-    } else {
+    const sway = s.kind === 'ship'
+      ? shipSway(time, rough)
+      : { roll: Math.sin(time * 0.9) * 0.05, pitch: Math.sin(time * 0.7) * 0.015, lift: Math.sin(time * 1.4) * 0.035 };
+    if (s.kind === 'plane') {
       // The plane flies over the storm, and the rough air shakes it a little.
       const shake = planeTurbulence(time, rough);
       sway.roll += shake.roll;
@@ -257,16 +263,11 @@ export function Voyage3D({ bus, reduced, overlay }: {
       const flown = bus.transfer;
       heli.visible = flown !== null;
       if (flown !== null) {
-        const deck = {
-          x: p.x - Math.cos(heading) * DECK_AFT * size,
-          y: p.y - Math.sin(heading) * DECK_AFT * size,
-          height: g.position.y + DECK_TOP * size,
-          heading,
-        };
+        const deck = shipDeckPose({ x: p.x, y: p.y, height: g.position.y, heading }, size);
         const at = transferAt(deck, flown);
         heli.position.set(at.x - 500, at.height, at.y - 500);
         heli.rotation.set(0, -at.heading, -HELICOPTER_TILT * Math.sin(Math.PI * flown), 'YZX');
-        heli.scale.setScalar(size * HELICOPTER_SIZE);
+        heli.scale.setScalar(size * HELICOPTER_SHIP_RATIO);
         // The rotor turns while it flies and stops once it is down.
         if (rotor.current && flown < 1) rotor.current.rotation.y = time * ROTOR_SPEED;
       }

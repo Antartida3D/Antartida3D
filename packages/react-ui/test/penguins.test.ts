@@ -1,15 +1,25 @@
 import { describe, expect, it } from 'vitest';
 import { buildPenguinPolyParts } from '../src/orcadas/lowPolyAnimals.ts';
-import { STATION_LAYOUT, footprintCorners, seaIceAt, worldCoastDistance } from '@antartida/core';
+import {
+  ARRIVAL_SECONDS,
+  STATION_LAYOUT,
+  footprintCorners,
+  seaIceAt,
+  worldCoastDistance,
+} from '@antartida/core';
 import {
   PENGUIN_NECK,
+  PENGUIN_RETURN_SECONDS,
   PENGUIN_SCALE,
   PENGUIN_SWIM_CLEARANCE,
+  applyZodiacAvoidance,
+  beachPoint,
   buildPenguinColony,
   penguinSwimCorridor,
   residentPose,
   restPose,
   travellerPose,
+  zodiacAvoidanceEnvelope,
   type PenguinPose,
   type PenguinSpecies,
 } from '../src/orcadas/penguins.ts';
@@ -224,5 +234,47 @@ describe('penguin colony (reconstruction)', () => {
         }
       }
     }
+  });
+
+  it('scatters coastal penguins uphill during Zodiac arrival and returns them afterward', () => {
+    expect(zodiacAvoidanceEnvelope(2, 'helicopter', 0, false)).toBe(0);
+    expect(zodiacAvoidanceEnvelope(2, 'ship', 0.7, false)).toBe(0);
+    expect(zodiacAvoidanceEnvelope(2, 'ship', 0, true)).toBe(0);
+    expect(zodiacAvoidanceEnvelope(ARRIVAL_SECONDS * 0.6, 'ship', 0, false)).toBeGreaterThan(0.8);
+    expect(zodiacAvoidanceEnvelope(ARRIVAL_SECONDS + PENGUIN_RETURN_SECONDS, 'ship', 0, false)).toBe(0);
+
+    const [bx, bz] = beachPoint([PENGUIN_KNOLL.center[0] + 0.5, PENGUIN_KNOLL.center[1] + 2.0], 0.35);
+    const shorePose: PenguinPose = {
+      ...restPose(),
+      x: bx,
+      y: heightAt(bx, bz),
+      z: bz,
+      lie: 0.9,
+    };
+
+    const duringArrival = applyZodiacAvoidance(
+      shorePose,
+      ARRIVAL_SECONDS * 0.6,
+      'ship',
+      0,
+      false,
+      10,
+      heightAt
+    );
+    expect(worldCoastDistance(duringArrival.x, duringArrival.z)).toBeGreaterThan(
+      worldCoastDistance(shorePose.x, shorePose.z) + 0.5
+    );
+    expect(duringArrival.lie).toBeLessThan(0.2);
+
+    const afterReturn = applyZodiacAvoidance(
+      shorePose,
+      ARRIVAL_SECONDS + PENGUIN_RETURN_SECONDS + 0.5,
+      'ship',
+      0,
+      false,
+      10,
+      heightAt
+    );
+    expect(afterReturn).toEqual(shorePose);
   });
 });

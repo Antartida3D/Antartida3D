@@ -13,7 +13,10 @@ import {
   type Vec3,
 } from '../src/voyage/lowPoly.ts';
 import {
-  buildFlagSegmentsTris,
+  FLAG_COLS,
+  FLAG_HALF_HEIGHT,
+  FLAG_LENGTH,
+  buildFlagTris,
   buildFlagpoleBaseTris,
   buildHelipadTris,
   buildModuleTris,
@@ -30,7 +33,7 @@ import {
   SCREEN_DOOR_OPEN_ANGLE,
   screenDoorAngle,
 } from '../src/orcadas/lowPolyBuildings.ts';
-import { buildStageDetailTris, FLAG_SEGMENT_WIDTH, VOXEL_PALETTE } from '../src/orcadas/stationModels.ts';
+import { buildStageDetailTris, VOXEL_PALETTE } from '../src/orcadas/stationModels.ts';
 import { inward } from './polyHelpers.ts';
 
 interface BBox {
@@ -75,13 +78,7 @@ const EXPECTED_BBOXES = {
   windVane: { min: [-0.64, -0.07, -0.08], max: [0.7, 0.17, 0.08] },
   windCups: { min: [-0.35, -0.17, -0.54], max: [0.62, 0.12, 0.54] },
   flagpoleBase: { min: [-0.67, 0, -0.67], max: [0.66, 5, 0.66] },
-  flagSegments: [
-    { min: [-0.01, -0.54, -0.038], max: [0.39, 0.545, 0.038] },
-    { min: [-0.01, -0.54, -0.0305], max: [0.39, 0.545, 0.0305] },
-    { min: [-0.01, -0.54, -0.0425], max: [0.39, 0.545, 0.0425] },
-    { min: [-0.01, -0.54, -0.0305], max: [0.39, 0.545, 0.0305] },
-    { min: [-0.01, -0.54, -0.0305], max: [0.39, 0.545, 0.0305] },
-  ],
+  flag: { min: [-0.016, -FLAG_HALF_HEIGHT, -0.022], max: [FLAG_LENGTH, FLAG_HALF_HEIGHT, 0.022] },
   helipad3: { min: [-1.5, 0, -1.5], max: [1.5, 0.128, 1.5] },
 } as const;
 
@@ -193,21 +190,13 @@ describe('Orcadas low-poly buildings and structures', () => {
     });
   }
 
-  it('flagpole base + 5 segments meet detail, finite vertices, and segment bounding boxes', () => {
+  it('flagpole base + continuous flag meet detail, finite vertices, no column gaps, and 360-degree Sol de Mayo', () => {
     const base = buildFlagpoleBaseTris();
-    const segments = buildFlagSegmentsTris();
-    expect(segments).toHaveLength(5);
+    const flag = buildFlagTris();
 
     const combined: Tri[] = [
       ...base,
-      ...segments.flatMap((seg, i) =>
-        seg.map(([a, b, c, col]): Tri => [
-          [a[0] + i * FLAG_SEGMENT_WIDTH, a[1] + 3.95, a[2]],
-          [b[0] + i * FLAG_SEGMENT_WIDTH, b[1] + 3.95, b[2]],
-          [c[0] + i * FLAG_SEGMENT_WIDTH, c[1] + 3.95, c[2]],
-          col,
-        ])
-      ),
+      ...shift(flag, 0, 3.95, 0),
     ];
     const colors = new Set(combined.map((t) => t[3]));
     expect(combined.length).toBeGreaterThanOrEqual(POLY_MIN_TRIS);
@@ -224,14 +213,52 @@ describe('Orcadas low-poly buildings and structures', () => {
       expect(Math.abs(baseBox.max[axis] - EXPECTED_BBOXES.flagpoleBase.max[axis])).toBeLessThanOrEqual(0.02);
     }
 
-    segments.forEach((seg, i) => {
-      const segBox = triBBox(seg);
-      const exp = EXPECTED_BBOXES.flagSegments[i];
-      for (let axis = 0; axis < 3; axis++) {
-        expect(Math.abs(segBox.min[axis] - exp.min[axis])).toBeLessThanOrEqual(0.02);
-        expect(Math.abs(segBox.max[axis] - exp.max[axis])).toBeLessThanOrEqual(0.02);
+    const flagBox = triBBox(flag);
+    for (let axis = 0; axis < 3; axis++) {
+      expect(Math.abs(flagBox.min[axis] - EXPECTED_BBOXES.flag.min[axis])).toBeLessThanOrEqual(0.02);
+      expect(Math.abs(flagBox.max[axis] - EXPECTED_BBOXES.flag.max[axis])).toBeLessThanOrEqual(0.02);
+    }
+
+    // Cloth continuity: every interior column boundary shares identical vertices on left and right sides
+    const clothTris = flag.filter((t) => t[3] === VOXEL_PALETTE.SKY || t[3] === VOXEL_PALETTE.WHITE);
+    for (let col = 1; col < FLAG_COLS; col++) {
+      const boundaryX = (col / FLAG_COLS) * FLAG_LENGTH;
+      const leftSideVerts = new Set<string>();
+      const rightSideVerts = new Set<string>();
+      for (const [a, b, c] of clothTris) {
+        const xs = [a[0], b[0], c[0]];
+        const minX = Math.min(...xs);
+        const maxX = Math.max(...xs);
+        for (const p of [a, b, c]) {
+          if (Math.abs(p[0] - boundaryX) > 1e-6) continue;
+          const key = `${p[1].toFixed(5)},${p[2].toFixed(5)}`;
+          if (maxX <= boundaryX + 1e-6) leftSideVerts.add(key);
+          if (minX >= boundaryX - 1e-6) rightSideVerts.add(key);
+        }
       }
-    });
+      expect(leftSideVerts.size).toBeGreaterThan(0);
+      expect(leftSideVerts).toEqual(rightSideVerts);
+    }
+
+    // Sol de Mayo: 16 rays spanning all 360 degrees on both faces, strictly clear of cloth z = +-0.008
+    const sunX = FLAG_LENGTH / 2;
+    const sunTris = flag.filter((t) => t[3] === VOXEL_PALETTE.ORANGE);
+    expect(sunTris.length).toBeGreaterThanOrEqual(64);
+    for (const sideSign of [-1, 1] as const) {
+      const faceSunTris = sunTris.filter((t) => sideSign * t[0][2] > 0.015);
+      expect(faceSunTris.length).toBeGreaterThanOrEqual(32);
+      const rayTipSectors = new Set<number>();
+      for (const [a, b, c] of faceSunTris) {
+        for (const p of [a, b, c]) {
+          const r = Math.hypot(p[0] - sunX, p[1]);
+          if (r > 0.10) {
+            const ang = ((Math.atan2(p[1], p[0] - sunX) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+            rayTipSectors.add(Math.floor((ang / (Math.PI * 2)) * 16 + 0.5) % 16);
+          }
+        }
+      }
+      expect(rayTipSectors.size).toBe(16);
+    }
   });
 
   it('night windows switch to LAMP colour', () => {

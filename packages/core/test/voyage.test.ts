@@ -10,9 +10,22 @@ import {
   MAX_POLAR_DEG,
   FUEGIA_LAND_MASK,
   GEAR_TAP_MS,
+  IRIZAR_ARRIVAL_POSE,
+  IRIZAR_HALF_BEAM,
+  ORCADAS_DEFAULT_SHIP_SIZE,
+  ORCADAS_HELICOPTER_SECONDS,
+  ORCADAS_POINT,
+  ORCADAS_SHIP_LENGTH,
+  ORCADAS_SHIP_PHASE,
+  ORCADAS_SHIP_SECONDS,
+  ORCADAS_SHORE,
+  ORCADAS_TRAVEL_SECONDS,
+  ORCADAS_ZODIAC_SECONDS,
   ROUTE_LENGTH,
   SHIP_ANCHORAGE,
   SHIP_HEAD_START,
+  ZODIAC_LOWER_PHASE,
+  ZODIAC_SHIP_RATIO,
   MILESTONES,
   EXPEDITION,
   SIGHTINGS,
@@ -30,12 +43,18 @@ import {
   flightClearance,
   fuegiaWorldHeight,
   heightAt,
+  irizarArrivalWorldPose,
   minCameraDistance,
   expeditionAt,
   nextGear,
+  orcadasTravelAt,
+  orcadasTravelLength,
+  orcadasTravelMs,
   quizScore,
   retreatVoyage,
   routeAt,
+  shipDeckPose,
+  shipWaterY,
   sightingsInView,
   parseTerrainMesh,
   planeTurbulence,
@@ -44,6 +63,7 @@ import {
   startVoyage,
   stormAt,
   stormCeiling,
+  toWorld,
   transferAt,
   unproject,
   voyageArrived,
@@ -687,5 +707,112 @@ describe('voyage state', () => {
     }
     expect(steps).toBe(voyageStops('plane').length - 1);
     expect(s.t).toBe(1);
+  });
+});
+
+describe('orcadas travel leg', () => {
+  const buf = readFileSync(join(import.meta.dirname, '../src/assets/terrain-mesh-hi.bin'));
+  const terrain = parseTerrainMesh(buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength));
+  const ground = (p: { x: number; y: number }) => Math.max(0, worldHeight(heightAt(p.x, p.y, terrain)));
+
+  it('keeps consistent duration constants per transport', () => {
+    expect(ORCADAS_SHIP_SECONDS).toBe(7);
+    expect(ORCADAS_ZODIAC_SECONDS).toBe(4);
+    expect(ORCADAS_HELICOPTER_SECONDS).toBe(8);
+    expect(ORCADAS_TRAVEL_SECONDS.ship).toBe(ORCADAS_SHIP_SECONDS + ORCADAS_ZODIAC_SECONDS);
+    expect(ORCADAS_TRAVEL_SECONDS.helicopter).toBe(ORCADAS_HELICOPTER_SECONDS);
+    expect(ORCADAS_SHIP_PHASE).toBeCloseTo(ORCADAS_SHIP_SECONDS / ORCADAS_TRAVEL_SECONDS.ship, 12);
+    expect(orcadasTravelMs('ship')).toBe(ORCADAS_TRAVEL_SECONDS.ship * 1000);
+    expect(orcadasTravelMs('helicopter')).toBe(ORCADAS_TRAVEL_SECONDS.helicopter * 1000);
+  });
+
+  it('matches the final Irízar pose and deck offset from the Ushuaia trip via a single source', () => {
+    const end = voyageAt('ship', 1);
+    const heading = voyageHeading('ship', 1);
+    expect(IRIZAR_ARRIVAL_POSE).toEqual({ x: end.x, y: end.y, heading });
+
+    const size = 3.2;
+    const worldPose = irizarArrivalWorldPose(size);
+    expect(worldPose.world).toEqual(toWorld(end.x, end.y, shipWaterY(size)));
+    expect(worldPose.deck).toEqual(shipDeckPose({ x: end.x, y: end.y, height: shipWaterY(size), heading }, size));
+  });
+
+  it('sails the Irízar from the Ushuaia arrival pose to Laurie anchorage, then lowers the Zodiac outside the hull to the shore', () => {
+    const shipSize = ORCADAS_DEFAULT_SHIP_SIZE;
+    const start = orcadasTravelAt('ship', 0, terrain, { shipSize });
+    const anchor = orcadasTravelAt('ship', ORCADAS_SHIP_PHASE, terrain, { shipSize });
+    const end = orcadasTravelAt('ship', 1, terrain, { shipSize });
+
+    // Departs from the exact Ushuaia arrival pose (position and heading).
+    expect(start.x).toBeCloseTo(IRIZAR_ARRIVAL_POSE.x, 9);
+    expect(start.y).toBeCloseTo(IRIZAR_ARRIVAL_POSE.y, 9);
+    expect(start.heading).toBeCloseTo(IRIZAR_ARRIVAL_POSE.heading, 9);
+    expect(start.height).toBe(0);
+
+    // Reaches the Laurie anchorage and finishes off the Laurie shore.
+    expect(Math.hypot(anchor.x - ORCADAS_POINT.x, anchor.y - ORCADAS_POINT.y)).toBeCloseTo(SHIP_ANCHORAGE, 4);
+    expect(Math.hypot(end.x - ORCADAS_POINT.x, end.y - ORCADAS_POINT.y)).toBeCloseTo(ORCADAS_SHORE, 4);
+    expect(orcadasTravelLength('ship')).toBeCloseTo(ORCADAS_SHIP_LENGTH + (SHIP_ANCHORAGE - ORCADAS_SHORE), 6);
+
+    // Continuity along the Irízar sailing leg (no jump before anchoring).
+    const beforeHandoff = orcadasTravelAt('ship', ORCADAS_SHIP_PHASE - 0.001, terrain, { shipSize });
+    expect(Math.hypot(anchor.x - beforeHandoff.x, anchor.y - beforeHandoff.y)).toBeLessThan(0.1);
+
+    // Zodiac starts outside the Irízar's hull, above water, and lowers down before motoring to shore.
+    const zodiacStart = orcadasTravelAt('ship', ORCADAS_SHIP_PHASE + 1e-6, terrain, { shipSize });
+    const cosH = Math.cos(anchor.heading);
+    const sinH = Math.sin(anchor.heading);
+    const lateralFromHull = Math.abs(-(zodiacStart.x - anchor.x) * sinH + (zodiacStart.y - anchor.y) * cosH);
+    const zodiacHalfBeam = 0.25 * ZODIAC_SHIP_RATIO * shipSize;
+    expect(ZODIAC_SHIP_RATIO).toBeLessThanOrEqual(1 / 8);
+    expect(lateralFromHull).toBeGreaterThan(IRIZAR_HALF_BEAM * shipSize + zodiacHalfBeam);
+    expect(zodiacStart.height).toBeGreaterThan(0);
+
+    const splashT = ORCADAS_SHIP_PHASE + ZODIAC_LOWER_PHASE * (1 - ORCADAS_SHIP_PHASE);
+    const splash = orcadasTravelAt('ship', splashT, terrain, { shipSize });
+    expect(splash.height).toBe(0);
+
+    // Every point of both ship and Zodiac stays on open water (heightAt === 0) and progresses forward.
+    let prevShipDist = 0;
+    let prevZodiacProg = -Infinity;
+    for (let i = 0; i <= 200; i++) {
+      const t = i / 200;
+      const p = orcadasTravelAt('ship', t, terrain, { shipSize });
+      expect(heightAt(p.x, p.y, terrain), `step ${i}`).toBe(0);
+      if (t <= ORCADAS_SHIP_PHASE) {
+        expect(p.height).toBe(0);
+        const dist = Math.hypot(p.x - start.x, p.y - start.y);
+        expect(dist).toBeGreaterThanOrEqual(prevShipDist - 1e-12);
+        prevShipDist = dist;
+      } else {
+        const along = (p.x - anchor.x) * cosH + (p.y - anchor.y) * sinH;
+        expect(along).toBeGreaterThanOrEqual(prevZodiacProg - 1e-12);
+        prevZodiacProg = along;
+      }
+    }
+    expect(orcadasTravelAt('ship', -0.5, terrain, { shipSize })).toEqual(start);
+    expect(orcadasTravelAt('ship', 1.5, terrain, { shipSize })).toEqual(end);
+  });
+
+  it('launches the helicopter from the Irízar flight deck at cruise altitude and descends onto Orcadas without clipping relief', () => {
+    const shipSize = 3.5;
+    const deck = irizarArrivalWorldPose(shipSize).deck;
+    const start = orcadasTravelAt('helicopter', 0, terrain, { shipSize });
+    const end = orcadasTravelAt('helicopter', 1, terrain, { shipSize });
+
+    expect(start.x).toBeCloseTo(deck.x, 9);
+    expect(start.y).toBeCloseTo(deck.y, 9);
+    expect(start.height).toBeCloseTo(deck.height, 9);
+    expect(start.heading).toBeCloseTo(IRIZAR_ARRIVAL_POSE.heading, 9);
+    expect(end.x).toBeCloseTo(ORCADAS_POINT.x, 6);
+    expect(end.y).toBeCloseTo(ORCADAS_POINT.y, 6);
+    expect(end.height).toBeCloseTo(ground(ORCADAS_POINT), 6);
+    expect(orcadasTravelLength('helicopter', { shipSize })).toBeCloseTo(Math.hypot(end.x - deck.x, end.y - deck.y), 6);
+
+    for (let i = 0; i <= 200; i++) {
+      const p = orcadasTravelAt('helicopter', i / 200, terrain, { shipSize });
+      expect(p.height, `step ${i}`).toBeGreaterThanOrEqual(ground(p));
+    }
+    expect(orcadasTravelAt('helicopter', 0.5, terrain, { shipSize }).height).toBeGreaterThanOrEqual(FLIGHT_CRUISE);
   });
 });

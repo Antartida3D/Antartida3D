@@ -1,17 +1,15 @@
-import { lazy, Suspense, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import {
   ORCADAS_GUIDING_QUESTION,
   ORCADAS_INTRO_DESC,
   introFacts,
+  type ArrivalId,
 } from '@antartida/core';
 import { BottomSheet } from '../BottomSheet.tsx';
 import { useFocusReturn } from '../hooks.ts';
+import { ArrivalPicker } from './ArrivalPicker.tsx';
 import { FactList, SourceContext } from './FactList.tsx';
-import { KindChip } from './KindChip.tsx';
 import { SourcesPanel } from './SourcesPanel.tsx';
-
-// Its own chunk: it needs WebGL, which the 2D map does not.
-const OrcadasSitePreview = lazy(() => import('./OrcadasSitePreview.tsx').then((m) => ({ default: m.OrcadasSitePreview })));
 
 const FOCUSABLE_SELECTOR =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -45,14 +43,15 @@ export function OrcadasIntro({
   preview = false,
   reduced = false,
 }: {
-  onStart: () => void;
+  onStart: (arrival: ArrivalId) => void;
   onExit: () => void;
   fallbackFocus?: () => HTMLElement | null;
-  /** Show the turning 3D model of the station site (needs WebGL). */
+  /** Show the turning 3D model of the chosen arrival vehicle (needs WebGL). */
   preview?: boolean;
   reduced?: boolean;
 }) {
   const ref = useRef<HTMLElement>(null);
+  const [arrival, setArrival] = useState<ArrivalId>('ship');
   const [openSource, setOpenSource] = useState<string | null>(null);
   const facts = useMemo(() => introFacts(), []);
   useFocusReturn(true, ref, '.btn.primary', fallbackFocus);
@@ -65,23 +64,13 @@ export function OrcadasIntro({
         <BottomSheet className="voyage orc-intro" labelledBy="orcadas-intro-title" sheetRef={ref} onClose={onExit}>
           <h2 id="orcadas-intro-title">Estación Orcadas</h2>
           <p className="place">{ORCADAS_GUIDING_QUESTION}</p>
-          {preview && (
-            <div className="orc-intro-preview">
-              <Suspense fallback={<div className="vpreview" />}>
-                <OrcadasSitePreview reduced={reduced} />
-              </Suspense>
-              <p className="orc-intro-recon">
-                <KindChip kind="recon" label="Reconstrucción ilustrada" />
-                <span className="vsmall">Vista ilustrativa de la base, no a escala.</span>
-              </p>
-            </div>
-          )}
           <p>{ORCADAS_INTRO_DESC}</p>
           <SourceContext.Provider value={setOpenSource}>
+            <ArrivalPicker value={arrival} onChange={setArrival} preview={preview} reduced={reduced} />
             <FactList facts={facts} fold={false} />
           </SourceContext.Provider>
           <div className="row vactions">
-            <button type="button" className="btn primary" onClick={onStart}>
+            <button type="button" className="btn primary" onClick={() => onStart(arrival)}>
               Comenzar expedición
             </button>
             <button type="button" className="btn" onClick={onExit}>

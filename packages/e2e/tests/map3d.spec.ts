@@ -82,7 +82,7 @@ test.describe('3D relief view', () => {
     if (!(await intro.isVisible()) && (await orcadasBtn.isVisible())) {
       await orcadasBtn.click();
     }
-    // In 3D the intro shows the turning model of the station, labelled as an illustration.
+    // In 3D the intro shows the turning model of the chosen arrival vehicle, labelled as an illustration.
     await expect(intro.locator('.vpreview')).toBeVisible();
     await expect(intro.getByText('Reconstrucción ilustrada')).toBeVisible();
     await intro.getByRole('button', { name: 'Comenzar expedición' }).click();

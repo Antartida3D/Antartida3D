@@ -684,9 +684,70 @@ export function buildZodiacWakeGeometry(): BufferGeometry {
     const mB: RgbaVertex = [bx * 0.58, 0.1, bz * 0.58, FOAM_RGB[0], FOAM_RGB[1], FOAM_RGB[2], 0.72];
     const oA: RgbaVertex = [ax * 1.12, -0.15, az * 1.12, FOAM_RGB[0], FOAM_RGB[1], FOAM_RGB[2], 0.0];
     const oB: RgbaVertex = [bx * 1.12, -0.15, bz * 1.12, FOAM_RGB[0], FOAM_RGB[1], FOAM_RGB[2], 0.0];
-    faces.push([center, mB, mA], [mA, mB, oB], [mA, oB, oA]);
+    faces.push([center, mA, mB], [mA, oA, oB], [mA, oB, mB]);
   }
   return buildAlphaWaterGeometry(faces);
+}
+
+/**
+ * Low-poly hull waterline glow and bow foam collar for the moving Zodiac, matching icebergs.ts
+ * shallow water and foam colours. Centered on boat local origin (+x bow, -x stern, y = 0).
+ */
+export function buildZodiacWaterlineGeometry(): BufferGeometry {
+  // Perimeter ring ordered counter-clockwise seen from +y (+x -> -z -> -x -> +z)
+  const hullPts: readonly [number, number][] = [
+    [1.22, 0],
+    [0.9, -0.36],
+    [0.44, -0.55],
+    [-0.12, -0.57],
+    [-0.68, -0.56],
+    [-1.12, -0.51],
+    [-1.18, 0],
+    [-1.12, 0.51],
+    [-0.68, 0.56],
+    [-0.12, 0.57],
+    [0.44, 0.55],
+    [0.9, 0.36],
+  ];
+  const n = hullPts.length;
+  const pt = (
+    idx: number,
+    scaleX: number,
+    scaleZ: number,
+    y: number,
+    rgb: readonly [number, number, number],
+    alpha: number,
+  ): RgbaVertex => {
+    const [hx, hz] = hullPts[(idx + n) % n];
+    const sx = hx < 0 ? scaleX + (scaleX - 1) * 0.7 : scaleX;
+    return [hx * sx, y, hz * scaleZ, rgb[0], rgb[1], rgb[2], alpha];
+  };
+  const faces: [RgbaVertex, RgbaVertex, RgbaVertex][] = [];
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n;
+    // Inner shallow-water glow hugging the hull
+    const g0a = pt(i, 0.94, 0.94, 0.008, SHALLOW_RGB, 0.55);
+    const g0b = pt(j, 0.94, 0.94, 0.008, SHALLOW_RGB, 0.55);
+    const g1a = pt(i, 1.38, 1.52, 0.0, MID_RGB, 0.0);
+    const g1b = pt(j, 1.38, 1.52, 0.0, MID_RGB, 0.0);
+    faces.push([g0a, g1a, g1b], [g0a, g1b, g0b]);
+
+    // Bow and flank foam crest fading outward
+    const f0a = pt(i, 0.98, 0.98, 0.022, FOAM_RGB, 0.85);
+    const f0b = pt(j, 0.98, 0.98, 0.022, FOAM_RGB, 0.85);
+    const f1a = pt(i, 1.15, 1.24, 0.006, FOAM_RGB, 0.0);
+    const f1b = pt(j, 1.15, 1.24, 0.006, FOAM_RGB, 0.0);
+    faces.push([f0a, f1a, f1b], [f0a, f1b, f0b]);
+  }
+  return buildAlphaWaterGeometry(faces);
+}
+
+/** Low-poly snow-puff particle (pure triangles, no texture) for helicopter rotor downdraft. */
+export function buildSnowPuffTris(): Tri[] {
+  return [
+    ...chunk(0, 0, 0, 0.92, 0.58, 0.86, 190466, WHITE),
+    ...chunk(0.18, 0.12, -0.1, 0.58, 0.44, 0.58, 190467, ICE),
+  ];
 }
 
 // ============================================================================

@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { MeshBasicMaterial, type Group, type Mesh } from 'three';
 import { useFrame } from '@react-three/fiber';
+import type { ArrivalId } from '@antartida/core';
 import { boxShade, buildPolyGeometry } from '../voyage/lowPoly.ts';
 import { vehicleMaterial } from '../voyage/vehicles.ts';
 import {
@@ -12,6 +13,7 @@ import {
   PENGUIN_NECK,
   PENGUIN_SCALE,
   PENGUIN_SHOULDER,
+  applyZodiacAvoidance,
   buildPenguinColony,
   residentPose,
   restPose,
@@ -54,8 +56,17 @@ function applyPose(rig: Rig, p: PenguinPose) {
  * Penguin colony on its knoll (reconstruction): residents on their nests and travellers doing
  * the round trip to Bahía Scotia. Poses come from penguins.ts, a pure function of time.
  */
-export function PenguinColony({ reduced, seaIce = 0 }: { reduced: boolean; seaIce?: number }) {
-  const colony = useMemo(() => buildPenguinColony((x, z) => evaluateIsthmusTerrain(x, z).y), []);
+export function PenguinColony({
+  reduced,
+  seaIce = 0,
+  arrival = 'ship',
+}: {
+  reduced: boolean;
+  seaIce?: number;
+  arrival?: ArrivalId;
+}) {
+  const heightAt = useMemo(() => (x: number, z: number) => evaluateIsthmusTerrain(x, z).y, []);
+  const colony = useMemo(() => buildPenguinColony(heightAt), [heightAt]);
   const geos = useMemo(() => {
     const make = (species: PenguinSpecies) => {
       const parts = buildPenguinPolyParts(species);
@@ -118,16 +129,25 @@ export function PenguinColony({ reduced, seaIce = 0 }: { reduced: boolean; seaIc
     penguins.map(() => ({ root: null, tilt: null, neck: null, flipL: null, flipR: null, shadow: null }))
   );
   const pose = useMemo(() => restPose(), []);
+  const arrivalStartRef = useRef<number | null>(null);
 
   useLayoutEffect(() => {
+    arrivalStartRef.current = null;
     if (!reduced) return;
     penguins.forEach((p, i) => applyPose(rigs.current[i], p.pose(STILL_TIME, pose)));
-  }, [reduced, penguins, pose]);
+  }, [reduced, penguins, pose, arrival]);
 
   useFrame(({ clock }) => {
     if (reduced) return;
     const t = clock.getElapsedTime();
-    penguins.forEach((p, i) => applyPose(rigs.current[i], p.pose(t, pose)));
+    if (arrivalStartRef.current === null) arrivalStartRef.current = t;
+    const elapsed = t - arrivalStartRef.current;
+    penguins.forEach((p, i) =>
+      applyPose(
+        rigs.current[i],
+        applyZodiacAvoidance(p.pose(t, pose), elapsed, arrival, seaIce, reduced, t, heightAt),
+      ),
+    );
   });
 
   const [sx, sy, sz] = PENGUIN_SHOULDER;

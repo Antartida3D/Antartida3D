@@ -156,6 +156,8 @@ export const LEOPARD_JAW: readonly Box[] = both([
 export const EMPEROR_SHOULDER = [0.1, 0.02, 0.1] as const;
 
 /** An emperor lying flat to swim: black back, white belly, yellow ear patches and pale chest. */
+/** Tip of the bill of the swimming emperor, along +x: where it holds a caught fish. */
+export const EMPEROR_BILL_TIP = 0.47;
 export const EMPEROR_SWIM: readonly Box[] = both([
   [0, 0, 0, 0.5, 0.18, 0.2, C.black],
   [0, -0.05, 0, 0.46, 0.09, 0.205, C.white],
@@ -271,8 +273,9 @@ export const TEETH_DETAIL: readonly Box[] = [
 ];
 
 /**
- * Weddell seal resting under the ice, in one piece. It is the block seal Orcadas used before it moved
- * to low-poly (#116): Océano keeps it so that its whole scene stays in blocks.
+ * Weddell seal lying on a floe, in one piece. It is the block seal Orcadas used before it moved to
+ * low-poly (#116): Océano keeps it so that its whole scene stays in blocks. Head, flippers and tail
+ * sit where they join the body (the old assembly shifted them twice and left them apart).
  */
 export const WEDDELL: readonly Box[] = [
   // Torso, tapering front and rear, with a darker back.
@@ -292,15 +295,15 @@ export const WEDDELL: readonly Box[] = [
     [-0.18, 0.11, 0.112, 0.06, 0.04, 0.012, C.weddellSpot],
   ]),
   // Head: round, short snout, nose and eyes.
-  [0.59, 0.43, 0, 0.15, 0.15, 0.17, C.weddell],
-  [0.68, 0.42, 0, 0.09, 0.09, 0.11, C.weddellSnout],
-  [0.73, 0.425, 0, 0.025, 0.038, 0.048, C.black],
-  [0.69, 0.39, 0, 0.07, 0.03, 0.09, C.weddellSpot],
-  ...both([[0.63, 0.465, 0.086, 0.028, 0.028, 0.01, C.black]]),
+  [0.33, 0.25, 0, 0.15, 0.15, 0.17, C.weddell],
+  [0.42, 0.24, 0, 0.09, 0.09, 0.11, C.weddellSnout],
+  [0.47, 0.245, 0, 0.025, 0.038, 0.048, C.black],
+  [0.43, 0.21, 0, 0.07, 0.03, 0.09, C.weddellSpot],
+  ...both([[0.37, 0.285, 0.086, 0.028, 0.028, 0.01, C.black]]),
   // Front flippers and tail.
-  ...both([[0.36, 0.1, 0.34, 0.14, 0.035, 0.11, C.weddellDark]]),
-  [-0.86, 0.13, 0.07, 0.15, 0.035, 0.1, C.weddellDark],
-  [-0.86, 0.13, -0.07, 0.15, 0.035, 0.1, C.weddellDark],
+  ...both([[0.18, 0.05, 0.17, 0.14, 0.035, 0.11, C.weddellDark]]),
+  [-0.48, 0.06, 0.07, 0.15, 0.035, 0.1, C.weddellDark],
+  [-0.48, 0.06, -0.07, 0.15, 0.035, 0.1, C.weddellDark],
 ];
 
 /** Every model of Océano, joined with its moving parts, for the test of least detail. */

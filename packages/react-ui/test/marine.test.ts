@@ -1,11 +1,34 @@
 import { describe, expect, it } from 'vitest';
 import { SCENE_MODELS, SEA_MODELS } from '../src/voyage/sightingModels.ts';
-import { MARINE_MODELS } from '../src/marine/models.ts';
+import { MARINE_MODELS, WEDDELL } from '../src/marine/models.ts';
+import type { Box } from '../src/voyage/vehicles.ts';
 import {
   DIVE_PERIOD, EDGE_Z, FILTER_PERIOD, HOLE, ICE_BOTTOM, LEAD, LEOPARD_LOOP, MINKE_FOOTPRINT, MINKE_KRILL_PATCHES, MINKE_LOOP,
-  MINKE_SCALE, ORCA_POD, SUCTION_PERIOD, WATER_Y, WAVE_FLOE, WAVE_PERIOD, emperorDive, humpbackFilter, iceAt, inOpenWater,
+  MINKE_SCALE, ORCA_POD, SUCTION_PERIOD, WATER_Y, WAVE_FLOE, WAVE_PERIOD, WAVE_SEAL_START, EMPEROR_HUNT_LOOP, EMPEROR_HUNT_STILL, emperorDive, emperorHunt, humpbackFilter, iceAt, inOpenWater,
   krillAt, leopardPose, minkePose, orcaPose, orcaWave, suction,
 } from '../src/marine/marinePoses.ts';
+
+/** True when two boxes overlap or touch (a small tolerance for faces that only meet). */
+const touch = (a: Box, b: Box, eps = 1e-3) =>
+  [0, 1, 2].every((k) => Math.abs(a[k] - b[k]) <= (a[k + 3] + b[k + 3]) / 2 + eps);
+
+/** Boxes not joined, through other boxes, to the first one. */
+function loose(boxes: readonly Box[]): Box[] {
+  const reached = new Set([0]);
+  for (let grew = true; grew;) {
+    grew = false;
+    boxes.forEach((b, i) => {
+      if (!reached.has(i) && [...reached].some((j) => touch(b, boxes[j]))) { reached.add(i); grew = true; }
+    });
+  }
+  return boxes.filter((_, i) => !reached.has(i));
+}
+
+describe('Océano: models in one piece', () => {
+  it('the Weddell seal has its head, flippers and tail joined to the body', () => {
+    expect(loose(WEDDELL)).toEqual([]);
+  });
+});
 
 const samples = (period: number, step = 0.05) => Array.from({ length: Math.ceil(period / step) }, (_, i) => i * step);
 
@@ -122,11 +145,37 @@ describe('Océano: how each animal feeds', () => {
       const w = orcaWave(t, 0);
       if (order[order.length - 1] !== w.phase) order.push(w.phase);
       if (w.height > 0.2 && Math.abs(w.crest - WAVE_FLOE.x) < 0.3) crossed = true;
-      expect(w.slide).toBeLessThan(WAVE_FLOE.half * 0.6);
+      // On the floe the seal rests on the ice; past its edge it is below the water line.
+      const sealX = WAVE_SEAL_START + w.slide;
+      if (Math.abs(sealX) < WAVE_FLOE.half - 0.4) expect(w.sealY).toBeCloseTo(0.2, 5);
+      if (w.sealVisible && w.sealY < 0.2) expect(sealX).toBeGreaterThan(WAVE_FLOE.half);
+      if (w.phase === 'approach' && w.sealVisible) expect(sealX).toBe(WAVE_SEAL_START);
       expect(WAVE_FLOE.z).toBeGreaterThan(EDGE_Z + 2);
     }
     expect(order).toEqual(['approach', 'dive', 'wave', 'away']);
     expect(crossed).toBe(true);
+    // The wave sweeps the seal off the floe and it ends under the water, out of view.
+    const fallen = samples(WAVE_PERIOD).map((t) => orcaWave(t, 0)).filter((w) => w.sealY < WATER_Y - 0.4);
+    expect(fallen.length).toBeGreaterThan(0);
+    expect(samples(WAVE_PERIOD).some((t) => !orcaWave(t, 0).sealVisible)).toBe(true);
+  });
+
+  it('the emperor catches one fish per loop with its bill, carries it and swallows it', () => {
+    const states: string[] = [];
+    for (const t of samples(EMPEROR_HUNT_LOOP.period, 0.01)) {
+      const { emperor, prey } = emperorHunt(t);
+      if (states[states.length - 1] !== prey.state) states.push(prey.state);
+      // Just before the catch the fish is right at the bill, so the snap reads as a bite.
+      if (prey.state === 'free' && emperorHunt(t + 0.01).prey.state === 'held') {
+        const reach = Math.hypot(prey.x - emperor.x, prey.z - emperor.z);
+        expect(reach).toBeGreaterThan(0.45);
+        expect(reach).toBeLessThan(0.8);
+      }
+      expect(emperor.y).toBeLessThan(ICE_BOTTOM);
+    }
+    expect(states).toEqual(['gone', 'free', 'held', 'gone']);
+    // With reduced motion the still frame shows the fish in the bill.
+    expect(emperorHunt(EMPEROR_HUNT_STILL).prey.state).toBe('held');
   });
 
   it('the emperor holds its head up out of the water while it breathes', () => {

@@ -16,11 +16,11 @@ import { buildBoxGeometry, vehicleMaterial, type Box } from '../voyage/vehicles.
 import {
   BALEEN_DETAIL, DIATOM_CHAIN, DIATOM_DISC, EMPEROR_FLIPPER, EMPEROR_SHOULDER, EMPEROR_SWIM, HUMPBACK_BODY, HUMPBACK_HINGE,
   HUMPBACK_JAW, HUMPBACK_THROAT, KRILL, LEOPARD_BODY, LEOPARD_HINGE, LEOPARD_JAW, MINKE_FEED_BODY, MINKE_HINGE, MINKE_JAW,
-  MINKE_THROAT, SILVERFISH, SQUID, TEETH_DETAIL, WEDDELL,
+  MINKE_THROAT, SILVERFISH, SQUID, TEETH_DETAIL, WEDDELL, EMPEROR_BILL_TIP,
 } from './models.ts';
 import {
   DIVE_BOTTOM, EDGE_Z, FILTER_STILL, HOLE, ICE_TOP, LEAD, LEOPARD_LOOP, LEOPARD_PREY, MINKE_KRILL_PATCHES, MINKE_LOOP,
-  MINKE_SCALE, ORCA_LOOP, ORCA_POD, STILL_TIME, SUCTION_PERIOD, WATER_Y, WAVE_FLOE, WAVE_PERIOD, buildIceBoxes, emperorDive,
+  MINKE_SCALE, ORCA_LOOP, ORCA_POD, STILL_TIME, SUCTION_PERIOD, WATER_Y, WAVE_FLOE, WAVE_PERIOD, WAVE_SEAL_START, buildIceBoxes, emperorDive, EMPEROR_HUNT_STILL, EMPEROR_SWIM_SCALE, emperorHunt,
   humpbackFilter, krillAt, leopardPose, minkePose, onLoop, orcaPose, orcaWave, suction, type Loop, type Pose,
 } from './marinePoses.ts';
 
@@ -324,24 +324,47 @@ function Follow({ pose, active, reduced }: { pose: (t: number) => Pose; active: 
   return null;
 }
 
-function SwimmingEmperor({ pose, reduced, still }: { pose: (t: number) => Pose & { stroke?: number }; reduced: boolean; still?: number }) {
+/** The fish the emperor is about to catch, off the school, until it is in the bill. */
+function EmperorPrey({ reduced }: { reduced: boolean }) {
+  const ref = useRef<Group>(null);
+  usePose((t) => {
+    const { prey } = emperorHunt(t);
+    place(ref.current, prey);
+    if (!ref.current) return;
+    ref.current.visible = prey.state === 'free';
+    ref.current.scale.setScalar(0.5 * Math.max(0.01, prey.size));
+  }, reduced, EMPEROR_HUNT_STILL);
+  return <group ref={ref}><mesh geometry={partGeometry('silverfish', () => SILVERFISH)} material={vehicleMaterial} /></group>;
+}
+
+/** `holding`, when given, says when a fish is in its bill (crosswise, as penguins carry prey). */
+function SwimmingEmperor({ pose, reduced, still, holding }: {
+  pose: (t: number) => Pose & { stroke?: number }; reduced: boolean; still?: number; holding?: (t: number) => boolean;
+}) {
   const root = useRef<Group>(null);
   const left = useRef<Group>(null);
   const right = useRef<Group>(null);
+  const fish = useRef<Group>(null);
   usePose((t) => {
     const p = pose(t);
     place(root.current, p);
     const beat = (p.stroke ?? Math.sin(t * 6)) * 0.5;
     if (right.current) right.current.rotation.x = beat;
     if (left.current) left.current.rotation.x = -beat;
+    if (fish.current) fish.current.visible = !!holding?.(t);
   }, reduced, still);
   const [sx, sy, sz] = EMPEROR_SHOULDER;
   const flipper = partGeometry('emperor-flipper', () => EMPEROR_FLIPPER);
   return (
-    <group ref={root} scale={1.3}>
+    <group ref={root} scale={EMPEROR_SWIM_SCALE}>
       <mesh geometry={partGeometry('emperor-swim', () => EMPEROR_SWIM)} material={vehicleMaterial} />
       <group ref={right} position={[sx, sy, sz - 0.1]}><mesh geometry={flipper} material={vehicleMaterial} /></group>
       <group ref={left} position={[sx, sy, -sz + 0.1]} scale={[1, 1, -1]}><mesh geometry={flipper} material={vehicleMaterial} /></group>
+      {holding && (
+        <group ref={fish} position={[EMPEROR_BILL_TIP, 0, 0]} rotation={[0, Math.PI / 2, 0]} scale={0.5 / EMPEROR_SWIM_SCALE} visible={false}>
+          <mesh geometry={partGeometry('silverfish', () => SILVERFISH)} material={vehicleMaterial} />
+        </group>
+      )}
     </group>
   );
 }
@@ -428,7 +451,7 @@ const WAVE_FLOE_BOXES: readonly Box[] = [
 
 /**
  * Pitman and Durban (2012), illustrated: type B orcas swim together to the floe, dive under it and
- * the wave washes over the ice. The seal slides on the wet ice; the capture is not shown.
+ * the wave washes over the ice and sweeps the seal off into the water; the capture is not shown.
  */
 function OrcaWave({ reduced }: { reduced: boolean }) {
   const orcas = useRef<(Group | null)[]>([]);
@@ -439,7 +462,11 @@ function OrcaWave({ reduced }: { reduced: boolean }) {
     for (let i = 0; i < 3; i++) place(orcas.current[i], orcaWave(t, i));
     const w = orcaWave(t, 0);
     if (floe.current) floe.current.rotation.z = -w.tilt;
-    if (seal.current) seal.current.position.x = -0.2 + w.slide;
+    if (seal.current) {
+      seal.current.position.set(WAVE_SEAL_START + w.slide, w.sealY, 0);
+      seal.current.rotation.z = w.sealPitch;
+      seal.current.visible = w.sealVisible;
+    }
     if (wave.current) {
       wave.current.visible = w.height > 0.02;
       wave.current.position.set(w.crest, WATER_Y, WAVE_FLOE.z);
@@ -452,7 +479,7 @@ function OrcaWave({ reduced }: { reduced: boolean }) {
     ))}
     <group ref={floe} position={[WAVE_FLOE.x, 0, WAVE_FLOE.z]}>
       <mesh geometry={partGeometry('wave-floe', () => WAVE_FLOE_BOXES)} material={vehicleMaterial} />
-      <group ref={seal} position={[-0.2, 0.2, 0]} rotation={[0, 0.3, 0]} scale={1.3}>
+      <group ref={seal} position={[WAVE_SEAL_START, 0.2, 0]} scale={1.3}>
         <mesh geometry={partGeometry('weddell', () => WEDDELL)} material={vehicleMaterial} />
       </group>
     </group>
@@ -570,7 +597,8 @@ function Underwater({ view, state, reduced }: { view: MarineView; state: MarineS
     {(view === 'ceiling' || view === 'minke') && <Minke reduced={reduced} showBlow={false} />}
     {view === 'minke' && <Follow pose={minkePose} active={state.followed} reduced={reduced} />}
     {view === 'emperor' && <>
-      <SwimmingEmperor pose={(t) => onLoop({ cx: HOLE.x + 2, cy: -2, cz: HOLE.z - 0.5, rx: 2.2, rz: 1.3, period: 9 }, t)} reduced={reduced} />
+      <SwimmingEmperor pose={(t) => emperorHunt(t).emperor} holding={(t) => emperorHunt(t).prey.state === 'held'} reduced={reduced} still={EMPEROR_HUNT_STILL} />
+      <EmperorPrey reduced={reduced} />
       <FishSchool loop={{ cx: HOLE.x + 3, cy: -2.6, cz: HOLE.z - 1.2, rx: 1.6, rz: 1.1, period: 11 }} count={14} scale={0.5} reduced={reduced} />
       <KrillSwarm center={[HOLE.x + 1, -1.8, HOLE.z - 1.6]} count={60} spread={1.2} scale={0.14} reduced={reduced} />
     </>}

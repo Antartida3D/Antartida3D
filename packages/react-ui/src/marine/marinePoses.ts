@@ -1,5 +1,5 @@
 import type { Box } from '../voyage/vehicles.ts';
-import { MARINE_PALETTE } from './models.ts';
+import { EMPEROR_BILL_TIP, MARINE_PALETTE } from './models.ts';
 
 /**
  * Layout of the illustrative sea of Océano and the poses of its animals, as pure functions of time
@@ -155,6 +155,47 @@ export function emperorDive(t: number): Pose & { phase: DivePhase; stroke: numbe
   return { ...lerp(under, top, smooth(0.86, 0.96, u)), yaw: heading + Math.PI, pitch: 1.2 * (1 - smooth(0.94, 1, u)), phase: 'up', stroke };
 }
 
+// --- Emperor hunt --------------------------------------------------------------------------------
+
+/** The emperor of «Del hielo al agua» swims this loop under the floes, next to the fish school. */
+export const EMPEROR_HUNT_LOOP: Loop = { cx: HOLE.x + 2, cy: -2, cz: HOLE.z - 0.5, rx: 2.2, rz: 1.3, period: 9 };
+/** Size the swimming emperor is drawn at. */
+export const EMPEROR_SWIM_SCALE = 1.3;
+/** Where its bill tip is, in front of the body, in world units. */
+const EMPEROR_BILL_REACH = EMPEROR_BILL_TIP * EMPEROR_SWIM_SCALE;
+/** Moments of each loop: the fish shows up, is caught, and is swallowed. */
+const PREY_IN = 0.05, CATCH = 0.5, SWALLOW = 0.6;
+/** A still frame with the fish in the bill, for reduced motion. */
+export const EMPEROR_HUNT_STILL = EMPEROR_HUNT_LOOP.period * 0.55;
+
+export type PreyState = 'free' | 'held' | 'gone';
+
+/**
+ * The emperor catches one fish per loop, «de a una presa por vez»: a fish waits off the school where
+ * the emperor will pass, the emperor snaps it with its bill, carries it a moment and swallows it.
+ */
+export function emperorHunt(t: number): { emperor: Pose & { stroke: number }; prey: Pose & { state: PreyState; size: number } } {
+  const loop = EMPEROR_HUNT_LOOP;
+  const u = (((t / loop.period) % 1) + 1) % 1;
+  const base = onLoop(loop, t);
+  // A quick head-down snap at the catch.
+  const snap = Math.max(0, 1 - Math.abs(u - CATCH) / 0.05);
+  const emperor = { ...base, pitch: -0.25 * snap, stroke: Math.sin(t * (6 + 6 * snap)) };
+  const at = onLoop(loop, CATCH * loop.period);
+  const ahead = { x: Math.cos(at.yaw) * EMPEROR_BILL_REACH, z: -Math.sin(at.yaw) * EMPEROR_BILL_REACH };
+  const wiggle = Math.max(0, (CATCH - u) / CATCH) * 0.25;
+  const prey = {
+    x: at.x + ahead.x + Math.sin(t * 2.3) * wiggle,
+    y: at.y + Math.sin(t * 1.7) * wiggle * 0.5,
+    z: at.z + ahead.z + Math.cos(t * 2.1) * wiggle,
+    yaw: at.yaw + Math.PI / 2 + Math.sin(t * 3) * 0.3,
+    pitch: 0,
+    state: (u < PREY_IN ? 'gone' : u < CATCH ? 'free' : u < SWALLOW ? 'held' : 'gone') as PreyState,
+    size: smooth(PREY_IN, PREY_IN + 0.1, u),
+  };
+  return { emperor, prey };
+}
+
 // --- Humpback filter ---------------------------------------------------------------------------
 
 export const FILTER_PERIOD = 8;
@@ -240,7 +281,19 @@ export type WavePhase = 'approach' | 'dive' | 'wave' | 'away';
  * swims together towards the floe, dives under it, and the wave they raise washes over the floe.
  * The seal slides on the wet ice but stays on it: the scene does not show the capture.
  */
-export function orcaWave(t: number, i: number): Pose & { phase: WavePhase; crest: number; height: number; tilt: number; slide: number } {
+/**
+ * The seal on the wave floe, in the frame of the floe: it rests near the middle, the wave pushes it
+ * off the far edge and it drops into the water, nose first. Hidden once under water, until the loop
+ * starts again with the seal back on the ice.
+ */
+export const WAVE_SEAL_START = -0.2;
+const WAVE_SEAL_REST_Y = 0.2;
+
+export function orcaWave(t: number, i: number): Pose & {
+  phase: WavePhase; crest: number; height: number; tilt: number;
+  /** Seal: along the floe, height, nose-down roll, and whether it is still in view. */
+  slide: number; sealY: number; sealPitch: number; sealVisible: boolean;
+} {
   const u = (((t / WAVE_PERIOD) % 1) + 1) % 1;
   const side = (i - 1) * 0.9;
   const startX = WAVE_FLOE.x - 10, diveX = WAVE_FLOE.x - 2.6, endX = WAVE_FLOE.x + 6;
@@ -254,7 +307,11 @@ export function orcaWave(t: number, i: number): Pose & { phase: WavePhase; crest
   const over = Math.max(0, 1 - Math.abs(crest - WAVE_FLOE.x) / WAVE_FLOE.half);
   return {
     x, y: y + Math.sin(t * 1.3 + i) * 0.04, z: WAVE_FLOE.z + side, yaw: 0, pitch, phase, crest, height,
-    tilt: over * 0.12, slide: smooth(0.55, 0.8, u) * WAVE_FLOE.half * 0.45,
+    tilt: over * 0.12,
+    slide: smooth(0.6, 0.76, u) * (WAVE_FLOE.half + 0.45 - WAVE_SEAL_START),
+    sealY: WAVE_SEAL_REST_Y - smooth(0.72, 0.82, u) * 0.8,
+    sealPitch: -smooth(0.7, 0.8, u) * 0.6,
+    sealVisible: u < 0.86,
   };
 }
 

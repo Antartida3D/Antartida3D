@@ -67,6 +67,17 @@ export function tickDiorama(flow: DioramaFlow, now: number, reduced: boolean): D
   }
 }
 
+/** Timers wake up a little before their time (the browser rounds them to whole ms): this much counts as time. */
+export const DIORAMA_TIMER_SLACK_MS = 4;
+
+/**
+ * The flow once the timer of its phase fired. `tickDiorama` is exact and would leave the phase as it is
+ * if the timer woke up a fraction of a ms early; then nothing would re-arm the timer and the screen
+ * would stay in that phase for good (it hid the map after «Seguir con Poncho»).
+ */
+export const timerFiredDiorama = (flow: DioramaFlow, now: number, reduced: boolean): DioramaFlow =>
+  tickDiorama(flow, now + DIORAMA_TIMER_SLACK_MS, reduced);
+
 /** Ms until the phase changes by itself (0 if it is time), or null if it only changes on request (inside, closed). */
 export function dioramaRemaining(flow: DioramaFlow, now: number, reduced: boolean): number | null {
   const length = lengthOf(flow.phase, reduced);

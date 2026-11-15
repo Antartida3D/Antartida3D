@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   DIORAMA_ENTER_MS,
   DIORAMA_LEAVE_MS,
+  DIORAMA_TIMER_SLACK_MS,
   backStep,
   clampStep,
   dioramaOpacity,
@@ -11,6 +12,7 @@ import {
   nextStep,
   openDiorama,
   tickDiorama,
+  timerFiredDiorama,
 } from '../src/index.ts';
 
 describe('steps of the diorama', () => {
@@ -73,6 +75,21 @@ describe('flow of the diorama (injected clock)', () => {
     const left = leaveDiorama(openDiorama(0), 10);
     expect(tickDiorama(left, 1e6, false).phase).toBe('closed');
     expect(tickDiorama(openDiorama(0), 1e6, false).phase).toBe('inside');
+  });
+
+  it('a timer that fires a fraction of a ms early still ends the phase (the screen must not get stuck leaving)', () => {
+    const inside = tickDiorama(openDiorama(0), 10_000, false);
+    const leaving = leaveDiorama(inside, 20_000.3);
+    const early = 20_000.3 + DIORAMA_LEAVE_MS - 0.7; // the browser woke up 0.7 ms before the phase was over
+    // The exact tick keeps its boundary (nothing changes): that is why it alone left the screen stuck.
+    expect(tickDiorama(leaving, early, false)).toBe(leaving);
+    expect(timerFiredDiorama(leaving, early, false).phase).toBe('closed');
+    // A phase that is clearly not over yet does not end, even when the timer fires.
+    expect(timerFiredDiorama(leaving, 20_000.3 + DIORAMA_LEAVE_MS - 2 * DIORAMA_TIMER_SLACK_MS, false)).toBe(leaving);
+    // Entering finishes the same way, and an idle phase never changes.
+    const entering = openDiorama(5_000.4);
+    expect(timerFiredDiorama(entering, 5_000.4 + 650 - 0.9, false).phase).toBe('inside');
+    expect(timerFiredDiorama(inside, 99_999, false)).toBe(inside);
   });
 
   it('can leave while it is still entering, and leaving twice changes nothing', () => {

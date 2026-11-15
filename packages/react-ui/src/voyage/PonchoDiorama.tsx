@@ -8,7 +8,7 @@ import {
   leaveDiorama,
   nextStep,
   openDiorama,
-  tickDiorama,
+  timerFiredDiorama,
   type DioramaView,
   type SceneDef,
 } from '@antartida/core';
@@ -67,7 +67,7 @@ export function PonchoDiorama({ scene, essential, reduced, onDone, onLost, child
   useEffect(() => {
     const wait = dioramaRemaining(flow, performance.now(), reduced);
     if (wait === null) return;
-    const timer = window.setTimeout(() => setFlow((f) => tickDiorama(f, performance.now(), reduced)), wait);
+    const timer = window.setTimeout(() => setFlow((f) => timerFiredDiorama(f, performance.now(), reduced)), wait);
     return () => window.clearTimeout(timer);
   }, [flow, reduced]);
   useEffect(() => {

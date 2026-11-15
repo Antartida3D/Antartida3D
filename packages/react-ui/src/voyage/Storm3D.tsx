@@ -11,15 +11,12 @@ const CLOUD_GREY = 0x66727d;
 const CLOUD_LIGHT = 0x8b97a1;
 const RAIN = 0xb9cbd6;
 const FOAM = 0xf7fafb;
-const BOLT = 0xfff3b0;
 
 const { radius: RADIUS, cloudBase: CLOUD_BASE, cloudTop: CLOUD_TOP } = DRAKE_STORM;
 /** Half the length of the middle line of the storm, and its direction in the frame of the storm (+x downwind). */
 const HALF = Math.hypot(DRAKE_STORM.to.x - DRAKE_STORM.from.x, DRAKE_STORM.to.y - DRAKE_STORM.from.y) / 2;
 const AXIS = Math.atan2(DRAKE_STORM.to.y - DRAKE_STORM.from.y, DRAKE_STORM.to.x - DRAKE_STORM.from.x) - DRAKE_STORM.wind;
 const CLOUDS = 60;
-/** Clouds the bolts fall from. */
-const BOLT_CLOUDS = [5, 8, 23, 41];
 const STREAKS = 750;
 const WHITECAPS = 600;
 const GUSTS = 85;
@@ -29,10 +26,6 @@ const GUST_LINKS = 9;
 const FALL_SECONDS = 1.1;
 /** Seconds a gust takes to cross its stretch of sea: slow, so the ribbons glide. */
 const GUST_SECONDS = 7;
-/** Seconds between the flashes of one bolt. */
-const BOLT_SECONDS = 5.5;
-/** Part of that time the bolt is lit: two quick flashes. */
-const BOLT_FLASHES: readonly (readonly [number, number])[] = [[0, 0.03], [0.055, 0.075]];
 /**
  * Rain, whitecaps and gusts are sized for the camera of the trip, about this high over the sea.
  * Higher they grow with the camera, up to DETAIL_MAX times, so they still show from farther away.
@@ -58,20 +51,9 @@ const CLOUD: readonly (readonly [number, number, number, number, number, number,
   [-0.45, 0.09, -0.2, 0.3, 0.1, 0.28, CLOUD_DARK],
 ];
 
-/** A zigzag from the cloud base (y = 1) down to the sea. */
-const BOLT_BOXES: readonly Box[] = [
-  [0, 0.87, 0, 0.025, 0.27, 0.025, BOLT],
-  [0.08, 0.66, 0, 0.185, 0.025, 0.025, BOLT],
-  [0.16, 0.47, 0, 0.025, 0.36, 0.025, BOLT],
-  [0.09, 0.3, 0, 0.165, 0.025, 0.025, BOLT],
-  [0.02, 0.15, 0, 0.025, 0.3, 0.025, BOLT],
-];
-
 interface Layout {
   /** Every cloud of the bank, in the frame of the storm: +x downwind. */
   clouds: Box[];
-  /** [x, z, height] of the base of the clouds the bolts fall from. */
-  bolts: (readonly [number, number, number])[];
   /** [x, z, phase] of each streak of rain. */
   streaks: (readonly [number, number, number])[];
   /** [x, z, length, phase] of each whitecap. */
@@ -101,7 +83,6 @@ function layOut(): Layout {
         const height = sy * width * CLOUD_THICKNESS;
         return [x + cx * width, Math.min(base + cy * width * CLOUD_THICKNESS, CLOUD_TOP - height / 2), z + cz * width, sx * width, height, sz * width, color];
       })),
-    bolts: BOLT_CLOUDS.map((i) => [spots[i][0], spots[i][1], spots[i][3]] as const),
     streaks: Array.from({ length: STREAKS }, () => [...inBand(), rng()] as const),
     caps: Array.from({ length: WHITECAPS }, () => [...inBand(), 0.25 + rng() * 0.35, rng() * Math.PI * 2] as const),
     gusts: Array.from({ length: GUSTS }, () => [...inBand(RADIUS - 2), 0.35 + rng() * 1.3, rng()] as const),
@@ -109,32 +90,27 @@ function layOut(): Layout {
 }
 
 const cloudMaterial = new MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: CLOUD_OPACITY, depthWrite: false });
-const boltMaterial = new MeshBasicMaterial({ vertexColors: true });
 const rainMaterial = new MeshBasicMaterial({ color: RAIN, transparent: true, opacity: 0.7, depthWrite: false });
 const foamMaterial = new MeshBasicMaterial({ color: FOAM, transparent: true, opacity: 0.85 });
 const gustMaterial = new MeshBasicMaterial({ color: FOAM, transparent: true, opacity: 0.6, depthWrite: false });
 const unitBox = new BoxGeometry(1, 1, 1);
 
 /**
- * The storm over the Drake Passage: clouds, rain, lightning, whitecaps and gusts of wind, on the
- * open map and during the trip. Made of boxes like every effect. An illustration, not weather data.
+ * The storm over the Drake Passage: clouds, rain, whitecaps and gusts of wind, on the open map and
+ * during the trip. Made of boxes like every effect. An illustration, not weather data. No lightning:
+ * thunderstorms are not part of the weather of the Drake.
  */
-export function Storm3D({ reduced }: { reduced: boolean }) {
+export function Storm3D() {
   const group = useRef<Group>(null);
   const clouds = useRef<Mesh>(null);
   const details = useRef<Group>(null);
   const rain = useRef<InstancedMesh>(null);
   const foam = useRef<InstancedMesh>(null);
   const wind = useRef<InstancedMesh>(null);
-  const bolts = useRef<(Mesh | null)[]>([]);
   const seaTime = useSeaTime();
   const layout = useMemo(layOut, []);
   const cloudGeometry = useMemo(() => buildBoxGeometry(layout.clouds), [layout]);
-  const boltGeometry = useMemo(() => buildBoxGeometry(BOLT_BOXES), []);
-  useEffect(() => () => {
-    cloudGeometry.dispose();
-    boltGeometry.dispose();
-  }, [cloudGeometry, boltGeometry]);
+  useEffect(() => () => cloudGeometry.dispose(), [cloudGeometry]);
   const dummy = useMemo(() => new Object3D(), []);
 
   // Time comes from the clock of the sea, which already asks for frames and stands still with reduced motion.
@@ -151,13 +127,6 @@ export function Storm3D({ reduced }: { reduced: boolean }) {
 
     // The bank heaves slowly, downwind and back.
     clouds.current?.position.set(Math.sin(time * 0.12) * 0.8, Math.sin(time * 0.3) * 0.15, 0);
-
-    bolts.current.forEach((bolt, i) => {
-      if (!bolt) return;
-      const beat = (time / BOLT_SECONDS + i * 0.43) % 1;
-      // No flashes with reduced motion.
-      bolt.visible = !reduced && BOLT_FLASHES.some(([from, to]) => beat >= from && beat < to);
-    });
 
     const fine = details.current;
     if (!fine) return;
@@ -218,9 +187,6 @@ export function Storm3D({ reduced }: { reduced: boolean }) {
     // +x of the storm points downwind, like the bow of a vehicle points ahead.
     <group ref={group} position={[DRAKE_STORM.x - 500, 0, DRAKE_STORM.y - 500]} rotation-y={-DRAKE_STORM.wind}>
       <mesh ref={clouds} geometry={cloudGeometry} material={cloudMaterial} />
-      {layout.bolts.map(([x, z, base], i) => (
-        <mesh key={i} ref={(m) => void (bolts.current[i] = m)} position={[x, 0, z]} scale={base} geometry={boltGeometry} material={boltMaterial} visible={false} />
-      ))}
       <group ref={details}>
         <instancedMesh ref={rain} args={[unitBox, rainMaterial, STREAKS]} frustumCulled={false} />
         <instancedMesh ref={foam} args={[unitBox, foamMaterial, WHITECAPS]} frustumCulled={false} />

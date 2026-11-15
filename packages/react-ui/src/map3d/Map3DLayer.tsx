@@ -150,7 +150,7 @@ function SceneContent({
       <OrcadasSite reduced={reduced} />
       <MarambioSite reduced={reduced} hidden={Boolean(voyage)} />
       <PointModels reduced={reduced} />
-      <Storm3D reduced={reduced} />
+      <Storm3D />
       {phase === 'travel' && <OrcadasTravel3D arrival={arrival ?? 'ship'} reduced={reduced} />}
       {voyage && <Voyage3D bus={voyage} reduced={reduced} overlay={overlayRef} />}
       {enablePost && (

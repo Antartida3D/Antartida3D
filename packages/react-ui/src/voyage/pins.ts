@@ -1,6 +1,8 @@
 import { CircleGeometry, MeshBasicMaterial, Shape, ShapeGeometry } from 'three';
 
 const HEAD_Y = 0.68;
+/** Height of the center of the round head of a pin, in pin units: where its button goes. */
+export const PIN_HEAD_Y = HEAD_Y;
 const HEAD_R = 0.32;
 /** Width of the ink line around the pin, like the line around the markers of the map. */
 const LINE = 0.055;

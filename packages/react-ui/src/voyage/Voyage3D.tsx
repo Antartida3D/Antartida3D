@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { BoxGeometry, BufferGeometry, Group, Line, LineDashedMaterial, Mesh, MeshBasicMaterial, Vector3 } from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
-import type { CameraControls } from '@react-three/drei';
+import { Html, type CameraControls } from '@react-three/drei';
 import {
   CAMERA_RETURN_SECONDS,
   DRAKE_STORM,
@@ -31,7 +31,7 @@ import {
   type TransportKind,
 } from '@antartida/core';
 import { HELICOPTER_BOXES, HELICOPTER_ROTOR_BOXES, HELICOPTER_ROTOR_ORIGIN } from '../orcadas/stationModels.ts';
-import { buildPinGeometry, pinMaterial } from './pins.ts';
+import { PIN_HEAD_Y, buildPinGeometry, pinMaterial } from './pins.ts';
 import { buildBoxGeometry, buildVehicleGeometry, vehicleMaterial } from './vehicles.ts';
 import { Sighting3D } from './Sighting3D.tsx';
 import { buildTrailGeometry, trailMaterial, updateTrail } from './trail.ts';
@@ -146,6 +146,8 @@ export function Voyage3D({ bus, reduced, overlay }: {
   const storm = useRef({ inside: false });
   // Ids of the animals in view and of the ones already spotted, joined: React re-renders only when they change.
   const [inView, setInView] = useState('||');
+  // Milestones passed: their pins open their cards (#157).
+  const [passed, setPassed] = useState(0);
 
   useEffect(() => {
     const onChange = () => {
@@ -156,6 +158,8 @@ export function Voyage3D({ bus, reduced, overlay }: {
       // A card open beside an animal goes away with it.
       if (bus.beside && !visible.includes(bus.beside)) return bus.closeSighting();
       setInView(`${visible.join(',')}|${bus.seen.join(',')}|${bus.beside ?? ''}`);
+      // Not while the helicopter flies to the base: its pin gives way to it.
+      setPassed(s && bus.transfer === null ? s.reached : 0);
       invalidate();
     };
     bus.listeners.add(onChange);
@@ -205,6 +209,7 @@ export function Voyage3D({ bus, reduced, overlay }: {
   useEffect(() => () => trail?.dispose(), [trail]);
 
   // One pin per milestone ahead of the departure, so the user sees them coming.
+  const stops = kind ? voyageStops(kind) : [];
   const pins = useMemo(() => (kind ? voyageStops(kind).slice(1).map((stop) => stop.pin) : []), [kind]);
   const pinGroups = useRef<(Group | null)[]>([]);
   const pinGeometry = useMemo(buildPinGeometry, []);
@@ -394,6 +399,18 @@ export function Voyage3D({ bus, reduced, overlay }: {
           <mesh geometry={pinGeometry.fill} material={pinMaterial.ahead} renderOrder={1001} />
           <mesh geometry={pinGeometry.line} material={pinMaterial.line} renderOrder={1000} />
           <mesh geometry={pinGeometry.dot} material={pinMaterial.dot} renderOrder={1002} />
+          {/* A pin passed opens its milestone: the trip does not stop at it (#157). A real button, over its head. */}
+          {i + 1 < passed && i + 1 < pins.length && (
+            <Html position={[0, PIN_HEAD_Y, 0]} center portal={overlay as RefObject<HTMLElement>} zIndexRange={[3, 3]}>
+              <button
+                type="button"
+                className="vpin"
+                onClick={() => bus.openStop(i + 1)}
+                aria-label={`Hito: ${stops[i + 1].milestone.title}. Tocá para leerlo.`}
+                title={stops[i + 1].milestone.title}
+              />
+            </Html>
+          )}
         </group>
       ))}
       {trail && <mesh ref={trailMesh} geometry={trail} material={trailMaterial} frustumCulled={false} />}

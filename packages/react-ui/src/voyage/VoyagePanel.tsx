@@ -16,6 +16,7 @@ import {
   voyageArrived,
   voyageProgress,
   voyageSightings,
+  voyageStopAt,
   voyageStops,
   type TransportId,
   type TransportKind,
@@ -182,6 +183,39 @@ function Notebook({ voyage, animated }: { voyage: VoyageController; animated: bo
   );
 }
 
+/**
+ * Milestones of the trip on arrival, like the notebook of the animals: the ones read and the ones
+ * passed by without opening (#157). Every one opens from here, read or not.
+ */
+function MilestoneLog({ voyage }: { voyage: VoyageController }) {
+  const state = voyage.state!;
+  // The arrival is the card this is in: it is not listed.
+  const stops = voyageStops(state.kind).slice(0, -1);
+  const read = stops.filter((s) => voyage.opened.includes(s.milestone.id)).length;
+  return (
+    <div className="vnotebook">
+      <p><strong>Hitos del viaje:</strong> abriste {read} de {stops.length}</p>
+      <ul>
+        {stops.map(({ milestone }, i) => {
+          const open = voyage.opened.includes(milestone.id);
+          return (
+            <li key={milestone.id}>
+              <button
+                type="button"
+                className={'vnote' + (open ? '' : ' missed')}
+                onClick={() => voyage.openMilestone(i)}
+                aria-label={open ? `${milestone.title}, abierto. Volver a leerlo.` : `${milestone.title}, sin abrir. Leerlo.`}
+              >
+                {milestone.title}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
 function MilestoneCard({ voyage, animated, onExit, onSource }: {
   voyage: VoyageController;
   animated: boolean;
@@ -192,15 +226,21 @@ function MilestoneCard({ voyage, animated, onExit, onSource }: {
   const ref = useRef<HTMLElement>(null);
   const [more, setMore] = useState(false);
   useFocusReturn(true, ref, '.btn.primary');
-  const { milestone } = voyageStops(state.kind)[state.card];
+  const stops = voyageStops(state.kind);
+  const { milestone } = stops[state.card];
   const { notes, question } = expeditionAt(milestone.id, state.transport);
   const chosen = voyage.answers[milestone.id];
   const answered = chosen !== undefined;
+  // The question is optional (#157): it waits behind a button, unless the card was opened for it.
+  const [asked, setAsked] = useState(voyage.asking);
+  const quiz = !!question && (asked || answered);
   const score = quizScore(state.transport, voyage.answers);
-  const last = voyageArrived(state);
+  const arrived = voyageArrived(state);
+  // The card of the arrival. Once arrived, the other milestones open again from it, and close back to it.
+  const last = state.card === stops.length - 1;
   const next = () => (last ? onExit(true) : voyage.closeCard());
-  // The hop of the helicopter shows the answer of the arrival: offered once the question is answered.
-  const transfer = animated && last && answered && state.transport === VOYAGE_TRANSFER.transport;
+  // The hop of the helicopter shows the answer of the arrival: not offered while its question waits for one.
+  const transfer = animated && last && (answered || !quiz) && state.transport === VOYAGE_TRANSFER.transport;
   return (
     <section
       className="sheet voyage"
@@ -210,7 +250,7 @@ function MilestoneCard({ voyage, animated, onExit, onSource }: {
       ref={ref}
       onKeyDown={(e) => e.key === 'Escape' && next()}
     >
-      <small className="vstep">Hito {state.card + 1} de {voyageStops(state.kind).length}</small>
+      <small className="vstep">Hito {state.card + 1} de {stops.length}</small>
       <h2 id="voyage-title">{milestone.title}</h2>
       <ul className="vfacts">
         <Fact fact={milestone.essential} onSource={onSource} />
@@ -218,7 +258,20 @@ function MilestoneCard({ voyage, animated, onExit, onSource }: {
       </ul>
       {notes.length > 0 && (
         <div className="vexp" role="group" aria-label="Cómo funciona la expedición">
-          {question && (
+          {question && !quiz && (
+            <button
+              type="button"
+              className="btn vask"
+              onClick={() => {
+                setAsked(true);
+                // The button gives way to the question: the focus goes to its first option.
+                requestAnimationFrame(() => ref.current?.querySelector<HTMLElement>('.vquiz .btn')?.focus());
+              }}
+            >
+              Responder una pregunta
+            </button>
+          )}
+          {question && quiz && (
             <fieldset className="vquiz">
               <legend>{question.prompt}</legend>
               {question.options.map((option, i) => (
@@ -246,9 +299,13 @@ function MilestoneCard({ voyage, animated, onExit, onSource }: {
       )}
       {last && score.total > 0 && (
         <p>
-          <strong>Preguntas del viaje:</strong> acertaste {score.right} de {score.total}.{score.right === score.total ? ' ¡Todas!' : ''}
+          <strong>Preguntas del viaje:</strong>{' '}
+          {score.answered === 0
+            ? `no respondiste ninguna de las ${score.total}. Se abren desde los hitos de abajo.`
+            : `respondiste ${score.answered} de ${score.total} y acertaste ${score.right}.${score.right === score.total ? ' ¡Todas!' : ''}`}
         </p>
       )}
+      {last && <MilestoneLog voyage={voyage} />}
       {last && voyageSightings(state.kind).length > 0 && <Notebook voyage={voyage} animated={animated} />}
       {last && <p className="anno">Si te quedó curiosidad por otro medio, volvé a hacer la expedición.</p>}
       <div className="row vactions">
@@ -258,7 +315,9 @@ function MilestoneCard({ voyage, animated, onExit, onSource }: {
             Ver el traslado
           </button>
         )}
-        <button type="button" className="btn primary" onClick={next}>{last ? 'Terminar el viaje' : 'Continuar'}</button>
+        <button type="button" className="btn primary" onClick={next}>
+          {last ? 'Terminar el viaje' : arrived ? 'Volver a la llegada' : 'Seguir viaje'}
+        </button>
         <button type="button" className="btn ghost" aria-expanded={more} onClick={() => setMore((m) => !m)}>
           {more ? 'Ver menos' : 'Saber más'}
         </button>
@@ -317,6 +376,8 @@ function TravelBar({ voyage, animated, onExit }: { voyage: VoyageController; ani
   const trip = useRef<HTMLParagraphElement>(null);
   const { bus } = voyage;
   const [atStart, setAtStart] = useState(state.t <= 0);
+  // The milestone the vehicle is at or just went by: going back can take it behind the last one passed.
+  const [here, setHere] = useState(voyageStopAt(state));
 
   // The progress bar follows the trip frame by frame without re-rendering React.
   useEffect(() => {
@@ -327,7 +388,11 @@ function TravelBar({ voyage, animated, onExit }: { voyage: VoyageController; ani
         const text = tripLine(bus.state.transport, bus.state.kind, bus.state.t);
         if (trip.current.textContent !== text) trip.current.textContent = text;
       }
-      if (bus.state) setAtStart(bus.state.t <= 0); // re-renders only when it changes
+      if (bus.state) {
+        // Re-render only when they change.
+        setAtStart(bus.state.t <= 0);
+        setHere(voyageStopAt(bus.state));
+      }
     };
     paint();
     bus.listeners.add(paint);
@@ -348,6 +413,9 @@ function TravelBar({ voyage, animated, onExit }: { voyage: VoyageController; ani
   }, [hint, voyage.gear]);
 
   const next = voyageStops(state.kind)[state.reached].milestone;
+  const stop = here >= 0 ? voyageStops(state.kind)[here].milestone : null;
+  const question = stop ? expeditionAt(stop.id, state.transport).question : null;
+  const read = stop ? voyage.opened.includes(stop.id) : false;
   /** Handlers of a press-and-hold button that moves the trip forward or back. */
   const holdProps = (back: boolean) => {
     const press = () => {
@@ -400,7 +468,30 @@ function TravelBar({ voyage, animated, onExit }: { voyage: VoyageController; ani
           </span>
         )}
       </p>
-      {/* One row, with the main button at the same corner as "Continuar" in the milestone card: the pointer stays put. */}
+      {/* The milestone just passed and its question are offered, not opened: the trip goes on (#157). */}
+      {stop && (
+        <div className="vsuggest" role="group" aria-label="Hito por el que pasás">
+          <button
+            type="button"
+            className={'vchip' + (read ? ' read' : '')}
+            onClick={() => voyage.openMilestone(here)}
+            aria-label={`${read ? 'Volver a leer' : 'Leer'} el hito: ${stop.title}`}
+          >
+            <span className="vchipk">{read ? 'Leído' : 'Leer'}</span>{stop.title}
+          </button>
+          {question && voyage.answers[stop.id] === undefined && (
+            <button
+              type="button"
+              className="vchip ask"
+              onClick={() => voyage.openMilestone(here, true)}
+              aria-label={`Responder la pregunta del hito: ${stop.title}`}
+            >
+              ¿Una pregunta?
+            </button>
+          )}
+        </div>
+      )}
+      {/* One row, with the main button at the same corner as "Seguir viaje" in the milestone card: the pointer stays put. */}
       <div className="row">
         {animated && (
           <button

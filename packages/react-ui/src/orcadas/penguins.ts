@@ -1,21 +1,15 @@
-import { worldCoastDistance } from '@antartida/core';
-import type { Box } from '../voyage/vehicles.ts';
-import { PENGUIN_KNOLL, SLIDE_DIRECTION, VOXEL_PALETTE } from './stationModels.ts';
+import { ARRIVAL_SECONDS, type ArrivalId, worldCoastDistance } from '@antartida/core';
+import { PENGUIN_KNOLL, SLIDE_DIRECTION } from './stationModels.ts';
 
 /**
  * Penguin colony of the Orcadas diorama: a reconstruction (no source places the colony) of
  * Adélie and chinstrap penguins on a rocky knoll, with a few of them doing the round trip to the
- * sea: walk, toboggan down the snow, shake, swim and leap back onto the beach.
+ * sea: walk, toboggan down the snow, swim, leap back onto the beach and shake.
  *
  * Everything here is a pure function of time, so the scene can draw any instant and the tests
  * can check the whole loop (no overlap, nobody walks on water or through a building).
  */
 
-const { BLACK, WHITE, ORANGE, RED, ROCK, ROCK_DARK, ROCK_LIGHT } = VOXEL_PALETTE;
-/** Pink-cream guano of a krill-eating colony. */
-const GUANO = 0xdcc2b4;
-const GUANO_LIGHT = 0xeee2d6;
-const PEBBLE = 0x5b605e;
 
 /** Animals are drawn larger than real so they can be seen (declared in the scene label). */
 export const PENGUIN_SCALE = 0.55;
@@ -25,82 +19,6 @@ export const PENGUIN_SHOULDER: readonly [number, number, number] = [-0.01, 0.47,
 
 export type PenguinSpecies = 'adelie' | 'chinstrap';
 
-export interface PenguinParts {
-  body: Box[];
-  /** Relative to PENGUIN_NECK. */
-  head: Box[];
-  /** One flipper relative to its shoulder; the scene places it on both sides. */
-  flipper: Box[];
-}
-
-const shift = (boxes: readonly Box[], dx: number, dy: number, dz: number): Box[] =>
-  boxes.map(([x, y, z, sx, sy, sz, c]) => [x + dx, y + dy, z + dz, sx, sy, sz, c] as Box);
-
-/** Standing penguin split in body, head and flippers so the scene can animate them. */
-export function penguinParts(species: PenguinSpecies): PenguinParts {
-  const body: Box[] = [
-    // Webbed feet
-    [0.05, 0.02, 0.075, 0.16, 0.04, 0.09, ORANGE],
-    [0.05, 0.02, -0.075, 0.16, 0.04, 0.09, ORANGE],
-    [0.12, 0.015, 0.075, 0.05, 0.028, 0.105, ORANGE],
-    [0.12, 0.015, -0.075, 0.05, 0.028, 0.105, ORANGE],
-    // Stiff tail
-    [-0.14, 0.07, 0, 0.12, 0.045, 0.11, BLACK],
-    [-0.19, 0.045, 0, 0.08, 0.03, 0.075, BLACK],
-    // Black back, stepped towards the shoulders
-    [-0.01, 0.19, 0, 0.23, 0.22, 0.26, BLACK],
-    [-0.01, 0.37, 0, 0.22, 0.2, 0.24, BLACK],
-    [-0.005, 0.5, 0, 0.19, 0.1, 0.21, BLACK],
-    // White belly and chest
-    [0.055, 0.19, 0, 0.14, 0.2, 0.245, WHITE],
-    [0.06, 0.36, 0, 0.135, 0.2, 0.225, WHITE],
-    [0.055, 0.48, 0, 0.12, 0.08, 0.19, WHITE],
-  ];
-  const crown: Box[] = [
-    [0.01, 0.61, 0, 0.18, 0.13, 0.19, BLACK],
-    [0.005, 0.685, 0, 0.14, 0.035, 0.15, BLACK],
-  ];
-  const face: Box[] =
-    species === 'adelie'
-      ? [
-          // Adélie: black head, wide white eye ring, red-based bill
-          [0.05, 0.625, 0.098, 0.07, 0.07, 0.014, WHITE],
-          [0.05, 0.625, -0.098, 0.07, 0.07, 0.014, WHITE],
-          [0.056, 0.625, 0.107, 0.028, 0.028, 0.008, BLACK],
-          [0.056, 0.625, -0.107, 0.028, 0.028, 0.008, BLACK],
-          [0.12, 0.6, 0, 0.06, 0.042, 0.056, RED],
-          [0.165, 0.595, 0, 0.055, 0.028, 0.038, BLACK],
-        ]
-      : [
-          // Chinstrap: white face, black cap and the thin black strap under the chin
-          [0.045, 0.59, 0, 0.14, 0.11, 0.196, WHITE],
-          [0.065, 0.625, 0.102, 0.028, 0.028, 0.01, BLACK],
-          [0.065, 0.625, -0.102, 0.028, 0.028, 0.01, BLACK],
-          [0.035, 0.56, 0.101, 0.026, 0.1, 0.01, BLACK],
-          [0.035, 0.56, -0.101, 0.026, 0.1, 0.01, BLACK],
-          [0.07, 0.535, 0, 0.05, 0.03, 0.206, BLACK],
-          [0.13, 0.6, 0, 0.075, 0.04, 0.052, BLACK],
-        ];
-  const flipper: Box[] = [
-    [0, -0.09, 0, 0.11, 0.18, 0.036, BLACK],
-    [0.02, -0.23, 0.003, 0.085, 0.15, 0.032, BLACK],
-    [0.04, -0.16, -0.002, 0.03, 0.24, 0.038, WHITE],
-  ];
-  const [nx, ny, nz] = PENGUIN_NECK;
-  return { body, head: shift([...crown, ...face], -nx, -ny, -nz), flipper };
-}
-
-/** The whole penguin at rest, for the voxel detail test. */
-export function assemblePenguinBoxes(species: PenguinSpecies): Box[] {
-  const { body, head, flipper } = penguinParts(species);
-  const [sx, sy, sz] = PENGUIN_SHOULDER;
-  return [
-    ...body,
-    ...shift(head, ...PENGUIN_NECK),
-    ...shift(flipper, sx, sy, sz),
-    ...shift(flipper, sx, sy, -sz),
-  ];
-}
 
 // ---------------------------------------------------------------------------------------------
 // Colony plan
@@ -132,37 +50,6 @@ const NESTS: readonly V2[] = [
 
 /** Where each nest is, in world x/z. */
 export const NEST_POSITIONS: readonly V2[] = NESTS.map(([s, p]) => knollPoint(s, p));
-
-/**
- * Flat guano-stained rock of the colony with a ring of pebbles for each nest, relative to the
- * knoll centre and its top height (y = 0).
- */
-export function buildRookeryBoxes(): Box[] {
-  // Irregular stains of guano and bare rock, thin and flush with the knoll top.
-  const boxes: Box[] = [
-    [0.1, 0.0, -0.15, 1.1, 0.03, 0.8, GUANO],
-    [-0.35, 0.0, 0.3, 0.8, 0.03, 0.6, GUANO],
-    [0.45, 0.0, 0.3, 0.5, 0.03, 0.45, GUANO_LIGHT],
-    [-0.6, 0.0, -0.45, 0.45, 0.03, 0.5, GUANO_LIGHT],
-    [0.3, 0.0, -0.75, 0.55, 0.03, 0.3, GUANO],
-    [-0.95, 0.0, 0.05, 0.3, 0.03, 0.55, GUANO_LIGHT],
-    [0.75, 0.02, -0.45, 0.28, 0.08, 0.22, ROCK_DARK],
-    [-0.85, 0.02, 0.6, 0.24, 0.07, 0.3, ROCK_LIGHT],
-    [0.95, 0.02, 0.5, 0.2, 0.06, 0.2, ROCK],
-  ];
-  for (const [s, p] of NESTS) {
-    const x = S[0] * s + P[0] * p;
-    const z = S[1] * s + P[1] * p;
-    // A low ring of pebbles: the nest the penguins build.
-    boxes.push(
-      [x + 0.11, 0.06, z, 0.06, 0.05, 0.2, PEBBLE],
-      [x - 0.11, 0.06, z, 0.06, 0.05, 0.2, PEBBLE],
-      [x, 0.06, z + 0.11, 0.16, 0.05, 0.06, PEBBLE],
-      [x, 0.06, z - 0.11, 0.16, 0.05, 0.06, PEBBLE]
-    );
-  }
-  return boxes;
-}
 
 /** Pose of one penguin at one instant. Angles in radians, lengths in world units. */
 export interface PenguinPose {
@@ -541,12 +428,9 @@ export function buildPenguinRoute(heightAt: HeightAt): PenguinRoute {
   const walk1 = toSamples(curve([rest, knollPoint(0.8, 0.7), rim], 0.15), ground);
   add('walk', walk1, walk1[walk1.length - 1].d / WALK_SPEED);
   add('flop', still(last()), 0.75);
-  const slide = toSamples(curve([rim, slideEnd], 0.12), ground);
+  // The slide does not stop at the beach: it runs on to the water's edge and into the dive.
+  const slide = toSamples(curve([rim, slideEnd, edge], 0.12), ground);
   add('slide', slide, slide[slide.length - 1].d / SLIDE_SPEED);
-  add('standUp', still(last()), 0.8);
-  add('shake', still(last()), 1.3);
-  const walk2 = toSamples([slideEnd, edge], ground);
-  add('walk', walk2, Math.max(0.6, walk2[walk2.length - 1].d / WALK_SPEED));
   const diveP = toSamples(curve([edge, dive], 0.1), (x, z) => Math.max(SWIM_Y, ground(x, z)));
   add('dive', diveP, 0.9);
   const swim = toSamples(curve([dive, out1, out2, back], 0.15), () => SWIM_Y);
@@ -554,6 +438,7 @@ export function buildPenguinRoute(heightAt: HeightAt): PenguinRoute {
   const leap = toSamples(curve([back, landing], 0.08), (x, z) => Math.max(SWIM_Y, ground(x, z)));
   add('leap', leap, Math.max(0.9, leap[leap.length - 1].d / 1.4));
   add('standUp', still(last()), 0.8);
+  add('shake', still(last()), 1.3);
   const walk3 = toSamples(curve([landing, side, rest], 0.15), ground);
   add('walk', walk3, walk3[walk3.length - 1].d / WALK_SPEED);
   // At rest the penguin turns back towards the rim, ready for the next trip.
@@ -561,7 +446,7 @@ export function buildPenguinRoute(heightAt: HeightAt): PenguinRoute {
   segs.push({
     mode: 'rest',
     path: restSeg,
-    duration: 3,
+    duration: 2,
     yaw0: segs[segs.length - 1].yaw1,
     yaw1: segs[0].yaw0,
     slope0: segs[segs.length - 1].slope1,
@@ -663,8 +548,8 @@ export function travellerPose(route: PenguinRoute, t: number, offset: number, ou
       out.headPitch = smooth(0.4, 1, u) * 1.2;
       break;
     case 'slide': {
-      // Accelerates down the slope and brakes on the flat; kicks with the feet at the start.
-      dist = total * (u < 0.7 ? 0.7 * (u / 0.7) ** 1.6 : 1 - 0.3 * (1 - (u - 0.7) / 0.3) ** 2);
+      // Accelerates down the slope and keeps its speed to the water; kicks with the feet at the start.
+      dist = total * u ** 1.3;
       lie = 1;
       out.flipL = out.flipR = 1.0 + Math.sin(u * 20) * 0.08;
       out.headPitch = 1.2;
@@ -678,7 +563,7 @@ export function travellerPose(route: PenguinRoute, t: number, offset: number, ou
       out.headPitch = (1 - smooth(0, 0.7, u)) * 1.2;
       break;
     case 'shake': {
-      // Quick shake to get the snow off, fading out.
+      // Quick shake to get the water off, fading out.
       const fade = Math.sin(u * Math.PI);
       out.roll = Math.sin(u * 44) * 0.24 * fade;
       out.flipL = out.flipR = 0.2 + fade * (0.55 + Math.sin(u * 44) * 0.25);
@@ -687,7 +572,8 @@ export function travellerPose(route: PenguinRoute, t: number, offset: number, ou
       break;
     }
     case 'dive':
-      lie = smooth(0, 0.3, u);
+      // Already on its belly from the slide.
+      lie = 1;
       out.flipL = out.flipR = 0.3 + smooth(0, 0.6, u) * 0.4;
       out.headPitch = smooth(0.3, 1, u) * 0.6;
       break;
@@ -787,4 +673,73 @@ export function buildPenguinColony(heightAt: HeightAt): {
     };
   });
   return { residents, route, travellers, frozenTravellers };
+}
+
+/** Seconds after `ARRIVAL_SECONDS` for coastal penguins to return to the beach. */
+export const PENGUIN_RETURN_SECONDS = 3.5;
+
+/**
+ * Retreat envelope in `[0, 1]` while the Zodiac approaches and lands on the beach.
+ * Active only for boat arrival (`arrival === 'ship'`), open water (`seaIce < 0.5`), and `!reduced`.
+ */
+export function zodiacAvoidanceEnvelope(
+  elapsed: number,
+  arrival: ArrivalId,
+  seaIce: number,
+  reduced: boolean,
+): number {
+  if (reduced || arrival !== 'ship' || seaIce >= 0.5) return 0;
+  if (elapsed <= 0 || elapsed >= ARRIVAL_SECONDS + PENGUIN_RETURN_SECONDS) return 0;
+  if (elapsed < ARRIVAL_SECONDS) return smooth(0.2, 1.8, elapsed);
+  return 1 - smooth(ARRIVAL_SECONDS + 0.3, ARRIVAL_SECONDS + PENGUIN_RETURN_SECONDS, elapsed);
+}
+
+/**
+ * Shifts coastal/beach/water penguins uphill away from the landing Zodiac during arrival,
+ * standing them up and keeping their feet/body supported on the terrain.
+ */
+export function applyZodiacAvoidance(
+  pose: PenguinPose,
+  elapsed: number,
+  arrival: ArrivalId,
+  seaIce: number,
+  reduced: boolean,
+  t: number,
+  heightAt: HeightAt,
+): PenguinPose {
+  const env = zodiacAvoidanceEnvelope(elapsed, arrival, seaIce, reduced);
+  if (env <= 1e-4) return pose;
+
+  const coastD = worldCoastDistance(pose.x, pose.z);
+  const prox = 1 - smooth(0.8, 2.2, coastD);
+  const factor = env * prox;
+  if (factor <= 1e-4) return pose;
+
+  const dx = CX - pose.x;
+  const dz = CZ - pose.z;
+  const len = Math.hypot(dx, dz) || 1;
+  const dirX = dx / len;
+  const dirZ = dz / len;
+  // Move enough uphill so even wading/near-shore penguins clear the landing beach.
+  const retreatDist = factor * (0.9 + Math.max(0, 1.2 - coastD) * 0.75);
+
+  const out: PenguinPose = { ...pose };
+  out.x += dirX * retreatDist;
+  out.z += dirZ * retreatDist;
+  out.lie = pose.lie * (1 - factor);
+  out.slope = pose.slope * (1 - factor);
+  const retreatYaw = yawOf(dirX, dirZ);
+  out.yaw = lerpAngle(pose.yaw, retreatYaw, smooth(0, 0.45, factor));
+
+  // Add a brisk waddle while actively retreating or returning.
+  const movingWeight = Math.sin(factor * Math.PI);
+  out.roll += Math.sin(t * 11) * 0.08 * movingWeight;
+  out.flipL = Math.max(out.flipL, 0.12 + movingWeight * 0.25);
+  out.flipR = Math.max(out.flipR, 0.12 + movingWeight * 0.25);
+
+  const supportY = groundSupportY(heightAt, out);
+  const newCoast = worldCoastDistance(out.x, out.z);
+  const swimFloor = SWIM_Y + 0.125 * PENGUIN_SCALE;
+  out.y = newCoast < 0.05 ? Math.max(supportY, swimFloor) : supportY;
+  return out;
 }

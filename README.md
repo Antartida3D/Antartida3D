@@ -28,6 +28,7 @@ Equipo **DOT ENV**, hackatón SoberaníaTech (Ushuaia, 2026), Eje 2: Antártida,
 │  ├─ diseno/           especificación de diseño (HANDOFF.md y prototipo)
 │  ├─ decisiones.md     registro de decisiones y diferencias
 │  ├─ datos-relieve.md  origen y archivos de los datos de relieve 3D (Bedmap3)
+│  ├─ tecnologias.md    guía fácil de leer de las tecnologías del proyecto
 │  └─ rendimiento.md    + rendimiento/ (results.json, capturas/)
 ├─ .agents/ .claude/ .githooks/
 ├─ AGENTS.md  ROADMAP.md  README.md  .gitignore
@@ -54,8 +55,23 @@ pnpm e2e             # tests de flujo e2e en apps/dibujado (Playwright)
 pnpm bench           # benchmark de rendimiento
 ```
 
+`pnpm e2e` acepta tres variables opcionales para correr más rápido en local (#87). Sin ellas, la suite corre como siempre: un solo worker y WebGL dibujado por CPU (SwiftShader), que funciona en cualquier máquina.
+
+- `E2E_GPU=1`: dibuja WebGL con la placa de video. Al empezar, la suite imprime qué GPU usa y avisa si Chromium volvió a SwiftShader.
+- `E2E_WORKERS=<n>`: corre `n` archivos de prueba en paralelo. Solo junto con `E2E_GPU=1`: con SwiftShader cada worker usa varios núcleos y, con 4, la prueba de arrastre del mapa 3D se pasa del tiempo límite.
+- `E2E_PORT=<puerto>`: levanta la vista previa en otro puerto. Sirve si hay un `pnpm dev` de otra rama en 5103, que si no la suite reutilizaría.
+
+Por ejemplo, en una máquina con placa de video (Git Bash o sh):
+
+```sh
+E2E_GPU=1 E2E_WORKERS=4 pnpm e2e
+```
+
+Tiempos medidos en [`docs/rendimiento/e2e.md`](docs/rendimiento/e2e.md).
+
 ## Fuentes y licencias
 
+- **Reclamos territoriales antárticos (#108):** capa opcional del mapa 3D, desactivada al cargar. Se abre desde la ficha de **El Polo Sur** con **Ver reclamos territoriales** (#128); con la capa encendida, el interruptor **Reclamos territoriales** la apaga. Muestra superficies transparentes de colores intensos, con bordes punteados y banderas; los botones por país permiten distinguir superposiciones. Incluye los siete países reclamantes y Pedro I como reclamo insular separado de Tierra de la Reina Maud. Ofrece **Sectores con mar** (referencia geográfica hasta 60° S) y **Solo tierra y hielo** sobre Bedmap3. El color de un sector sobre el mar no significa soberanía ni ZEE. Las fichas de los siete países describen sus reclamos y enlazan las fuentes. Banderas con ubicación y escala ilustrativas. Fuentes nacionales, Tratado Antártico, metodología y licencias en [`docs/reclamos-antarticos-fuentes.md`](docs/reclamos-antarticos-fuentes.md).
 - **Relieve Bedmap3 (apps/dibujado):** British Antarctic Survey (UK Polar Data Centre). Dataset de superficie y máscaras a 500 m en EPSG:3031, licencia [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Detalle de archivos, transformación y cita en [`docs/datos-relieve.md`](docs/datos-relieve.md).
   - Organismo: UK Polar Data Centre, British Antarctic Survey.
   - Dataset DOI: [https://doi.org/10.5285/2d0e4791-8e20-46a3-80e4-f5f6716025d2](https://doi.org/10.5285/2d0e4791-8e20-46a3-80e4-f5f6716025d2).
@@ -117,6 +133,11 @@ pnpm bench           # benchmark de rendimiento
 
 En cumplimiento con las bases de la hackatón, se declara el uso de herramientas de inteligencia artificial en el desarrollo de los prototipos:
 
+- **Reclamos territoriales antárticos (#108):**
+  > Investigación, implementación y pruebas con Codex. Seis banderas nacionales modeladas e inspeccionadas en Blender mediante MCP; se reutiliza la bandera argentina existente. Los modelos son ilustraciones de bloques, no reproducciones normativas de símbolos oficiales. Banderas editables en [`claim-flags.blend`](docs/diseno/modelos/claim-flags.blend) y generador [`build-claim-flags.py`](packages/react-ui/scripts/build-claim-flags.py). Las superficies siguen el relieve Bedmap3 existente (CC BY 4.0) y se extienden sobre el mar según meridianos documentados, conservando las superposiciones. Los bordes punteados distinguen los reclamos sin añadir altura ni paredes. No se incorporaron imágenes ni modelos de terceros.
+  > Acceso desde la ficha del Polo Sur (#128): implementación y pruebas con Claude Code (modelo Claude Opus 5.5).
+- **Bandera argentina en Malvinas (#97):**
+  > Modelado e inspección en Blender mediante MCP, integración y verificaciones con Codex. Asta con soporte horizontal y bandera desplegada, sin animación. Por pedido del usuario, mantiene un tamaño fijo en el mundo tanto en 2D como en 3D, sin compensar el zoom. Es un símbolo ilustrativo: su ubicación y tamaño no representan un mástil real. Usa la cartografía existente; no agrega datos históricos ni recursos de terceros. Modelo editable en [`malvinas-flag.blend`](docs/diseno/modelos/malvinas-flag.blend); script de construcción y exportación en [`build-malvinas-flag.py`](packages/react-ui/scripts/build-malvinas-flag.py).
 - **App dibujada:**
   > Como exigen las bases de la hackatón: se dibujo un boceto con todas las posibles ideas y luego **el diseño se generó con Claude Design** (prototipo en `docs/diseno/design/Main.dc.html`) y **el código de este repositorio se escribió con Claude Code**, con multiples revisiones del equipo.
 - **Prototipo atlas (descartado, ya no está en el repositorio; se recupera en el commit `2ab6f80`):**
@@ -127,7 +148,39 @@ En cumplimiento con las bases de la hackatón, se declara el uso de herramientas
   > Auditoría, plan, revisión, verificación de fuentes y pulido visual con Claude Code (modelo Claude Opus 5.5); parte de la implementación delegada a Antigravity (Gemini 3.8 Flash) bajo revisión. Cada decisión de producto (cuatro capítulos, escenario de frente, selección de edificios) la aprobó quien lleva el issue. Las plantas de los edificios salen de OpenStreetMap (ODbL); ninguna imagen generada se presenta como dato.
 - **Recorrido guiado de la expedición Estación Orcadas (#61):**
   > Plan, decisiones de diseño, revisión, verificación con capturas y parte de la implementación con Claude Code (modelo Claude Opus 5.5); implementación de los pasos delegada a Antigravity (Gemini 4 Hydrogen) bajo revisión. Cada frase de parada sale de una ficha con fuente verificada; no se agregaron datos nuevos.
+- **Helipuerto y helicóptero en la expedición Estación Orcadas (#68):**
+  > Plan, búsqueda y verificación de fuentes, revisión de cada paso, capturas y ajustes con Claude Code (modelo Claude Opus 5.5); implementación de los pasos delegada a Antigravity (Gemini 4 Hydrogen) bajo revisión. El helipuerto sale de OpenStreetMap (ODbL); la ficha del relevo en helicóptero cita a la Armada Argentina (15 dic 2025) y a COMNAP (2017). El tipo de helicóptero, sus colores, su escala y su vuelo de llegada son ilustrativos.
+- **Llegada inmersiva a Orcadas, camino y detalles vivos del diorama (#135):**
+  > Orquestación, revisión de cada diff, pruebas e2e y capturas con Claude Code (modelo Claude Opus 5.5); implementación de los pasos (camino, lógica de llegada, selector, viaje en el mapa, llegada y detalles del diorama) delegada a Antigravity (Gemini 4 Hydrogen) bajo revisión. No se agregaron datos ni fuentes: el texto del selector usa la ficha con fuente de la llegada en buque o helicóptero, y el viaje, la llegada, el viento, la nieve, las aves, el observador y los témpanos son reconstrucciones ilustradas.
+- **Pruebas e2e de Orcadas y tobogán de los pingüinos (#84):**
+  > Diagnóstico de las pruebas, ajuste del tiempo límite y cambio de la ruta de los pingüinos con Claude Code (modelo Claude Sonnet 5.5). No se agregaron datos ni fuentes; el movimiento de los pingüinos es una reconstrucción ilustrada.
+- **Prueba e2e del reloj del mar 3D (#41):**
+  > Diagnóstico y arreglo de la prueba con asistencia de IA, con revisión del equipo. Solo cambia la prueba; no se agregaron datos ni fuentes.
 - **Resto del hemisferio sur en el mapa 3D (#42):**
   > Planificación, revisión y ajustes visuales con Claude Code (modelo Claude Opus 5.5); implementación de partes delegada a Antigravity (Gemini 3.8 Flash) bajo revisión. Las siluetas salen de Natural Earth y su color de Natural Earth II (ambos de dominio público); son contexto geográfico, no datos.
+- **La lista de puntos tapa los cartelitos del mapa (#48):**
+  > Diagnóstico, arreglo y prueba e2e con asistencia de IA, con revisión del equipo. No se agregaron datos ni fuentes.
+- **Fichas verificadas y modelos de los puntos «Próximamente» y «Ampliación prevista» (#58):**
+  > Plan, verificación de cada cita contra su fuente, redacción final de las fichas, diseño de los modelos low-poly apoyados sobre el relieve, la toma cercana de cada punto, animaciones y revisión con Claude Code (modelo Claude Opus 5.5). La búsqueda de fuentes y un primer borrador de la interfaz y de los modelos se delegaron a Antigravity (Gemini 4 Hydrogen); los modelos se rehicieron después en low-poly. La cumbre del Erebus se arma sobre el relieve real de Bedmap3 y toma sus colores; el cráter está exagerado unas 3 veces para que se vea. Cada oración de las fichas tiene su cita textual en `docs/puntos-proximamente-fuentes.md`. Los modelos y sus movimientos (humo y bombas del Erebus, desprendimiento en Thwaites, giro de los emperadores y banderas) son ilustraciones: no están a escala y su ritmo está acelerado.
+- **Thwaites sigue la costa del mapa y aurora de Belgrano II (#117):**
+  > Plan, diagnóstico con raycast desde la página, revisión, correcciones del acantilado y capturas con Claude Code (modelo Claude Opus 5.5); implementación delegada a Antigravity (Gemini 4 Hydrogen) bajo revisión. El frente de Thwaites se traza sobre la máscara de costa de Bedmap3 que ya usa el mapa; su altura, sus grietas y sus témpanos son ilustrativos. La aurora se sacó del mapa y queda en la ficha con su cita del Ejército Argentino.
+- **Base Orcadas en low-poly (#116):**
+  > Plan, revisión de cada grupo, correcciones (muros de piedra seca de Omond, sol de la bandera, apoyo de piedras y nieve sobre el terreno, fuente única de los helpers del agua de los témpanos) y capturas con Claude Code (modelo Claude Opus 5.5); modelado de los edificios, vehículos, hielo, animales y sitio del mapa delegado a Antigravity (Gemini 4 Hydrogen) en cuatro agentes en paralelo, bajo revisión. Mismas ubicaciones, escalas y animaciones que los modelos de bloques. Casa Omond se dibuja como ruina sin techo según Cool Antarctica («Now a roofless ruin», consultada el 14 nov 2026). Los modelos son ilustraciones, no a escala.
+- **Panel de inicio de Orcadas, puerta del abrigo y gestos del diorama (#125):**
+  > Plan, revisión de cada diff, correcciones y capturas con Claude Code (modelo Claude Opus 5.5); implementación del panel, de la puerta con los termómetros y de los gestos delegada a Antigravity (Gemini 4 Hydrogen) en tres agentes en paralelo, bajo revisión. El panel muestra el modelo ilustrado de la base, la pregunta guía y tres datos reales ya publicados en la expedición, con sus fuentes; no suma datos nuevos. En el mismo issue, Claude Code pasó las fichas de los puntos al panel arrastrable para que se cierren deslizando hacia abajo. Los cuatro termómetros de 1903 (seco, húmedo, de máxima y de mínima) se apoyan en Mossman (1907); su forma y ubicación dentro del abrigo son ilustrativas.
+- **Documento de tecnologías (#82):**
+  > Redactado con asistencia de IA a partir del código y la documentación del repositorio, con revisión del equipo. No agrega datos nuevos.
 - **Bordes del mapa 3D, resto del mundo hasta 60° N y gestos de la cámara (#46):**
   > Planificación, implementación y pruebas con asistencia de IA, con revisión del equipo. Las siluetas salen de Natural Earth y su color de Natural Earth II (ambos de dominio público); son contexto geográfico, no datos.
+- **Expedición «Desde Ushuaia»: turbulencia del Hércules, llegada a la Base Marambio y traslado en helicóptero (#46):**
+  > Planificación, implementación, pruebas y verificación con capturas con asistencia de IA, con revisión del equipo. El traslado en helicóptero cita a la Armada Argentina (30 dic 2025). El lugar donde espera el buque, el recorrido del helicóptero y su tamaño son ilustrativos, y la interfaz lo dice. La turbulencia del avión es un efecto visual, no un dato. El modelo del helicóptero es el de #68.
+- **Bienvenida en la primera visita (#115):**
+  > Diagnóstico, planificación, implementación, pruebas y verificación con capturas con asistencia de IA, con revisión del equipo. No se agregaron datos ni fuentes.
+- **Cámara del viaje con movimiento reducido (#76):**
+  > Diagnóstico, arreglo y prueba e2e con asistencia de IA, con revisión del equipo. No se agregaron datos ni fuentes.
+- **E2E más rápido en local con GPU, workers y puerto (#87):**
+  > Medición, diagnóstico (en Windows `--use-angle=gl-egl` caía a SwiftShader) e implementación con Claude Code (modelo Claude Opus 5.5), con revisión del equipo. Solo cambia cómo se corren las pruebas; no se agregaron datos ni fuentes.
+- **Leyenda cerrada en el celular y swipe para cerrarla (#114):**
+  > Planificación, implementación, pruebas y verificación con capturas con asistencia de IA, con revisión del equipo. No se agregaron datos ni fuentes.
+- **Tope del zoom en el relieve 3D (#127):**
+  > Diagnóstico, mediciones en el navegador, implementación, pruebas y capturas con Claude Code (modelo Claude Opus 5.5), con revisión del equipo. Cada valor del tope lo eligió quien lleva el issue. No se agregaron datos ni fuentes.

@@ -1,6 +1,16 @@
-# 30. Estilo visual: modelos de bloques (voxel)
+# 30. Estilo visual: modelos de bloques (voxel) y low-poly
 
 > **Por qué:** Dos estilos de dibujo en el mismo mapa se leen como dos aplicaciones distintas. Un solo estilo y un mínimo de detalle hacen que todo se vea parte del mismo cuaderno.
+
+> **Transición en curso (14 nov 2026, #58):** se admiten los dos estilos, bloques y low-poly. El proyecto está pasando a low-poly y es posible que más adelante se muden todos los modelos. Un modelo nuevo puede hacerse en cualquiera de los dos; uno que se apoya sobre el relieve conviene hacerlo low-poly.
+>
+> **Low-poly:** lista de triángulos de color plano `[a, b, c, color]` unidos con `buildPolyGeometry` (`packages/react-ui/src/voyage/lowPoly.ts`) y dibujados con `vehicleMaterial`. Sin luces: cada cara recibe un sombreado fijo según el sol del relieve. Las caras del suelo pueden tomar el color del relieve pintado (`RELIEF_ICE`, `RELIEF_ROCK`, `reliefColor`) para que no se distingan del mapa. Mínimo de detalle: `POLY_MIN_TRIS` (60) caras y `POLY_MIN_COLORS` (2) colores, con el mismo rasgo distintivo de la regla 3. Prueba: `packages/react-ui/test/pointModels.test.ts` y `lowPoly.test.ts`. Ejemplos: los puntos sin expedición en `pointModels.ts`, apoyados vértice a vértice sobre el relieve en `map3d/PointModels.tsx`.
+>
+> **Tamaño de los puntos sin expedición:** de cerca sus modelos low-poly tienen su ancho en el mundo (`PointModel.width`) y se apoyan sobre el relieve; de lejos crecen hasta unos `GROW_PX` px en pantalla (con tope `GROW_MAX`) para que se vean y den ganas de tocarlos. Al tocar el punto la cámara baja a verlos sobre el relieve (`MapPoint.closeUp`). Los témpanos del mar abierto también son low-poly (`icebergs.ts`).
+>
+> **Base Orcadas en low-poly (#116):** todos los modelos del diorama (edificios, vehículos, hielo y animales: `orcadas/lowPolyBuildings.ts`, `lowPolyProps.ts`, `lowPolyAnimals.ts`) y el sitio del mapa (`voyage/orcadasSiteModel.ts`) son low-poly. En el diorama se dibujan con `buildPolyGeometry(tris, boxShade)`, la luz fija por cara de las cajas, para que convivan con lo que queda en bloques. Nivel de detalle de referencia: los témpanos (`icebergs.ts`), con formas creíbles y contacto con el entorno (agua, espuma, ondas, nieve, apoyo en el suelo). Los témpanos del diorama son los mismos del mapa abierto, con su agua. Pruebas: `test/orcadasLowPoly.test.ts`, `orcadasProps.test.ts`, `orcadasAnimals.test.ts` y `orcadasSite.test.ts`. Siguen en bloques los vehículos del viaje (Irízar, Hércules, helicóptero del viaje), Ushuaia y la fauna del mar abierto.
+>
+> Lo que sigue describe los modelos de bloques; las reglas de medidas, colores con nombre, efectos y `ModelPreview` valen para los dos estilos.
 
 1. Todo animal, vehículo, edificio, personaje u objeto que se dibuje sobre el mapa es un **modelo de bloques**: una lista de cajas `[cx, cy, cz, sx, sy, sz, color]` unidas con `buildBoxGeometry` y dibujadas con `vehicleMaterial`.
    - No: sprites, dibujos planos, texturas pintadas, modelos importados (`.glb`, `.obj`), sombreado con luces.

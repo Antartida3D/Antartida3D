@@ -1,14 +1,20 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
-import type { Group } from 'three';
+import { MeshBasicMaterial, type Group, type Mesh } from 'three';
 import { useFrame } from '@react-three/fiber';
-import { buildBoxGeometry, vehicleMaterial } from '../voyage/vehicles.ts';
+import type { ArrivalId } from '@antartida/core';
+import { boxShade, buildPolyGeometry } from '../voyage/lowPoly.ts';
+import { vehicleMaterial } from '../voyage/vehicles.ts';
+import {
+  buildPenguinPolyParts,
+  buildPenguinShadowGeometry,
+  buildRookeryTris,
+} from './lowPolyAnimals.ts';
 import {
   PENGUIN_NECK,
   PENGUIN_SCALE,
   PENGUIN_SHOULDER,
+  applyZodiacAvoidance,
   buildPenguinColony,
-  buildRookeryBoxes,
-  penguinParts,
   residentPose,
   restPose,
   travellerPose,
@@ -23,13 +29,14 @@ interface Rig {
   neck: Group | null;
   flipL: Group | null;
   flipR: Group | null;
+  shadow: Mesh | null;
 }
 
 /** Time drawn when motion is reduced: every penguin stands still in a calm pose. */
 const STILL_TIME = 2;
 
 function applyPose(rig: Rig, p: PenguinPose) {
-  const { root, tilt, neck, flipL, flipR } = rig;
+  const { root, tilt, neck, flipL, flipR, shadow } = rig;
   if (!root || !tilt || !neck || !flipL || !flipR) return;
   root.position.set(p.x, p.y, p.z);
   root.rotation.y = p.yaw;
@@ -39,26 +46,52 @@ function applyPose(rig: Rig, p: PenguinPose) {
   neck.rotation.set(0, p.headYaw, p.headPitch, 'YZX');
   flipL.rotation.x = -p.flipL;
   flipR.rotation.x = p.flipR;
+  if (shadow) {
+    shadow.visible = !(p.lie > 0.7 && p.y < 0.08);
+    shadow.scale.set(1 + p.lie * 0.65, 1, 1 - p.lie * 0.15);
+  }
 }
 
 /**
  * Penguin colony on its knoll (reconstruction): residents on their nests and travellers doing
  * the round trip to Bahía Scotia. Poses come from penguins.ts, a pure function of time.
  */
-export function PenguinColony({ reduced, seaIce = 0 }: { reduced: boolean; seaIce?: number }) {
-  const colony = useMemo(() => buildPenguinColony((x, z) => evaluateIsthmusTerrain(x, z).y), []);
+export function PenguinColony({
+  reduced,
+  seaIce = 0,
+  arrival = 'ship',
+}: {
+  reduced: boolean;
+  seaIce?: number;
+  arrival?: ArrivalId;
+}) {
+  const heightAt = useMemo(() => (x: number, z: number) => evaluateIsthmusTerrain(x, z).y, []);
+  const colony = useMemo(() => buildPenguinColony(heightAt), [heightAt]);
   const geos = useMemo(() => {
     const make = (species: PenguinSpecies) => {
-      const parts = penguinParts(species);
+      const parts = buildPenguinPolyParts(species);
       return {
-        body: buildBoxGeometry(parts.body),
-        head: buildBoxGeometry(parts.head),
-        flipper: buildBoxGeometry(parts.flipper),
+        body: buildPolyGeometry(parts.body, boxShade),
+        head: buildPolyGeometry(parts.head, boxShade),
+        flipper: buildPolyGeometry(parts.flipper, boxShade),
       };
     };
     return { adelie: make('adelie'), chinstrap: make('chinstrap') };
   }, []);
-  const rookeryGeo = useMemo(() => buildBoxGeometry(buildRookeryBoxes()), []);
+  const rookeryGeo = useMemo(() => buildPolyGeometry(buildRookeryTris(), boxShade), []);
+  const shadowGeo = useMemo(() => buildPenguinShadowGeometry(), []);
+  const shadowMat = useMemo(
+    () =>
+      new MeshBasicMaterial({
+        vertexColors: true,
+        transparent: true,
+        depthWrite: false,
+        polygonOffset: true,
+        polygonOffsetFactor: -1,
+        polygonOffsetUnits: -1,
+      }),
+    []
+  );
   const knollTop = useMemo(
     () => evaluateIsthmusTerrain(PENGUIN_KNOLL.center[0], PENGUIN_KNOLL.center[1]).y,
     []
@@ -72,8 +105,10 @@ export function PenguinColony({ reduced, seaIce = 0 }: { reduced: boolean; seaIc
         g.flipper.dispose();
       }
       rookeryGeo.dispose();
+      shadowGeo.dispose();
+      shadowMat.dispose();
     },
-    [geos, rookeryGeo]
+    [geos, rookeryGeo, shadowGeo, shadowMat]
   );
 
   const isFrozen = seaIce >= 0.5;
@@ -90,18 +125,29 @@ export function PenguinColony({ reduced, seaIce = 0 }: { reduced: boolean; seaIc
     ],
     [colony, isFrozen]
   );
-  const rigs = useRef<Rig[]>(penguins.map(() => ({ root: null, tilt: null, neck: null, flipL: null, flipR: null })));
+  const rigs = useRef<Rig[]>(
+    penguins.map(() => ({ root: null, tilt: null, neck: null, flipL: null, flipR: null, shadow: null }))
+  );
   const pose = useMemo(() => restPose(), []);
+  const arrivalStartRef = useRef<number | null>(null);
 
   useLayoutEffect(() => {
+    arrivalStartRef.current = null;
     if (!reduced) return;
     penguins.forEach((p, i) => applyPose(rigs.current[i], p.pose(STILL_TIME, pose)));
-  }, [reduced, penguins, pose]);
+  }, [reduced, penguins, pose, arrival]);
 
   useFrame(({ clock }) => {
     if (reduced) return;
     const t = clock.getElapsedTime();
-    penguins.forEach((p, i) => applyPose(rigs.current[i], p.pose(t, pose)));
+    if (arrivalStartRef.current === null) arrivalStartRef.current = t;
+    const elapsed = t - arrivalStartRef.current;
+    penguins.forEach((p, i) =>
+      applyPose(
+        rigs.current[i],
+        applyZodiacAvoidance(p.pose(t, pose), elapsed, arrival, seaIce, reduced, t, heightAt),
+      ),
+    );
   });
 
   const [sx, sy, sz] = PENGUIN_SHOULDER;
@@ -117,6 +163,13 @@ export function PenguinColony({ reduced, seaIce = 0 }: { reduced: boolean; seaIc
         const rig = rigs.current[i];
         return (
           <group key={i} ref={(n) => void (rig.root = n)} scale={PENGUIN_SCALE}>
+            <mesh
+              ref={(n) => void (rig.shadow = n)}
+              geometry={shadowGeo}
+              material={shadowMat}
+              position-y={0.005}
+              renderOrder={1}
+            />
             <group ref={(n) => void (rig.tilt = n)}>
               <mesh geometry={g.body} material={vehicleMaterial} />
               <group ref={(n) => void (rig.neck = n)} position={PENGUIN_NECK}>

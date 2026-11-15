@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import {
   CHAPTERS,
   CHAPTER_HEADINGS,
@@ -6,23 +6,27 @@ import {
   ORCADAS_CLIMATE,
   ORCADAS_FAUNA,
   ORCADAS_GUIDING_QUESTION,
+  arrivalMonth,
   chapterIndex,
   eraAt,
   factsFor,
   hotspotFacts,
   initialOrcadas,
+  observationDone,
   orcadasProgress,
   orcadasReducer,
   readingFor,
+  sceneWindFor,
   seaIceAt,
   sunsetHour,
   tourAtEnd,
   tourStop,
   tourStops,
+  type ArrivalId,
   type Chapter,
 } from '@antartida/core';
 import { BottomSheet, type OpenSheetSize } from '../BottomSheet.tsx';
-import { useFocusReturn, useIsDesktop } from '../hooks.ts';
+import { useFocusReturn, useIsDesktop, useMediaQuery } from '../hooks.ts';
 import { Icon } from '../ui.tsx';
 import { Answer } from './Answer.tsx';
 import { FactCard, FactList, SourceContext } from './FactList.tsx';
@@ -76,7 +80,7 @@ function SceneBadge({ onOpenSource }: { onOpenSource?: (id: string) => void }) {
         <div className="orc-scene-help-popover" role="note">
           <p>{fact.text}</p>
           <p>
-            Disposición ilustrativa, no a escala: una selección de los edificios de la base, con su forma y sus colores según OpenStreetMap (imágenes Maxar 2019), acomodados en fila para que se vean; alturas aproximadas; animales, instrumentos y bandera agrandados para que se vean; relieve y pingüinera ilustrativos.{' '}
+            Disposición ilustrativa, no a escala: una selección de los edificios de la base, con su forma y sus colores según OpenStreetMap (imágenes Maxar 2019), acomodados en fila para que se vean; alturas aproximadas; animales, instrumentos y bandera agrandados para que se vean; relieve y pingüinera ilustrativos; helicóptero ilustrativo, se muestra en la temporada de visitas.{' '}
             <button
               type="button"
               className="orc-scene-sources-link"
@@ -95,16 +99,19 @@ function SceneBadge({ onOpenSource }: { onOpenSource?: (id: string) => void }) {
 }
 
 export function OrcadasExpedition({
+  arrival = 'ship',
   reduced,
   onLeave,
 }: {
+  arrival?: ArrivalId;
   reduced: boolean;
   onLeave: (done: boolean) => void;
 }) {
   const [initDate] = useState(() => {
     const now = new Date();
+    const month = arrivalMonth(arrival, now);
     return {
-      month: now.getMonth() + 1,
+      month,
       year: now.getFullYear(),
       seed:
         now.getFullYear() * 10000 +
@@ -123,8 +130,11 @@ export function OrcadasExpedition({
   const [openSpot, setOpenSpot] = useState<Exclude<HotspotId, 'overview'> | null>(null);
   const [highlightSource, setHighlightSource] = useState<string | null>(null);
   const [sheetSize, setSheetSize] = useState<OpenSheetSize>('small');
+  const [panelHidden, setPanelHidden] = useState(false);
 
   const isDesktop = useIsDesktop(900);
+  const canHidePanel = useMediaQuery('(min-width: 900px) and (min-height: 501px)');
+  const isPanelHidden = canHidePanel && panelHidden;
   // On a phone held upright the chapter panel is a bottom sheet; tall, it leaves the scene a strip.
   const panelExpanded = !isDesktop && sheetSize === 'tall';
   const panelRef = useRef<HTMLElement>(null);
@@ -134,13 +144,43 @@ export function OrcadasExpedition({
   const hotspotsRef = useRef<HTMLDivElement>(null);
   const mobileCardRef = useRef<HTMLElement>(null);
   const primaryBtnRef = useRef<HTMLButtonElement>(null);
+  const showPanelBtnRef = useRef<HTMLButtonElement>(null);
+  const focusTargetRef = useRef<'show' | 'heading' | null>(null);
+  const isPanelHiddenRef = useRef(isPanelHidden);
+  isPanelHiddenRef.current = isPanelHidden;
+  const [leaving, setLeaving] = useState<boolean | null>(null);
+  const leavingRef = useRef<boolean | null>(null);
+  const onLeaveRef = useRef(onLeave);
+  onLeaveRef.current = onLeave;
+
+  const beginLeave = (done: boolean) => {
+    if (reduced) {
+      onLeaveRef.current(done);
+      return;
+    }
+    if (leavingRef.current !== null) return;
+    leavingRef.current = done;
+    setLeaving(done);
+  };
+
+  const handleDepartureDone = useCallback(() => {
+    const done = leavingRef.current;
+    if (done === null) return;
+    leavingRef.current = null;
+    setLeaving(null);
+    onLeaveRef.current(done);
+  }, []);
 
   // Move focus to the chapter h2 heading and reset panel scroll whenever chapter changes
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = 0;
     }
-    headingRef.current?.focus({ preventScroll: true });
+    if (isPanelHiddenRef.current) {
+      focusTargetRef.current = 'heading';
+    } else {
+      headingRef.current?.focus({ preventScroll: true });
+    }
     // Observing needs the thermometer and its button on screen: the sheet opens tall there.
     setSheetSize(s.chapter === 'observation' ? 'tall' : 'small');
   }, [s.chapter]);
@@ -151,7 +191,24 @@ export function OrcadasExpedition({
     setFocus(chapterFocus(s.chapter, s.tourIndex));
     // A new stop has a line to read: a sheet folded down to its title comes back up.
     setSheetSize((size) => (size === 'peek' ? 'small' : size));
+    setPanelHidden(false);
   }, [s.chapter, s.tourIndex]);
+
+  useEffect(() => {
+    if (!canHidePanel) {
+      setPanelHidden(false);
+    }
+  }, [canHidePanel]);
+
+  useEffect(() => {
+    if (isPanelHidden && focusTargetRef.current === 'show') {
+      focusTargetRef.current = null;
+      showPanelBtnRef.current?.focus();
+    } else if (!isPanelHidden && focusTargetRef.current === 'heading') {
+      focusTargetRef.current = null;
+      headingRef.current?.focus({ preventScroll: true });
+    }
+  }, [isPanelHidden]);
 
   const activeSpotDef = useMemo(
     () => (openSpot ? HOTSPOTS.find((h) => h.id === openSpot) ?? null : null),
@@ -195,12 +252,14 @@ export function OrcadasExpedition({
     [s.month]
   );
 
-  const sceneWindKmh =
-    s.chapter === 'observation'
-      ? reading.windKmh
-      : Math.round(climate?.windMeanKmh ?? 22);
-  const sceneWindDirDeg =
-    s.chapter === 'observation' ? reading.windDirDeg : 270;
+  const { windKmh: sceneWindKmh, windDirDeg: sceneWindDirDeg } = useMemo(
+    () =>
+      sceneWindFor({
+        reading,
+        windGuess: s.guesses.wind,
+      }),
+    [reading, s.guesses.wind],
+  );
   const sceneCloudOktas =
     s.chapter === 'observation'
       ? reading.cloudOktas
@@ -215,6 +274,8 @@ export function OrcadasExpedition({
   const activeStop = tourStop(s.chapter, s.tourIndex);
   const atTourEnd = tourAtEnd(s);
   const defaultFocus = chapterFocus(s.chapter, s.tourIndex);
+  // S4: open the screen door only while the temperature reading is active and unrecorded.
+  const screenOpen = s.chapter === 'observation' && !observationDone(s) && !openSpot;
 
   const tourCardElement = activeStop ? (
     <TourCard
@@ -271,12 +332,28 @@ export function OrcadasExpedition({
         <>
           <div className="orc-panel-scroll" ref={scrollRef}>
             <div className="orc-panel-head">
-              <span className="orc-kicker hand">
-                Capítulo {idx + 1} de {CHAPTERS.length} · {CHAPTER_NAMES[s.chapter]}
-              </span>
-              <h2 ref={headingRef} tabIndex={-1} className="orc-chapter-h2">
-                {CHAPTER_HEADINGS[s.chapter]}
-              </h2>
+              <div className="orc-panel-head-title">
+                <span className="orc-kicker hand">
+                  Capítulo {idx + 1} de {CHAPTERS.length} · {CHAPTER_NAMES[s.chapter]}
+                </span>
+                <h2 ref={headingRef} tabIndex={-1} className="orc-chapter-h2">
+                  {CHAPTER_HEADINGS[s.chapter]}
+                </h2>
+              </div>
+              {canHidePanel && (
+                <button
+                  type="button"
+                  className="btn ghost orc-panel-hide"
+                  aria-expanded={!isPanelHidden}
+                  aria-controls="orc-chapter-panel"
+                  onClick={() => {
+                    focusTargetRef.current = 'show';
+                    setPanelHidden(true);
+                  }}
+                >
+                  Ocultar panel
+                </button>
+              )}
             </div>
 
             {s.chapter === 'arrival' && (
@@ -342,7 +419,7 @@ export function OrcadasExpedition({
                 if (!atTourEnd) {
                   dispatch({ type: 'tourNext' });
                 } else if (s.chapter === 'answer') {
-                  onLeave(true);
+                  beginLeave(true);
                 } else {
                   dispatch({ type: 'next' });
                 }
@@ -374,6 +451,7 @@ export function OrcadasExpedition({
       >
         {/* Full-bleed 3D Diorama (or SVG fallback when WebGL is unavailable) */}
         <StationScene
+          arrival={arrival}
           month={s.month}
           hour={sceneHour}
           windKmh={sceneWindKmh}
@@ -382,9 +460,13 @@ export function OrcadasExpedition({
           seaIce={sceneSeaIce}
           buildings={sceneBuildings}
           animals={activeAnimals}
-          focus={focus}
+          focus={leaving !== null ? 'overview' : focus}
           reduced={reduced}
+          screenOpen={screenOpen}
+          leaving={leaving !== null}
           panelExpanded={panelExpanded}
+          panelHidden={isPanelHidden}
+          onDepartureDone={handleDepartureDone}
           overlayRef={hotspotsRef}
         />
 
@@ -440,7 +522,7 @@ export function OrcadasExpedition({
             <button
               type="button"
               className="pill orc-top-btn"
-              onClick={() => onLeave(false)}
+              onClick={() => beginLeave(false)}
               aria-label="Volver al mapa"
             >
               {Icon.back}
@@ -497,7 +579,13 @@ export function OrcadasExpedition({
 
         {/* Field Notebook Chapter Panel: a side card on wide screens, a bottom sheet on phones */}
         {isDesktop ? (
-          <div className="orc-panel" role="region" aria-labelledby="orc-panel-label">
+          <div
+            id="orc-chapter-panel"
+            className={`orc-panel${isPanelHidden ? ' is-hidden' : ''}`}
+            role="region"
+            aria-labelledby="orc-panel-label"
+            inert={isPanelHidden || undefined}
+          >
             {panelBody}
           </div>
         ) : (
@@ -511,6 +599,22 @@ export function OrcadasExpedition({
           >
             {panelBody}
           </BottomSheet>
+        )}
+
+        {isPanelHidden && (
+          <button
+            ref={showPanelBtnRef}
+            type="button"
+            className="orc-panel-show"
+            aria-expanded={false}
+            aria-controls="orc-chapter-panel"
+            onClick={() => {
+              focusTargetRef.current = 'heading';
+              setPanelHidden(false);
+            }}
+          >
+            Mostrar panel
+          </button>
         )}
 
         {s.panel && (

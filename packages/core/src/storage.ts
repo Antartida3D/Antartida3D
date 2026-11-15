@@ -2,6 +2,8 @@ import { EXPEDITION_POINT } from './content/points.ts';
 
 export const EXPLORED_KEY = 'antartida:explored';
 export const VIEW_MODE_KEY = 'antartida:view';
+/** The first-visit welcome (#115) was already shown. */
+export const WELCOME_KEY = 'antartida:welcome';
 
 /** Ids of the completed expeditions. The old format ('1') meant only Fósiles. */
 export function loadExplored(): string[] {
@@ -37,5 +39,22 @@ export function saveViewMode(mode: '2d' | '3d'): void {
     localStorage.setItem(VIEW_MODE_KEY, mode);
   } catch {
     // Storage unavailable
+  }
+}
+
+/** Without storage it reads as not seen: the welcome then shows once per visit. */
+export function loadWelcomeSeen(): boolean {
+  try {
+    return localStorage.getItem(WELCOME_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function saveWelcomeSeen(): void {
+  try {
+    localStorage.setItem(WELCOME_KEY, '1');
+  } catch {
+    // Storage unavailable: the welcome shows again on the next visit.
   }
 }

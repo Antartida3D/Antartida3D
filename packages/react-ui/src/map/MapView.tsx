@@ -1,27 +1,32 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import {
-  DRAG_THRESHOLD, EXPEDITION_POINT, HOME, KEY_PAN, MIN_K, PTS, VOYAGE_POINTS, ZOOM_MS,
-  buildMarkers, diveView, markerPress, geometry, isWheelNotch, keyView, panBy, wheelFactor, zoomAround, zoomCenter,
-  type MapPoint, type Marker, type SeaPoint, type Size, type TransportId, type View,
+  DRAG_THRESHOLD, EXPEDITION_POINT, HOME, KEY_PAN, MIN_K, PTS, VOYAGE_POINT, VOYAGE_POINTS, ZOOM_MS,
+  buildMarkers, diveView, markerPress, geometry, isWheelNotch, keyView, panBy, welcomeView, wheelFactor, zoomAround, zoomCenter,
+  type ArrivalId, type MapPoint, type Marker, type SeaPoint, type Size, type TransportId, type View, type ClaimsCoverage,
 } from '@antartida/core';
-import { useReducedMotion, useTimers } from '../hooks.ts';
+import { usePageSettled, useReducedMotion, useTimers } from '../hooks.ts';
 import { useVoyage, type VoyageBus } from '../voyage/useVoyage.ts';
 import { Icon } from '../ui.tsx';
 import { ExplorationLog } from './ExplorationLog.tsx';
 import { Legend } from './Legend.tsx';
+import { ClaimsControl, type ClaimsSelection, type ClaimsStatus } from './ClaimsControl.tsx';
 import { ListView } from './ListView.tsx';
 import { PointSheet } from './PointSheet.tsx';
+import { KindChip } from '../orcadas/KindChip.tsx';
+import { OrcadasIntro } from '../orcadas/OrcadasIntro.tsx';
 import { ViewToggle } from './ViewToggle.tsx';
 import { Map2DLayer, type LayerProps } from './Map2DLayer.tsx';
 
 const VoyagePanel = lazy(() => import('../voyage/VoyagePanel.tsx').then((m) => ({ default: m.VoyagePanel })));
 
-/** `approach`: the 3D camera zooms down to the point before its scene opens. */
-export type Phase = 'idle' | 'dive' | 'approach' | 'fade' | 'ret';
+/** `travel`: final approach leg on the 3D map before `approach`; `approach`: camera zooms down to the point. */
+export type Phase = 'idle' | 'travel' | 'dive' | 'approach' | 'fade' | 'ret';
 export type Anim = '' | 'zoom' | 'wheel' | 'dive';
 export type ViewMode = '2d' | '3d';
 
 const WHEEL_MS = 200;
+/** The territorial claims open from this point's sheet: the claimed sectors meet at the pole. */
+const CLAIMS_POINT_ID = 'polo';
 
 /**
  * A request from the shared controls (buttons, keys, cluster clicks) to the 3D camera. In 3D the
@@ -31,23 +36,30 @@ export type Camera3DCommand =
   | { type: 'zoom'; factor: number }
   | { type: 'home' }
   | { type: 'focus'; view: View }
+  /** Fly down to the model of a point, this close (world units): MapPoint.closeUp. */
+  | { type: 'visit'; id: string; distance: number }
   | { type: 'pan'; dx: number; dy: number }
   | { type: 'rotate'; deg: number };
 
 export type Layer3DProps = LayerProps & {
   size: Size;
   diveTarget: MapPoint;
+  arrival?: ArrivalId;
   /** `n` grows with every request so repeating the same command still fires. */
   command: { n: number; cmd: Camera3DCommand } | null;
   /** The camera came to rest: the 2D-style view it shows, for clustering and the 2D switch. */
   onCameraRest: (view: View) => void;
   /** The trip from Ushuaia while it is under way: the scene draws the vehicle and follows it. */
   voyage: VoyageBus | null;
+  claims: { selection: ClaimsSelection; coverage: ClaimsCoverage } | null;
+  onClaimsStatus: (status: ClaimsStatus) => void;
 };
 
 export interface MapViewProps {
   phase: Phase;
   explored: readonly string[];
+  /** Chosen Orcadas arrival transport for the 3D travel phase. */
+  arrival?: ArrivalId;
   /** The trip from Ushuaia is open: its panel replaces the map's own controls. */
   voyaging?: boolean;
   diveTarget?: MapPoint;
@@ -55,12 +67,19 @@ export interface MapViewProps {
   legend: boolean;
   /** Move focus to the expedition marker on mount (coming back from the expedition). */
   focusExpedition: boolean;
+  /** First visit (#115): come close to «Desde Ushuaia», show its label and say to start there. */
+  welcome?: boolean;
+  /** The welcome is on screen: it must not show again. */
+  onWelcomeShown?: () => void;
   mode?: ViewMode;
   showToggle?: boolean;
+  /** False without WebGL: «Relieve 3D» explains how to turn it on (#123). */
+  available3D?: boolean;
   Layer3D?: (props: Layer3DProps) => React.ReactNode;
   onToggleLegend: () => void;
   onToggleMode?: (next: ViewMode) => void;
-  onStart: (point: MapPoint) => void;
+  onStart: (point: MapPoint, arrival?: ArrivalId) => void;
+  onSkipTravel?: () => void;
   /** Transport the trip starts with when it is not picked (Poncho's team); undefined: the traveller picks. */
   voyageTransport?: TransportId;
   onStartVoyage?: (point: MapPoint) => void;
@@ -80,20 +99,56 @@ function keyCommand3D(key: string): Camera3DCommand | null {
   return null;
 }
 
+/** Overlay shown during the 3D travel leg to Laurie Island, allowing keyboard/pointer skip. */
+function OrcadasTravelBar({ arrival, onSkip }: { arrival: ArrivalId; onSkip?: () => void }) {
+  const skipRef = useRef<HTMLButtonElement>(null);
+  const onSkipRef = useRef(onSkip);
+  onSkipRef.current = onSkip;
+  useEffect(() => {
+    skipRef.current?.focus();
+    const onEscape = (e: globalThis.KeyboardEvent) => {
+      if (e.key === 'Escape') onSkipRef.current?.();
+    };
+    window.addEventListener('keydown', onEscape);
+    return () => window.removeEventListener('keydown', onEscape);
+  }, []);
+  return (
+    <div className="vbar" role="group" aria-label="Viaje hacia Isla Laurie">
+      <p className="vnext">
+        <strong>{arrival === 'helicopter' ? 'Rumbo a Isla Laurie · Helicóptero' : 'Rumbo a Isla Laurie · Irízar y Zodiac'}</strong>
+      </p>
+      <p className="orc-intro-recon">
+        <KindChip kind="recon" label="Reconstrucción ilustrada" />
+        <span className="vsmall">Tramo ilustrativo desde Isla Marambio hasta Isla Laurie; el vehículo está agrandado para que se vea.</span>
+      </p>
+      <div className="row">
+        <button ref={skipRef} type="button" className="btn primary" onClick={() => onSkipRef.current?.()}>
+          Saltar viaje
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function MapView({
   phase,
   explored,
+  arrival = 'ship',
   voyaging = false,
   diveTarget = EXPEDITION_POINT,
   toast,
   legend,
   focusExpedition,
+  welcome = false,
+  onWelcomeShown,
   mode = '2d',
   showToggle = false,
+  available3D = true,
   Layer3D,
   onToggleLegend,
   onToggleMode,
   onStart,
+  onSkipTravel,
   voyageTransport,
   onStartVoyage,
   onEndVoyage,
@@ -104,9 +159,15 @@ export function MapView({
   const [anim, setAnim] = useState<Anim>('');
   const [touched, setTouched] = useState(false);
   const [sheet, setSheet] = useState<MapPoint | SeaPoint | null>(null);
+  const [pendingOrcadas, setPendingOrcadas] = useState<MapPoint | null>(null);
   // Key of the marker whose label a first touch brought into view.
   const [shown, setShown] = useState<string | null>(null);
   const [list, setList] = useState(false);
+  const [claimsEnabled, setClaimsEnabled] = useState(false);
+  const [claimsSelection, setClaimsSelection] = useState<ClaimsSelection>('all');
+  const [claimsCoverage, setClaimsCoverage] = useState<ClaimsCoverage>('sectors');
+  const [claimsStatus, setClaimsStatus] = useState<ClaimsStatus>('loading');
+  const claimsSwitch = useRef<HTMLButtonElement>(null);
   const later = useTimers();
   const reduced = useReducedMotion();
   const voyage = useVoyage();
@@ -120,8 +181,10 @@ export function MapView({
   const live = useRef({ size, view, phase, is3D });
   live.current = { size, view, phase, is3D };
 
+  /** Moves the 3D camera; `send3D` when the user asked for it. */
+  const queue3D = (cmd: Camera3DCommand) => setCommand((c) => ({ n: (c?.n ?? 0) + 1, cmd }));
   const send3D = (cmd: Camera3DCommand) => {
-    setCommand((c) => ({ n: (c?.n ?? 0) + 1, cmd }));
+    queue3D(cmd);
     setTouched(true);
   };
 
@@ -178,12 +241,44 @@ export function MapView({
     setView(diveView(live.current.size, diveTarget.x, diveTarget.y));
   }, [phase, diveTarget]);
 
-  const animateTo = (next: View) => {
+  /** Eases the 2D map to `next`; `animateTo` when the user asked for it. */
+  const glide = (next: View) => {
     setView(next);
     setAnim('zoom');
-    setTouched(true);
     later('zoom', () => setAnim(''), ZOOM_MS);
   };
+  const animateTo = (next: View) => {
+    glide(next);
+    setTouched(true);
+  };
+
+  // First visit (#115): once the page has loaded and stopped stuttering, the map comes close to
+  // «Desde Ushuaia», its label opens (one more touch starts the trip) and the hint says to start
+  // there. The move is not the user's, so it does not count as `touched`; anything the user does
+  // afterwards ends the welcome. Someone who already moved the map while it loaded gets no welcome.
+  const [welcoming, setWelcoming] = useState(false);
+  const settled = usePageSettled(welcome);
+  const welcomeMove = () => {
+    const next = welcomeView(live.current.size);
+    if (live.current.is3D) queue3D({ type: 'focus', view: next });
+    else glide(next);
+  };
+  useEffect(() => {
+    if (!welcome || !settled) return;
+    if (touched || phase !== 'idle' || voyaging) return void onWelcomeShown?.();
+    welcomeMove();
+    setShown(VOYAGE_POINT.id);
+    setWelcoming(true);
+    onWelcomeShown?.();
+  }, [welcome, settled]);
+  // The map can still switch between 3D and 2D during the welcome: the starting view changes once
+  // reduced motion is read (useReducedMotion), and the user may switch it. Stay close to Ushuaia.
+  useEffect(() => {
+    if (welcoming) welcomeMove();
+  }, [is3D]);
+  useEffect(() => {
+    if (touched || voyaging || phase !== 'idle') setWelcoming(false);
+  }, [touched, voyaging, phase]);
 
   const rel = (e: { clientX: number; clientY: number }) => {
     const r = vpRef.current!.getBoundingClientRect();
@@ -297,15 +392,37 @@ export function MapView({
 
   const openPoint = (p: MapPoint | SeaPoint) => {
     if (onStartVoyage && VOYAGE_POINTS.some((v) => v.id === p.id)) onStartVoyage(p as MapPoint);
-    else if ('tier' in p && p.tier === 'A') onStart(p);
-    else {
+    else if ('tier' in p && p.tier === 'A') {
+      if (phase === 'idle') {
+        // One sheet at a time: the intro replaces the trip from Ushuaia, as starting Orcadas did before.
+        if (voyaging) onEndVoyage?.(false);
+        setSheet(null);
+        setPendingOrcadas(p);
+      }
+    } else {
+      if (is3D && 'closeUp' in p && p.closeUp) send3D({ type: 'visit', id: p.id, distance: p.closeUp });
       setSheet(p);
       setTouched(true);
     }
   };
 
+  /** From the South Pole sheet: closes it, turns the claims layer on, shows the whole continent and focuses the control. */
+  const showClaims = () => {
+    setSheet(null);
+    if (!claimsEnabled) {
+      if (legend) onToggleLegend();
+      setClaimsEnabled(true);
+      setClaimsStatus('loading');
+    }
+    // Pull back to the whole continent: the sectors only read as a whole.
+    send3D({ type: 'home' });
+    // After the sheet returns focus to its opener.
+    requestAnimationFrame(() => claimsSwitch.current?.focus());
+  };
+
   const onPick = (m: Marker, touch: boolean) => {
     if (gesture.current.dragged) return;
+    setWelcoming(false);
     if (m.kind === 'cluster') {
       setShown(null);
       if (is3D) send3D({ type: 'focus', view: m.target });
@@ -319,7 +436,7 @@ export function MapView({
 
   const markers = useMemo(() => buildMarkers(size, view, explored, PTS), [size, view, explored]);
   const geo = geometry(size);
-  const stageCls = 'stage' + (is3D ? ' m3d' : '') + (voyaging ? ' voyaging' : '') + (phase === 'dive' ? ' dive' : phase === 'approach' ? ' approach' : phase === 'fade' ? ' fade' : phase === 'ret' ? ' ret' : '');
+  const stageCls = 'stage' + (is3D ? ' m3d' : '') + (voyaging ? ' voyaging' : '') + (phase === 'travel' ? ' travel' : phase === 'dive' ? ' dive' : phase === 'approach' ? ' approach' : phase === 'fade' ? ' fade' : phase === 'ret' ? ' ret' : '');
 
   return (
     <div className="stagewrap">
@@ -348,6 +465,7 @@ export function MapView({
               view={view}
               anim={anim}
               phase={phase}
+              arrival={arrival}
               diveTarget={diveTarget}
               markers={markers}
               shown={shown}
@@ -355,6 +473,8 @@ export function MapView({
               command={command}
               onCameraRest={setView}
               voyage={voyaging ? voyage.bus : null}
+              claims={claimsEnabled && !voyaging ? { selection: claimsSelection, coverage: claimsCoverage } : null}
+              onClaimsStatus={setClaimsStatus}
             />
           ) : (
             <Map2DLayer geo={geo} view={view} anim={anim} phase={phase} markers={markers} shown={shown} onPick={onPick} />
@@ -371,19 +491,33 @@ export function MapView({
           <ExplorationLog explored={explored} />
         </header>
 
-        {!touched && !voyaging && phase === 'idle' && <div className="hint">arrastrá para mover · pellizcá para acercar</div>}
+        {welcoming ? (
+          <div className="hint" role="status">Tocá <strong>Desde Ushuaia</strong> para empezar</div>
+        ) : (
+          !touched && !voyaging && phase === 'idle' && <div className="hint">arrastrá para mover · pellizcá para acercar</div>
+        )}
         {toast && <div className="toast" role="status">{toast}</div>}
 
+        {phase !== 'travel' && (
         <div className="bottom">
           {voyaging ? <span /> : (
           <div className="leftcol">
             <Legend open={legend} onToggle={onToggleLegend} mode={mode} />
-            <button type="button" className="btn" onClick={() => { setSheet(null); setList(true); }}>
+            {/* Off, the claims open from the South Pole sheet; on, this control turns them off. */}
+            {is3D && claimsEnabled && <ClaimsControl enabled selection={claimsSelection} coverage={claimsCoverage} status={claimsStatus}
+              switchRef={claimsSwitch}
+              onToggle={() => {
+                setClaimsEnabled(false);
+                setClaimsStatus('loading');
+                vpRef.current?.focus();
+              }}
+              onSelect={setClaimsSelection} onCoverage={setClaimsCoverage} />}
+            <button type="button" className="btn" onClick={() => { setSheet(null); setPendingOrcadas(null); setList(true); }}>
               {Icon.list}
               Ver como lista
             </button>
             {showToggle && onToggleMode && (
-              <ViewToggle mode={mode} onChange={onToggleMode} />
+              <ViewToggle mode={mode} available3D={available3D} onChange={onToggleMode} />
             )}
           </div>
           )}
@@ -393,6 +527,8 @@ export function MapView({
             <button type="button" className="iconbtn" onClick={() => (is3D ? send3D({ type: 'home' }) : animateTo(HOME))} aria-label="Ver todo el continente">{Icon.reset}</button>
           </div>
         </div>
+        )}
+        {phase === 'travel' && <OrcadasTravelBar arrival={arrival} onSkip={onSkipTravel} />}
 
         {list && (
           <ListView
@@ -406,7 +542,21 @@ export function MapView({
             <VoyagePanel voyage={voyage} transport={voyageTransport} animated={is3D && !reduced} webgl={is3D} reduced={reduced} onExit={onEndVoyage} />
           </Suspense>
         )}
-        {sheet && <PointSheet point={sheet} onClose={() => setSheet(null)} fallbackFocus={() => vpRef.current} preview={is3D} reduced={reduced} />}
+        {sheet && <PointSheet point={sheet} onClose={() => setSheet(null)} fallbackFocus={() => vpRef.current} preview={is3D} reduced={reduced}
+          action={is3D && sheet.id === CLAIMS_POINT_ID ? { label: claimsEnabled ? 'Ver reclamos en el mapa' : 'Ver reclamos territoriales', onClick: showClaims } : undefined} />}
+        {pendingOrcadas && phase === 'idle' && (
+          <OrcadasIntro
+            onStart={(arrival) => {
+              const point = pendingOrcadas;
+              setPendingOrcadas(null);
+              onStart(point, arrival);
+            }}
+            onExit={() => setPendingOrcadas(null)}
+            fallbackFocus={() => vpRef.current}
+            preview={is3D}
+            reduced={reduced}
+          />
+        )}
       </div>
       <div className={'veil' + (phase === 'dive' ? ' on' : phase === 'approach' ? ' late' : '')} />
     </div>

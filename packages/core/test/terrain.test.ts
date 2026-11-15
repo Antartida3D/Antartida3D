@@ -14,7 +14,7 @@ import {
 
 describe('terrain', () => {
   it('exports expected constants', () => {
-    expect(VERTICAL_EXAGGERATION).toBe(50);
+    expect(VERTICAL_EXAGGERATION).toBe(10);
     expect(CONTOUR_M).toBe(250);
     expect(TERRAIN_BOX.minX).toBeLessThan(TERRAIN_BOX.maxX);
     expect(TERRAIN_BOX.minY).toBeLessThan(TERRAIN_BOX.maxY);

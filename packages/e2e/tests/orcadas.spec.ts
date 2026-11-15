@@ -1,6 +1,8 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { ORCADAS_GUIDING_QUESTION } from '../../core/src/content/orcadas.ts';
+import { clearStorage } from '../storage.ts';
+import { ORCADAS_GUIDING_QUESTION, ORCADAS_INTRO_DESC } from '../../core/src/content/orcadas.ts';
 import { answerFor } from '../../core/src/orcadas.ts';
+import { clickOrcadasMarker, openOrcadasFromMap } from './orcadas-helpers.ts';
 
 const log = (page: Page) => page.locator('.reg');
 const primary = (page: Page) => page.locator('.ebar .btn.primary');
@@ -10,14 +12,6 @@ function formatTempC(val: number): string {
   if (Object.is(numVal, -0) || numVal === 0) return '0,0 °C';
   const absVal = Math.abs(val).toFixed(1).replace('.', ',');
   return numVal < 0 ? `−${absVal} °C` : `${absVal} °C`;
-}
-
-async function openOrcadasFromMap(page: Page) {
-  const cluster = page.getByRole('button', { name: /Grupo de .*Estación Orcadas/ });
-  if (await cluster.isVisible()) await cluster.click();
-  await page.getByRole('button', { name: /^Estación Orcadas, Islas Orcadas del Sur/ }).click();
-  await expect(page.getByRole('heading', { level: 2, name: ORCADAS_GUIDING_QUESTION })).toBeVisible();
-  await page.waitForFunction(() => (window as unknown as { __orcadasReady?: boolean }).__orcadasReady === true);
 }
 
 async function tabTo(page: Page, name: RegExp, max = 50) {
@@ -57,7 +51,7 @@ test.beforeEach(async ({ page }) => {
   });
   page.on('pageerror', (e) => consoleErrors.push(e.message));
   await page.goto('/');
-  await page.evaluate(() => localStorage.clear());
+  await clearStorage(page);
   await page.reload();
   await expect(log(page)).toContainText('0/2');
 });
@@ -279,6 +273,7 @@ test('from the 3D map with motion allowed, the camera zooms down to the island b
     }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'] });
   });
   await marker.click();
+  await page.getByRole('dialog', { name: 'Estación Orcadas' }).getByRole('button', { name: 'Comenzar expedición' }).click();
   await expect(page.getByRole('heading', { level: 2, name: ORCADAS_GUIDING_QUESTION })).toBeVisible({
     timeout: 30_000,
   });
@@ -788,4 +783,95 @@ test('G6: in the entry view every hotspot dot is inside the viewport and the cam
   });
   expect(ratio).toBeGreaterThan(1);
   expect(ratio).toBeLessThanOrEqual(1.25);
+});
+
+test('on desktop (1440px) the chapter panel can be hidden to a right-edge tab and shown again with focus restored', async ({
+  page,
+}) => {
+  const vw = page.viewportSize()?.width ?? 1440;
+  test.skip(vw < 900, 'Desktop only test');
+
+  await openOrcadasFromMap(page);
+
+  const panel = page.locator('#orc-chapter-panel');
+  const hideBtn = page.getByRole('button', { name: 'Ocultar panel' });
+  await expect(panel).toBeVisible();
+  await expect(hideBtn).toHaveAttribute('aria-expanded', 'true');
+  await expect(hideBtn).toHaveAttribute('aria-controls', 'orc-chapter-panel');
+
+  await hideBtn.click();
+
+  const showBtn = page.getByRole('button', { name: 'Mostrar panel' });
+  await expect(showBtn).toBeVisible();
+  await expect(showBtn).toHaveAttribute('aria-expanded', 'false');
+  await expect(showBtn).toHaveAttribute('aria-controls', 'orc-chapter-panel');
+  await expect(showBtn).toBeFocused();
+  await expect(panel).toBeHidden();
+  await expect(panel).toHaveAttribute('inert', '');
+
+  await showBtn.click();
+
+  await expect(panel).toBeVisible();
+  await expect(showBtn).toHaveCount(0);
+  await expect(hideBtn).toHaveAttribute('aria-expanded', 'true');
+  await expectFocused(page, ORCADAS_GUIDING_QUESTION);
+});
+
+test('Orcadas intro modal opens from marker and list, traps focus, returns focus on Escape and Volver al mapa, and starts expedition', async ({
+  page,
+}) => {
+  await clickOrcadasMarker(page);
+  const intro = page.getByRole('dialog', { name: 'Estación Orcadas' });
+  await expect(intro).toBeVisible();
+  const startBtn = intro.getByRole('button', { name: 'Comenzar expedición' });
+  await expect(startBtn).toBeFocused();
+  await expect(intro.locator('.place')).toHaveText(ORCADAS_GUIDING_QUESTION);
+  await expect(intro.getByText(ORCADAS_INTRO_DESC)).toBeVisible();
+  // On the 2D map there is no WebGL: the turning model of the station is left out (map3d.spec covers it in 3D).
+  await expect(intro.locator('.vpreview')).toHaveCount(0);
+
+  await expect(intro.getByText('El registro mensual de temperatura empieza en abril de 1903 y sigue hasta hoy.')).toBeVisible();
+  const readerBtn = intro.getByRole('button', { name: 'SCAR READER' });
+  await expect(readerBtn).toBeVisible();
+  await readerBtn.click();
+  const sourcesDialog = page.getByRole('dialog', { name: 'Fuentes' });
+  await expect(sourcesDialog).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(sourcesDialog).toHaveCount(0);
+  await expect(readerBtn).toBeFocused();
+
+  await startBtn.focus();
+  await expect(startBtn).toBeFocused();
+  for (let i = 0; i < 4; i++) {
+    await page.keyboard.press('Tab');
+    expect(
+      await page.evaluate(() => Boolean(document.activeElement?.closest('[aria-labelledby="orcadas-intro-title"]')))
+    ).toBe(true);
+  }
+  await page.keyboard.press('Shift+Tab');
+  expect(
+    await page.evaluate(() => Boolean(document.activeElement?.closest('[aria-labelledby="orcadas-intro-title"]')))
+  ).toBe(true);
+
+  await page.keyboard.press('Escape');
+  await expect(intro).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /^Estación Orcadas, Islas Orcadas del Sur/ })).toBeFocused();
+
+  const listBtn = page.getByRole('button', { name: 'Ver como lista' });
+  await listBtn.click();
+  await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Estación Orcadas/ }).click();
+  await expect(intro).toBeVisible();
+  await expect(intro.getByRole('button', { name: 'Comenzar expedición' })).toBeFocused();
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+  expect(overflow).toBe(false);
+
+  await intro.getByRole('button', { name: 'Volver al mapa' }).click();
+  await expect(intro).toHaveCount(0);
+  await expect(listBtn).toBeFocused();
+
+  await clickOrcadasMarker(page);
+  await intro.getByRole('button', { name: 'Comenzar expedición' }).click();
+  await expect(page.getByRole('heading', { level: 2, name: ORCADAS_GUIDING_QUESTION })).toBeVisible();
 });

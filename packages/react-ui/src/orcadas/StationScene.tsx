@@ -1,5 +1,6 @@
 import {
   memo,
+  useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -12,13 +13,12 @@ import {
   Box3,
   BufferAttribute,
   BufferGeometry,
-  Color,
   Group,
   InstancedMesh,
+  Mesh,
+  MeshBasicMaterial,
   Object3D,
   PlaneGeometry,
-  Points,
-  PointsMaterial,
   ShaderMaterial,
   SphereGeometry,
   Vector2,
@@ -28,20 +28,46 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { CameraControls, PerformanceMonitor } from '@react-three/drei';
 import { EffectComposer } from '@react-three/postprocessing';
 import {
+  ARRIVAL_SECONDS,
+  DEPARTURE_SECONDS,
   ORCADAS_LAT,
   DIORAMA_METERS_PER_UNIT,
   DIORAMA_PROP_SCALE,
   DIORAMA_ELEMENTS,
+  arrivalFinalPose,
+  arrivalScene,
+  helicopterDeparture,
+  helicopterLanding,
   layoutOf,
   worldCoastDistance,
   midMonthDayOfYear,
+  orcadasWind,
+  shouldLightWindows,
   shouldTick,
   solarAzimuthDeg,
   solarElevationDeg,
+  zodiacApproach,
+  zodiacDeparture,
+  type ArrivalId,
+  type ArrivalPoint,
+  type ArrivalPose,
   type BuildingId,
 } from '@antartida/core';
 import { InkEffect } from '../map3d/InkEffect.ts';
-import { buildBoxGeometry, vehicleMaterial, type Box } from '../voyage/vehicles.ts';
+import { useMapGestures } from '../map3d/useMapGestures.ts';
+import {
+  ICEBERG_DRAFT,
+  ICEBERG_PEAKS_POLY,
+  ICEBERG_RIPPLE_SECONDS,
+  ICEBERG_RIPPLES,
+  ICEBERG_TABULAR_POLY,
+  icebergSwell,
+  rippleAt,
+  waterline,
+  waterMaterial,
+} from '../voyage/icebergs.ts';
+import { boxShade, buildPolyGeometry, type Tri } from '../voyage/lowPoly.ts';
+import { vehicleMaterial } from '../voyage/vehicles.ts';
 import {
   HOTSPOTS,
   VIEW_BEARING_DEG,
@@ -49,6 +75,7 @@ import {
   VIEW_MAX_ZOOM_OUT,
   VIEW_ORBIT_DEG,
   poseForHotspot,
+  type CameraPose,
   type HotspotId,
 } from './Hotspots.tsx';
 import { StationFallback } from './StationFallback.tsx';
@@ -60,33 +87,58 @@ import {
   penguinSwimCorridor,
 } from './penguins.ts';
 import {
-  BIRD_WING_ROOT,
-  FLAGPOLE_BASE_BOXES,
-  FLAG_SEGMENT_BOXES,
-  FLAG_SEGMENT_WIDTH,
-  ICEBERG_PINNACLE_BOXES,
-  ICEBERG_TABULAR_BOXES,
-  SEA_ICE_FLOE_VARIANTS,
-  SKUA_MODEL,
-  SNOW_PETREL_MODEL,
-  STATION_BOAT_BOXES,
-  STEVENSON_SCREEN_BOXES,
-  VOXEL_PALETTE,
-  WIND_CUPS_BOXES,
-  WIND_MAST_BASE_BOXES,
-  WIND_VANE_BOXES,
-  buildModuleBoxes,
-  buildOmondBoxes,
-  buildRadioTowerBoxes,
-  buildStageDetailBoxes,
+  SCREEN_DOOR_DURATION,
+  SCREEN_DOOR_HINGE,
+  buildFlagpoleBaseTris,
+  buildHelipadTris,
+  buildModuleTris,
+  buildOmondTris,
+  buildRadioTowerTris,
+  buildStevensonDoorTris,
+  buildStevensonInstrumentsTris,
+  buildStevensonScreenTris,
+  buildWindMastBaseTris,
+  clamp01,
+  screenDoorAngle,
+  smooth01,
+} from './lowPolyBuildings.ts';
+import {
+  SEA_ICE_FLOE_POLY_VARIANTS,
+  buildBoatChocksTris,
+  buildHelicopterRotorTris,
+  buildHelicopterTris,
+  buildSnowPuffTris,
+  buildZodiacTris,
+  buildZodiacWakeGeometry,
+  buildZodiacWaterlineGeometry,
+  zodiacBottomY,
+} from './lowPolyProps.ts';
+import {
+  buildElephantSealPolyParts,
+  buildSealContactGeometry,
+  buildWeddellSealPolyParts,
+} from './lowPolyAnimals.ts';
+import {
+  HELICOPTER_ROTOR_ORIGIN,
+  HELIPAD_TOP_Y,
+  buildStageDetailTris,
   createIsthmusTerrainGeometry,
   evaluateIsthmusTerrain,
   generateIcebergs,
   floeVisibility,
   generateSeaIcePlates,
-  generateSnowParticles,
   type SeaIcePlate,
 } from './stationModels.ts';
+import { icebergDriftAt } from './icebergDrift.ts';
+import {
+  CAMERA_TRANSITION_SECONDS,
+  ERA_MIN_SCALE,
+  ERA_VISIBLE_THRESHOLD,
+  stepEraPresence,
+} from './lifeDetails.ts';
+import { LifeDetails } from './LifeDetails.tsx';
+import { StationSnowfall } from './WeatherDetails.tsx';
+import { WindDetails, WindFlag, WindMastInstruments } from './WindDetails.tsx';
 import {
   ELEPHANT_FLIPPER_L,
   ELEPHANT_FLIPPER_R,
@@ -98,11 +150,9 @@ import {
   WEDDELL_NECK,
   WEDDELL_TAIL,
   buildSealColony,
-  elephantSealParts,
   residentPose as sealResidentPose,
   restPose as restSealPose,
   travellerPose as sealTravellerPose,
-  weddellSealParts,
   type SealPose,
 } from './seals.ts';
 import {
@@ -115,6 +165,7 @@ import {
 } from './stationSky.glsl.ts';
 
 export interface StationSceneProps {
+  arrival?: ArrivalId;
   month: number;
   hour: number;
   windKmh: number;
@@ -125,8 +176,12 @@ export interface StationSceneProps {
   animals: readonly string[];
   focus: HotspotId | null;
   reduced: boolean;
+  screenOpen?: boolean;
+  leaving?: boolean;
   panelExpanded?: boolean;
+  panelHidden?: boolean;
   onReady?: () => void;
+  onDepartureDone?: () => void;
   overlayRef?: RefObject<HTMLDivElement | null>;
 }
 
@@ -160,10 +215,11 @@ function computeSunDirection(month: number, hour: number): {
 }
 
 function computeWindVector(windDirDeg: number, windKmh: number): Vector2 {
-  // windDirDeg is the direction wind blows FROM; drift direction is opposite (+180 deg)
-  const toRad = ((windDirDeg + 180) * Math.PI) / 180;
+  const {
+    toDir: [toX, toZ],
+  } = orcadasWind(windDirDeg, windKmh);
   const speedNorm = Math.min(2.5, Math.max(0.05, windKmh / 28));
-  return new Vector2(Math.sin(toRad) * speedNorm, -Math.cos(toRad) * speedNorm);
+  return new Vector2(toX * speedNorm, toZ * speedNorm);
 }
 
 function SkyAndLighting({
@@ -254,9 +310,9 @@ function SkyAndLighting({
   );
 }
 
-/** Paths, loose rocks and snow patches of the stage: static boxes in one geometry. */
+/** Paths, loose rocks and snow patches of the stage: low-poly ground details in one geometry. */
 function StageDetails() {
-  const geo = useMemo(() => buildBoxGeometry(buildStageDetailBoxes()), []);
+  const geo = useMemo(() => buildPolyGeometry(buildStageDetailTris(), boxShade), []);
   useEffect(() => () => geo.dispose(), [geo]);
   return <mesh geometry={geo} material={vehicleMaterial} />;
 }
@@ -303,13 +359,25 @@ function IsthmusTerrain({
   return <mesh geometry={geo} material={mat} receiveShadow />;
 }
 
+/** Matches stationWaterVertexShader wave displacement at (x, z) and time t. */
+function bayWaveY(x: number, z: number, t: number, windKmh: number, seaIce: number): number {
+  const iceDamp = 1 - Math.min(1, Math.max(0, seaIce)) * 0.85;
+  const waveAmp = Math.min(0.22, Math.max(0.02, windKmh / 80)) * iceDamp;
+  const d = -worldCoastDistance(x, z);
+  const s = Math.min(1, Math.max(0, (d - 0.5) / 3.5));
+  const shoreMask = s * s * (3 - 2 * s);
+  return Math.sin(x * 0.45 + t * 1.8) * Math.cos(z * 0.38 + t * 1.4) * waveAmp * shoreMask;
+}
+
 function BayOcean({
+  month,
   sunDir,
   windKmh,
   windVec,
   seaIce,
   reduced,
 }: {
+  month: number;
   sunDir: Vector3;
   windKmh: number;
   windVec: Vector2;
@@ -357,9 +425,14 @@ function BayOcean({
     [swimCorridor]
   );
   const floeGeos = useMemo(
-    () => SEA_ICE_FLOE_VARIANTS.map((boxes) => buildBoxGeometry(boxes)),
+    () => SEA_ICE_FLOE_POLY_VARIANTS.map((v) => buildPolyGeometry(v.tris, boxShade)),
     []
   );
+  const floeWaterGeos = useMemo(
+    () => SEA_ICE_FLOE_POLY_VARIANTS.map((v) => v.createWaterline()),
+    []
+  );
+  const floeWaterMat = useMemo(waterMaterial, []);
   const variantPlates = useMemo(() => {
     const list: SeaIcePlate[][] = [[], [], [], []];
     for (const p of plates) {
@@ -368,23 +441,30 @@ function BayOcean({
     return list;
   }, [plates]);
   const platesRefs = useRef<(InstancedMesh | null)[]>([]);
+  const plateWaterRefs = useRef<(InstancedMesh | null)[]>([]);
 
   const icebergs = useMemo(
     () => generateIcebergs(190409, swimCorridor, PENGUIN_SWIM_CLEARANCE),
     [swimCorridor]
   );
-  const tabularBergs = useMemo(
-    () => icebergs.filter((b) => b.variant === 'tabular'),
-    [icebergs]
+  const tabularGeo = useMemo(() => buildPolyGeometry(ICEBERG_TABULAR_POLY, boxShade), []);
+  const pinnacleGeo = useMemo(() => buildPolyGeometry(ICEBERG_PEAKS_POLY, boxShade), []);
+  const waterlines = useMemo(
+    () => ({
+      'iceberg-lg': waterline('iceberg-lg'),
+      'iceberg-sm': waterline('iceberg-sm'),
+    }),
+    []
   );
-  const pinnacleBergs = useMemo(
-    () => icebergs.filter((b) => b.variant === 'pinnacle'),
-    [icebergs]
+  const glowMaterial = useMemo(waterMaterial, []);
+  const bergWaterMaterials = useMemo(
+    () => Array.from({ length: icebergs.length * (ICEBERG_RIPPLES + 1) }, waterMaterial),
+    [icebergs.length]
   );
-  const tabularGeo = useMemo(() => buildBoxGeometry(ICEBERG_TABULAR_BOXES), []);
-  const pinnacleGeo = useMemo(() => buildBoxGeometry(ICEBERG_PINNACLE_BOXES), []);
-  const tabularRef = useRef<InstancedMesh>(null);
-  const pinnacleRef = useRef<InstancedMesh>(null);
+  const bergGroups = useRef<(Group | null)[]>([]);
+  const bergBodies = useRef<(Group | null)[]>([]);
+  const bergFoams = useRef<(Mesh | null)[]>([]);
+  const bergRipples = useRef<(Mesh | null)[]>([]);
   const dummy = useMemo(() => new Object3D(), []);
 
   useEffect(() => {
@@ -392,10 +472,30 @@ function BayOcean({
       waterGeo.dispose();
       waterMat.dispose();
       for (const g of floeGeos) g.dispose();
+      for (const g of floeWaterGeos) g.dispose();
+      floeWaterMat.dispose();
       tabularGeo.dispose();
       pinnacleGeo.dispose();
+      for (const w of Object.values(waterlines)) {
+        w.glow.dispose();
+        w.foam.dispose();
+        w.ripple.dispose();
+      }
+      glowMaterial.dispose();
+      for (const m of bergWaterMaterials) m.dispose();
     };
-  }, [waterGeo, waterMat, floeGeos, tabularGeo, pinnacleGeo]);
+  }, [
+    waterGeo,
+    waterMat,
+    floeGeos,
+    floeWaterGeos,
+    floeWaterMat,
+    tabularGeo,
+    pinnacleGeo,
+    waterlines,
+    glowMaterial,
+    bergWaterMaterials,
+  ]);
 
   useLayoutEffect(() => {
     uniforms.uSunDir.value.copy(sunDir);
@@ -404,173 +504,238 @@ function BayOcean({
     uniforms.uSeaIce.value = seaIce;
   }, [sunDir, windKmh, windVec, seaIce, uniforms]);
 
-  // Update sea-ice pancake plates whenever seaIce changes
+  // Update sea-ice floe plates initially (t = 0) and whenever seaIce or windKmh changes
   useLayoutEffect(() => {
     const isClosed = seaIce >= 0.9;
     variantPlates.forEach((group, v) => {
       const mesh = platesRefs.current[v];
+      const waterMesh = plateWaterRefs.current[v];
       if (!mesh) return;
+      if (waterMesh) waterMesh.visible = !isClosed;
       for (let i = 0; i < group.length; i++) {
         const p = group[i];
         if (isClosed) {
           // On the closed sheet (seaIce >= 0.9) keep only about 1 in 6 as low rubble, rest hidden
           if (i % 6 === 0) {
-            dummy.position.set(p.x, 0.015, p.z);
+            dummy.position.set(p.x, 0.01, p.z);
             dummy.rotation.set(0, p.rotY, 0);
-            dummy.scale.set(p.sizeX * 0.65, 0.22, p.sizeZ * 0.65);
+            dummy.scale.set(p.sizeX * 0.65, 0.25, p.sizeZ * 0.65);
           } else {
             dummy.scale.set(0, 0, 0);
           }
         } else {
           const cov = floeVisibility(p.threshold, seaIce);
           const k = cov / 0.9;
-          dummy.position.set(p.x, 0.02, p.z);
+          const wy = cov > 0.01 ? bayWaveY(p.x, p.z, 0, windKmh, seaIce) : 0;
+          dummy.position.set(p.x, wy, p.z);
           dummy.rotation.set(0, p.rotY, 0);
-          dummy.scale.set(p.sizeX * k, cov > 0.01 ? 0.8 : 0, p.sizeZ * k);
+          dummy.scale.set(p.sizeX * k, cov > 0.01 ? 0.9 : 0, p.sizeZ * k);
         }
         dummy.updateMatrix();
         mesh.setMatrixAt(i, dummy.matrix);
+        if (waterMesh && !isClosed) waterMesh.setMatrixAt(i, dummy.matrix);
       }
       mesh.instanceMatrix.needsUpdate = true;
+      if (waterMesh && !isClosed) waterMesh.instanceMatrix.needsUpdate = true;
     });
-  }, [variantPlates, seaIce, dummy]);
+  }, [variantPlates, seaIce, windKmh, dummy]);
 
-  // Update icebergs initially and bob in useFrame when !reduced
+  // Initialize icebergs and waterlines (t = 0 so reduced mode starts settled and still)
   useLayoutEffect(() => {
-    const initBergs = (mesh: InstancedMesh | null, list: typeof tabularBergs) => {
-      if (!mesh) return;
-      for (let i = 0; i < list.length; i++) {
-        const b = list[i];
-        dummy.position.set(b.x, 0.35 - seaIce * 0.2, b.z);
-        dummy.rotation.set(0.08, b.rotY, -0.05);
-        dummy.scale.set(b.scaleX, b.scaleY, b.scaleZ);
-        dummy.updateMatrix();
-        mesh.setMatrixAt(i, dummy.matrix);
+    const openWater = Math.max(0, 1 - seaIce / 0.85);
+    glowMaterial.opacity = 0.85 * openWater;
+    icebergs.forEach((b, i) => {
+      const g = bergGroups.current[i];
+      const body = bergBodies.current[i];
+      const pose = icebergDriftAt(b, 0, seaIce, month, reduced);
+      if (g) {
+        g.position.set(pose.x, bayWaveY(pose.x, pose.z, 0, windKmh, seaIce), pose.z);
+        g.rotation.set(0, pose.rotY, 0);
+        g.scale.set(b.scaleX, b.scaleY, b.scaleZ);
       }
-      mesh.instanceMatrix.needsUpdate = true;
-    };
-    initBergs(tabularRef.current, tabularBergs);
-    initBergs(pinnacleRef.current, pinnacleBergs);
-  }, [tabularBergs, pinnacleBergs, dummy, seaIce]);
+      if (body) {
+        body.position.y = -ICEBERG_DRAFT;
+        body.rotation.set(0, 0, 0);
+      }
+      const foam = bergFoams.current[i];
+      if (foam) {
+        foam.visible = openWater > 0.02;
+        (foam.material as MeshBasicMaterial).opacity = 0.55 * openWater;
+      }
+      for (let r = 0; r < ICEBERG_RIPPLES; r++) {
+        const m = bergRipples.current[i * ICEBERG_RIPPLES + r];
+        if (!m) continue;
+        m.visible = openWater > 0.02;
+        const { scale, opacity } = rippleAt((r / ICEBERG_RIPPLES + 0.15) % 1);
+        m.scale.set(scale, 1, scale);
+        (m.material as MeshBasicMaterial).opacity = opacity * openWater;
+      }
+    });
+  }, [icebergs, seaIce, month, windKmh, reduced, glowMaterial]);
 
   useFrame(({ clock }) => {
     if (reduced) return;
     const t = clock.getElapsedTime();
     uniforms.uTime.value = t;
 
-    // Icebergs stop rocking as the bay closes; frozen in, they sit lower in the ice.
+    const isClosed = seaIce >= 0.9;
+    if (!isClosed) {
+      variantPlates.forEach((group, v) => {
+        const mesh = platesRefs.current[v];
+        const waterMesh = plateWaterRefs.current[v];
+        if (!mesh) return;
+        let touched = false;
+        for (let i = 0; i < group.length; i++) {
+          const p = group[i];
+          const cov = floeVisibility(p.threshold, seaIce);
+          if (cov <= 0.01) continue;
+          const k = cov / 0.9;
+          const wy = bayWaveY(p.x, p.z, t, windKmh, seaIce);
+          dummy.position.set(p.x, wy, p.z);
+          dummy.rotation.set(0, p.rotY, 0);
+          dummy.scale.set(p.sizeX * k, 0.9, p.sizeZ * k);
+          dummy.updateMatrix();
+          mesh.setMatrixAt(i, dummy.matrix);
+          if (waterMesh) waterMesh.setMatrixAt(i, dummy.matrix);
+          touched = true;
+        }
+        if (touched) {
+          mesh.instanceMatrix.needsUpdate = true;
+          if (waterMesh) waterMesh.instanceMatrix.needsUpdate = true;
+        }
+      });
+    }
+
+    // Icebergs ride the swell: heave, gentle pitch/roll, foam thickening on dip, two ripples half a cycle apart.
     const damp = 1 - seaIce;
-    const updateBergs = (mesh: InstancedMesh | null, list: typeof tabularBergs) => {
-      if (!mesh) return;
-      for (let i = 0; i < list.length; i++) {
-        const b = list[i];
-        const bob = Math.sin(t * 1.1 + b.phase) * 0.08 * damp;
-        const tilt = Math.cos(t * 0.9 + b.phase) * 0.04 * damp;
-        dummy.position.set(b.x, 0.35 - seaIce * 0.2 + bob, b.z);
-        dummy.rotation.set(0.06 + tilt, b.rotY, -0.04 + tilt);
-        dummy.scale.set(b.scaleX, b.scaleY, b.scaleZ);
-        dummy.updateMatrix();
-        mesh.setMatrixAt(i, dummy.matrix);
+    const openWater = Math.max(0, 1 - seaIce / 0.85);
+    icebergs.forEach((b, i) => {
+      const pose = icebergDriftAt(b, t, seaIce, month, reduced);
+      const g = bergGroups.current[i];
+      if (g) {
+        g.position.set(pose.x, bayWaveY(pose.x, pose.z, t, windKmh, seaIce), pose.z);
+        g.rotation.y = pose.rotY;
       }
-      mesh.instanceMatrix.needsUpdate = true;
-    };
-    updateBergs(tabularRef.current, tabularBergs);
-    updateBergs(pinnacleRef.current, pinnacleBergs);
+      const heave = icebergSwell(t, b.phase) * damp;
+      const sway = t * 0.4 + b.phase * Math.PI * 2;
+      const body = bergBodies.current[i];
+      if (body) {
+        body.position.y = heave - ICEBERG_DRAFT;
+        body.rotation.set(
+          Math.sin(sway) * 0.045 * damp,
+          0,
+          Math.sin(sway * 1.2 + 0.7) * 0.035 * damp
+        );
+      }
+      const foam = bergFoams.current[i];
+      if (foam) {
+        foam.visible = openWater > 0.02;
+        (foam.material as MeshBasicMaterial).opacity =
+          (0.55 + 0.45 * Math.min(1, Math.max(0, -heave / 0.012))) * openWater;
+      }
+      for (let r = 0; r < ICEBERG_RIPPLES; r++) {
+        const m = bergRipples.current[i * ICEBERG_RIPPLES + r];
+        if (!m) continue;
+        m.visible = openWater > 0.02;
+        const { scale, opacity } = rippleAt(
+          ((t + b.phase * 7) / ICEBERG_RIPPLE_SECONDS + r / ICEBERG_RIPPLES) % 1
+        );
+        m.scale.set(scale, 1, scale);
+        (m.material as MeshBasicMaterial).opacity = opacity * openWater;
+      }
+    });
   });
+
+  const openWater = Math.max(0, 1 - seaIce / 0.85);
 
   return (
     <group>
       <mesh geometry={waterGeo} material={waterMat} position={[0, 0, 0]} />
       {variantPlates.map((group, v) => (
-        <instancedMesh
-          key={v}
-          ref={(node) => {
-            platesRefs.current[v] = node;
-          }}
-          args={[floeGeos[v], vehicleMaterial, group.length]}
-          frustumCulled={false}
-        />
+        <group key={v}>
+          <instancedMesh
+            ref={(node) => {
+              platesRefs.current[v] = node;
+            }}
+            args={[floeGeos[v], vehicleMaterial, group.length]}
+            frustumCulled={false}
+          />
+          <instancedMesh
+            ref={(node) => {
+              plateWaterRefs.current[v] = node;
+            }}
+            args={[floeWaterGeos[v], floeWaterMat, group.length]}
+            renderOrder={1}
+            frustumCulled={false}
+          />
+        </group>
       ))}
-      <instancedMesh
-        ref={tabularRef}
-        args={[tabularGeo, vehicleMaterial, tabularBergs.length]}
-        frustumCulled={false}
-      />
-      <instancedMesh
-        ref={pinnacleRef}
-        args={[pinnacleGeo, vehicleMaterial, pinnacleBergs.length]}
-        frustumCulled={false}
-      />
+      {icebergs.map((b, i) => {
+        const kind = b.variant === 'tabular' ? 'iceberg-lg' : 'iceberg-sm';
+        const geo = b.variant === 'tabular' ? tabularGeo : pinnacleGeo;
+        const w = waterlines[kind];
+        return (
+          <group
+            key={`${b.variant}-${i}`}
+            ref={(node) => {
+              bergGroups.current[i] = node;
+            }}
+          >
+            <group
+              ref={(node) => {
+                bergBodies.current[i] = node;
+              }}
+            >
+              <mesh geometry={geo} material={vehicleMaterial} />
+            </group>
+            <mesh
+              geometry={w.glow}
+              material={glowMaterial}
+              position-y={0.012}
+              visible={openWater > 0.02}
+              renderOrder={1}
+            />
+            {Array.from({ length: ICEBERG_RIPPLES }, (_, r) => (
+              <mesh
+                key={r}
+                ref={(node) => {
+                  bergRipples.current[i * ICEBERG_RIPPLES + r] = node;
+                }}
+                geometry={w.ripple}
+                material={bergWaterMaterials[i * ICEBERG_RIPPLES + r]}
+                position-y={0.015}
+                renderOrder={2}
+              />
+            ))}
+            <mesh
+              ref={(node) => {
+                bergFoams.current[i] = node;
+              }}
+              geometry={w.foam}
+              material={bergWaterMaterials[icebergs.length * ICEBERG_RIPPLES + i]}
+              position-y={0.018}
+              renderOrder={3}
+            />
+          </group>
+        );
+      })}
     </group>
   );
 }
 
-/**
- * The flag as a chain of 5 box segments: each one hangs from the end of the previous one, so a
- * small turn at every hinge adds up to a wave along the cloth.
- */
-function FlagChain({
-  geos,
-  jointRefs,
-  index,
-}: {
-  geos: readonly BufferGeometry[];
-  jointRefs: RefObject<(Group | null)[]>;
-  index: number;
-}) {
-  if (index >= geos.length) return null;
-  return (
-    <group
-      ref={(node) => {
-        jointRefs.current[index] = node;
-      }}
-      position={[index === 0 ? 0 : FLAG_SEGMENT_WIDTH, 0, 0]}
-    >
-      <mesh geometry={geos[index]} material={vehicleMaterial} />
-      <FlagChain geos={geos} jointRefs={jointRefs} index={index + 1} />
-    </group>
-  );
-}
-
-/** Turns each hinge of the flag: a travelling wave that grows and quickens with the wind. */
-function waveFlag(joints: (Group | null)[], t: number, windKmh: number) {
-  const strength = Math.min(1, windKmh / 60);
-  const amp = 0.06 + strength * 0.24;
-  const speed = 2.2 + strength * 5;
-  joints.forEach((joint, i) => {
-    if (!joint) return;
-    joint.rotation.y = Math.sin(t * speed - i * 1.1) * amp * (0.6 + i * 0.15);
-    // Light wind lets the free end droop a little.
-    joint.rotation.z = i === 0 ? 0 : -(1 - strength) * 0.05;
-  });
-}
+/** Keeps each element group smoothly fading/scaling in as its era enters `buildings`. */
 
 /** The boat model is 2.3 units long; the measured Zodiac is 5 m. */
 const BOAT_SCALE = 5 / DIORAMA_METERS_PER_UNIT / 2.3;
-const BOAT_ARRIVAL_DURATION = 6.0;
 const BOAT_ARRIVAL_DISTANCE = 8.0;
 const WAKE_COUNT = 26;
-
-function clamp01(v: number): number {
-  return v < 0 ? 0 : v > 1 ? 1 : v;
-}
-
-function smooth01(t: number): number {
-  const c = clamp01(t);
-  return c * c * (3 - 2 * c);
-}
-
-function zodiacBottomY(localX: number, localZ: number): number {
-  const az = Math.abs(localZ);
-  let base = 0;
-  if (localX > 0.98) base = 0.17;
-  else if (localX > 0.85) base = 0.095;
-  else if (localX > 0.65) base = 0.04;
-  if (az > 0.31) base = Math.max(base, 0.11);
-  else if (az > 0.21) base = Math.max(base, 0.085);
-  else if (az > 0.08) base = Math.max(base, 0.035);
-  return base;
-}
+/** Rotor blade length in HELICOPTER_BOXES; scaled so the rotor matches the helipad side. */
+const HELICOPTER_ROTOR_SPAN = 0.84;
+const HELI_ROTOR_COAST_DURATION = 1.2;
+const HELI_TOTAL_ARRIVAL_DURATION = ARRIVAL_SECONDS + HELI_ROTOR_COAST_DURATION;
+const HELI_ROTOR_CRUISE_SPEED = 22;
+const HELI_SNOW_COUNT = 36;
+const HELI_START_PITCH = -0.12;
 
 const ERA_BUILDING_IDS: readonly BuildingId[] = [
   'omond',
@@ -581,24 +746,43 @@ const ERA_BUILDING_IDS: readonly BuildingId[] = [
 ];
 
 function StationElements({
+  arrival,
   buildings,
   isNight,
   windKmh,
   windDirDeg,
   reduced,
   seaIce,
+  showHelicopter,
+  screenOpen = false,
+  leaving = false,
+  onVehicleArrivalDone,
+  onDepartureDone,
 }: {
+  arrival: ArrivalId;
   buildings: readonly BuildingId[];
   isNight: boolean;
   windKmh: number;
   windDirDeg: number;
   reduced: boolean;
   seaIce: number;
+  showHelicopter: boolean;
+  screenOpen?: boolean;
+  leaving?: boolean;
+  onVehicleArrivalDone?: () => void;
+  onDepartureDone?: () => void;
 }) {
-  const vaneRef = useRef<Group>(null);
-  const cupsRef = useRef<Group>(null);
   const boatRef = useRef<Group>(null);
   const wakeRef = useRef<InstancedMesh>(null);
+  const boatWaterRef = useRef<Mesh>(null);
+  const heliRef = useRef<Group>(null);
+  const heliRotorRef = useRef<Group>(null);
+  const heliSnowRef = useRef<InstancedMesh>(null);
+  const screenDoorRef = useRef<Group>(null);
+  const doorStateRef = useRef<{ open: boolean; elapsed: number }>({
+    open: screenOpen,
+    elapsed: screenOpen ? 0 : SCREEN_DOOR_DURATION,
+  });
   const elementRefs = useRef<Record<string, Group | null>>({});
 
   const presences = useRef<Record<BuildingId, number>>({
@@ -627,10 +811,34 @@ function StationElements({
   const isFrozen = seaIce >= 0.5;
 
   const arrivalRef = useRef<{ active: boolean; elapsed: number }>({
-    active: !isFrozen && !reduced,
+    active: arrival === 'ship' && !isFrozen && !reduced,
     elapsed: 0,
   });
-  const prevFrozenRef = useRef<boolean>(isFrozen);
+
+  const heliArrivalRef = useRef<{ active: boolean; elapsed: number }>({
+    active: arrival === 'helicopter' && showHelicopter && !reduced,
+    elapsed: 0,
+  });
+  const vehicleDoneFiredRef = useRef(false);
+
+  const onDepartureDoneRef = useRef(onDepartureDone);
+  onDepartureDoneRef.current = onDepartureDone;
+  const departRef = useRef<{
+    started: boolean;
+    active: boolean;
+    elapsed: number;
+    duration: number;
+    boatTo: ArrivalPoint | null;
+    heliTo: ArrivalPoint | null;
+  }>({
+    started: false,
+    active: false,
+    elapsed: 0,
+    duration: DEPARTURE_SECONDS,
+    boatTo: null,
+    heliTo: null,
+  });
+  const departDoneFiredRef = useRef(false);
 
   // Pulled up for the winter onto the flat gravel above the beach, so the chocks stay short.
   const boatBeachRest = useMemo(() => {
@@ -645,20 +853,18 @@ function StationElements({
       }
     }
     const chockTopY = maxGroundY + 0.04;
-    const chockBoxes: Box[] = [];
-    for (const u of [0.35, -0.35]) {
+    const stations = [0.35, -0.35].map((u) => {
       const wx = rx + u * fwdX;
       const wz = rz + u * fwdZ;
       const gy = evaluateIsthmusTerrain(wx, wz).y;
-      const h = Math.max(0.04, chockTopY - gy);
-      const midY = gy + h / 2;
-      chockBoxes.push(
-        [wx, midY, wz, 0.12, h, 0.52, VOXEL_PALETTE.WOOD],
-        [wx + 0.03 * fwdX, chockTopY - 0.02, wz + 0.03 * fwdZ + 0.22, 0.14, 0.06, 0.1, VOXEL_PALETTE.WOOD_LIGHT],
-        [wx + 0.03 * fwdX, chockTopY - 0.02, wz + 0.03 * fwdZ - 0.22, 0.14, 0.06, 0.1, VOXEL_PALETTE.WOOD_LIGHT]
-      );
-    }
-    return { x: rx, z: rz, chockTopY, chockGeo: buildBoxGeometry(chockBoxes) };
+      return { wx, wz, gy, chockTopY };
+    });
+    return {
+      x: rx,
+      z: rz,
+      chockTopY,
+      chockGeo: buildPolyGeometry(buildBoatChocksTris(stations, fwdX, fwdZ, rightX, rightZ), boxShade),
+    };
   }, [boatLayout, fwdX, fwdZ, rightX, rightZ]);
 
   // Open-water stranded pose: bow resting on the gravel beach, stern floating in the bay.
@@ -688,25 +894,43 @@ function StationElements({
     return { x: sx, y, z: sz, pitch, roll };
   }, [bx, bz, fwdX, fwdZ, rightX, rightZ]);
 
-  const boatGeo = useMemo(() => buildBoxGeometry(STATION_BOAT_BOXES), []);
-  const wakeGeo = useMemo(
-    () => buildBoxGeometry([[0, 0, 0, 1, 1, 1, VOXEL_PALETTE.WHITE]]),
-    []
+  const boatTo = useMemo(
+    () => ({ x: strandedPose.x, z: strandedPose.z, height: strandedPose.y, heading: bRotY }),
+    [strandedPose, bRotY]
   );
+  const boatFrom = useMemo(
+    () => ({
+      x: strandedPose.x - BOAT_ARRIVAL_DISTANCE * fwdX,
+      z: strandedPose.z - BOAT_ARRIVAL_DISTANCE * fwdZ,
+      height: -0.025,
+      heading: bRotY,
+    }),
+    [strandedPose, fwdX, fwdZ, bRotY]
+  );
+  const heliTo = useMemo(() => ({ x: 0, z: 0, height: HELIPAD_TOP_Y, heading: 0 }), []);
+  const heliFrom = useMemo(() => helicopterLanding(0, { to: heliTo, reduced: false }), [heliTo]);
+
+  const boatGeo = useMemo(() => buildPolyGeometry(buildZodiacTris(), boxShade), []);
+  const wakeGeo = useMemo(() => buildZodiacWakeGeometry(), []);
+  const wakeMat = useMemo(waterMaterial, []);
+  const boatWaterGeo = useMemo(() => buildZodiacWaterlineGeometry(), []);
+  const boatWaterMat = useMemo(waterMaterial, []);
   const wakeDummy = useMemo(() => new Object3D(), []);
+  const heliSnowGeo = useMemo(() => buildPolyGeometry(buildSnowPuffTris(), boxShade), []);
+  const heliSnowDummy = useMemo(() => new Object3D(), []);
 
   const geometries = useMemo(() => {
     const map = new Map<string, BufferGeometry>();
     for (const el of buildingElements) {
-      let boxes: readonly Box[];
+      let tris: readonly Tri[];
       const [length, width] = layoutOf(el.id).footprint;
       const height = el.heightM / DIORAMA_METERS_PER_UNIT;
       switch (el.kind) {
         case 'omond':
-          boxes = buildOmondBoxes(isNight);
+          tris = buildOmondTris(isNight);
           break;
         case 'module':
-          boxes = buildModuleBoxes(
+          tris = buildModuleTris(
             length,
             width,
             height,
@@ -716,53 +940,266 @@ function StationElements({
           );
           break;
         case 'radioTower':
-          boxes = buildRadioTowerBoxes(height);
+          tris = buildRadioTowerTris(height);
           break;
         case 'screen':
-          boxes = STEVENSON_SCREEN_BOXES;
+          tris = buildStevensonScreenTris();
           break;
         case 'windMast':
-          boxes = WIND_MAST_BASE_BOXES;
+          tris = buildWindMastBaseTris();
           break;
         case 'flag':
-          boxes = FLAGPOLE_BASE_BOXES;
+          tris = buildFlagpoleBaseTris();
+          break;
+        case 'helipad':
+          tris = buildHelipadTris(length);
           break;
         default:
-          boxes = [];
+          tris = [];
       }
-      map.set(el.id, buildBoxGeometry(boxes));
+      map.set(el.id, buildPolyGeometry(tris, boxShade));
     }
     return map;
   }, [buildingElements, isNight]);
 
-  const vaneGeo = useMemo(() => buildBoxGeometry(WIND_VANE_BOXES), []);
-  const cupsGeo = useMemo(() => buildBoxGeometry(WIND_CUPS_BOXES), []);
-
-  const flagGeos = useMemo(() => FLAG_SEGMENT_BOXES.map((boxes) => buildBoxGeometry(boxes)), []);
-  const flagJointRefs = useRef<(Group | null)[]>([]);
+  const heliGeo = useMemo(() => buildPolyGeometry(buildHelicopterTris(), boxShade), []);
+  const heliRotorGeo = useMemo(() => buildPolyGeometry(buildHelicopterRotorTris(), boxShade), []);
+  const screenDoorGeo = useMemo(() => buildPolyGeometry(buildStevensonDoorTris(), boxShade), []);
+  const screenInstrumentsGeo = useMemo(() => buildPolyGeometry(buildStevensonInstrumentsTris(), boxShade), []);
 
   useEffect(() => {
     return () => {
       for (const geo of geometries.values()) {
         geo.dispose();
       }
-      vaneGeo.dispose();
-      cupsGeo.dispose();
-      for (const g of flagGeos) g.dispose();
+      heliGeo.dispose();
+      heliRotorGeo.dispose();
+      screenDoorGeo.dispose();
+      screenInstrumentsGeo.dispose();
       boatBeachRest.chockGeo.dispose();
       boatGeo.dispose();
       wakeGeo.dispose();
+      wakeMat.dispose();
+      boatWaterGeo.dispose();
+      boatWaterMat.dispose();
+      heliSnowGeo.dispose();
     };
-  }, [geometries, vaneGeo, cupsGeo, flagGeos, boatBeachRest, boatGeo, wakeGeo]);
+  }, [
+    geometries,
+    heliGeo,
+    heliRotorGeo,
+    screenDoorGeo,
+    screenInstrumentsGeo,
+    boatBeachRest,
+    boatGeo,
+    wakeGeo,
+    wakeMat,
+    boatWaterGeo,
+    boatWaterMat,
+    heliSnowGeo,
+  ]);
+
+  const applyBoatPoseAndWake = useCallback(
+    (pose: ArrivalPose, t: number) => {
+      if (!boatRef.current) return;
+      const climbDenom = Math.max(1e-4, boatTo.height - boatFrom.height);
+      const climbProgress = clamp01((pose.height - boatFrom.height) / climbDenom);
+      const waveDamp = 1 - climbProgress;
+      const swell = Math.min(1.0, Math.max(0.22, windKmh / 35));
+      const waveBob = Math.sin(t * 2.8) * 0.025 * swell * waveDamp;
+      const wavePitch = Math.sin(t * 3.2 + 0.5) * 0.045 * swell * waveDamp + 0.035 * pose.speed;
+      const waveRoll = Math.cos(t * 2.4) * 0.055 * swell * waveDamp;
+
+      const py = pose.height + waveBob * waveDamp;
+      const pitch = wavePitch + (strandedPose.pitch - wavePitch) * climbProgress;
+      const roll = waveRoll + (strandedPose.roll - waveRoll) * climbProgress;
+      boatRef.current.position.set(pose.x, py, pose.z);
+      boatRef.current.rotation.set(roll, pose.heading, pitch);
+
+      const wakeFade = pose.speed * (1 - climbProgress);
+      const boatWaterMesh = boatWaterRef.current;
+      if (boatWaterMesh) {
+        if (wakeFade > 0.02 && worldCoastDistance(pose.x, pose.z) < 0.25) {
+          boatWaterMesh.visible = true;
+          boatWaterMesh.position.set(
+            pose.x,
+            bayWaveY(pose.x, pose.z, t, windKmh, seaIce) + 0.014,
+            pose.z
+          );
+          boatWaterMesh.rotation.set(0, pose.heading, 0);
+          boatWaterMat.opacity = Math.min(1, wakeFade * 1.15);
+        } else {
+          boatWaterMesh.visible = false;
+        }
+      }
+
+      const wakeMesh = wakeRef.current;
+      if (wakeMesh) {
+        if (wakeFade > 0.02) {
+          const cosH = Math.cos(pose.heading);
+          const sinH = Math.sin(pose.heading);
+          const axX = cosH;
+          const axZ = -sinH;
+          const sideX = sinH;
+          const sideZ = cosH;
+          wakeMesh.visible = true;
+          for (let i = 0; i < WAKE_COUNT; i++) {
+            let lag: number;
+            let side: number;
+            let sx: number;
+            let sy: number;
+            let sz: number;
+            let yawOffset = 0;
+
+            if (i < 10) {
+              const k = i / 9;
+              lag = 0.72 + k * 2.4;
+              side = Math.sin(i * 2.4 + t * 8) * 0.055 * (1 + k);
+              const s = wakeFade * (1 - k * 0.55) * (0.85 + 0.25 * Math.sin(t * 10 - i * 1.3));
+              sx = 0.22 * s;
+              sy = 0.036 * s;
+              sz = 0.18 * s;
+            } else {
+              const arm = i < 18 ? -1 : 1;
+              const idx = i < 18 ? i - 10 : i - 18;
+              const k = idx / 7;
+              lag = 0.5 + k * 2.5;
+              side = arm * (0.24 + k * 0.58);
+              const s = wakeFade * (1 - k * 0.5);
+              sx = 0.28 * s;
+              sy = 0.026 * s;
+              sz = 0.12 * s;
+              yawOffset = arm * 0.24;
+            }
+
+            const wx = pose.x - lag * axX + side * sideX;
+            const wz = pose.z - lag * axZ + side * sideZ;
+            if (worldCoastDistance(wx, wz) >= -0.04) {
+              wakeDummy.scale.set(0, 0, 0);
+            } else {
+              const wy = bayWaveY(wx, wz, t, windKmh, seaIce) + 0.015;
+              wakeDummy.position.set(wx, wy, wz);
+              wakeDummy.rotation.set(0, pose.heading + yawOffset, 0);
+              wakeDummy.scale.set(sx, sy, sz);
+            }
+            wakeDummy.updateMatrix();
+            wakeMesh.setMatrixAt(i, wakeDummy.matrix);
+          }
+          wakeMesh.instanceMatrix.needsUpdate = true;
+        } else {
+          wakeMesh.visible = false;
+        }
+      }
+    },
+    [boatFrom, boatTo, windKmh, seaIce, strandedPose, boatWaterMat, wakeDummy]
+  );
+
+  const applyHeliPoseAndSnow = useCallback(
+    (
+      pose: ArrivalPose,
+      dt: number,
+      particleElapsed: number,
+      rotorSpeed: number,
+      rotorWash: number,
+      departing = false
+    ) => {
+      if (!heliRef.current) return;
+      const altitude = Math.max(0, pose.height - HELIPAD_TOP_Y);
+      const airFactor = clamp01(altitude / 5.2);
+      const flare = !departing && pose.speed > 0 ? Math.sin(Math.PI * (1 - airFactor)) : 0;
+      const pitch = pose.speed > 0 ? HELI_START_PITCH * pose.speed + 0.08 * flare : 0;
+      const roll = !departing && pose.speed > 0 ? 0.09 * Math.sin(Math.PI * airFactor) : 0;
+      heliRef.current.position.set(pose.x, pose.height, pose.z);
+      heliRef.current.rotation.set(roll, pose.heading, pitch);
+
+      if (heliRotorRef.current) {
+        heliRotorRef.current.rotation.y += dt * rotorSpeed;
+      }
+
+      const snowMesh = heliSnowRef.current;
+      if (snowMesh) {
+        const groundProximity = smooth01(1 - altitude / 3.6);
+        const snowIntensity = groundProximity * rotorWash;
+        if (snowIntensity > 0.02) {
+          snowMesh.visible = true;
+          for (let i = 0; i < HELI_SNOW_COUNT; i++) {
+            const phase = (particleElapsed * (1.1 + (i % 5) * 0.14) + i / HELI_SNOW_COUNT) % 1;
+            const r = 0.35 + phase * 2.3;
+            const theta =
+              (i / HELI_SNOW_COUNT) * Math.PI * 2 + phase * 1.4 + particleElapsed * 0.8;
+            const sy =
+              HELIPAD_TOP_Y +
+              0.03 +
+              Math.sin(phase * Math.PI) *
+                (0.34 + (i % 3) * 0.16) *
+                (0.4 + 0.6 * groundProximity);
+            const s = snowIntensity * Math.sin(phase * Math.PI) * (0.048 + (i % 4) * 0.014);
+            heliSnowDummy.position.set(Math.cos(theta) * r, sy, Math.sin(theta) * r);
+            heliSnowDummy.rotation.set(particleElapsed * 3 + i, theta, particleElapsed * 2 - i);
+            heliSnowDummy.scale.set(s, s, s);
+            heliSnowDummy.updateMatrix();
+            snowMesh.setMatrixAt(i, heliSnowDummy.matrix);
+          }
+          snowMesh.instanceMatrix.needsUpdate = true;
+        } else {
+          snowMesh.visible = false;
+        }
+      }
+    },
+    [heliSnowDummy]
+  );
 
   useLayoutEffect(() => {
-    if (reduced) waveFlag(flagJointRefs.current, 0, windKmh);
-    if (vaneRef.current) {
-      vaneRef.current.rotation.y = (-windDirDeg * Math.PI) / 180;
+    if (leaving && !departRef.current.started) {
+      departRef.current.started = true;
+      departRef.current.elapsed = 0;
+
+      const startT =
+        arrival === 'ship'
+          ? isFrozen
+            ? 0
+            : arrivalRef.current.active
+              ? Math.min(ARRIVAL_SECONDS, arrivalRef.current.elapsed)
+              : ARRIVAL_SECONDS
+          : !showHelicopter
+            ? 0
+            : heliArrivalRef.current.active
+              ? Math.min(ARRIVAL_SECONDS, heliArrivalRef.current.elapsed)
+              : ARRIVAL_SECONDS;
+
+      departRef.current.boatTo =
+        arrival === 'ship' && !isFrozen && arrivalRef.current.active
+          ? zodiacApproach(startT, { from: boatFrom, to: boatTo, reduced: false })
+          : boatTo;
+      departRef.current.heliTo =
+        arrival === 'helicopter' && showHelicopter && heliArrivalRef.current.active
+          ? helicopterLanding(startT, { to: heliTo, reduced: false })
+          : heliTo;
+
+      arrivalRef.current.active = false;
+      heliArrivalRef.current.active = false;
+
+      if (reduced || startT <= 0.01) {
+        departRef.current.active = false;
+        if (!departDoneFiredRef.current) {
+          departDoneFiredRef.current = true;
+          onDepartureDoneRef.current?.();
+        }
+      } else {
+        departRef.current.active = true;
+        departRef.current.duration = DEPARTURE_SECONDS * Math.max(0.45, startT / ARRIVAL_SECONDS);
+      }
+    } else if (!leaving && departRef.current.started) {
+      departRef.current.started = false;
+      departRef.current.active = false;
+      departRef.current.elapsed = 0;
+      departRef.current.boatTo = null;
+      departRef.current.heliTo = null;
+      departDoneFiredRef.current = false;
     }
 
-    const wasFrozen = prevFrozenRef.current;
-    prevFrozenRef.current = isFrozen;
+    const boatDeparting = departRef.current.active && arrival === 'ship';
+    const heliDeparting = departRef.current.active && arrival === 'helicopter';
 
     if (boatRef.current) {
       boatRef.current.rotation.order = 'YXZ';
@@ -770,22 +1207,76 @@ function StationElements({
         arrivalRef.current.active = false;
         boatRef.current.position.set(boatBeachRest.x, boatBeachRest.chockTopY, boatBeachRest.z);
         boatRef.current.rotation.set(0, bRotY, 0);
-      } else if (reduced) {
+      } else if (reduced || arrival !== 'ship') {
         arrivalRef.current.active = false;
-        boatRef.current.position.set(strandedPose.x, strandedPose.y, strandedPose.z);
-        boatRef.current.rotation.set(strandedPose.roll, bRotY, strandedPose.pitch);
-      } else if (wasFrozen || (arrivalRef.current.active && arrivalRef.current.elapsed === 0)) {
-        arrivalRef.current = { active: true, elapsed: 0 };
-        boatRef.current.position.set(
-          strandedPose.x - BOAT_ARRIVAL_DISTANCE * fwdX,
-          -0.025,
-          strandedPose.z - BOAT_ARRIVAL_DISTANCE * fwdZ
-        );
-        boatRef.current.rotation.set(0, bRotY, 0.03);
+        const rest = arrivalFinalPose(boatTo);
+        boatRef.current.position.set(rest.x, rest.height, rest.z);
+        boatRef.current.rotation.set(strandedPose.roll, rest.heading, strandedPose.pitch);
+      } else if (arrivalRef.current.active && arrivalRef.current.elapsed === 0) {
+        const start = zodiacApproach(0, { from: boatFrom, to: boatTo, reduced: false });
+        boatRef.current.position.set(start.x, start.height, start.z);
+        boatRef.current.rotation.set(0, start.heading, 0.03);
       }
     }
-    if (wakeRef.current && (isFrozen || reduced || !arrivalRef.current.active)) {
+    if (wakeRef.current && (isFrozen || reduced || (!arrivalRef.current.active && !boatDeparting))) {
       wakeRef.current.visible = false;
+    }
+    if (
+      boatWaterRef.current &&
+      (isFrozen || reduced || (!arrivalRef.current.active && !boatDeparting))
+    ) {
+      boatWaterRef.current.visible = false;
+    }
+
+    if (heliRef.current) {
+      heliRef.current.rotation.order = 'YXZ';
+      if (!showHelicopter || reduced || arrival !== 'helicopter') {
+        heliArrivalRef.current.active = false;
+        const rest = arrivalFinalPose(heliTo);
+        heliRef.current.position.set(rest.x, rest.height, rest.z);
+        heliRef.current.rotation.set(0, rest.heading, 0);
+        if (heliRotorRef.current) heliRotorRef.current.rotation.y = 0;
+      } else if (heliArrivalRef.current.active && heliArrivalRef.current.elapsed === 0) {
+        const start = helicopterLanding(0, { to: heliTo, reduced: false });
+        heliRef.current.position.set(start.x, start.height, start.z);
+        heliRef.current.rotation.set(0, start.heading, HELI_START_PITCH);
+        if (heliRotorRef.current) heliRotorRef.current.rotation.y = 0;
+      }
+    } else if (!showHelicopter) {
+      heliArrivalRef.current.active = false;
+    }
+    if (
+      heliSnowRef.current &&
+      (!showHelicopter || reduced || (!heliArrivalRef.current.active && !heliDeparting))
+    ) {
+      heliSnowRef.current.visible = false;
+    }
+
+    if (
+      !vehicleDoneFiredRef.current &&
+      !arrivalRef.current.active &&
+      !heliArrivalRef.current.active &&
+      !departRef.current.active
+    ) {
+      vehicleDoneFiredRef.current = true;
+      onVehicleArrivalDone?.();
+    }
+
+    const doorState = doorStateRef.current;
+    if (doorState.open !== screenOpen) {
+      doorState.open = screenOpen;
+      doorState.elapsed = Math.max(0, SCREEN_DOOR_DURATION - doorState.elapsed);
+    }
+    if (reduced) {
+      doorState.elapsed = SCREEN_DOOR_DURATION;
+    }
+    if (screenDoorRef.current) {
+      // Negative rotation around +y swings the left-hinged door outward toward +z and -x.
+      screenDoorRef.current.rotation.y = -screenDoorAngle(
+        doorState.open,
+        doorState.elapsed,
+        reduced
+      );
     }
 
     if (reduced) {
@@ -803,118 +1294,78 @@ function StationElements({
     }
     invalidate();
   }, [
+    arrival,
     buildings,
     windKmh,
     windDirDeg,
+    isNight,
     reduced,
     invalidate,
     isFrozen,
     bRotY,
-    fwdX,
-    fwdZ,
     boatBeachRest,
+    boatFrom,
+    boatTo,
+    heliTo,
     strandedPose,
     buildingElements,
+    showHelicopter,
+    screenOpen,
+    leaving,
+    onVehicleArrivalDone,
   ]);
 
   useFrame(({ clock }, delta) => {
     const t = clock.getElapsedTime();
+    const dt = Math.min(delta, 0.1);
     let arrivalMoving = false;
 
     if (!reduced) {
-      waveFlag(flagJointRefs.current, t, windKmh);
-      if (cupsRef.current) {
-        const spinRate = 0.6 + (windKmh / 15) * 3.2;
-        cupsRef.current.rotation.y += delta * spinRate;
-      }
       if (!isFrozen && boatRef.current) {
         boatRef.current.rotation.order = 'YXZ';
-        if (arrivalRef.current.active) {
-          arrivalRef.current.elapsed += Math.min(delta, 0.05);
-          const u = clamp01(arrivalRef.current.elapsed / BOAT_ARRIVAL_DURATION);
-          const ease = 1 - (1 - u) ** 2.3;
-          const speedNorm = (1 - u) ** 1.3;
-          const backDist = BOAT_ARRIVAL_DISTANCE * (1 - ease);
-          const px = strandedPose.x - backDist * fwdX;
-          const pz = strandedPose.z - backDist * fwdZ;
-
-          const waveDamp = 1 - smooth01((u - 0.65) / 0.31);
-          const swell = Math.min(1.0, Math.max(0.22, windKmh / 35));
-          const waveBob = Math.sin(t * 2.8) * 0.025 * swell * waveDamp;
-          const wavePitch = Math.sin(t * 3.2 + 0.5) * 0.045 * swell * waveDamp + 0.035 * speedNorm;
-          const waveRoll = Math.cos(t * 2.4) * 0.055 * swell * waveDamp;
-
-          const climb = smooth01((u - 0.68) / 0.32);
-          const py = -0.025 + waveBob + (strandedPose.y - (-0.025 + waveBob)) * climb;
-          const pitch = wavePitch + (strandedPose.pitch - wavePitch) * climb;
-          const roll = waveRoll + (strandedPose.roll - waveRoll) * climb;
-          boatRef.current.position.set(px, py, pz);
-          boatRef.current.rotation.set(roll, bRotY, pitch);
-
-          const wakeMesh = wakeRef.current;
-          if (wakeMesh) {
-            const wakeFade = speedNorm * (1 - smooth01((u - 0.68) / 0.24));
-            if (wakeFade > 0.02) {
-              wakeMesh.visible = true;
-              for (let i = 0; i < WAKE_COUNT; i++) {
-                let lag: number;
-                let side: number;
-                let sx: number;
-                let sy: number;
-                let sz: number;
-                let wy: number;
-                let yawOffset = 0;
-
-                if (i < 10) {
-                  const k = i / 9;
-                  lag = 0.72 + k * 2.4;
-                  side = Math.sin(i * 2.4 + t * 8) * 0.055 * (1 + k);
-                  const s = wakeFade * (1 - k * 0.55) * (0.85 + 0.25 * Math.sin(t * 10 - i * 1.3));
-                  sx = 0.20 * s;
-                  sy = 0.036 * s;
-                  sz = 0.17 * s;
-                  wy = 0.016;
-                } else {
-                  const arm = i < 18 ? -1 : 1;
-                  const idx = i < 18 ? i - 10 : i - 18;
-                  const k = idx / 7;
-                  lag = 0.50 + k * 2.5;
-                  side = arm * (0.24 + k * 0.58);
-                  const s = wakeFade * (1 - k * 0.5);
-                  sx = 0.26 * s;
-                  sy = 0.026 * s;
-                  sz = 0.11 * s;
-                  wy = 0.012;
-                  yawOffset = arm * 0.24;
-                }
-
-                const wx = px - lag * fwdX + side * rightX;
-                const wz = pz - lag * fwdZ + side * rightZ;
-                if (worldCoastDistance(wx, wz) >= -0.04) {
-                  wakeDummy.scale.set(0, 0, 0);
-                } else {
-                  wakeDummy.position.set(wx, wy, wz);
-                  wakeDummy.rotation.set(0, bRotY + yawOffset, 0);
-                  wakeDummy.scale.set(sx, sy, sz);
-                }
-                wakeDummy.updateMatrix();
-                wakeMesh.setMatrixAt(i, wakeDummy.matrix);
-              }
-              wakeMesh.instanceMatrix.needsUpdate = true;
-            } else {
-              wakeMesh.visible = false;
+        if (departRef.current.active && arrival === 'ship') {
+          departRef.current.elapsed += dt;
+          const pose = zodiacDeparture(departRef.current.elapsed, {
+            from: boatFrom,
+            to: departRef.current.boatTo ?? boatTo,
+            duration: departRef.current.duration,
+            reduced: false,
+          });
+          applyBoatPoseAndWake(pose, t);
+          if (departRef.current.elapsed >= departRef.current.duration) {
+            departRef.current.active = false;
+            if (wakeRef.current) wakeRef.current.visible = false;
+            if (boatWaterRef.current) boatWaterRef.current.visible = false;
+            if (!departDoneFiredRef.current) {
+              departDoneFiredRef.current = true;
+              onDepartureDoneRef.current?.();
             }
+          } else {
+            arrivalMoving = true;
           }
-
-          if (u >= 1) {
+        } else if (arrivalRef.current.active) {
+          arrivalRef.current.elapsed += dt;
+          const pose = zodiacApproach(arrivalRef.current.elapsed, {
+            from: boatFrom,
+            to: boatTo,
+            reduced: false,
+          });
+          applyBoatPoseAndWake(pose, t);
+          if (arrivalRef.current.elapsed >= ARRIVAL_SECONDS) {
             arrivalRef.current.active = false;
             if (wakeRef.current) wakeRef.current.visible = false;
+            if (boatWaterRef.current) boatWaterRef.current.visible = false;
+            if (!vehicleDoneFiredRef.current) {
+              vehicleDoneFiredRef.current = true;
+              onVehicleArrivalDone?.();
+            }
           } else {
             arrivalMoving = true;
           }
         } else {
           // Stranded: bow stays planted on the gravel beach, stern breathes gently in the swell.
           if (wakeRef.current) wakeRef.current.visible = false;
+          if (boatWaterRef.current) boatWaterRef.current.visible = false;
           const swell = Math.min(1.0, Math.max(0.12, windKmh / 40));
           const sternBob = Math.sin(t * 1.4) * 0.004 * swell;
           const bowU = 0.72 * BOAT_SCALE;
@@ -924,20 +1375,85 @@ function StationElements({
           const dY = (sternBob * bowU) / pivotSpan;
           const dRoll = Math.cos(t * 1.1) * 0.008 * swell;
           boatRef.current.position.set(strandedPose.x, strandedPose.y + dY, strandedPose.z);
-          boatRef.current.rotation.set(strandedPose.roll + dRoll, bRotY, strandedPose.pitch + dPitch);
+          boatRef.current.rotation.set(
+            strandedPose.roll + dRoll,
+            bRotY,
+            strandedPose.pitch + dPitch
+          );
         }
+      }
+      if (showHelicopter && heliRef.current) {
+        if (departRef.current.active && arrival === 'helicopter') {
+          heliRef.current.rotation.order = 'YXZ';
+          departRef.current.elapsed += dt;
+          const elapsed = departRef.current.elapsed;
+          const pose = helicopterDeparture(elapsed, {
+            from: heliFrom,
+            to: departRef.current.heliTo ?? heliTo,
+            duration: departRef.current.duration,
+            reduced: false,
+          });
+          const rotorRamp = smooth01(elapsed / 0.25);
+          const rotorSpeed = HELI_ROTOR_CRUISE_SPEED * (0.4 + 0.6 * rotorRamp);
+          applyHeliPoseAndSnow(pose, dt, elapsed, rotorSpeed, rotorRamp, true);
+          if (elapsed >= departRef.current.duration) {
+            departRef.current.active = false;
+            if (heliSnowRef.current) heliSnowRef.current.visible = false;
+            if (!departDoneFiredRef.current) {
+              departDoneFiredRef.current = true;
+              onDepartureDoneRef.current?.();
+            }
+          } else {
+            arrivalMoving = true;
+          }
+        } else if (heliArrivalRef.current.active) {
+          heliRef.current.rotation.order = 'YXZ';
+          heliArrivalRef.current.elapsed += dt;
+          const elapsed = heliArrivalRef.current.elapsed;
+          const pose = helicopterLanding(elapsed, { to: heliTo, reduced: false });
+          const rotorSpeed =
+            elapsed <= ARRIVAL_SECONDS
+              ? HELI_ROTOR_CRUISE_SPEED
+              : HELI_ROTOR_CRUISE_SPEED *
+                (1 - smooth01((elapsed - ARRIVAL_SECONDS) / HELI_ROTOR_COAST_DURATION));
+          const rotorWash =
+            elapsed <= ARRIVAL_SECONDS
+              ? 1
+              : 1 - smooth01((elapsed - ARRIVAL_SECONDS) / (HELI_ROTOR_COAST_DURATION * 0.75));
+          applyHeliPoseAndSnow(pose, dt, elapsed, rotorSpeed, rotorWash);
+          if (elapsed >= HELI_TOTAL_ARRIVAL_DURATION) {
+            heliArrivalRef.current.active = false;
+            if (heliSnowRef.current) heliSnowRef.current.visible = false;
+            if (!vehicleDoneFiredRef.current) {
+              vehicleDoneFiredRef.current = true;
+              onVehicleArrivalDone?.();
+            }
+          } else {
+            arrivalMoving = true;
+          }
+        }
+      }
+      const doorState = doorStateRef.current;
+      if (doorState.elapsed < SCREEN_DOOR_DURATION) {
+        doorState.elapsed = Math.min(
+          SCREEN_DOOR_DURATION,
+          doorState.elapsed + Math.min(delta, 0.05)
+        );
+        if (screenDoorRef.current) {
+          screenDoorRef.current.rotation.y = -screenDoorAngle(
+            doorState.open,
+            doorState.elapsed,
+            false
+          );
+        }
+        arrivalMoving = true;
       }
     }
 
     let moving = false;
     for (const id of ERA_BUILDING_IDS) {
-      const target = buildings.includes(id) ? 1 : 0;
       const cur = presences.current[id];
-      const next = reduced
-        ? target
-        : Math.abs(target - cur) < 0.005
-          ? target
-          : cur + (target - cur) * Math.min(1, delta * 6.5);
+      const next = stepEraPresence(cur, buildings.includes(id), delta, reduced);
       if (next !== cur) moving = true;
       presences.current[id] = next;
     }
@@ -946,15 +1462,13 @@ function StationElements({
       const grp = elementRefs.current[el.id];
       if (!grp) continue;
       const p = el.era ? presences.current[el.era] : 1;
-      grp.visible = p > 0.01;
-      const s = Math.max(0.001, p);
+      grp.visible = p > ERA_VISIBLE_THRESHOLD;
+      const s = Math.max(ERA_MIN_SCALE, p);
       grp.scale.set(s, s, s);
     }
 
     if (moving || arrivalMoving) invalidate();
   });
-
-  const windToRad = ((-windDirDeg + 90) * Math.PI) / 180;
 
   return (
     <group>
@@ -975,20 +1489,37 @@ function StationElements({
           >
             <group scale={scale}>
               {geo && <mesh geometry={geo} material={vehicleMaterial} />}
-              {el.id === 'windMast' && (
+              {el.id === 'screen' && (
                 <>
-                  <group ref={vaneRef} position={[0, 3.85, 0]}>
-                    <mesh geometry={vaneGeo} material={vehicleMaterial} />
-                  </group>
-                  <group ref={cupsRef} position={[0, 4.25, 0]}>
-                    <mesh geometry={cupsGeo} material={vehicleMaterial} />
+                  <mesh geometry={screenInstrumentsGeo} material={vehicleMaterial} />
+                  <group ref={screenDoorRef} position={SCREEN_DOOR_HINGE}>
+                    <mesh geometry={screenDoorGeo} material={vehicleMaterial} />
                   </group>
                 </>
               )}
+              {el.id === 'windMast' && (
+                <WindMastInstruments windKmh={windKmh} windDirDeg={windDirDeg} reduced={reduced} />
+              )}
               {el.id === 'flag' && (
-                <group position={[0, 3.95, 0]} rotation={[0, windToRad, 0]}>
-                  <FlagChain geos={flagGeos} jointRefs={flagJointRefs} index={0} />
-                </group>
+                <WindFlag windKmh={windKmh} windDirDeg={windDirDeg} reduced={reduced} />
+              )}
+              {el.id === 'helipad' && showHelicopter && (
+                <>
+                  <instancedMesh
+                    ref={heliSnowRef}
+                    args={[heliSnowGeo, vehicleMaterial, HELI_SNOW_COUNT]}
+                    visible={false}
+                    frustumCulled={false}
+                  />
+                  <group ref={heliRef} position={[0, HELIPAD_TOP_Y, 0]}>
+                    <group scale={layout.footprint[0] / HELICOPTER_ROTOR_SPAN}>
+                      <mesh geometry={heliGeo} material={vehicleMaterial} />
+                      <group ref={heliRotorRef} position={HELICOPTER_ROTOR_ORIGIN}>
+                        <mesh geometry={heliRotorGeo} material={vehicleMaterial} />
+                      </group>
+                    </group>
+                  </group>
+                </>
               )}
             </group>
           </group>
@@ -999,9 +1530,18 @@ function StationElements({
       {isFrozen && <mesh geometry={boatBeachRest.chockGeo} material={vehicleMaterial} />}
       <instancedMesh
         ref={wakeRef}
-        args={[wakeGeo, vehicleMaterial, WAKE_COUNT]}
+        args={[wakeGeo, wakeMat, WAKE_COUNT]}
         visible={false}
+        renderOrder={2}
         frustumCulled={false}
+      />
+      <mesh
+        ref={boatWaterRef}
+        geometry={boatWaterGeo}
+        material={boatWaterMat}
+        scale={BOAT_SCALE}
+        visible={false}
+        renderOrder={2}
       />
       <group ref={boatRef}>
         <group scale={BOAT_SCALE}>
@@ -1020,12 +1560,13 @@ interface SealRig {
   flipR: Group | null;
   flipL: Group | null;
   tail: Group | null;
+  contact: Mesh | null;
 }
 
 const STILL_TIME = 2.0;
 
 function applySealPose(rig: SealRig, p: SealPose) {
-  const { root, tilt, neck, jaw, flipR, flipL, tail } = rig;
+  const { root, tilt, neck, jaw, flipR, flipL, tail, contact } = rig;
   if (!root || !tilt || !neck || !flipR || !flipL || !tail) return;
   root.position.set(p.x, p.y, p.z);
   root.rotation.y = p.yaw;
@@ -1036,52 +1577,63 @@ function applySealPose(rig: SealRig, p: SealPose) {
   flipR.rotation.set(p.flipRPitch, 0, p.flipRRoll);
   flipL.rotation.set(p.flipLPitch, 0, p.flipLRoll);
   tail.rotation.set(p.tailPitch, p.tailYaw, 0);
+  if (contact) contact.visible = p.y >= 0.005;
 }
 
 function StationFauna({
   animals,
   reduced,
   seaIce,
+  arrival,
 }: {
   animals: readonly string[];
   reduced: boolean;
   seaIce: number;
+  arrival: ArrivalId;
 }) {
   const showPenguins =
     animals.includes('adelie') || animals.includes('chinstrap');
   const showSeals =
     animals.includes('weddell') || animals.includes('elephant');
-  const showBirds =
-    animals.includes('skua') || animals.includes('snowPetrel');
-
-  const birdsGroupRef = useRef<Group>(null);
 
   const sealColony = useMemo(() => buildSealColony((x, z) => evaluateIsthmusTerrain(x, z).y), []);
 
-  const weddellParts = useMemo(() => weddellSealParts(), []);
-  const elephantParts = useMemo(() => elephantSealParts(), []);
+  const weddellGeos = useMemo(() => {
+    const parts = buildWeddellSealPolyParts();
+    return {
+      body: buildPolyGeometry(parts.body, boxShade),
+      head: buildPolyGeometry(parts.head, boxShade),
+      flipperR: buildPolyGeometry(parts.flipperR, boxShade),
+      flipperL: buildPolyGeometry(parts.flipperL, boxShade),
+      tail: buildPolyGeometry(parts.tail, boxShade),
+      contact: buildSealContactGeometry('weddell'),
+    };
+  }, []);
 
-  const weddellGeos = useMemo(
-    () => ({
-      body: buildBoxGeometry(weddellParts.body),
-      head: buildBoxGeometry(weddellParts.head),
-      flipperR: buildBoxGeometry(weddellParts.flipperR),
-      flipperL: buildBoxGeometry(weddellParts.flipperL),
-      tail: buildBoxGeometry(weddellParts.tail),
-    }),
-    [weddellParts]
-  );
+  const elephantGeos = useMemo(() => {
+    const parts = buildElephantSealPolyParts();
+    return {
+      body: buildPolyGeometry(parts.body, boxShade),
+      head: buildPolyGeometry(parts.head, boxShade),
+      jaw: parts.jaw ? buildPolyGeometry(parts.jaw, boxShade) : null,
+      flipperR: buildPolyGeometry(parts.flipperR, boxShade),
+      flipperL: buildPolyGeometry(parts.flipperL, boxShade),
+      tail: buildPolyGeometry(parts.tail, boxShade),
+      contact: buildSealContactGeometry('elephant'),
+    };
+  }, []);
 
-  const elephantGeos = useMemo(
-    () => ({
-      body: buildBoxGeometry(elephantParts.body),
-      head: buildBoxGeometry(elephantParts.head),
-      jaw: elephantParts.jaw ? buildBoxGeometry(elephantParts.jaw) : null,
-      flipperR: buildBoxGeometry(elephantParts.flipperR),
-      flipperL: buildBoxGeometry(elephantParts.flipperL),
-      tail: buildBoxGeometry(elephantParts.tail),
-    }),
-    [elephantParts]
+  const contactMat = useMemo(
+    () =>
+      new MeshBasicMaterial({
+        vertexColors: true,
+        transparent: true,
+        depthWrite: false,
+        polygonOffset: true,
+        polygonOffsetFactor: -1,
+        polygonOffsetUnits: -1,
+      }),
+    []
   );
 
   const seals = useMemo(
@@ -1110,20 +1662,10 @@ function StationFauna({
       flipR: null,
       flipL: null,
       tail: null,
+      contact: null,
     }))
   );
   const tempSealPose = useMemo(() => restSealPose(), []);
-
-  const mirrorZ = (boxes: readonly Box[]): Box[] =>
-    boxes.map(([x, y, z, ...rest]) => [x, y, -z, ...rest]);
-
-  const skuaBodyGeo = useMemo(() => buildBoxGeometry(SKUA_MODEL.body), []);
-  const skuaRightWingGeo = useMemo(() => buildBoxGeometry(SKUA_MODEL.wing), []);
-  const skuaLeftWingGeo = useMemo(() => buildBoxGeometry(mirrorZ(SKUA_MODEL.wing)), []);
-
-  const petrelBodyGeo = useMemo(() => buildBoxGeometry(SNOW_PETREL_MODEL.body), []);
-  const petrelRightWingGeo = useMemo(() => buildBoxGeometry(SNOW_PETREL_MODEL.wing), []);
-  const petrelLeftWingGeo = useMemo(() => buildBoxGeometry(mirrorZ(SNOW_PETREL_MODEL.wing)), []);
 
   useEffect(() => {
     return () => {
@@ -1132,30 +1674,17 @@ function StationFauna({
       weddellGeos.flipperR.dispose();
       weddellGeos.flipperL.dispose();
       weddellGeos.tail.dispose();
+      weddellGeos.contact.dispose();
       elephantGeos.body.dispose();
       elephantGeos.head.dispose();
       elephantGeos.jaw?.dispose();
       elephantGeos.flipperR.dispose();
       elephantGeos.flipperL.dispose();
       elephantGeos.tail.dispose();
-
-      skuaBodyGeo.dispose();
-      skuaRightWingGeo.dispose();
-      skuaLeftWingGeo.dispose();
-      petrelBodyGeo.dispose();
-      petrelRightWingGeo.dispose();
-      petrelLeftWingGeo.dispose();
+      elephantGeos.contact.dispose();
+      contactMat.dispose();
     };
-  }, [
-    weddellGeos,
-    elephantGeos,
-    skuaBodyGeo,
-    skuaRightWingGeo,
-    skuaLeftWingGeo,
-    petrelBodyGeo,
-    petrelRightWingGeo,
-    petrelLeftWingGeo,
-  ]);
+  }, [weddellGeos, elephantGeos, contactMat]);
 
   useLayoutEffect(() => {
     if (reduced) {
@@ -1169,28 +1698,6 @@ function StationFauna({
     if (reduced) return;
     const t = clock.getElapsedTime();
 
-    if (showBirds && birdsGroupRef.current) {
-      const nodes = birdsGroupRef.current.children;
-      for (let i = 0; i < nodes.length; i++) {
-        const bird = nodes[i];
-        const isPetrel = animals.includes('snowPetrel') && i % 2 === 0;
-        const model = isPetrel ? SNOW_PETREL_MODEL : SKUA_MODEL;
-        const ang = t * (0.45 + i * 0.06) + i * 1.3;
-        const radius = 12 + (i % 3) * 4.5;
-        bird.position.set(
-          Math.cos(ang) * radius,
-          8.5 + (i % 2) * 2.2 + Math.sin(t * 1.5 + i) * 0.6,
-          Math.sin(ang) * radius
-        );
-        bird.rotation.set(0.08, -ang - Math.PI / 2, Math.sin(t * 1.8 + i) * 0.14, 'YXZ');
-
-        const [reach, speed] = model.flap;
-        const lift = 0.08 + Math.sin(t * speed + i * 1.2) * reach;
-        if (bird.children[1]) bird.children[1].rotation.x = -lift;
-        if (bird.children[2]) bird.children[2].rotation.x = lift;
-      }
-    }
-
     if (showSeals) {
       seals.forEach((s, i) =>
         applySealPose(sealRigs.current[i], s.pose(t, tempSealPose))
@@ -1200,7 +1707,7 @@ function StationFauna({
 
   return (
     <group>
-      {showPenguins && <PenguinColony reduced={reduced} seaIce={seaIce} />}
+      {showPenguins && <PenguinColony reduced={reduced} seaIce={seaIce} arrival={arrival} />}
 
       {/* Seals on the front beach of Bahía Scotia */}
       {showSeals && (
@@ -1218,6 +1725,13 @@ function StationFauna({
 
             return (
               <group key={i} ref={(n) => void (rig.root = n)}>
+                <mesh
+                  ref={(n) => void (rig.contact = n)}
+                  geometry={geos.contact}
+                  material={contactMat}
+                  position-y={0.005}
+                  renderOrder={1}
+                />
                 <group ref={(n) => void (rig.tilt = n)}>
                   <mesh geometry={geos.body} material={vehicleMaterial} />
                   <group ref={(n) => void (rig.neck = n)} position={neckPivot}>
@@ -1250,131 +1764,69 @@ function StationFauna({
           })}
         </group>
       )}
-
-      {/* Gliding seabirds (skuas and snow petrels) */}
-      {showBirds && (
-        <group ref={birdsGroupRef}>
-          {[0, 1, 2, 3, 4].map((i) => {
-            const isPetrel = animals.includes('snowPetrel') && i % 2 === 0;
-            const bodyGeo = isPetrel ? petrelBodyGeo : skuaBodyGeo;
-            const rightWingGeo = isPetrel ? petrelRightWingGeo : skuaRightWingGeo;
-            const leftWingGeo = isPetrel ? petrelLeftWingGeo : skuaLeftWingGeo;
-            return (
-              <group
-                key={i}
-                position={[Math.cos(i) * 12, 9 + (i % 2) * 2, Math.sin(i) * 12]}
-              >
-                {/* 0: Body */}
-                <mesh geometry={bodyGeo} material={vehicleMaterial} />
-                {/* 1: Right wing */}
-                <group position={BIRD_WING_ROOT}>
-                  <mesh geometry={rightWingGeo} material={vehicleMaterial} />
-                </group>
-                {/* 2: Left wing */}
-                <group
-                  position={[
-                    BIRD_WING_ROOT[0],
-                    BIRD_WING_ROOT[1],
-                    -BIRD_WING_ROOT[2],
-                  ]}
-                >
-                  <mesh geometry={leftWingGeo} material={vehicleMaterial} />
-                </group>
-              </group>
-            );
-          })}
-        </group>
-      )}
     </group>
   );
 }
 
-function SnowAndSpindrift({
-  windKmh,
-  windVec,
-  reduced,
-  lowQuality,
-}: {
-  windKmh: number;
-  windVec: Vector2;
-  reduced: boolean;
-  lowQuality: boolean;
-}) {
-  const count = lowQuality ? 140 : 420;
-  const pointsRef = useRef<Points>(null);
+function orbitPose(
+  target: readonly [number, number, number],
+  distance: number,
+  bearingDeg: number,
+  elevationDeg: number,
+  right = 0,
+  near = 0
+): CameraPose {
+  const b = (bearingDeg * Math.PI) / 180;
+  const e = (elevationDeg * Math.PI) / 180;
+  const dx = Math.sin(b);
+  const dz = -Math.cos(b);
+  const tx = target[0] + dz * right + dx * near;
+  const tz = target[2] - dx * right + dz * near;
+  const h = Math.cos(e) * distance;
+  return {
+    pos: [tx + dx * h, target[1] + Math.sin(e) * distance, tz + dz * h],
+    target: [tx, target[1], tz],
+  };
+}
 
-  const geo = useMemo(() => {
-    const g = new BufferGeometry();
-    const positions = generateSnowParticles(count, 190412);
-    g.setAttribute('position', new BufferAttribute(positions, 3));
-    return g;
-  }, [count]);
-
-  const mat = useMemo(
-    () =>
-      new PointsMaterial({
-        color: new Color('#F7FAFB'),
-        size: 0.085,
-        transparent: true,
-        opacity: 0.78,
-        depthWrite: false,
-      }),
-    []
-  );
-
-  useEffect(() => {
-    return () => {
-      geo.dispose();
-      mat.dispose();
-    };
-  }, [geo, mat]);
-
-  useFrame((_, delta) => {
-    if (reduced || !pointsRef.current) return;
-    const posAttr = geo.getAttribute('position') as BufferAttribute;
-    const arr = posAttr.array as Float32Array;
-    const dt = Math.min(delta, 0.05);
-    const strongGale = windKmh >= 35;
-    const vx = windVec.x * (strongGale ? 9.5 : 4.2);
-    const vz = windVec.y * (strongGale ? 9.5 : 4.2);
-    const vy = strongGale ? -1.4 : -2.2;
-
-    for (let i = 0; i < count; i++) {
-      let x = arr[i * 3] + vx * dt;
-      let y = arr[i * 3 + 1] + vy * dt;
-      let z = arr[i * 3 + 2] + vz * dt;
-
-      if (x > 32) x -= 64;
-      if (x < -32) x += 64;
-      if (z > 32) z -= 64;
-      if (z < -32) z += 64;
-      if (y < 0.2) {
-        y = strongGale && i % 3 === 0 ? 0.4 + (i % 5) * 0.45 : 22.0;
-      }
-
-      arr[i * 3] = x;
-      arr[i * 3 + 1] = y;
-      arr[i * 3 + 2] = z;
-    }
-    posAttr.needsUpdate = true;
-  });
-
-  if (reduced) return null;
-  return <points ref={pointsRef} geometry={geo} material={mat} />;
+function arrivalCameraPose(
+  arrival: ArrivalId,
+  mobile: boolean,
+  landscape: boolean,
+  panelHidden: boolean
+): CameraPose {
+  if (arrival === 'helicopter') {
+    if (mobile) return orbitPose([4.0, 1.5, 4.5], 38, 170, 17, 0, 4);
+    if (landscape) return orbitPose([5.8, 2.2, 3.2], 16, 168, 16, 2.2, 0);
+    return orbitPose([5.8, 2.4, 3.2], 20, 168, 16, panelHidden ? 0 : 2.5, 0);
+  }
+  if (mobile) return orbitPose([0.2, 0.4, 4.5], 34, 192, 16, 0, 4);
+  if (landscape) return orbitPose([0.0, 0.7, 4.2], 14, 194, 14, 2.2, 0);
+  return orbitPose([0.0, 0.8, 4.2], 16, 194, 14, panelHidden ? 0 : 2.6, 0);
 }
 
 function StationCameraAndProjection({
+  arrival,
+  vehicleDone,
   focus,
   reduced,
   panelExpanded,
+  panelHidden,
   overlayRef,
+  screenNoZoomRef,
   onReady,
+  onCameraSettled,
 }: {
+  arrival: ArrivalId;
+  vehicleDone: boolean;
   focus: HotspotId | null;
   reduced: boolean;
   panelExpanded?: boolean;
+  panelHidden?: boolean;
   overlayRef?: RefObject<HTMLDivElement | null>;
+  screenNoZoomRef?: RefObject<boolean>;
   onReady?: () => void;
+  onCameraSettled?: () => void;
 }) {
   const controlsRef = useRef<CameraControls>(null);
   const camera = useThree((s) => s.camera);
@@ -1382,7 +1834,16 @@ function StationCameraAndProjection({
   const invalidate = useThree((s) => s.invalidate);
   const readyFiredRef = useRef(false);
   const initializedRef = useRef(false);
+  const userControlledRef = useRef(false);
+  const arrivalSettledRef = useRef(reduced || vehicleDone);
+  const prevVehicleDoneRef = useRef(vehicleDone);
+  const returningRef = useRef<{ active: boolean; elapsed: number; targetPos: Vector3 }>({
+    active: false,
+    elapsed: 0,
+    targetPos: new Vector3(),
+  });
   const projVec = useMemo(() => new Vector3(), []);
+  const screenTargetVec = useMemo(() => new Vector3(), []);
   const buttonMapRef = useRef<Map<string, HTMLElement>>(new Map());
   const lastCamPos = useRef<Vector3 | null>(null);
   const lastSize = useRef<{ width: number; height: number }>({ width: 0, height: 0 });
@@ -1393,51 +1854,107 @@ function StationCameraAndProjection({
   // Same test as the landscape media query of orcadas.css, where the panel takes the right 46 %.
   const landscape = size.width > size.height && size.height <= 500;
 
+  // The diorama is always seen from Bahía Scotia: a little orbit, no top view, limited zoom.
+  const deg = Math.PI / 180;
+  const azimuth = (180 - VIEW_BEARING_DEG) * deg;
+  // Never farther than a little beyond the entry view: the stage ends past it.
+  const entry = poseForHotspot(null, mobile, Boolean(panelExpanded), landscape, Boolean(panelHidden));
+  const maxDistance =
+    Math.hypot(
+      entry.pos[0] - entry.target[0],
+      entry.pos[1] - entry.target[1],
+      entry.pos[2] - entry.target[2]
+    ) * VIEW_MAX_ZOOM_OUT;
+  const boundary = useMemo(() => new Box3(new Vector3(-20, -1, -14), new Vector3(20, 24, 60)), []);
+
+  useMapGestures(controlsRef, {
+    minAzimuthAngle: azimuth - VIEW_ORBIT_DEG * deg,
+    maxAzimuthAngle: azimuth + VIEW_ORBIT_DEG * deg,
+    minPolarAngle: (90 - VIEW_ELEVATION_DEG[1]) * deg,
+    maxPolarAngle: (90 - VIEW_ELEVATION_DEG[0]) * deg,
+    minDistance: 3,
+    maxDistance,
+    smoothTime: 0.32,
+    boundary,
+    invalidate,
+  });
+
   useLayoutEffect(() => {
     invalidate();
   }, [invalidate]);
+
+  useEffect(() => {
+    const cc = controlsRef.current;
+    if (!cc) return;
+    const onControlStart = () => {
+      userControlledRef.current = true;
+      if (returningRef.current.active) {
+        returningRef.current.active = false;
+        if (!arrivalSettledRef.current) {
+          arrivalSettledRef.current = true;
+          onCameraSettled?.();
+        }
+      }
+    };
+    cc.addEventListener('controlstart', onControlStart);
+    return () => {
+      cc.removeEventListener('controlstart', onControlStart);
+    };
+  }, [onCameraSettled]);
 
   useLayoutEffect(() => {
     const cc = controlsRef.current;
     if (!cc) return;
     (window as unknown as { __orcadasCamera?: CameraControls }).__orcadasCamera = cc;
-    // The diorama is always seen from Bahía Scotia: a little orbit, no top view, limited zoom.
-    const deg = Math.PI / 180;
-    const azimuth = (180 - VIEW_BEARING_DEG) * deg;
-    cc.minAzimuthAngle = azimuth - VIEW_ORBIT_DEG * deg;
-    cc.maxAzimuthAngle = azimuth + VIEW_ORBIT_DEG * deg;
-    cc.minPolarAngle = (90 - VIEW_ELEVATION_DEG[1]) * deg;
-    cc.maxPolarAngle = (90 - VIEW_ELEVATION_DEG[0]) * deg;
-    cc.minDistance = 3;
-    // Never farther than a little beyond the entry view: the stage ends past it.
-    const entry = poseForHotspot(null, mobile, Boolean(panelExpanded), landscape);
-    cc.maxDistance =
-      Math.hypot(
-        entry.pos[0] - entry.target[0],
-        entry.pos[1] - entry.target[1],
-        entry.pos[2] - entry.target[2]
-      ) * VIEW_MAX_ZOOM_OUT;
-    cc.smoothTime = 0.32;
-    cc.setBoundary(new Box3(new Vector3(-20, -1, -14), new Vector3(20, 24, 60)));
 
-    const pose = poseForHotspot(focus, mobile, Boolean(panelExpanded), landscape);
+    const pose = poseForHotspot(focus, mobile, Boolean(panelExpanded), landscape, Boolean(panelHidden));
+    const hasCustomFocus = Boolean(focus && focus !== 'overview');
+    const wasVehicleDone = prevVehicleDoneRef.current;
+    prevVehicleDoneRef.current = vehicleDone;
+    projectedRef.current = false;
+
     if (!initializedRef.current) {
-      // Every visit starts from the same view, without an entry flight.
       initializedRef.current = true;
-      camera.position.set(pose.pos[0], pose.pos[1], pose.pos[2]);
-      camera.lookAt(new Vector3(pose.target[0], pose.target[1], pose.target[2]));
+      if (screenNoZoomRef) screenNoZoomRef.current = true;
+      const startPose =
+        !reduced && !vehicleDone && !hasCustomFocus
+          ? arrivalCameraPose(arrival, mobile, landscape, Boolean(panelHidden))
+          : pose;
+      camera.position.set(startPose.pos[0], startPose.pos[1], startPose.pos[2]);
+      camera.lookAt(new Vector3(startPose.target[0], startPose.target[1], startPose.target[2]));
       camera.updateMatrixWorld(true);
       camera.updateProjectionMatrix();
       void cc.setLookAt(
-        pose.pos[0],
-        pose.pos[1],
-        pose.pos[2],
-        pose.target[0],
-        pose.target[1],
-        pose.target[2],
+        startPose.pos[0],
+        startPose.pos[1],
+        startPose.pos[2],
+        startPose.target[0],
+        startPose.target[1],
+        startPose.target[2],
         false
       );
-    } else {
+      if ((reduced || vehicleDone || hasCustomFocus) && !arrivalSettledRef.current) {
+        arrivalSettledRef.current = true;
+        onCameraSettled?.();
+      }
+    } else if (reduced || hasCustomFocus) {
+      if (screenNoZoomRef) {
+        if (focus === 'screen') {
+          const alreadyAtTarget =
+            camera.position.distanceToSquared(
+              screenTargetVec.set(pose.pos[0], pose.pos[1], pose.pos[2])
+            ) < 0.15;
+          screenNoZoomRef.current = reduced || alreadyAtTarget;
+        } else {
+          screenNoZoomRef.current = false;
+        }
+      }
+      if (hasCustomFocus) userControlledRef.current = true;
+      returningRef.current.active = false;
+      if (!arrivalSettledRef.current) {
+        arrivalSettledRef.current = true;
+        onCameraSettled?.();
+      }
       void cc.setLookAt(
         pose.pos[0],
         pose.pos[1],
@@ -1447,9 +1964,70 @@ function StationCameraAndProjection({
         pose.target[2],
         !reduced
       );
+    } else if (!vehicleDone) {
+      if (screenNoZoomRef) screenNoZoomRef.current = false;
+      if (!userControlledRef.current) {
+        const aPose = arrivalCameraPose(arrival, mobile, landscape, Boolean(panelHidden));
+        void cc.setLookAt(
+          aPose.pos[0],
+          aPose.pos[1],
+          aPose.pos[2],
+          aPose.target[0],
+          aPose.target[1],
+          aPose.target[2],
+          true
+        );
+      }
+    } else if (!wasVehicleDone) {
+      if (userControlledRef.current) {
+        if (!arrivalSettledRef.current) {
+          arrivalSettledRef.current = true;
+          onCameraSettled?.();
+        }
+      } else {
+        returningRef.current.active = true;
+        returningRef.current.elapsed = 0;
+        returningRef.current.targetPos.set(pose.pos[0], pose.pos[1], pose.pos[2]);
+        void cc.setLookAt(
+          pose.pos[0],
+          pose.pos[1],
+          pose.pos[2],
+          pose.target[0],
+          pose.target[1],
+          pose.target[2],
+          true
+        );
+      }
+    } else {
+      if (returningRef.current.active) {
+        returningRef.current.targetPos.set(pose.pos[0], pose.pos[1], pose.pos[2]);
+      }
+      void cc.setLookAt(
+        pose.pos[0],
+        pose.pos[1],
+        pose.pos[2],
+        pose.target[0],
+        pose.target[1],
+        pose.target[2],
+        true
+      );
     }
     invalidate();
-  }, [focus, mobile, landscape, reduced, panelExpanded, invalidate]);
+  }, [
+    arrival,
+    vehicleDone,
+    focus,
+    mobile,
+    landscape,
+    reduced,
+    panelExpanded,
+    panelHidden,
+    invalidate,
+    camera,
+    screenNoZoomRef,
+    screenTargetVec,
+    onCameraSettled,
+  ]);
 
   // Keyboard orbit (Arrow keys) and zoom (+ / -)
   useEffect(() => {
@@ -1466,29 +2044,37 @@ function StationCameraAndProjection({
       const cc = controlsRef.current;
       if (!cc) return;
       const smooth = !reduced;
+      let handled = true;
       if (e.key === 'ArrowLeft') {
         void cc.rotate(-0.18, 0, smooth);
-        invalidate();
       } else if (e.key === 'ArrowRight') {
         void cc.rotate(0.18, 0, smooth);
-        invalidate();
       } else if (e.key === 'ArrowUp') {
         void cc.rotate(0, -0.12, smooth);
-        invalidate();
       } else if (e.key === 'ArrowDown') {
         void cc.rotate(0, 0.12, smooth);
-        invalidate();
       } else if (e.key === '+' || e.key === '=') {
         void cc.dollyTo(Math.max(cc.minDistance, cc.distance * 0.8), smooth);
-        invalidate();
       } else if (e.key === '-' || e.key === '_') {
         void cc.dollyTo(Math.min(cc.maxDistance, cc.distance * 1.25), smooth);
+      } else {
+        handled = false;
+      }
+      if (handled) {
+        userControlledRef.current = true;
+        if (returningRef.current.active) {
+          returningRef.current.active = false;
+          if (!arrivalSettledRef.current) {
+            arrivalSettledRef.current = true;
+            onCameraSettled?.();
+          }
+        }
         invalidate();
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [reduced, invalidate]);
+  }, [reduced, invalidate, onCameraSettled]);
 
   // The phone's chapter panel changes height without the camera moving: place the dots again.
   useEffect(() => {
@@ -1502,8 +2088,25 @@ function StationCameraAndProjection({
     return () => ro.disconnect();
   }, [isPortrait, invalidate]);
 
-  useFrame(() => {
+  useFrame((_, delta) => {
     const cc = controlsRef.current;
+    if (returningRef.current.active) {
+      returningRef.current.elapsed += Math.min(delta, 0.1);
+      const dist = camera.position.distanceTo(returningRef.current.targetPos);
+      if (
+        (!cc?.active && returningRef.current.elapsed > 0.15) ||
+        dist < 0.08 ||
+        returningRef.current.elapsed >= CAMERA_TRANSITION_SECONDS
+      ) {
+        returningRef.current.active = false;
+        if (!arrivalSettledRef.current) {
+          arrivalSettledRef.current = true;
+          onCameraSettled?.();
+        }
+      } else {
+        invalidate();
+      }
+    }
     if (cc && cc.active) {
       invalidate();
     }
@@ -1554,7 +2157,7 @@ function StationCameraAndProjection({
       : 116;
     // Nor under the chapter panel: above it on a portrait phone (a bottom sheet the user drags),
     // left of it elsewhere (a card on the right).
-    const panelRect = document.querySelector('.orc-panel')?.getBoundingClientRect();
+    const panelRect = !panelHidden ? document.querySelector('.orc-panel')?.getBoundingClientRect() : null;
     const overlayRect = overlay.getBoundingClientRect();
     const panelTop = panelRect && isPortrait ? panelRect.top - overlayRect.top - 28 : null;
     const panelLeft = panelRect && !isPortrait ? panelRect.left - overlayRect.left - 28 : null;
@@ -1656,6 +2259,7 @@ function SceneClock({ reduced, lowQuality }: { reduced: boolean; lowQuality: boo
 }
 
 export const StationScene = memo(function StationScene({
+  arrival = 'ship',
   month,
   hour,
   windKmh,
@@ -1666,13 +2270,58 @@ export const StationScene = memo(function StationScene({
   animals,
   focus,
   reduced,
+  screenOpen = false,
+  leaving = false,
   panelExpanded,
+  panelHidden,
   onReady,
+  onDepartureDone,
   overlayRef,
 }: StationSceneProps) {
   const [webglOk, setWebglOk] = useState<boolean>(() => canUseWebGL());
   const [lowQuality, setLowQuality] = useState(false);
   const [enablePost, setEnablePost] = useState(false);
+  const hasMainHouse = buildings.includes('modern');
+  const screenNoZoomRef = useRef(false);
+  const [vehicleDone, setVehicleDone] = useState(() => reduced);
+  const [arrivalDone, setArrivalDone] = useState(() => reduced);
+  const [observerAtScreen, setObserverAtScreen] = useState(
+    () => screenOpen && (reduced || !buildings.includes('modern'))
+  );
+  const handleVehicleArrivalDone = useCallback(() => setVehicleDone(true), []);
+  const handleCameraSettled = useCallback(() => setArrivalDone(true), []);
+  const handleObserverAtScreen = useCallback((at: boolean) => setObserverAtScreen(at), []);
+  const sceneArrival = useMemo(() => arrivalScene(arrival, month), [arrival, month]);
+  const onDepartureDoneRef = useRef(onDepartureDone);
+  onDepartureDoneRef.current = onDepartureDone;
+
+  useEffect(() => {
+    if (!webglOk && leaving) {
+      onDepartureDoneRef.current?.();
+    }
+  }, [webglOk, leaving]);
+
+  useLayoutEffect(() => {
+    if (!screenOpen) setObserverAtScreen(false);
+    else if (reduced || !hasMainHouse) setObserverAtScreen(true);
+  }, [screenOpen, reduced, hasMainHouse]);
+
+  useLayoutEffect(() => {
+    if (reduced) {
+      setVehicleDone(true);
+      setArrivalDone(true);
+    }
+  }, [reduced]);
+
+  useLayoutEffect(() => {
+    if (typeof window === 'undefined') return;
+    const done = !webglOk || reduced || arrivalDone;
+    (
+      window as unknown as {
+        __orcadasArrival?: { arrival: ArrivalId; done: boolean };
+      }
+    ).__orcadasArrival = { arrival, done };
+  }, [arrival, webglOk, reduced, arrivalDone]);
   // Back on the page (another window or tab was in front), quality is measured again from scratch:
   // the slow frames of a covered window say nothing about the GPU.
   const [monitorRun, setMonitorRun] = useState(0);
@@ -1700,7 +2349,7 @@ export const StationScene = memo(function StationScene({
     [windDirDeg, windKmh]
   );
 
-  const isNight = sunElevationDeg < -1.5;
+  const isNight = shouldLightWindows(month, sunElevationDeg);
 
   if (!webglOk) {
     return (
@@ -1778,6 +2427,7 @@ export const StationScene = memo(function StationScene({
         <IsthmusTerrain sunDir={sunDir} sunElevationDeg={sunElevationDeg} />
         <StageDetails />
         <BayOcean
+          month={month}
           sunDir={sunDir}
           windKmh={windKmh}
           windVec={windVec}
@@ -1785,19 +2435,54 @@ export const StationScene = memo(function StationScene({
           reduced={reduced}
         />
         <StationElements
+          arrival={arrival}
           buildings={buildings}
           isNight={isNight}
           windKmh={windKmh}
           windDirDeg={windDirDeg}
           seaIce={seaIce}
           reduced={reduced}
+          showHelicopter={sceneArrival.helicopterOnPad}
+          screenOpen={screenOpen && (reduced || !hasMainHouse || observerAtScreen)}
+          leaving={leaving}
+          onVehicleArrivalDone={handleVehicleArrivalDone}
+          onDepartureDone={onDepartureDone}
+        />
+        <WindDetails
+          windKmh={windKmh}
+          windDirDeg={windDirDeg}
+          hasMainHouse={hasMainHouse}
+          reduced={reduced}
         />
         <StationFauna
           animals={animals}
           seaIce={seaIce}
           reduced={reduced}
+          arrival={arrival}
         />
-        <SnowAndSpindrift
+        <StationCameraAndProjection
+          arrival={arrival}
+          vehicleDone={vehicleDone}
+          focus={screenOpen ? 'screen' : focus}
+          reduced={reduced}
+          panelExpanded={panelExpanded}
+          panelHidden={panelHidden}
+          overlayRef={overlayRef}
+          screenNoZoomRef={screenNoZoomRef}
+          onReady={onReady}
+          onCameraSettled={handleCameraSettled}
+        />
+        <LifeDetails
+          month={month}
+          animals={animals}
+          hasMainHouse={hasMainHouse}
+          screenOpen={screenOpen}
+          reduced={reduced}
+          screenNoZoomRef={screenNoZoomRef}
+          onObserverAtScreen={handleObserverAtScreen}
+        />
+        <StationSnowfall
+          month={month}
           windKmh={windKmh}
           windVec={windVec}
           reduced={reduced}
@@ -1808,13 +2493,6 @@ export const StationScene = memo(function StationScene({
             <InkEffect />
           </EffectComposer>
         )}
-        <StationCameraAndProjection
-          focus={focus}
-          reduced={reduced}
-          panelExpanded={panelExpanded}
-          overlayRef={overlayRef}
-          onReady={onReady}
-        />
       </Canvas>
     </div>
   );

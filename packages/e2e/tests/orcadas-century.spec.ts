@@ -1,16 +1,7 @@
-import { expect, test, type Page } from '@playwright/test';
-import { ORCADAS_GUIDING_QUESTION } from '../../core/src/content/orcadas.ts';
+import { expect, test } from '@playwright/test';
+import { clearStorage } from '../storage.ts';
 import { answerFor, climateFor } from '../../core/src/orcadas.ts';
-
-async function openOrcadasFromMap(page: Page) {
-  const cluster = page.getByRole('button', { name: /Grupo de .*Estación Orcadas/ });
-  if (await cluster.isVisible()) await cluster.click();
-  await page.getByRole('button', { name: /^Estación Orcadas, Islas Orcadas del Sur/ }).click();
-  await expect(page.getByRole('heading', { level: 2, name: ORCADAS_GUIDING_QUESTION })).toBeVisible();
-  await page.waitForFunction(
-    () => (window as unknown as { __orcadasReady?: boolean }).__orcadasReady === true
-  );
-}
+import { openOrcadasFromMap } from './orcadas-helpers.ts';
 
 let consoleErrors: string[] = [];
 
@@ -21,7 +12,7 @@ test.beforeEach(async ({ page }) => {
   });
   page.on('pageerror', (e) => consoleErrors.push(e.message));
   await page.goto('/');
-  await page.evaluate(() => localStorage.clear());
+  await clearStorage(page);
   await page.reload();
 });
 

@@ -12,8 +12,13 @@ const BLACK = 0x1f2a36;
 const DECK = 0x5e656c;
 const NAVY_GREY = 0x8e989f;
 const LIGHT_GREY = 0xc9d0d4;
-const PLANE_GREY = 0x9aa3a8;
 const PLANE_DARK = 0x6f787e;
+const CAMO_GREEN = 0x55603f;
+const CAMO_SAND = 0xa7845f;
+const BELLY_GREY = 0xaab2b4;
+// Same values as SKY and WHITE in sightingModels.ts, which imports this file and so cannot be imported here.
+const FLAG_SKY = 0x7fb6dc;
+const FLAG_WHITE = 0xf7fafb;
 const LIFEBOAT = 0xd9822b;
 
 /**
@@ -72,15 +77,26 @@ const MODELS: Record<TransportId, readonly Box[]> = {
     [-0.2, 0.1, -0.03, 0.09, 0.04, 0.07, HULL_RED],
     [-0.34, 0.095, 0.03, 0.07, 0.03, 0.06, CREAM],
   ],
-  // C-130: high straight wing, four engines, conventional tail, blunt nose.
+  // C-130 of the Argentine Air Force: high straight wing, four engines, conventional tail, blunt
+  // nose with a black radome; green and sand camouflage over a light grey belly.
   hercules: [
-    [0, 0, 0, 0.72, 0.11, 0.11, PLANE_GREY],
-    [0.39, -0.008, 0, 0.07, 0.09, 0.09, PLANE_GREY],
-    [0.435, -0.015, 0, 0.03, 0.06, 0.06, PLANE_DARK],
-    [-0.42, 0.03, 0, 0.14, 0.06, 0.07, PLANE_GREY],
-    [0.04, 0.065, 0, 0.13, 0.018, 1.2, PLANE_GREY],
-    [-0.43, 0.14, 0, 0.12, 0.17, 0.015, PLANE_GREY],
-    [-0.45, 0.065, 0, 0.08, 0.012, 0.4, PLANE_GREY],
+    [0, 0, 0, 0.72, 0.11, 0.11, CAMO_GREEN],
+    [0.39, -0.008, 0, 0.07, 0.09, 0.09, CAMO_GREEN],
+    [0.435, -0.015, 0, 0.03, 0.06, 0.06, BLACK],
+    [-0.42, 0.03, 0, 0.14, 0.06, 0.07, CAMO_GREEN],
+    [0.04, 0.065, 0, 0.13, 0.018, 1.2, CAMO_GREEN],
+    [-0.43, 0.14, 0, 0.12, 0.17, 0.015, CAMO_GREEN],
+    [-0.45, 0.065, 0, 0.08, 0.012, 0.4, CAMO_GREEN],
+    // Sand patches of the camouflage, a hair larger than what they cover.
+    [0.22, 0.012, 0, 0.1, 0.09, 0.114, CAMO_SAND],
+    [-0.1, 0.02, 0, 0.16, 0.074, 0.114, CAMO_SAND],
+    [0.04, 0.065, 0.32, 0.132, 0.022, 0.26, CAMO_SAND],
+    [0.04, 0.065, -0.12, 0.132, 0.022, 0.2, CAMO_SAND],
+    [-0.455, 0.11, 0, 0.06, 0.07, 0.017, CAMO_SAND],
+    // Argentine flag high on the fin, larger than the real one so it reads on screen.
+    [-0.42, 0.198, 0, 0.07, 0.016, 0.019, FLAG_SKY],
+    [-0.42, 0.182, 0, 0.07, 0.016, 0.019, FLAG_WHITE],
+    [-0.42, 0.166, 0, 0.07, 0.016, 0.019, FLAG_SKY],
     [0.09, 0.045, 0.2, 0.13, 0.04, 0.04, PLANE_DARK],
     [0.09, 0.045, -0.2, 0.13, 0.04, 0.04, PLANE_DARK],
     [0.09, 0.045, 0.4, 0.13, 0.04, 0.04, PLANE_DARK],
@@ -89,9 +105,9 @@ const MODELS: Record<TransportId, readonly Box[]> = {
     [0.16, 0.045, -0.2, 0.006, 0.11, 0.11, BLACK],
     [0.16, 0.045, 0.4, 0.006, 0.11, 0.11, BLACK],
     [0.16, 0.045, -0.4, 0.006, 0.11, 0.11, BLACK],
-    // Cockpit windows and the dark belly of the cargo hold.
+    // Cockpit windows and the light grey belly, up the lower sides of the fuselage.
     [0.4, 0.025, 0, 0.05, 0.022, 0.092, BLACK],
-    [-0.02, -0.06, 0, 0.5, 0.012, 0.09, PLANE_DARK],
+    [0, -0.04, 0, 0.722, 0.034, 0.116, BELLY_GREY],
   ],
 };
 

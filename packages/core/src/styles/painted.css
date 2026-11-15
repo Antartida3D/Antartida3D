@@ -109,12 +109,47 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid #1E3E5C;outline-
 .iconbtn{width:48px;height:48px;border-radius:50%;border:2px solid var(--ink);background:#FBF4E6;display:flex;align-items:center;justify-content:center;padding:0;box-shadow:2px 3px 0 rgba(31,42,54,.2)}
 .iconbtn svg{width:22px;height:22px}
 .leftcol{display:flex;flex-direction:column;gap:10px;align-items:flex-start}
+.claims-control{position:relative;z-index:1}
+/* Without WebGL (#123): «Relieve 3D» stays, marked as off, and opens how to turn it on. */
+.chip.off{border:1.5px dashed #8A5A14;color:#6B430D;background:#FBF4E6}
+.webgl-note{background:rgba(251,244,230,.98);border:1.5px solid var(--ink);border-left:6px solid var(--ocre);border-radius:8px 14px 10px 12px;padding:10px 12px;max-width:min(300px,calc(100vw - 32px));font-size:14px;line-height:1.35;box-shadow:2px 3px 0 rgba(31,42,54,.15)}
+.webgl-note p{margin:0 0 6px}
+.webgl-note .wn-title{font-weight:700;font-size:15px}
+.webgl-note ol{margin:0 0 6px;padding-left:20px}
+.webgl-note .btn{min-height:40px;font-size:14px;padding:0 14px}
+.m3d .legend ul{max-height:min(250px,30dvh);overflow-y:auto;overscroll-behavior:contain}
+.claims-actions{display:flex;align-items:center;gap:6px}
+.claims-switch{width:26px;height:16px;border:1.5px solid var(--ink);border-radius:10px;background:var(--paper);position:relative;flex:none}
+.claims-switch::after{content:'';position:absolute;left:2px;top:2px;width:9px;height:9px;border-radius:50%;background:var(--pencil)}
+[aria-checked=true] .claims-switch{background:var(--deep)}
+[aria-checked=true] .claims-switch::after{left:12px;background:var(--ice)}
+.claims-details{position:absolute;left:0;bottom:calc(100% + 10px);width:min(330px,calc(100vw - 32px));max-height:min(440px,calc(100dvh - 330px));overflow:auto;overscroll-behavior:contain;padding:12px;background:var(--paper);border:1.5px solid var(--ink);border-radius:10px 16px 12px 14px;box-shadow:2px 3px 0 color-mix(in srgb,var(--ink) 20%,transparent);font-size:13px;line-height:1.35}
+.claims-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:16px}
+.claims-details p{margin:8px 0}
+.claims-coverage{display:grid;gap:5px;font-weight:700}
+.claims-coverage select{width:100%;min-height:40px;padding:6px;color:var(--ink);background:var(--paper);border:1px solid var(--pencil);border-radius:6px;font:inherit}
+.claims-countries{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin:12px 0}
+.claims-countries .btn{min-height:40px;font-size:13px;padding:6px 8px;justify-content:flex-start}
+.claims-countries [aria-pressed=true]{background:var(--deep);color:var(--ice)}
+.claims-swatch{width:12px;height:12px;border:1px solid currentColor;border-radius:3px;flex:none}
+.claims-note{color:var(--pencil);font-size:12px}
+.claims-details a{color:var(--deep);text-underline-offset:2px}
+@media(max-height:650px) and (min-width:650px){.claims-details{max-height:calc(100dvh - 120px);left:calc(100% + 10px);bottom:0;width:min(330px,calc(100vw - 320px))}}
 
 .legend{background:rgba(251,244,230,.96);border:1.5px solid var(--ink);border-radius:8px 14px 10px 12px;padding:8px 10px;max-width:230px;box-shadow:2px 3px 0 rgba(31,42,54,.15)}
 .legend button.lt{border:0;background:transparent;padding:4px 2px;min-height:32px;display:flex;align-items:center;gap:6px;font-weight:700;font-size:14px}
 .legend ul{list-style:none;margin:4px 0 2px;padding:0;display:flex;flex-direction:column;gap:6px}
 .legend li{display:flex;align-items:center;gap:8px;font-size:13px;line-height:1.2}
 .legend .sw{flex:none;width:18px;height:18px;display:flex;align-items:center;justify-content:center}
+/* A finger swiping the open legend carries it (Legend.tsx, #114); let go, it eases back into place. */
+.legend{transition:transform .2s ease}
+.legend.swiping{transition:none}
+/* Sources and illustration notes, folded under the symbols (#114). */
+.legend details{margin-top:6px;border-top:1px dashed rgba(31,42,54,.3);padding-top:2px}
+.legend summary{min-height:32px;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;cursor:pointer;list-style:none}
+.legend summary::-webkit-details-marker{display:none}
+.legend summary::before{content:'▸';font-size:12px;transition:transform .2s ease}
+.legend details[open] summary::before{transform:rotate(90deg)}
 .sw .a{width:14px;height:14px;border-radius:50%;background:var(--ocre);border:2px solid var(--ink)}
 .sw .b{width:12px;height:12px;border-radius:50%;background:#8FA2AF;border:2px solid #3B4651}
 .sw .c{width:12px;height:12px;border-radius:50%;border:1.5px dashed #5E656C}
@@ -128,11 +163,12 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid #1E3E5C;outline-
 .scrim{position:absolute;inset:0;background:rgba(31,42,54,.28);animation:fadein .25s ease both;z-index:19}
 .sheet{position:absolute;left:0;right:0;bottom:0;max-height:86%;overflow:auto;background:var(--paper);border-top:2px solid var(--ink);border-radius:22px 22px 0 0;padding:10px 20px 24px;box-shadow:0 -10px 30px rgba(31,42,54,.2);animation:up .32s cubic-bezier(.2,.8,.3,1) both;z-index:20}
 @keyframes up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
-.grab{width:44px;height:5px;border-radius:3px;background:rgba(31,42,54,.25);margin:0 auto 12px}
 /* A sheet that grows (BottomSheet): its handle is dragged up to make it taller, down to bring it back. */
 /* Small, a finger drags the whole sheet; tall, its text scrolls. It never hands the pull on to the page. */
 .sheet.grows{transition:max-height .28s cubic-bezier(.2,.8,.3,1);touch-action:none;overscroll-behavior:contain}
 .sheet.grows.full{touch-action:pan-y}
+/* No scrollbar on these sheets: a finger drags or scrolls them and the mouse wheel still scrolls; the bar only took width from the text. */
+.sheet.grows{scrollbar-width:none}.sheet.grows::-webkit-scrollbar{display:none}
 /* Tall, it goes over the title and the log at the top of the screen: it must be on top of them to take presses. */
 .sheet.grows.full,.sheet.grows.dragging{max-height:92%;z-index:21}
 .sheet.grows.dragging{transition:none}
@@ -142,9 +178,15 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid #1E3E5C;outline-
 .sheet-handle:active span{background:rgba(31,42,54,.6)}
 .sheet h2{margin:6px 0 2px;font-family:'Fraunces',Georgia,serif;font-size:26px;line-height:1.1}
 .sheet .place{margin:0 0 14px;color:#3B4651}
+.sheet-desc{margin:0;font-size:15px;line-height:1.45;color:var(--ink)}
 .sheet-sources{margin:12px 0 0;padding-top:10px;border-top:1px dashed rgba(31,42,54,.3)}
-.sheet-sources h3{font-family:'Fraunces',Georgia,serif;font-size:15px;margin:0 0 6px}
-.sheet-sources ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.sheet-sources h3{font-family:'Fraunces',Georgia,serif;font-size:15px;margin:0}
+.sheet-sources-toggle{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;min-height:32px;font:inherit;color:var(--ink)}
+.sheet-sources-toggle::after{content:'▸';font-size:12px;transition:transform .15s}
+.sheet-sources-toggle[aria-expanded=true]::after{transform:rotate(90deg)}
+.sheet-sources-toggle:focus-visible{outline:2px solid var(--deep);outline-offset:2px;border-radius:4px}
+.sheet-sources ul[hidden]{display:none}
+.sheet-sources ul{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
 .sheet-sources li{font-size:13px;color:#3B4651;line-height:1.3}
 .sheet-sources a{font-weight:700;color:var(--deep)}
 .sheet-sources small{display:block;color:#5E656C}
@@ -159,7 +201,8 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid #1E3E5C;outline-
 .row{display:flex;gap:10px;flex-wrap:wrap}
 .anno{font-family:'Caveat',cursive;font-size:19px;color:#1E3E5C;line-height:1.1}
 
-.listview{position:absolute;inset:0;background:var(--paper);overflow:auto;animation:fadein .25s ease both}
+/* .vp is not a stacking context, so map markers (20 when shown) compete with the list: stay above them and the bars (#48). */
+.listview{position:absolute;inset:0;background:var(--paper);overflow:auto;animation:fadein .25s ease both;z-index:21}
 .listview .inner{max-width:680px;margin:0 auto;padding:16px 16px 40px}
 .listhead{position:sticky;top:0;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:6px 0 12px;background:var(--paper);z-index:1}
 .listhead h2{margin:0;font-family:'Fraunces',Georgia,serif;font-size:26px}
@@ -311,5 +354,6 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid #1E3E5C;outline-
   .pl{transition:none}
   .sheet,.kp,.mcard,.toast{animation:fadein .2s ease both}
   .sheet.grows{transition:none}
+  .legend,.legend summary::before{transition:none}
   .stage.ret{animation:fadein .4s ease both}
 }

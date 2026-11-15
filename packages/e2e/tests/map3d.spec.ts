@@ -1,5 +1,26 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { ORCADAS_GUIDING_QUESTION } from '../../core/src/content/orcadas.ts';
+import { FUEGIA_MIN_DISTANCE, GROUND_TARGET_MAX, GROUND_TARGET_MIN, ICE_MIN_DISTANCE } from '../../core/src/fuegia.ts';
+
+/**
+ * Waits until the camera has reached where it was heading. `active` turns false as soon as the
+ * camera is within `restThreshold` (0.01) of its end, and how close it is by then depends on the
+ * frame rate: drawing with a real GPU a twist read at that moment came out 0.0085 rad short (#87).
+ */
+const cameraSettled = (page: Page) =>
+  page.waitForFunction(() => {
+    (window as any).__invalidate();
+    const cc = (window as any).__cameraControls;
+    if (cc.active) return false;
+    const [now, end] = [cc.getSpherical(undefined, false), cc.getSpherical()];
+    const close = (a: number, b: number) => Math.abs(a - b) < 1e-4;
+    return (
+      close(now.theta, end.theta) &&
+      close(now.phi, end.phi) &&
+      close(now.radius, end.radius) &&
+      cc.getTarget(undefined, false).distanceTo(cc.getTarget()) < 1e-4
+    );
+  });
 
 let consoleErrors: string[] = [];
 
@@ -56,12 +77,79 @@ test.describe('3D relief view', () => {
     await clusterOrMarker.click();
 
     // If it was in a cluster, clicking it zooms in and separates the points; then click the marker.
+    const intro = page.getByRole('dialog', { name: 'Estación Orcadas' });
     const orcadasBtn = page.getByRole('button', { name: /Estación Orcadas.*Expedición disponible/ });
-    if (await orcadasBtn.isVisible()) {
+    if (!(await intro.isVisible()) && (await orcadasBtn.isVisible())) {
       await orcadasBtn.click();
     }
+    // In 3D the intro shows the turning model of the chosen arrival vehicle, labelled as an illustration.
+    await expect(intro.locator('.vpreview')).toBeVisible();
+    await expect(intro.getByText('Reconstrucción ilustrada')).toBeVisible();
+    await intro.getByRole('button', { name: 'Comenzar expedición' }).click();
 
     await expect(page.getByRole('heading', { level: 2, name: ORCADAS_GUIDING_QUESTION })).toBeVisible({ timeout: 10000 });
+  });
+
+  test('wheel, buttons and keys all stop at the same closest distance over the ice (#127)', async ({ page }) => {
+    test.setTimeout(120000);
+    await page.goto('/');
+    await page.getByRole('group', { name: 'Modo de vista' }).getByRole('button', { name: 'Relieve 3D' }).click();
+    await page.waitForFunction(() => (window as any).__cameraControls && (window as any).__invalidate);
+    const map = page.getByRole('application', { name: /Mapa en relieve 3D/ });
+
+    // Over the open plateau, far from Tierra del Fuego and from any point with a model.
+    const reset = () =>
+      page.evaluate(() => {
+        const cc = (window as any).__cameraControls;
+        cc.moveTo(-50, 0, 0, false);
+        cc.dollyTo(300, false);
+        (window as any).__invalidate();
+      });
+    const closest = async () => {
+      // Let the camera settle, then read where it stopped.
+      await page.waitForFunction(
+        () => {
+          (window as any).__invalidate();
+          return !(window as any).__cameraControls.active;
+        },
+        null,
+        { timeout: 10000 },
+      );
+      return page.evaluate(() => (window as any).__cameraControls.distance as number);
+    };
+
+    await reset();
+    const box = (await map.boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    for (let i = 0; i < 40; i++) await page.mouse.wheel(0, -200);
+    expect(await closest()).toBeCloseTo(ICE_MIN_DISTANCE, 0);
+
+    await reset();
+    for (let i = 0; i < 12; i++) await page.getByRole('button', { name: 'Acercar', exact: true }).click();
+    expect(await closest()).toBeCloseTo(ICE_MIN_DISTANCE, 0);
+
+    await reset();
+    await map.focus();
+    for (let i = 0; i < 12; i++) await page.keyboard.press('+');
+    expect(await closest()).toBeCloseTo(ICE_MIN_DISTANCE, 0);
+
+    // With the cursor low on the screen, zooming towards it used to sink the target under the map
+    // and take the camera in after it. It stays on the ground, and the camera above the plateau.
+    await page.evaluate(() => {
+      const cc = (window as any).__cameraControls;
+      cc.setLookAt(-159.6, 150, 250, -159.6, 0, -12.3, false);
+      (window as any).__invalidate();
+    });
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height * 0.7);
+    for (let i = 0; i < 40; i++) await page.mouse.wheel(0, -250);
+    expect(await closest()).toBeCloseTo(ICE_MIN_DISTANCE, 0);
+    const heights = await page.evaluate(() => {
+      const cc = (window as any).__cameraControls;
+      return { target: cc.getTarget().y as number, camera: cc.getPosition().y as number };
+    });
+    expect(heights.target).toBeGreaterThanOrEqual(GROUND_TARGET_MIN - 0.01);
+    expect(heights.target).toBeLessThanOrEqual(GROUND_TARGET_MAX);
+    expect(heights.camera - heights.target).toBeGreaterThan(ICE_MIN_DISTANCE / 2 - 0.1);
   });
 
   test('zoom buttons move the orbit camera from where it is, without resetting it', async ({ page }) => {
@@ -182,10 +270,7 @@ test.describe('3D relief view', () => {
       await page.mouse.up({ button });
       // The camera eases to where the drag left it.
       await page.waitForTimeout(150);
-      await page.waitForFunction(() => {
-        (window as any).__invalidate();
-        return !(window as any).__cameraControls.active;
-      });
+      await cameraSettled(page);
     };
 
     // Dragging to the right pulls the map with the pointer: the target goes to the camera's left.
@@ -241,10 +326,7 @@ test.describe('3D relief view', () => {
     for (let i = 1; i <= 8; i++) await touch('touchMove', vp.width * 0.3 + i * 15);
     await touch('touchEnd', 0);
     await page.waitForTimeout(150);
-    await page.waitForFunction(() => {
-      (window as any).__invalidate();
-      return !(window as any).__cameraControls.active;
-    });
+    await cameraSettled(page);
 
     const end = await cam();
     expect(end.tx).toBeLessThan(start.tx - 10);
@@ -293,10 +375,7 @@ test.describe('3D relief view', () => {
       for (let i = 1; i <= 10; i++) await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: points(i / 10) });
       await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
       await page.waitForTimeout(150);
-      await page.waitForFunction(() => {
-        (window as any).__invalidate();
-        return !(window as any).__cameraControls.active;
-      });
+      await cameraSettled(page);
     };
 
     // Spreading the fingers to twice the gap halves the distance; nothing else moves.
@@ -399,16 +478,19 @@ test.describe('3D relief view', () => {
         { timeout: 10000 },
       );
 
-    // Around Ushuaia the camera may go well below the Antarctic limit of 60.
-    await settle('cc.minDistance < 60');
+    // Around Ushuaia the camera may go well below the closest distance over the ice.
+    await settle(`cc.minDistance < ${ICE_MIN_DISTANCE}`);
     await page.evaluate(() => void (window as any).__cameraControls.dollyTo(1, false));
     await settle('cc.distance < 20');
     const minHere = await page.evaluate(() => (window as any).__cameraControls.minDistance as number);
-    expect(await distance()).toBeGreaterThanOrEqual(minHere - 0.01);
+    // Closer, but not without end (#127).
+    expect(minHere).toBe(FUEGIA_MIN_DISTANCE);
+    expect(await distance()).toBeCloseTo(FUEGIA_MIN_DISTANCE, 1);
 
-    // Moving the target to the South Pole pushes it back out.
-    await page.evaluate(() => void (window as any).__cameraControls.moveTo(0, 0, 0, false));
-    await settle('cc.minDistance === 60 && cc.distance >= 59.9');
+    // Moving the target to the open plateau pushes it back out. Not the South Pole itself: a point
+    // with a model lets the camera come down to it (#58).
+    await page.evaluate(() => void (window as any).__cameraControls.moveTo(-50, 0, 0, false));
+    await settle(`cc.minDistance === ${ICE_MIN_DISTANCE} && cc.distance >= ${ICE_MIN_DISTANCE - 0.1}`);
   });
 
   test('with PointSheet open, elementFromPoint at sheet center returns an element inside the sheet', async ({ page }) => {

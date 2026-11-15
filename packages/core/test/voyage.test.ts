@@ -4,14 +4,31 @@ import { describe, expect, it } from 'vitest';
 import {
   DRAKE_STORM,
   FLIGHT_CRUISE,
+  PLANE_TURBULENCE,
   FUEGIA_MIN_DISTANCE,
+  ICE_MIN_DISTANCE,
+  MAX_POLAR_DEG,
   FUEGIA_LAND_MASK,
   GEAR_TAP_MS,
   PONCHO_EXPEDITION,
   PONCHO_MILESTONES,
   PONCHO_TRANSPORT,
+  IRIZAR_ARRIVAL_POSE,
+  IRIZAR_HALF_BEAM,
+  ORCADAS_DEFAULT_SHIP_SIZE,
+  ORCADAS_HELICOPTER_SECONDS,
+  ORCADAS_POINT,
+  ORCADAS_SHIP_LENGTH,
+  ORCADAS_SHIP_PHASE,
+  ORCADAS_SHIP_SECONDS,
+  ORCADAS_SHORE,
+  ORCADAS_TRAVEL_SECONDS,
+  ORCADAS_ZODIAC_SECONDS,
   ROUTE_LENGTH,
+  SHIP_ANCHORAGE,
   SHIP_HEAD_START,
+  ZODIAC_LOWER_PHASE,
+  ZODIAC_SHIP_RATIO,
   MILESTONES,
   EXPEDITION,
   SIGHTINGS,
@@ -23,24 +40,34 @@ import {
   VOYAGE_SOURCE_CODES,
   voyageSourceNumber,
   VOYAGE_TOURISM_NOTE,
+  VOYAGE_TRANSFER,
   advanceVoyage,
   closeVoyageCard,
   flightClearance,
   fuegiaWorldHeight,
   heightAt,
+  irizarArrivalWorldPose,
   minCameraDistance,
   expeditionAt,
   nextGear,
+  orcadasTravelAt,
+  orcadasTravelLength,
+  orcadasTravelMs,
   quizScore,
   retreatVoyage,
   routeAt,
+  shipDeckPose,
+  shipWaterY,
   sightingsInView,
   parseTerrainMesh,
+  planeTurbulence,
   project,
   skipToNextStop,
   startVoyage,
   stormAt,
   stormCeiling,
+  toWorld,
+  transferAt,
   unproject,
   voyageArrived,
   voyageAt,
@@ -65,6 +92,7 @@ const facts: VoyageFact[] = [
   ...PONCHO_TRANSPORT.facts,
   ...PONCHO_MILESTONES.flatMap((m) => [m.essential, ...m.more]),
   ...Object.values(PONCHO_EXPEDITION).flatMap((stop) => stop.notes.map((n) => n.fact)),
+  ...VOYAGE_TRANSFER.facts,
 ];
 
 describe('voyage content', () => {
@@ -108,9 +136,15 @@ describe('voyage content', () => {
 });
 
 describe.each(['ship', 'plane'] as const)('voyage path (%s)', (kind) => {
-  it('ends in Marambio', () => {
+  it('ends at Marambio: a plane on the base, a ship off the island', () => {
     const end = voyageAt(kind, 1);
-    expect(Math.hypot(end.x - MARAMBIO.x, end.y - MARAMBIO.y)).toBeLessThan(0.01);
+    const fromBase = Math.hypot(end.x - MARAMBIO.x, end.y - MARAMBIO.y);
+    if (kind === 'plane') expect(fromBase).toBeLessThan(0.01);
+    else {
+      // SHIP_ANCHORAGE is measured along the route, which bends a little: in a straight line it is somewhat less.
+      expect(fromBase).toBeGreaterThan(0.8 * SHIP_ANCHORAGE);
+      expect(fromBase).toBeLessThanOrEqual(SHIP_ANCHORAGE);
+    }
   });
 
   it('opens its milestones in order, the first at departure and the last on arrival', () => {
@@ -153,19 +187,26 @@ describe('voyage path', () => {
     expect(voyageStops('ship')).toHaveLength(MILESTONES.length);
   });
 
-  it('stands the pin of Cabo de Hornos on the cape, not on the path, and every other pin on the path', () => {
+  it('stands the pins of Cabo de Hornos and Base Marambio on those places, not on the path, and every other pin on the path', () => {
     for (const stop of voyageStops('ship')) {
       const onPath = voyageAt('ship', stop.t);
       const off = Math.hypot(stop.pin.x - onPath.x, stop.pin.y - onPath.y);
-      if (stop.milestone.id !== 'hornos') expect(off).toBe(0);
-      else {
+      if (stop.milestone.id === 'hornos') {
         const { lon, lat } = unproject(stop.pin.x, stop.pin.y);
         expect(lon).toBeCloseTo(-67.27, 2);
         expect(lat).toBeCloseTo(-55.97, 2);
         // The ship passes south-east of the cape, in open sea.
         expect(off).toBeGreaterThan(2);
-      }
+      } else if (stop.milestone.id === 'marambio') {
+        // The ship stays off the island; the pin stands on the base.
+        expect(Math.hypot(stop.pin.x - MARAMBIO.x, stop.pin.y - MARAMBIO.y)).toBeLessThan(0.01);
+        expect(off).toBeGreaterThan(0.8 * SHIP_ANCHORAGE);
+      } else expect(off).toBe(0);
     }
+    // The plane lands on the base: its pin is where the flight ends.
+    const stops = voyageStops('plane');
+    const landing = voyageAt('plane', 1);
+    expect(Math.hypot(stops[stops.length - 1].pin.x - landing.x, stops[stops.length - 1].pin.y - landing.y)).toBeLessThan(0.01);
   });
 
   it('flies a shorter path than the ship sails', () => {
@@ -181,6 +222,73 @@ describe('voyage path', () => {
     expect(length('plane')).toBeLessThan(length('ship'));
     expect(voyageLength('ship')).toBeCloseTo(length('ship'), 0);
     expect(voyageLength('plane')).toBeCloseTo(length('plane'), 0);
+  });
+});
+
+describe('arrival of a ship off Marambio', () => {
+  const buf = readFileSync(join(import.meta.dirname, '../src/assets/terrain-mesh-hi.bin'));
+  const terrain = parseTerrainMesh(buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength));
+  const onLand = (p: { x: number; y: number }) => heightAt(p.x, p.y, terrain) > 0;
+
+  it('stops on the water, with open sea between the ship and the island', () => {
+    // The sea route ends on the base, up on the plateau: a ship that sailed all of it ended inside the island.
+    expect(onLand(routeAt(1))).toBe(true);
+    // The last stretch of the trip never touches land.
+    for (let i = 0; i <= 200; i++) expect(onLand(voyageAt('ship', 1 - (i / 200) * 0.02)), `step ${i}`).toBe(false);
+    // Past the ship, the route goes on over the water for at least half of the way to the base.
+    const end = 1 - SHIP_ANCHORAGE / ROUTE_LENGTH;
+    let water = 0;
+    while (water < 400 && !onLand(routeAt(end + ((water + 1) / 400) * (1 - end)))) water++;
+    expect((water / 400) * SHIP_ANCHORAGE).toBeGreaterThan(SHIP_ANCHORAGE / 2);
+  });
+
+  describe('helicopter hop from the ship to the base', () => {
+    // The flight deck of the ship where it waits: a little above the water, nose as the ship's.
+    const ship = voyageAt('ship', 1);
+    const deck = { ...ship, height: 0.4, heading: voyageHeading('ship', 1) };
+    const ground = (p: { x: number; y: number }) => Math.max(0, worldHeight(heightAt(p.x, p.y, terrain)));
+    const hop = Array.from({ length: 201 }, (_, i) => transferAt(deck, i / 200, terrain));
+
+    it('lifts off the deck of the ship and lands on the plateau of the base', () => {
+      expect(hop[0]).toEqual(deck);
+      const end = hop[200];
+      expect(Math.hypot(end.x - MARAMBIO.x, end.y - MARAMBIO.y)).toBeLessThan(0.01);
+      expect(end.height).toBeGreaterThan(0);
+      expect(end.height).toBeCloseTo(ground(MARAMBIO), 6);
+    });
+
+    it('never flies under the relief, and passes well over it on the way', () => {
+      for (const [i, at] of hop.entries()) expect(at.height, `step ${i}`).toBeGreaterThanOrEqual(ground(at));
+      const top = Math.max(...hop.map((at) => at.height));
+      expect(top).toBeGreaterThan(Math.max(...hop.map(ground)) + 0.5);
+    });
+
+    it('goes straight up first and straight down last, without a leap in between', () => {
+      expect(hop[10].x).toBe(deck.x);
+      expect(hop[10].height).toBeGreaterThan(deck.height);
+      expect(hop[190].x).toBeCloseTo(MARAMBIO.x, 6);
+      expect(hop[190].height).toBeGreaterThan(hop[200].height);
+      const whole = Math.hypot(MARAMBIO.x - deck.x, MARAMBIO.y - deck.y);
+      for (let i = 1; i <= 200; i++) {
+        const step = Math.hypot(hop[i].x - hop[i - 1].x, hop[i].y - hop[i - 1].y, hop[i].height - hop[i - 1].height);
+        expect(step, `step ${i}`).toBeLessThan(whole / 50);
+      }
+    });
+
+    it('turns its nose to the base the short way round', () => {
+      const bearing = Math.atan2(MARAMBIO.y - deck.y, MARAMBIO.x - deck.x);
+      expect(Math.cos(hop[200].heading - bearing)).toBeCloseTo(1, 6);
+      // Starting almost opposite, it does not go the long way: the turn is never more than half a circle.
+      const back = transferAt({ ...deck, heading: bearing + 3 }, 1, terrain);
+      expect(Math.abs(back.heading - (bearing + 3))).toBeLessThan(Math.PI);
+      expect(Math.cos(back.heading - bearing)).toBeCloseTo(1, 6);
+    });
+  });
+
+  it('plays the hop only on the Irízar, and says that it is a drawing', () => {
+    expect(VOYAGE_TRANSFER.transport).toBe('irizar');
+    expect(VOYAGE_TRANSFER.facts.map((f) => f.kind)).toEqual(['real', 'illustrative']);
+    expect(VOYAGE_TRANSFER.facts[0].sources).toEqual(['O24']);
   });
 });
 
@@ -205,7 +313,7 @@ describe('flight altitude', () => {
       highest = Math.max(highest, ground(t));
       expect(flightClearance(t, terrain), `t=${t}`).toBeGreaterThanOrEqual(ground(t));
     }
-    expect(highest).toBeGreaterThan(1); // the path does cross relief
+    expect(highest).toBeGreaterThan(worldHeight(160)); // the path does cross relief
   });
 
   it('climbs and descends without steps', () => {
@@ -251,9 +359,10 @@ describe('flight altitude', () => {
     // Soon after take-off it is only as high as the hills of Navarino need.
     expect(flightClearance(0.02, terrain)).toBeLessThan(FLIGHT_CRUISE * 0.6);
     // Then it keeps climbing, to pass over the storm of the Drake: no step between two samples.
+    // The step is measured against the storm it climbs over, which does not change with the exaggeration.
     for (let i = 20; i < 300; i++) {
       const rise = flightClearance((i + 1) / 1000, terrain) - flightClearance(i / 1000, terrain);
-      expect(rise, `t=${i / 1000}`).toBeLessThan(FLIGHT_CRUISE * 0.1);
+      expect(rise, `t=${i / 1000}`).toBeLessThan(DRAKE_STORM.cloudTop * 0.02);
     }
     // Past the storm it is back at its cruise height.
     expect(flightClearance(0.85, terrain)).toBeCloseTo(FLIGHT_CRUISE);
@@ -297,12 +406,34 @@ describe('how the expedition works', () => {
     }
   });
 
+  it('asks how people and cargo reach the base only on the Irízar, and tells only what source O24 says', () => {
+    const { question, notes } = expeditionAt('marambio', 'irizar');
+    expect(question!.options[question!.answer]).toBe('En helicóptero');
+    // The note that answers it comes first, with its source.
+    expect(notes[0].text).toMatch(/helicóptero/);
+    expect(notes[0].sources).toEqual(['O24']);
+    expect(expeditionAt('marambio', 'puerto-argentino').question).toBeNull();
+    expect(expeditionAt('marambio', 'hercules').question).toBeNull();
+    expect(expeditionAt('shetland', 'irizar').question).toBeNull();
+    // The source does not say that the base has no port or pier: the trip does not say it either.
+    expect([question!.prompt, ...notes.map((f) => f.text)].join(' ')).not.toMatch(/puerto|muelle/i);
+    // Where a ship waits off the island is a drawing, and a ship says so; the plane lands on the base.
+    const drawing = (id: 'irizar' | 'puerto-argentino' | 'hercules') =>
+      expeditionAt('marambio', id).notes.some((f) => f.kind === 'illustrative' && /frente a la isla/.test(f.text));
+    expect(drawing('irizar')).toBe(true);
+    expect(drawing('puerto-argentino')).toBe(true);
+    expect(drawing('hercules')).toBe(false);
+  });
+
   it('counts the questions answered right', () => {
-    expect(quizScore('irizar', {})).toEqual({ right: 0, total: 4 });
-    expect(quizScore('hercules', {})).toEqual({ right: 0, total: 3 });
-    expect(quizScore('irizar', { beagle: 0, 'paralelo-60': 1, shetland: 2, marambio: 0 })).toEqual({ right: 3, total: 4 });
-    // The Shetland question is not asked on the plane: its answer does not count there.
-    expect(quizScore('hercules', { beagle: 0, 'paralelo-60': 1, shetland: 0, marambio: 0 })).toEqual({ right: 3, total: 3 });
+    expect(quizScore('irizar', {})).toEqual({ right: 0, total: 3 });
+    expect(quizScore('hercules', {})).toEqual({ right: 0, total: 2 });
+    expect(quizScore('puerto-argentino', {})).toEqual({ right: 0, total: 2 });
+    expect(quizScore('irizar', { beagle: 0, 'paralelo-60': 1, marambio: 0 })).toEqual({ right: 2, total: 3 });
+    expect(quizScore('irizar', { beagle: 0, 'paralelo-60': 1, marambio: 2 })).toEqual({ right: 3, total: 3 });
+    // The question of Marambio is about the Irízar: an answer to it does not count on another transport.
+    expect(quizScore('hercules', { beagle: 0, 'paralelo-60': 1, marambio: 2 })).toEqual({ right: 2, total: 2 });
+    expect(quizScore('puerto-argentino', { beagle: 0, 'paralelo-60': 1, marambio: 2 })).toEqual({ right: 2, total: 2 });
   });
 });
 
@@ -406,12 +537,14 @@ describe('storm over the Drake Passage', () => {
     for (const kind of ['ship', 'plane'] as const) {
       for (let i = 0; i <= 400; i++) {
         const p = voyageAt(kind, i / 400);
-        if (stormAt(p.x, p.y) > 0) expect(minCameraDistance(p.x, p.y, 60), `${kind} ${i}`).toBe(FUEGIA_MIN_DISTANCE);
+        if (stormAt(p.x, p.y) > 0) expect(minCameraDistance(p.x, p.y), `${kind} ${i}`).toBe(FUEGIA_MIN_DISTANCE);
       }
     }
+    // Even tilted as far as it goes, the closest camera fits under the clouds (Voyage3D's STORM_CAMERA_HEIGHT).
+    expect(FUEGIA_MIN_DISTANCE * Math.cos((MAX_POLAR_DEG * Math.PI) / 180)).toBeLessThan(DRAKE_STORM.cloudBase - 2);
     // Not past it: south of the storm the camera keeps off the plateau.
     const end = voyageAt('ship', 1);
-    expect(minCameraDistance(end.x, end.y, 60)).toBe(60);
+    expect(minCameraDistance(end.x, end.y)).toBe(ICE_MIN_DISTANCE);
   });
 
   it('is over the ship from the Drake to the 60° S parallel', () => {
@@ -437,6 +570,29 @@ describe('storm over the Drake Passage', () => {
       const [a, b] = [voyageAt('plane', (i - 1) / 400), voyageAt('plane', i / 400)];
       expect(Math.abs(stormCeiling(b.x, b.y) - stormCeiling(a.x, a.y)), `step ${i}`).toBeLessThan(1);
     }
+  });
+
+  it('shakes the plane a little over it: not outside it, not with reduced motion, never past its limit', () => {
+    const axes = ['roll', 'pitch', 'lift'] as const;
+    // The plane is well inside the storm at some point of its trip.
+    expect(Math.max(...Array.from({ length: 401 }, (_, i) => at('plane', i / 400)))).toBe(1);
+    const moved = { roll: 0, pitch: 0, lift: 0 };
+    for (let i = 0; i <= 600; i++) {
+      const time = i / 30;
+      const shake = planeTurbulence(time, 1);
+      for (const axis of axes) {
+        // Outside the storm the air is calm, at any time.
+        expect(Math.abs(planeTurbulence(time, 0)[axis]), `${axis} outside`).toBe(0);
+        expect(Math.abs(shake[axis]), `${axis} at ${time}`).toBeLessThanOrEqual(PLANE_TURBULENCE[axis]);
+        // It builds up with the storm: half the storm, half the shake.
+        expect(planeTurbulence(time, 0.5)[axis]).toBeCloseTo(shake[axis] / 2, 12);
+        moved[axis] = Math.max(moved[axis], Math.abs(shake[axis]));
+      }
+    }
+    // It does move, on its three axes.
+    for (const axis of axes) expect(moved[axis], axis).toBeGreaterThan(0.6 * PLANE_TURBULENCE[axis]);
+    // Reduced motion draws every frame at time 0: the plane stays still.
+    for (const axis of axes) expect(Math.abs(planeTurbulence(0, 1)[axis]), `${axis} reduced`).toBe(0);
   });
 
   it('is where the ship and the plane are when the card of the Drake opens', () => {
@@ -558,5 +714,112 @@ describe('voyage state', () => {
     }
     expect(steps).toBe(voyageStops('plane').length - 1);
     expect(s.t).toBe(1);
+  });
+});
+
+describe('orcadas travel leg', () => {
+  const buf = readFileSync(join(import.meta.dirname, '../src/assets/terrain-mesh-hi.bin'));
+  const terrain = parseTerrainMesh(buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength));
+  const ground = (p: { x: number; y: number }) => Math.max(0, worldHeight(heightAt(p.x, p.y, terrain)));
+
+  it('keeps consistent duration constants per transport', () => {
+    expect(ORCADAS_SHIP_SECONDS).toBe(7);
+    expect(ORCADAS_ZODIAC_SECONDS).toBe(4);
+    expect(ORCADAS_HELICOPTER_SECONDS).toBe(8);
+    expect(ORCADAS_TRAVEL_SECONDS.ship).toBe(ORCADAS_SHIP_SECONDS + ORCADAS_ZODIAC_SECONDS);
+    expect(ORCADAS_TRAVEL_SECONDS.helicopter).toBe(ORCADAS_HELICOPTER_SECONDS);
+    expect(ORCADAS_SHIP_PHASE).toBeCloseTo(ORCADAS_SHIP_SECONDS / ORCADAS_TRAVEL_SECONDS.ship, 12);
+    expect(orcadasTravelMs('ship')).toBe(ORCADAS_TRAVEL_SECONDS.ship * 1000);
+    expect(orcadasTravelMs('helicopter')).toBe(ORCADAS_TRAVEL_SECONDS.helicopter * 1000);
+  });
+
+  it('matches the final Irízar pose and deck offset from the Ushuaia trip via a single source', () => {
+    const end = voyageAt('ship', 1);
+    const heading = voyageHeading('ship', 1);
+    expect(IRIZAR_ARRIVAL_POSE).toEqual({ x: end.x, y: end.y, heading });
+
+    const size = 3.2;
+    const worldPose = irizarArrivalWorldPose(size);
+    expect(worldPose.world).toEqual(toWorld(end.x, end.y, shipWaterY(size)));
+    expect(worldPose.deck).toEqual(shipDeckPose({ x: end.x, y: end.y, height: shipWaterY(size), heading }, size));
+  });
+
+  it('sails the Irízar from the Ushuaia arrival pose to Laurie anchorage, then lowers the Zodiac outside the hull to the shore', () => {
+    const shipSize = ORCADAS_DEFAULT_SHIP_SIZE;
+    const start = orcadasTravelAt('ship', 0, terrain, { shipSize });
+    const anchor = orcadasTravelAt('ship', ORCADAS_SHIP_PHASE, terrain, { shipSize });
+    const end = orcadasTravelAt('ship', 1, terrain, { shipSize });
+
+    // Departs from the exact Ushuaia arrival pose (position and heading).
+    expect(start.x).toBeCloseTo(IRIZAR_ARRIVAL_POSE.x, 9);
+    expect(start.y).toBeCloseTo(IRIZAR_ARRIVAL_POSE.y, 9);
+    expect(start.heading).toBeCloseTo(IRIZAR_ARRIVAL_POSE.heading, 9);
+    expect(start.height).toBe(0);
+
+    // Reaches the Laurie anchorage and finishes off the Laurie shore.
+    expect(Math.hypot(anchor.x - ORCADAS_POINT.x, anchor.y - ORCADAS_POINT.y)).toBeCloseTo(SHIP_ANCHORAGE, 4);
+    expect(Math.hypot(end.x - ORCADAS_POINT.x, end.y - ORCADAS_POINT.y)).toBeCloseTo(ORCADAS_SHORE, 4);
+    expect(orcadasTravelLength('ship')).toBeCloseTo(ORCADAS_SHIP_LENGTH + (SHIP_ANCHORAGE - ORCADAS_SHORE), 6);
+
+    // Continuity along the Irízar sailing leg (no jump before anchoring).
+    const beforeHandoff = orcadasTravelAt('ship', ORCADAS_SHIP_PHASE - 0.001, terrain, { shipSize });
+    expect(Math.hypot(anchor.x - beforeHandoff.x, anchor.y - beforeHandoff.y)).toBeLessThan(0.1);
+
+    // Zodiac starts outside the Irízar's hull, above water, and lowers down before motoring to shore.
+    const zodiacStart = orcadasTravelAt('ship', ORCADAS_SHIP_PHASE + 1e-6, terrain, { shipSize });
+    const cosH = Math.cos(anchor.heading);
+    const sinH = Math.sin(anchor.heading);
+    const lateralFromHull = Math.abs(-(zodiacStart.x - anchor.x) * sinH + (zodiacStart.y - anchor.y) * cosH);
+    const zodiacHalfBeam = 0.25 * ZODIAC_SHIP_RATIO * shipSize;
+    expect(ZODIAC_SHIP_RATIO).toBeLessThanOrEqual(1 / 8);
+    expect(lateralFromHull).toBeGreaterThan(IRIZAR_HALF_BEAM * shipSize + zodiacHalfBeam);
+    expect(zodiacStart.height).toBeGreaterThan(0);
+
+    const splashT = ORCADAS_SHIP_PHASE + ZODIAC_LOWER_PHASE * (1 - ORCADAS_SHIP_PHASE);
+    const splash = orcadasTravelAt('ship', splashT, terrain, { shipSize });
+    expect(splash.height).toBe(0);
+
+    // Every point of both ship and Zodiac stays on open water (heightAt === 0) and progresses forward.
+    let prevShipDist = 0;
+    let prevZodiacProg = -Infinity;
+    for (let i = 0; i <= 200; i++) {
+      const t = i / 200;
+      const p = orcadasTravelAt('ship', t, terrain, { shipSize });
+      expect(heightAt(p.x, p.y, terrain), `step ${i}`).toBe(0);
+      if (t <= ORCADAS_SHIP_PHASE) {
+        expect(p.height).toBe(0);
+        const dist = Math.hypot(p.x - start.x, p.y - start.y);
+        expect(dist).toBeGreaterThanOrEqual(prevShipDist - 1e-12);
+        prevShipDist = dist;
+      } else {
+        const along = (p.x - anchor.x) * cosH + (p.y - anchor.y) * sinH;
+        expect(along).toBeGreaterThanOrEqual(prevZodiacProg - 1e-12);
+        prevZodiacProg = along;
+      }
+    }
+    expect(orcadasTravelAt('ship', -0.5, terrain, { shipSize })).toEqual(start);
+    expect(orcadasTravelAt('ship', 1.5, terrain, { shipSize })).toEqual(end);
+  });
+
+  it('launches the helicopter from the Irízar flight deck at cruise altitude and descends onto Orcadas without clipping relief', () => {
+    const shipSize = 3.5;
+    const deck = irizarArrivalWorldPose(shipSize).deck;
+    const start = orcadasTravelAt('helicopter', 0, terrain, { shipSize });
+    const end = orcadasTravelAt('helicopter', 1, terrain, { shipSize });
+
+    expect(start.x).toBeCloseTo(deck.x, 9);
+    expect(start.y).toBeCloseTo(deck.y, 9);
+    expect(start.height).toBeCloseTo(deck.height, 9);
+    expect(start.heading).toBeCloseTo(IRIZAR_ARRIVAL_POSE.heading, 9);
+    expect(end.x).toBeCloseTo(ORCADAS_POINT.x, 6);
+    expect(end.y).toBeCloseTo(ORCADAS_POINT.y, 6);
+    expect(end.height).toBeCloseTo(ground(ORCADAS_POINT), 6);
+    expect(orcadasTravelLength('helicopter', { shipSize })).toBeCloseTo(Math.hypot(end.x - deck.x, end.y - deck.y), 6);
+
+    for (let i = 0; i <= 200; i++) {
+      const p = orcadasTravelAt('helicopter', i / 200, terrain, { shipSize });
+      expect(p.height, `step ${i}`).toBeGreaterThanOrEqual(ground(p));
+    }
+    expect(orcadasTravelAt('helicopter', 0.5, terrain, { shipSize }).height).toBeGreaterThanOrEqual(FLIGHT_CRUISE);
   });
 });

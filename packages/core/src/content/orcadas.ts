@@ -2,6 +2,10 @@ import type { Chapter } from '../orcadas.ts';
 
 export const ORCADAS_GUIDING_QUESTION = '¿Cuánto cambió el clima de la isla Laurie en 120 años?';
 
+/** Activity summary for the pre-expedition intro sheet (describes user actions, not scientific data). */
+export const ORCADAS_INTRO_DESC =
+  'Recorré la base, registrá una observación del día, explorá la serie histórica y respondé la pregunta.';
+
 /** Short chapter names (buttons, Sources panel) and panel headings. Single source for the UI. */
 export const CHAPTER_NAMES: Record<Chapter, string> = {
   arrival: 'Llegar',
@@ -17,6 +21,13 @@ export const CHAPTER_HEADINGS: Record<Chapter, string> = {
   journey: 'Viaje en el tiempo',
   answer: 'La respuesta',
 };
+
+/** Real, sourced facts highlighted in the pre-expedition intro sheet. */
+export const ORCADAS_INTRO_FACT_IDS = [
+  'arrival-antiguedad',
+  'obs-registro-1903',
+  'eras-traspaso-1904',
+] as const;
 
 export type FactKind = 'real' | 'sim' | 'recon' | 'calc';
 
@@ -128,6 +139,15 @@ export const ORCADAS_SOURCES: readonly OrcadasSource[] = [
     consulted: '12 de noviembre de 2026',
     verified: true,
   },
+  {
+    id: 'armada-relevo-2025',
+    label: 'El rompehielos ARA "Almirante Irízar" avanza en la Campaña Antártica de Verano (15 dic 2025)',
+    short: 'Armada, 2025',
+    org: 'Armada Argentina',
+    url: 'https://www.argentina.gob.ar/noticias/el-rompehielos-ara-almirante-irizar-avanza-en-la-campana-antartica-de-verano',
+    consulted: '13 de noviembre de 2026',
+    verified: true,
+  },
 ] as const;
 
 const SOURCE_MAP = new Map<string, OrcadasSource>(
@@ -175,6 +195,14 @@ export const ORCADAS_FACTS: readonly OrcadasFact[] = [
     title: 'Cómo se llega',
     text: 'A la base se llega en buque o en helicóptero, con unas 25 visitas de buques por año entre noviembre y marzo. No tiene muelle: cuenta con dos botes Zodiac con motor fuera de borda y con playas aptas para desembarcar botes chicos.',
     sourceIds: ['comnap'],
+  },
+  {
+    id: 'arrival-relevo-sea-king',
+    chapter: 'arrival',
+    kind: 'real',
+    title: 'Relevo en helicóptero',
+    text: 'La base tiene helipuerto. En diciembre de 2025 el hielo no dejó acercarse al rompehielos Irízar, que quedó a la deriva en Bahía Scotia: un helicóptero Sea King hizo 23 vuelos en más de dos horas y llevó a 21 personas de la dotación nueva, combustible y científicos.',
+    sourceIds: ['armada-relevo-2025', 'comnap'],
   },
   {
     id: 'arrival-elevacion',
@@ -481,7 +509,7 @@ export const ORCADAS_ERAS: readonly OrcadasEra[] = [
   },
 ] as const;
 
-export type OrcadasHotspotId = 'screen' | 'mast' | 'house' | 'flag' | 'bay' | 'colony' | 'boat';
+export type OrcadasHotspotId = 'screen' | 'mast' | 'house' | 'flag' | 'bay' | 'colony' | 'boat' | 'helipad';
 
 export interface OrcadasTourStop {
   id: string;
@@ -590,6 +618,13 @@ export function factById(id: string): OrcadasFact | null {
   return FACT_MAP.get(id) ?? null;
 }
 
+/** Publishable real facts highlighted on the pre-expedition intro sheet. */
+export function introFacts(): OrcadasFact[] {
+  return ORCADAS_INTRO_FACT_IDS.map((id) => FACT_MAP.get(id)).filter(
+    (f): f is OrcadasFact => f !== undefined && f.kind === 'real' && isPublishable(f)
+  );
+}
+
 /** Publishable guided-tour stops for a chapter, in declared order. */
 export function tourStops(chapter: Chapter): OrcadasTourStop[] {
   return ORCADAS_TOUR.filter((stop) => {
@@ -623,6 +658,7 @@ export const ORCADAS_HOTSPOT_FACTS: Record<OrcadasHotspotId, readonly string[]> 
   bay: ['year-hielo-octubre'],
   boat: ['arrival-transporte'],
   colony: ['arrival-fauna'],
+  helipad: ['arrival-relevo-sea-king'],
 };
 
 /** Facts a panel shows at once; the rest go folded under «Saber más». */

@@ -1,22 +1,27 @@
 import { describe, expect, it } from 'vitest';
-import { AVAILABLE_COUNT, PONCHO_POINT, PONCHO_SEGMENTS, PTS, VOYAGE_POINT, VOYAGE_POINTS, project, voyageAt } from '../src/index.ts';
+import { PTS } from '../src/content/points.ts';
 
-describe('expedition points', () => {
-  it('offers Poncho as an available expedition at Base Esperanza, where his trip starts', () => {
-    expect(PONCHO_POINT.tier).toBe('A');
-    expect(PONCHO_POINT.place).toContain('Base Esperanza');
-    const [lon, lat] = PONCHO_SEGMENTS[0].waypoints[0];
-    expect(PONCHO_POINT).toMatchObject(project(lon, lat));
-    const start = voyageAt('dogs', 0);
-    expect(Math.hypot(start.x - PONCHO_POINT.x, start.y - PONCHO_POINT.y)).toBeLessThan(1);
+const VERIFIED = ['polo', 'testigos', 'vostok', 'erebus', 'thwaites', 'belgrano', 'emperador', 'fosiles', 'oceano'];
+
+describe('points without expedition (docs/puntos-proximamente-fuentes.md)', () => {
+  for (const id of VERIFIED) {
+    it(`${id} has a description and verified sources`, () => {
+      const p = PTS.find((q) => q.id === id)!;
+      expect(p.desc?.length ?? 0).toBeGreaterThan(80);
+      expect(p.sources?.length ?? 0).toBeGreaterThan(0);
+      for (const s of p.sources!) {
+        expect(s.url).toMatch(/^https:\/\//);
+        expect(s.org.length).toBeGreaterThan(0);
+        expect(s.consulted).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      }
+    });
+  }
+
+  it('leaves Poncho provisional: it has its own issues (#9, #26-#33)', () => {
+    expect(PTS.find((p) => p.id === 'poncho')!.desc).toBeUndefined();
   });
 
-  it('counts Orcadas, Ushuaia and Poncho as the available expeditions', () => {
-    expect(PTS.filter((p) => p.tier === 'A').map((p) => p.id).sort()).toEqual(['campana', 'orcadas', 'poncho']);
-    expect(AVAILABLE_COUNT).toBe(3);
-  });
-
-  it('lists the points whose expedition is a trip over the map', () => {
-    expect(VOYAGE_POINTS.map((p) => p.id)).toEqual([VOYAGE_POINT.id, PONCHO_POINT.id]);
+  it('gives no description to the points with an expedition', () => {
+    for (const p of PTS.filter((q) => q.tier === 'A')) expect(p.desc).toBeUndefined();
   });
 });

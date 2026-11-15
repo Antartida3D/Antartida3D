@@ -69,9 +69,10 @@ El script `packages/core/scripts/build-terrain.ts` (`pnpm terrain` desde la raí
 
 El máximo da menos que el Vinson porque la grilla promedia la cima.
 
-**Exageración vertical ×50.** La Antártida mide unos 4500 km de ancho y como mucho 4,9 km de alto; a escala real se vería como una lámina. Por eso las alturas se multiplican por 50 al dibujar.
+**Exageración vertical ×10.** La Antártida mide unos 4500 km de ancho y como mucho 4,9 km de alto; a escala real se vería como una lámina. Por eso las alturas se multiplican por 10 al dibujar.
 - Primero se usó ×25. El domo del este, que sube 4 km a lo largo de 2000 km, casi no se notaba, así que se subió a ×50, un valor habitual en diagramas de relieve a escala continental.
-- La leyenda de la interfaz toma el valor del código: «Relieve real · Bedmap3 (BAS) · exageración vertical ×50 · curvas cada 250 m».
+- El 14 de noviembre de 2026 se probaron ×25, ×15 y ×10 en el mapa (#100) y el equipo eligió ×10. Las texturas de relieve y sombras pesan casi la mitad: con menos exageración hay menos sombra marcada y se comprimen mejor.
+- La leyenda de la interfaz toma el valor del código: «Relieve real · Bedmap3 (BAS) ×10 · curvas cada 250 m».
 
 Las constantes del relieve están en un solo lugar, `packages/core/src/relief.ts`, y las usan la app y el script:
 - `VERTICAL_EXAGGERATION`, la exageración;
@@ -83,15 +84,15 @@ Si cambia la exageración o el sol, hay que regenerar los archivos, porque la in
 
 ## Archivos generados (sí van al repositorio)
 
-Todos están en `packages/core/src/assets/`. Son unos 32 MB en total.
+Todos están en `packages/core/src/assets/`. Son unos 31 MB en total.
 
 | Archivo | Tamaño | Qué es | Quién lo usa |
 |---|---|---|---|
 | `terrain-mesh-hi.bin` | 7,3 MB | Malla de alta calidad: 330 108 triángulos (error máximo ≈ 40 m). Incluye la grilla de alturas de 1025 × 1025 para consultas rápidas. | Pantallas de 820 px o más. |
 | `terrain-mesh-lo.bin` | 3,3 MB | Malla liviana: 109 927 triángulos (error máximo ≈ 155 m). Incluye la misma grilla de alturas. | Celulares (menos de 820 px). |
-| `terrain-relief-4096.webp` | 13,8 MB | Textura de 4096 × 4096 sin pérdida. Los canales RGB guardan la inclinación del terreno («mapa de normales») y el canal alfa guarda la altura en 256 niveles (0 a 4200 m). | Escritorio. |
-| `terrain-relief-2048.webp` | 3,4 MB | La misma textura a 2048 × 2048. | Celulares. |
-| `terrain-light-2048.webp` | 534 kB | Textura de 2048 × 2048 con pérdida (calidad 90). El canal R guarda la oclusión ambiental y el G la sombra del sol del noroeste. Como son datos suaves, alcanza una sola versión para todas las pantallas. | Shader del terreno (celulares y escritorio). |
+| `terrain-relief-4096.webp` | 7,5 MB | Textura de 4096 × 4096 sin pérdida. Los canales RGB guardan la inclinación del terreno («mapa de normales») y el canal alfa guarda la altura en 256 niveles (0 a 4200 m). | Escritorio. |
+| `terrain-relief-2048.webp` | 1,8 MB | La misma textura a 2048 × 2048. | Celulares. |
+| `terrain-light-2048.webp` | 131 kB | Textura de 2048 × 2048 con pérdida (calidad 90). El canal R guarda la oclusión ambiental y el G la sombra del sol del noroeste. Como son datos suaves, alcanza una sola versión para todas las pantallas. | Shader del terreno (celulares y escritorio). |
 | `map-paint-3d-2048.webp`, `map-paint-3d-4096.webp` | 15 kB y 46 kB | La acuarela del mapa sin los trazos decorativos de glaciar, para el terreno y el océano 3D. Se generan con `pnpm map-raster` junto con las del 2D. No salen de Bedmap3. | Terreno y océano 3D. |
 | `ocean-bathy-2048.webp` | 1,4 MB | Textura batimétrica de 2048 × 2048 derivada de IBCSO v2: R=profundidad codificada, G y B=normales del fondo marino, A=distancia signed a la costa. | Océano 3D en escritorio. |
 | `ocean-bathy-1024.webp` | 451 kB | La misma textura batimétrica a 1024 × 1024. | Océano 3D en celulares. |
@@ -103,7 +104,7 @@ Todos están en `packages/core/src/assets/`. Son unos 32 MB en total.
 
 **Formato de las mallas `.bin`.** Es binario propio. Una cabecera `MESH` con la cantidad de vértices e índices, el tamaño de la grilla y el recuadro. Después las coordenadas de cada vértice (Uint16), su altura en metros (Uint16), su tipo de superficie (Uint8), los índices de los triángulos (Uint32) y la grilla de alturas de 1025 × 1025. Lo lee `parseTerrainMesh` en `packages/core/src/terrain.ts`.
 
-**Qué descarga cada usuario.** Un celular baja la malla `lo` y la textura 2048, unos 6,6 MB. Una computadora baja la malla `hi` y la textura 4096, unos 19 MB. El navegador los guarda en caché después de la primera visita.
+**Qué descarga cada usuario.** Un celular baja la malla `lo`, la textura 2048 y la de sombras, unos 5,2 MB. Una computadora baja la malla `hi`, la textura 4096 y la de sombras, unos 15 MB. El navegador los guarda en caché después de la primera visita.
 
 **Por qué se commitean y no se generan en el build.** Generarlos requiere los 690 MB de Bedmap3 y unos minutos de proceso. Commiteados, cualquiera del equipo clona y corre la app sin descargar nada.
 
@@ -177,12 +178,13 @@ Bedmap3 termina en 60° S, así que el 3D no tenía tierra en Sudamérica: Ushua
 - **Por qué este dataset:** cubre todo al sur de 50° S, incluida la tierra, en una grilla de 500 m. El Beagle, de unos 5 km de ancho, queda con unas 10 celdas. Es el mismo dataset que ya usa el fondo del mar, así que no se suma una fuente ni una licencia nueva.
 - **Región:** caja del mapa `FUEGIA_BOX` (x de −96 a 100, y de 194 a 390), desde el Cabo de Hornos hasta 50° S, donde terminan los datos. Incluye las Islas Malvinas. En los últimos 0,6° la tierra baja suavemente al nivel del mar y se disuelve en el océano, para no terminar en una línea recta.
 - **Costa:** sale de la propia elevación (tierra es todo lo que está sobre el nivel del mar), no de Natural Earth. Por eso relieve y costa coinciden.
-- **Malla:** `fuegia-mesh-hi.bin` (unos 3,8 MB, 1,4 MB comprimido) para pantallas anchas y `fuegia-mesh-lo.bin` (unos 2,2 MB, 0,8 MB comprimido) para celular. Se arman sobre una grilla de 4097 × 4097 (celdas de unos 350 m). Usan el mismo formato `MESH` que el terreno antártico, sin grilla de elevación. Se descargan solo cuando la cámara se acerca a la región (`FUEGIA_LOAD_DISTANCE`).
+- **Malla:** `fuegia-mesh-hi.bin` (unos 3,8 MB, 1,4 MB comprimido) para pantallas anchas y `fuegia-mesh-lo.bin` (unos 2,5 MB, 0,9 MB comprimido) para celular. Se arman sobre una grilla de 4097 × 4097 (celdas de unos 350 m). Usan el mismo formato `MESH` que el terreno antártico, sin grilla de elevación. Se descargan solo cuando la cámara se acerca a la región (`FUEGIA_LOAD_DISTANCE`).
 - **Agua cercana a la costa:** la malla incluye también el agua a menos de 4 unidades de la costa (unos 30 km), pintada según la profundidad de IBCSO, y se funde con el plano del océano. Hace falta porque ese plano todavía toma su costa de Natural Earth y dibuja una banda de espuma más ancha que los canales. En esa franja el agua no tiene la animación del mar. Lo correcto a futuro es regenerar la batimetría del océano con esta misma costa.
-- **Exageración vertical ×10**, no ×50: a ×50 una sierra de 1000 m mediría seis unidades del mapa junto a un canal de menos de una, y lo taparía. La leyenda lo declara.
+- **Exageración vertical ×5**, la mitad que el continente: los canales miden menos de una unidad del mapa, y una sierra de 1000 m ya mide 0,6 unidades. Hasta el 14 de noviembre de 2026 fue ×10. En #100 se probó ×15 y las montañas se veían como agujas, porque la malla tenía un vértice cada 1,8 km cerca de Ushuaia. El equipo eligió ×5. La leyenda lo declara.
 - **Color:** tinte según la altura y la pendiente: pasto en la costa, verde de bosque hasta unos 600 m, roca arriba y en las laderas empinadas, nieve desde unos 1000 m. No representa la cobertura real del suelo; la leyenda dice «color según altura».
-- **Precisión:** la simplificación de la malla conserva la costa, pero el relieve interior tiene un error de hasta unos 310 m (malla ancha) y 500 m (celular). Sirve para leer la forma del terreno, no para medir alturas.
-- **Cámara:** sobre esta región se puede acercar hasta 3 unidades (`FUEGIA_MIN_DISTANCE`); sobre la Antártida el mínimo sigue en 60. Antes eran 8 (#46). A 3 unidades y con la inclinación máxima la cámara queda a 1,5 unidades de altura: puede atravesar un pico de más de 1200 m (por ejemplo en la Cordillera Darwin). No hay grilla de alturas de esta región para evitarlo.
+- **Precisión:** la simplificación de la malla conserva la costa, pero el relieve interior tiene un error de hasta unos 320 m (malla ancha) y 500 m (celular). Sirve para leer la forma del terreno, no para medir alturas.
+- **Más detalle en el Canal Beagle:** a menos de unas 9 unidades (unos 70 km) del centro del canal, el relieve cuenta 6 veces más al simplificar (`DETAIL_GAIN` en `build-fuegia.ts`), con una transición de 4 unidades. Ahí el error baja a unos 55 m (malla ancha) y 85 m (celular). En las montañas al norte de Ushuaia hay unos 2000 vértices en 16 km a la redonda; antes eran unos 250. Es la zona por donde navega el Irízar y donde la cámara se acerca más. Casi no cambia el peso de la malla ancha; la de celular sube unos 130 kB comprimida. Con la costa más precisa, la ruta del barco rozaba tierra al este del paso Mackinlay: dos puntos de `route.ts` se corrieron entre 100 y 200 m al norte, sobre agua según IBCSO.
+- **Cámara:** sobre esta región se puede acercar hasta 3 unidades (`FUEGIA_MIN_DISTANCE`); sobre la Antártida el mínimo sigue en 60. Antes eran 8 (#46). A 3 unidades y con la inclinación máxima la cámara queda a 1,5 unidades de altura: puede atravesar un pico de más de 2400 m (por ejemplo en la Cordillera Darwin). No hay grilla de alturas de esta región para evitarlo.
 - **Regenerar:** bajar `IBCSO_v2_bed.tif` a `~/.cache/antartida3d/ibcso/` (o indicar la carpeta con `IBCSO_DIR`) y correr `pnpm --filter @antartida/core fuegia`.
 - **Perfil bajo el vuelo:** `packages/core/src/flight-ground.ts` guarda la altura máxima de la tierra bajo la ruta del avión sobre Tierra del Fuego (60 valores, uno cada 0,2 % del viaje, 0,8 unidades a cada lado). Sale del mismo `IBCSO_v2_bed.tif` con `pnpm --filter @antartida/core flight-ground`. El avión del viaje lo usa para pasar por encima del relieve. Hay que regenerarlo si cambia la ruta.
 - **El mapa 2D no cambia:** sigue con la costa de Natural Earth.

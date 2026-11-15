@@ -7,6 +7,8 @@ import {
   FUEGIA_MIN_DISTANCE,
   FUEGIA_VERTICAL_EXAGGERATION,
   FUEGIA_WATER_MASK_MAX,
+  ICE_MIN_DISTANCE,
+  MAX_POLAR_DEG,
   METERS_PER_MAP_UNIT,
   fuegiaWorldHeight,
   inFuegia,
@@ -14,6 +16,7 @@ import {
   parseTerrainMesh,
   project,
   type TerrainMesh,
+  worldHeight,
 } from '../src/index.ts';
 
 const load = (level: 'hi' | 'lo') => {
@@ -51,10 +54,28 @@ describe('fuegia region', () => {
 
   it('lets the camera closer only inside the region', () => {
     const ushuaia = project(-68.3, -54.81);
-    expect(minCameraDistance(ushuaia.x, ushuaia.y, 60)).toBe(FUEGIA_MIN_DISTANCE);
-    expect(minCameraDistance(500, 500, 60)).toBe(60);
+    expect(minCameraDistance(ushuaia.x, ushuaia.y)).toBe(FUEGIA_MIN_DISTANCE);
+    expect(minCameraDistance(450, 450)).toBe(ICE_MIN_DISTANCE);
     // A base that is already closer than the regional minimum stays as it is.
     expect(minCameraDistance(ushuaia.x, ushuaia.y, FUEGIA_MIN_DISTANCE / 2)).toBe(FUEGIA_MIN_DISTANCE / 2);
+  });
+
+  it('lets the camera come down to a point with a model (#58)', () => {
+    // The South Pole station: its close-up is 2.6 world units.
+    expect(minCameraDistance(500, 500)).toBeCloseTo(1.3, 5);
+    expect(minCameraDistance(501, 498)).toBeCloseTo(1.3, 5);
+  });
+
+  it('keeps the closest camera over the ice well above the highest point of the relief (#127)', () => {
+    // The target lies at sea level; at the steepest tilt the camera is cos(MAX_POLAR_DEG) of its distance high.
+    const lowest = ICE_MIN_DISTANCE * Math.cos((MAX_POLAR_DEG * Math.PI) / 180);
+    for (const level of ['hi', 'lo']) {
+      const raw = readFileSync(join(import.meta.dirname, `../src/assets/terrain-mesh-${level}.bin`));
+      const mesh = parseTerrainMesh(raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength));
+      const top = worldHeight(mesh.heights.reduce((a, b) => Math.max(a, b), 0));
+      expect(top, level).toBeGreaterThan(4);
+      expect(lowest, level).toBeGreaterThan(top * 2);
+    }
   });
 
   it('uses its own vertical exaggeration', () => {

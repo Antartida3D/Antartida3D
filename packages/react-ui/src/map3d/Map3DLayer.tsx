@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { Box3, Vector3 } from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { CameraControls, CameraControlsImpl, PerformanceMonitor } from '@react-three/drei';
+import { CameraControls, PerformanceMonitor } from '@react-three/drei';
 import { EffectComposer } from '@react-three/postprocessing';
 import {
   homePose3D,
@@ -13,6 +13,7 @@ import {
   FOV,
   distanceFromK3D,
   generateSeaLifeInstances,
+  groundTarget,
   homeDistance3D,
   loadOceanDepth,
   poseFromView,
@@ -24,14 +25,10 @@ import {
   fromWorld,
   minCameraDistance,
   MAX_POLAR_DEG,
-  TILT_SCREEN_FRACTION,
-  moveTwoFingers,
-  startTwoFingers,
-  type TwoFingerState,
   PAN_LIMIT,
   SEA_HINT_MIN_PX,
   screenPx,
-  FUEGIA_MIN_DISTANCE,
+  ICE_MIN_DISTANCE,
   irizarStateAtTime,
   SEA_POINTS,
   type Geometry,
@@ -51,18 +48,24 @@ import { SeaLife } from './SeaLife.tsx';
 import { Terrain } from './Terrain.tsx';
 import { SouthernLands } from './SouthernLands.tsx';
 import { Fuegia } from './Fuegia.tsx';
+import { MalvinasFlag } from './MalvinasFlag.tsx';
+import { Claims3D } from './Claims3D.tsx';
 import { Graticule3D } from './Graticule3D.tsx';
 import { InkEffect } from './InkEffect.ts';
+import { useMapGestures } from './useMapGestures.ts';
 import { SeaTimeContext, useAnimationClock } from './useAnimationClock.ts';
 import { Town3D } from '../voyage/Town3D.tsx';
 import { Storm3D } from '../voyage/Storm3D.tsx';
 import { OrcadasSite } from './OrcadasSite.tsx';
+import { PointModels, pointFocus } from './PointModels.tsx';
+import { OrcadasTravel3D } from '../voyage/OrcadasTravel3D.tsx';
 import { Voyage3D } from '../voyage/Voyage3D.tsx';
 
 function SceneContent({
   wide,
   lowQuality,
   phase,
+  arrival,
   diveTarget,
   reduced,
   size,
@@ -74,10 +77,13 @@ function SceneContent({
   enablePost,
   voyage,
   seaMarkers,
+  claims,
+  onClaimsStatus,
 }: {
   wide: boolean;
   lowQuality: boolean;
   phase: Phase;
+  arrival: Layer3DProps['arrival'];
   diveTarget: MapPoint;
   reduced: boolean;
   size: Size;
@@ -89,6 +95,8 @@ function SceneContent({
   enablePost: boolean;
   voyage: Layer3DProps['voyage'];
   seaMarkers: SeaMarker[];
+  claims: Layer3DProps['claims'];
+  onClaimsStatus: Layer3DProps['onClaimsStatus'];
 }) {
   const seaTime = useAnimationClock({ lowQuality });
   const invalidate = useThree((s) => s.invalidate);
@@ -130,13 +138,17 @@ function SceneContent({
     <SeaTimeContext.Provider value={seaTime}>
       <Ocean wide={wide} timeUniform={seaTime} instances={seaLifeInstances} />
       <Terrain wide={wide} />
+      {claims && <Claims3D wide={wide} selection={claims.selection} coverage={claims.coverage} onStatus={onClaimsStatus} />}
       <SouthernLands />
       <Fuegia wide={wide} />
+      <MalvinasFlag wide={wide} />
       <Graticule3D />
-      <SeaLife visible={phase !== 'dive'} timeUniform={seaTime} instances={seaLifeInstances} voyage={voyage} />
+      <SeaLife visible={phase !== 'dive' && phase !== 'travel'} timeUniform={seaTime} instances={seaLifeInstances} voyage={voyage} />
       <Town3D reduced={reduced} wide={wide} overlay={overlayRef} />
       <OrcadasSite reduced={reduced} />
+      <PointModels reduced={reduced} />
       <Storm3D reduced={reduced} />
+      {phase === 'travel' && <OrcadasTravel3D arrival={arrival ?? 'ship'} reduced={reduced} />}
       {voyage && <Voyage3D bus={voyage} reduced={reduced} overlay={overlayRef} />}
       {enablePost && (
         <EffectComposer multisampling={0}>
@@ -151,6 +163,7 @@ function SceneContent({
         geo={geo}
         command={command}
         onCameraRest={onCameraRest}
+        voyaging={Boolean(voyage)}
       />
       <ProjectMarkers
         markers={markers}
@@ -167,15 +180,20 @@ function SceneContent({
 
 export type Map3DLayerProps = Layer3DProps;
 
-// Zoom range of the orbit camera, as a distance to its target. Closer than MIN_DISTANCE the camera
-// would graze the 4 km plateau (25 world units high at x50). The farthest view is the overview
-// (homeDistance3D: ~800 on desktop and ~2250 on a phone), where the whole continent fits; farther
-// the camera would see past the lands of the rest of the world (WORLD_FADE_END).
-const MIN_DISTANCE = 60;
-// The camera only gets closer than MIN_DISTANCE around Tierra del Fuego; there the near plane must
-// come in too, or the land in front of the target would be clipped.
+// Zoom range of the orbit camera, as a distance to its target. The closest is ICE_MIN_DISTANCE
+// (@antartida/core), lower only around Tierra del Fuego, the Drake and the points with a model
+// (minCameraDistance). The farthest view is the overview (homeDistance3D: ~800 on desktop and ~2250
+// on a phone), where the whole continent fits; farther the camera would see past the lands of the
+// rest of the world (WORLD_FADE_END).
+/** Angle from straight down of the close-up of a point with a model: the model is seen at a slant, on its ground. */
+const VISIT_POLAR = (52 * Math.PI) / 180;
+/** From this window width the point card is a side panel, not a bottom sheet (painted.css). */
+const VISIT_WIDE_PX = 820;
+// Closer than NEAR_FROM the near plane comes in too, or the land in front of the target would be clipped.
 const NEAR = 10;
-const NEAR_CLOSE = NEAR * (FUEGIA_MIN_DISTANCE / MIN_DISTANCE);
+const NEAR_FROM = 60;
+/** Near plane closer than NEAR_FROM: the close-up of a point with a model gets about 1 unit from it. */
+const NEAR_CLOSE = 0.5;
 
 function ControlsBridge({
   phase,
@@ -185,6 +203,7 @@ function ControlsBridge({
   geo,
   command,
   onCameraRest,
+  voyaging,
 }: {
   phase: Phase;
   diveTarget: MapPoint;
@@ -193,6 +212,8 @@ function ControlsBridge({
   geo: Geometry;
   command: Layer3DProps['command'];
   onCameraRest: (view: View) => void;
+  /** On a trip the target follows the vehicle, up in the air with the plane. */
+  voyaging: boolean;
 }) {
   const controlsRef = useRef<CameraControls>(null);
   const invalidate = useThree((s) => s.invalidate);
@@ -202,6 +223,19 @@ function ControlsBridge({
   const approach = useRef<{ from: CameraPose; to: CameraPose; startMs: number } | null>(null);
   const live = useRef({ size, geo, onCameraRest });
   live.current = { size, geo, onCameraRest };
+  // Boundary box enclosing continent and surrounding ocean navigation area
+  const boundary = useMemo(
+    () => new Box3(new Vector3(-PAN_LIMIT, -50, -PAN_LIMIT), new Vector3(PAN_LIMIT, 2500, PAN_LIMIT)),
+    []
+  );
+
+  useMapGestures(controlsRef, {
+    minPolarAngle: 0,
+    maxPolarAngle: (MAX_POLAR_DEG * Math.PI) / 180,
+    smoothTime: 0.25,
+    boundary,
+    invalidate,
+  });
 
   useLayoutEffect(() => {
     const cc = controlsRef.current;
@@ -211,22 +245,6 @@ function ControlsBridge({
     (window as unknown as { __invalidate?: () => void }).__invalidate = invalidate;
     (window as unknown as { __scene?: unknown }).__scene = scene;
     (window as unknown as { __gl?: unknown }).__gl = gl;
-
-    cc.minPolarAngle = 0;
-    cc.maxPolarAngle = (MAX_POLAR_DEG * Math.PI) / 180;
-    cc.smoothTime = 0.25;
-
-    // Dragging moves over the map, like in the 2D view; the right button turns and tilts. Two
-    // fingers are handled below (twoFingers): the built-in action cannot tell a twist from a drag.
-    const { ACTION } = CameraControlsImpl;
-    cc.mouseButtons.left = ACTION.SCREEN_PAN;
-    cc.mouseButtons.right = ACTION.ROTATE;
-    cc.touches.one = ACTION.TOUCH_SCREEN_PAN;
-    cc.touches.two = ACTION.NONE;
-
-    // Boundary box enclosing continent and surrounding ocean navigation area
-    const bbox = new Box3(new Vector3(-PAN_LIMIT, -50, -PAN_LIMIT), new Vector3(PAN_LIMIT, 2500, PAN_LIMIT));
-    cc.setBoundary(bbox);
 
     if (phase === 'approach') {
       const from = { pos: cc.getPosition(new Vector3()), target: cc.getTarget(new Vector3()) };
@@ -312,6 +330,25 @@ function ControlsBridge({
       endDistance = clampDistance(distanceFromK3D(aspect, cmd.view.k));
       cc.moveTo(t.x, 0, t.z, smooth);
       cc.dollyTo(endDistance, smooth);
+    } else if (cmd.type === 'visit') {
+      // Down to the model on the relief, looking at it from above at an angle, from where the camera is.
+      const at = pointFocus(cmd.id);
+      endDistance = cmd.distance;
+      cc.minDistance = Math.min(cc.minDistance, cmd.distance);
+      // The card covers the right side of a wide screen and the bottom of a phone: aim beside it, so
+      // the model sits in the free part (to the left, or higher up, seen from the camera).
+      const wide = size.vw >= VISIT_WIDE_PX;
+      const across = wide ? 0.14 * 2 * cmd.distance * Math.tan((FOV * Math.PI) / 360) * aspect : 0;
+      const toward = wide ? 0 : 0.22 * cmd.distance;
+      const az = cc.azimuthAngle;
+      void cc.moveTo(
+        at.x + Math.cos(az) * across + Math.sin(az) * toward,
+        at.y,
+        at.z - Math.sin(az) * across + Math.cos(az) * toward,
+        smooth
+      );
+      void cc.dollyTo(cmd.distance, smooth);
+      void cc.rotatePolarTo(VISIT_POLAR, smooth);
     } else if (cmd.type === 'pan') {
       // Move the target over the ground, in the camera's own left/right and forward directions.
       const upp = (2 * cc.distance * Math.tan((FOV * Math.PI) / 360)) / size.vh; // world units per px
@@ -332,75 +369,24 @@ function ControlsBridge({
     invalidate();
   }, [command]);
 
-  // Two fingers, like in a globe app: pinching zooms, twisting turns the camera and dragging both
-  // up or down tilts it. The gesture itself is in @antartida/core (gestures.ts).
-  useEffect(() => {
-    const el = gl.domElement;
-    const fingers = new Map<number, { x: number; y: number }>();
-    let gesture: TwoFingerState | null = null;
-    // Distance the pinch is heading to, and the easing to give back when the fingers lift.
-    let goal = 0;
-    let easing: number | null = null;
-    const pair = () => [...fingers.values()] as [{ x: number; y: number }, { x: number; y: number }];
-    const onDown = (e: PointerEvent) => {
-      if (e.pointerType !== 'touch') return;
-      fingers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-      gesture = fingers.size === 2 ? startTwoFingers(...pair()) : null;
-      const cc = controlsRef.current;
-      if (gesture && cc && easing === null) {
-        goal = cc.distance;
-        // As quick as the library's own drags. It still eases a little: with no easing at all the
-        // library never reports that the camera came to rest, and the markers would not regroup.
-        easing = cc.smoothTime;
-        cc.smoothTime = cc.draggingSmoothTime;
-      }
-    };
-    const onMove = (e: PointerEvent) => {
-      if (!fingers.has(e.pointerId)) return;
-      fingers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-      const cc = controlsRef.current;
-      if (!gesture || !cc || !cc.enabled) return;
-      const step = moveTwoFingers(gesture, ...pair());
-      gesture = step.state;
-      if (step.zoom !== 1) {
-        goal = Math.min(cc.maxDistance, Math.max(cc.minDistance, goal / step.zoom));
-        void cc.dollyTo(goal, true);
-      }
-      // Fingers up tilt the view towards the horizon; the whole range takes TILT_SCREEN_FRACTION of the screen.
-      const tilt = (-step.tilt * cc.maxPolarAngle) / (TILT_SCREEN_FRACTION * el.clientHeight);
-      if (step.turn !== 0 || tilt !== 0) void cc.rotate(step.turn, tilt, true);
-      invalidate();
-    };
-    const onUp = (e: PointerEvent) => {
-      if (!fingers.delete(e.pointerId)) return;
-      gesture = null;
-      const cc = controlsRef.current;
-      if (cc && easing !== null) cc.smoothTime = easing;
-      easing = null;
-    };
-    el.addEventListener('pointerdown', onDown);
-    window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup', onUp);
-    window.addEventListener('pointercancel', onUp);
-    return () => {
-      el.removeEventListener('pointerdown', onDown);
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onUp);
-      window.removeEventListener('pointercancel', onUp);
-    };
-  }, [gl, invalidate]);
-
   const target = useRef(new Vector3());
+  const eye = useRef(new Vector3());
   useFrame(({ camera }) => {
     const cc = controlsRef.current;
     if (!cc) return;
+    // Zooming towards the cursor lifts the target into the air or sinks it under the map, and the
+    // camera follows it in (#127): slide it back to sea level along the line of sight.
+    if (!voyaging && phase !== 'approach' && phase !== 'dive' && phase !== 'travel') {
+      const ground = groundTarget(cc.getPosition(eye.current, true), cc.getTarget(target.current, true));
+      if (ground) void cc.setTarget(ground.x, ground.y, ground.z, !reduced);
+    }
     const at = fromWorld(cc.getTarget(target.current));
-    cc.minDistance = minCameraDistance(at.x, at.y, MIN_DISTANCE);
+    cc.minDistance = minCameraDistance(at.x, at.y);
     // Panning out of Tierra del Fuego while close: back off before reaching the ice plateau.
     if (cc.distance < cc.minDistance - 0.01) void cc.dollyTo(cc.minDistance, !reduced);
     // A narrower window has a farther overview: come back in when the window gets wider.
     if (cc.distance > cc.maxDistance + 0.01) void cc.dollyTo(cc.maxDistance, !reduced);
-    const near = cc.distance < MIN_DISTANCE ? NEAR_CLOSE : NEAR;
+    const near = cc.distance < NEAR_FROM ? NEAR_CLOSE : NEAR;
     if (camera.near !== near) {
       camera.near = near;
       camera.updateProjectionMatrix();
@@ -414,8 +400,8 @@ function ControlsBridge({
       makeDefault
       dollyToCursor
       // The zoom into an expedition drives the camera on every frame: gestures would fight it.
-      enabled={phase !== 'approach' && phase !== 'dive'}
-      minDistance={MIN_DISTANCE}
+      enabled={phase !== 'approach' && phase !== 'dive' && phase !== 'travel'}
+      minDistance={ICE_MIN_DISTANCE}
       maxDistance={homeDistance3D(size.vw / size.vh)}
     />
   );
@@ -443,7 +429,7 @@ function ProjectMarkers({
 
   useFrame(() => {
     const el = overlayRef.current;
-    if (!el || phase === 'dive' || phase === 'approach') return;
+    if (!el || phase === 'dive' || phase === 'approach' || phase === 'travel') return;
 
     // 1. Position expedition & fossil markers
     for (const m of markers) {
@@ -549,6 +535,7 @@ export function Map3DLayer({
   size,
   geo,
   phase,
+  arrival,
   diveTarget,
   markers,
   shown,
@@ -556,6 +543,8 @@ export function Map3DLayer({
   command,
   onCameraRest,
   voyage,
+  claims,
+  onClaimsStatus,
 }: Map3DLayerProps) {
   const reduced = useReducedMotion();
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -633,6 +622,7 @@ export function Map3DLayer({
           wide={size.vw > 820}
           lowQuality={lowQuality}
           phase={phase}
+          arrival={arrival}
           diveTarget={diveTarget}
           reduced={reduced}
           size={size}
@@ -644,14 +634,16 @@ export function Map3DLayer({
           enablePost={enablePost}
           voyage={voyage}
           seaMarkers={seaMarkers}
+          claims={claims}
+          onClaimsStatus={onClaimsStatus}
         />
       </Canvas>
       <div
-        className={'ov' + (phase === 'dive' || phase === 'approach' ? ' hide' : '')}
+        className={'ov' + (phase === 'dive' || phase === 'approach' || phase === 'travel' ? ' hide' : '')}
         ref={overlayRef}
         style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
       >
-        {phase !== 'dive' && phase !== 'approach' && (
+        {phase !== 'dive' && phase !== 'approach' && phase !== 'travel' && (
           <>
             <span
               data-graticule="greenwich"

@@ -1,9 +1,18 @@
 /* Trip from Ushuaia (issue #4): panel laid over the live map. */
 .sheet.voyage{z-index:6}
+/* The Orcadas intro sheet and its scrim cover the bottom bar (.bottom, z-index 10) on phones. */
+.sheet.voyage.orc-intro,.vscrim.orc-intro{z-index:20}
+.orc-intro-recon{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:4px 0 10px}
+.orc-intro-recon .vsmall{margin:0}
+.orc-intro .orc-facts-list{margin:10px 0 4px}
+.orc-intro-sources .orc-scrim{z-index:22}
+.orc-intro-sources .orc-sources{z-index:23}
 .vscrim{z-index:6}
 .sheet.voyage p{margin:8px 0}
 /* The actions stay in view at the bottom of the sheet however long its content is. */
 .vactions{position:sticky;bottom:-24px;margin:12px 0 -24px;padding:8px 0 24px;background:var(--paper)}
+/* The button that plays the helicopter hop takes its own line, over the other actions. */
+.vactions .vwatch{flex:1 0 100%}
 .vstep{display:block;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--pencil)}
 .vpick{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
 .vopt{flex:1 1 104px;min-height:48px;padding:8px 10px;text-align:left;border:2px solid var(--ink);border-radius:8px 14px 10px 12px;background:var(--ice)}

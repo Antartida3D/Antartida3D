@@ -42,7 +42,7 @@ Si hay dos asignados, gana el primer comentario "Lo tomo." en el issue. El otro 
 
 ### 2. Trabajar
 
-- Un issue en curso por persona. Terminarlo o liberarlo antes de tomar otro.
+- Una persona puede tener varios issues en curso a la vez. Si uno queda parado, liberarlo (sección 4) para que otra persona lo tome.
 - Una rama por issue, creada desde `main` y vinculada al issue:
 
   ```sh
@@ -55,6 +55,7 @@ Si hay dos asignados, gana el primer comentario "Lo tomo." en el issue. El otro 
 ### 3. Entregar
 
 - Antes de abrir el PR: `git rebase origin/main`, `pnpm test` y `pnpm build` sin errores.
+- Para correr `pnpm e2e` más rápido en local hay variables opcionales (`E2E_GPU`, `E2E_WORKERS`, `E2E_PORT`), descritas en el `README.md`. En un worktree, usar `E2E_PORT` para no correr contra el servidor de otra rama.
 - El PR incluye `Closes #<N>` en la descripción.
 - PRs chicos. Un issue, un PR.
 - Otra persona del equipo revisa y mergea. Nadie mergea su propio PR, salvo urgencia del día de entrega.
@@ -72,8 +73,12 @@ Un issue asignado sin actividad por más de 24 h se puede reclamar, previo aviso
 
 ## Reglas para agentes de IA
 
-- Antes de cualquier cambio, confirmar el issue en curso y que esté asignado a la persona que te está usando. Si no hay issue asignado, detenerte y pedirlo.
-- No reclamar, reasignar ni cerrar issues por cuenta propia. Única excepción: un bug nuevo hallado en la aplicación. Antes se busca si ya está registrado (`.agents/scripts/bug-issue-check.sh`); si no existe, se crea el issue asignado solo a la persona que usa al agente (regla `15-bugs-and-issues.md`). Ese issue de bug no cuenta como «issue en curso» hasta que se empieza a trabajar, y se libera si no se va a arreglar pronto.
+- Antes de cualquier cambio, confirmar que el trabajo tiene un issue asignado a la persona que te está usando. Si no lo tiene, no hace falta detenerse a pedirlo:
+  - si ya existe un issue sin asignar para ese trabajo, tomarlo para esa persona (`gh issue edit <N> --add-assignee @me` y el comentario «Lo tomo.») y verificar que quede un solo asignado (sección 1);
+  - si no existe, buscar duplicados (`.agents/scripts/bug-issue-check.sh`) y crearlo asignado solo a esa persona (`gh issue create --assignee @me`).
+- Crear issues, tomar issues sin asignar y abrir pull requests no requiere permiso previo. Avisar a la persona qué issue o PR se creó o se tomó. Para bugs, seguir la regla `15-bugs-and-issues.md`.
+- No reasignar ni cerrar issues de otras personas, ni tomar un issue que ya tiene otra persona asignada.
+- No comentar en un issue ni en un PR de otra persona sin permiso. Mostrar primero el texto del comentario a quien te usa y esperar su confirmación explícita.
 - Trabajar solo en la rama del issue. Nunca commitear en `main`.
 - No modificar archivos fuera del alcance del issue sin avisar a la persona.
 - Todo uso de IA se declara en el README (lo exigen las bases).
@@ -105,7 +110,7 @@ Las reglas detalladas residen en `.agents/rules/` (con enlaces simbólicos en `.
 - **Proyecto (`.agents/rules/project/`):**
   - `00-convenciones-del-proyecto.md`: Flujo de issues, ramas, idioma, fuentes verificadas y arquitectura S1.
   - `20-web.md`: Accesibilidad, navegación por teclado, rendimiento en lienzo y pruebas E2E.
-  - `30-estilo-voxel.md`: Un solo estilo visual: modelos de bloques con un mínimo de detalle común.
+  - `30-estilo-voxel.md`: Modelos de bloques o low-poly, en transición a low-poly, con un mínimo de detalle común.
 - **Centrales (`.agents/rules/core/`):**
   - `00-agent-workflow.md`: Flujo de trabajo, exploración previa y definición de terminado.
   - `01-architecture-and-layers.md`: Estructura de capas y límites entre paquetes y apps.

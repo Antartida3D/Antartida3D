@@ -6,6 +6,7 @@ import {
   formatIsoDate,
   logLineAt,
   ponchoActOpeningAt,
+  ponchoPhotoAt,
   quizScore,
   sceneOf,
   tripSources,
@@ -29,6 +30,8 @@ import {
   type VoyageSource,
   type VoyageSourceCode,
 } from '@antartida/core';
+import ponchoPageUrl from '@antartida/core/assets/poncho/poncho-pagina.jpg';
+import sledTeamUrl from '@antartida/core/assets/poncho/perros-trineo.jpg';
 import { BottomSheet } from '../BottomSheet.tsx';
 import { useFocusReturn, useMediaQuery } from '../hooks.ts';
 import { Fact, TripContext, type OpenSources } from './Fact.tsx';
@@ -194,6 +197,9 @@ function Notebook({ voyage, animated }: { voyage: VoyageController; animated: bo
   );
 }
 
+/** File of each photograph of a stop (PONCHO_PHOTOS in @antartida/core). */
+const PONCHO_PHOTO_URL = { 'poncho-pagina.jpg': ponchoPageUrl, 'perros-trineo.jpg': sledTeamUrl } as const;
+
 /**
  * Card of a milestone. With `tour` (the diorama of the stop, voyage/PonchoDiorama.tsx) it tells the stop
  * a sentence at a time: «Atrás» and «Siguiente» move the tour; the hook and «Saber más» wait for the
@@ -221,12 +227,21 @@ function MilestoneCard({ voyage, animated, onExit, onSource, tour }: {
   // The hop of the helicopter shows the answer of the arrival: offered once the question is answered.
   const transfer = animated && last && answered && state.transport === VOYAGE_TRANSFER.transport;
   // The trip of Poncho is told in acts: the first stop of each one shows its title above its own.
+  const photo = state.kind === 'dogs' ? ponchoPhotoAt(milestone.id) : undefined;
   const act = state.kind === 'dogs' ? ponchoActOpeningAt(milestone.id) : undefined;
   const body = (
     <>
       <small className="vstep">Hito {state.card + 1} de {voyageStops(state.kind).length}</small>
       {act && <small className="vact">Acto {act.number} · {act.act.title}</small>}
       <h2 id="voyage-title" tabIndex={tour ? -1 : undefined}>{milestone.title}</h2>
+      {photo && (
+        <figure className="vphoto">
+          <img src={PONCHO_PHOTO_URL[photo.file]} alt={photo.alt} loading="lazy" />
+          <figcaption>
+            {photo.caption} Fuente: <a href={photo.source.url} target="_blank" rel="noreferrer">{photo.source.publisher}</a>, consultada el {photo.source.accessed}. <strong>Derechos pendientes de confirmar.</strong>
+          </figcaption>
+        </figure>
+      )}
       {tour && (
         <div className="vdots" role="img" aria-label={`Toma ${tour.view.step + 1} de ${tour.sentences.length}`}>
           {tour.sentences.map((_, i) => <i key={i} className={i <= tour.view.step ? 'on' : undefined} />)}

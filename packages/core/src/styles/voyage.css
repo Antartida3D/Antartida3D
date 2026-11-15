@@ -132,3 +132,7 @@
   .sheet.voyage.vdiorama.peek > :not(.sheet-handle):not(h2):not(.vactions){display:none}
 }
 @media (prefers-reduced-motion:reduce){.pdio *{animation:none !important}}
+.vphoto{margin:8px 0;padding:0}
+.vphoto img{display:block;width:100%;height:auto;max-height:240px;object-fit:cover;border:2px solid var(--ink);border-radius:10px 16px 12px 14px;background:var(--glacier)}
+.vphoto figcaption{margin-top:4px;font-size:12px;line-height:1.3;color:var(--pencil)}
+.vphoto a{color:var(--deep)}

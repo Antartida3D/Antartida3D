@@ -168,3 +168,14 @@ Cada punto indica qué se sabe, qué no y cómo queda en la interfaz. **No se re
 - Quien revise el PR debe abrir `[P1]`, `[P2]`, `[V1]`, `[V2]` y `[V3]` y confirmar lo que figura arriba.
 - Cuando el equipo aporte la evidencia de la autorización del autor, anotar dónde se guarda y actualizar las tablas 4.1 y 4.2.
 - Antes de la entrega, resolver las fechas con discrepancia o mostrarlas con el nivel de detalle que se indica en la sección 5.2.
+
+### 4.3. Fotos de la página de la Fundación Marambio (15 nov 2026)
+
+Dos imágenes tomadas de las páginas de `[P1]` se muestran en dos paradas (`packages/core/src/content/poncho-photos.ts`). Ninguna trae pie, autor ni fecha en la página, y no se inventó ninguno. Derechos: **pendientes** (se mantiene visible en la tarjeta).
+
+| Archivo | Origen | Parada |
+|---|---|---|
+| `poncho-pagina.jpg` | `https://www.marambio.aq/images/poncho1.jpg` (página «Poncho») | «Poncho va al frente» |
+| `perros-trineo.jpg` | `https://www.marambio.aq/galeria/fauna/perros/PERROS04.jpg` (página «El perro polar»); es ilustrativa, no de esa patrulla | «La patrulla Paralelo 82» |
+
+Consultadas el 2026-11-15. No se usó el retrato del autor que también está en la página.

@@ -7,6 +7,7 @@ export * from './content/dates.ts';
 export * from './content/ushuaia.ts';
 export * from './content/poncho.ts';
 export * from './content/poncho-route.ts';
+export * from './content/poncho-photos.ts';
 export * from './content/orcadas.ts';
 export * from './content/orcadas-series.ts';
 export * from './content/orcadas-layout.ts';

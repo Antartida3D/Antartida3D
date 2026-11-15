@@ -1,4 +1,4 @@
-import { smooth01, clamp01 } from './voyage.ts';
+import { clamp01 } from './voyage.ts';
 
 /**
  * Living scenes of Poncho's stops (issue #142): what is drawn beside the team when it reaches a
@@ -67,13 +67,37 @@ export interface SceneCamera {
   readonly azimuthDeg: number;
 }
 
+/**
+ * One guided shot of the diorama (issue #146): what the camera looks at while the panel tells one
+ * sentence of the stop's `essential` text. In the local frame of the scene (units of a person's
+ * height, +x ahead, +z to the left, y up): `target` is the point looked at, and the camera stands
+ * `distance` away from it, `elevation` degrees over the horizon and `azimuth` degrees round the
+ * vertical (0 = on the +x side of the target, 90 = on the +z side, as `sceneCameraOffset`).
+ */
+export interface SceneShot {
+  /** Index of the sentence of `essential` (essentialSentences) this shot goes with. */
+  readonly sentence: number;
+  readonly target: readonly [number, number, number];
+  readonly distance: number;
+  readonly elevation: number;
+  readonly azimuth: number;
+}
+
 export interface SceneDef {
   /** Every element lies within this many scene units of the middle of the scene. */
   readonly radius: number;
   readonly elements: readonly SceneElement[];
   readonly paths: readonly ScenePath[];
+  /** How the map camera looks at the scene when the card opens (the descent to the stop). */
   readonly camera: SceneCamera;
+  /** One shot per sentence of the stop's `essential` text, in order (a test keeps the count). */
+  readonly shots: readonly SceneShot[];
 }
+
+/** Limits of a shot: the diorama's camera never comes closer than a dog's size, nor leaves the stage far behind. */
+export const SHOT_DISTANCE: readonly [number, number] = [2.2, 10];
+export const SHOT_ELEVATION_DEG: readonly [number, number] = [10, 70];
+export const SHOT_TARGET_HEIGHT: readonly [number, number] = [0, 1.6];
 
 /** Most elements, persons and printed paths a scene may have: draw calls on a phone. */
 export const MAX_SCENE_ELEMENTS = 14;
@@ -86,9 +110,6 @@ export const MAX_SCENE_RADIUS = 4.6;
  * A fixed world distance, so the scene does not slide away from the camera's target when the user zooms.
  */
 export const SCENE_SIDE_WORLD = 7.2;
-/** The scene grows in from the ground between these distances along the path to its stop (map units); an open card shows it whole. */
-export const SCENE_FADE_START = 14;
-export const SCENE_FADE_END = 5;
 /** Distance between two boot prints and the pace of the walk (a pose cycle covers two prints). */
 export const SCENE_STRIDE = 0.55;
 /** Pose cycles per second of the people who work (radians per second = this * 2 pi): a strike or a shovelful about every 1.4 s. */
@@ -100,6 +121,9 @@ const DEG = Math.PI / 180;
 
 /** Yaw of a thing at (x, z) that faces the point (tx, tz). */
 export const yawToward = (x: number, z: number, tx: number, tz: number): number => Math.atan2(-(tz - z), tx - x);
+
+const shot = (sentence: number, target: readonly [number, number, number], distance: number, elevation: number, azimuth: number): SceneShot =>
+  ({ sentence, target, distance, elevation, azimuth });
 
 const person = (id: string, x: number, z: number, yaw: number, action: SceneAction, phaseOffset = 0, extra: Partial<SceneElement> = {}): SceneElement =>
   ({ kind: 'person', id, x, z, yaw, action, phaseOffset, ...extra });
@@ -130,6 +154,11 @@ export const PONCHO_SCENES: Readonly<Record<string, SceneDef>> = {
     ],
     paths: [{ id: 'walker', from: [-2.3, 2.0], to: [2.3, 1.8], delay: 0.4, duration: 6, prints: true }],
     camera: { distanceFactor: 1.05, elevationDeg: 42, azimuthDeg: -112 },
+    shots: [
+      shot(0, [0, 0.5, 0.8], 8, 32, -100),
+      shot(1, [-0.7, 0.35, 0.4], 3.2, 18, 195),
+      shot(2, [0.4, 0.6, -0.4], 5, 28, -120),
+    ],
   },
   // Probing for crevasses (book p. 12): they sink poles and stakes into the snow; Poncho sniffs ahead, the sled waits behind.
   'expedicion-invernal-1962': {
@@ -146,6 +175,11 @@ export const PONCHO_SCENES: Readonly<Record<string, SceneDef>> = {
     ],
     paths: [],
     camera: { distanceFactor: 1.05, elevationDeg: 44, azimuthDeg: -100 },
+    shots: [
+      shot(0, [0, 0.5, 0], 9, 30, 70),
+      shot(1, [0.5, 0.35, 1.5], 3.2, 18, 20),
+      shot(2, [0.4, 0.5, -0.2], 5.5, 30, 80),
+    ],
   },
   // Winter camp (book p. 10): the dogs stay under one or two meters of snow and the men dig them out.
   'poncho-perro-guia': {
@@ -161,6 +195,11 @@ export const PONCHO_SCENES: Readonly<Record<string, SceneDef>> = {
     ],
     paths: [],
     camera: { distanceFactor: 1.05, elevationDeg: 42, azimuthDeg: -125 },
+    shots: [
+      shot(0, [1, 0.4, 0.4], 8, 30, -110),
+      shot(1, [2, 0.25, 0.5], 2.8, 24, -60),
+      shot(2, [1.2, 0.7, -1.5], 4, 22, 80),
+    ],
   },
   // The little plane that came down (book p. 17-18): the men jump for joy and hug Poncho; the sled arrives.
   'rescate-ae-205': {
@@ -177,6 +216,11 @@ export const PONCHO_SCENES: Readonly<Record<string, SceneDef>> = {
     ],
     paths: [{ id: 'arrival', from: [-3.6, -2.4], to: [-1.0, -2.2], delay: 0.2, duration: 5 }],
     camera: { distanceFactor: 1.1, elevationDeg: 40, azimuthDeg: -115 },
+    shots: [
+      shot(0, [0.5, 0.6, 1.6], 6.5, 28, -80),
+      shot(1, [-2.3, 0.4, -2.3], 5.5, 25, 60),
+      shot(2, [-0.7, 0.4, -0.2], 3.4, 18, 235),
+    ],
   },
   // Lost compass (book p. 20): three canes with streamers in the snow; a man looks at Poncho.
   'brujula-perdida': {
@@ -191,20 +235,16 @@ export const PONCHO_SCENES: Readonly<Record<string, SceneDef>> = {
     ],
     paths: [],
     camera: { distanceFactor: 1.05, elevationDeg: 42, azimuthDeg: -120 },
+    shots: [
+      shot(0, [-0.5, 0.5, 0], 8.5, 28, -90),
+      shot(1, [-2.2, 0.3, -0.5], 4, 24, -40),
+      shot(2, [-0.2, 0.6, -0.3], 4.2, 18, 200),
+    ],
   },
 };
 
 /** The scene of a stop, or undefined (then the plain camera and nothing drawn). */
 export const sceneOf = (milestoneId: string): SceneDef | undefined => PONCHO_SCENES[milestoneId];
-
-/**
- * How much of the scene shows, 0..1 (its size: it grows out of the ground), for a team `distance`
- * map units from its stop along the path. An open card shows it whole.
- */
-export function sceneVisibility(distance: number, cardOpen: boolean): number {
-  if (cardOpen) return 1;
-  return smooth01((SCENE_FADE_START - Math.abs(distance)) / (SCENE_FADE_START - SCENE_FADE_END));
-}
 
 /** Phase (radians, 0 to 2 pi) of someone who works, for a clock `t` in seconds: the clock is the caller's. */
 export function scenePersonPhase(t: number, offset: number, rate = SCENE_WORK_RATE * Math.PI * 2): number {
@@ -265,13 +305,6 @@ export function sceneCenter(x: number, y: number, heading: number): { x: number;
   return { x: x - Math.sin(heading) * SCENE_SIDE_WORLD, y: y + Math.cos(heading) * SCENE_SIDE_WORLD };
 }
 
-/** A local point (x, z) of the scene in map space, for the middle `center` and the heading (unit = size of a scene unit). */
-export function sceneToMap(center: { x: number; y: number }, heading: number, unit: number, lx: number, lz: number): { x: number; y: number } {
-  const c = Math.cos(heading);
-  const s = Math.sin(heading);
-  return { x: center.x + (lx * c - lz * s) * unit, y: center.y + (lx * s + lz * c) * unit };
-}
-
 /**
  * Scene units (world size of one) per unit of camera distance, and the least and most: what the camera
  * follows scales with its distance (rule 30, 6), so at the closest zoom the scene reads whole; far away
@@ -281,3 +314,60 @@ export const SCENE_UNIT_PER_DISTANCE = 0.06;
 export const SCENE_UNIT_MIN = 0.25;
 export const SCENE_UNIT_MAX = 3;
 export const sceneUnit = (distance: number): number => Math.min(SCENE_UNIT_MAX, Math.max(SCENE_UNIT_MIN, distance * SCENE_UNIT_PER_DISTANCE));
+
+/** Words that end in a dot without ending the sentence (Gral. Belgrano, Nº 1, p. 12). */
+const ABBREVIATIONS = new Set(['gral', 'sr', 'sra', 'dr', 'dra', 'cnel', 'tte', 'cap', 'cdte', 'av', 'ing', 'lic', 'prof', 'sta', 'sto', 'n', 'nº', 'n°', 'p', 'pp', 'pág', 'págs', 'vs', 'aprox']);
+const SENTENCE_END = '.!?…';
+const CLOSERS = '»”"\')';
+const OPENERS = '«“"¿¡(';
+
+/**
+ * The sentences of a text, in order: the diorama tells one per shot. It splits after `.`, `!`, `?` or
+ * `…` followed by a space and the start of another sentence (a capital letter, a digit or an opening
+ * mark), but not inside «quotes», after an abbreviation (`Gral.`, `Nº`, `p.`) nor in a number (`1.500`,
+ * `1,5`). The sentences joined with one space give back the text.
+ */
+export function essentialSentences(text: string): string[] {
+  const source = text.trim();
+  const out: string[] = [];
+  let depth = 0;
+  let start = 0;
+  for (let i = 0; i < source.length; i++) {
+    const ch = source[i];
+    if (ch === '«') depth++;
+    else if (ch === '»') depth = Math.max(0, depth - 1);
+    if (!SENTENCE_END.includes(ch)) continue;
+    // Closing marks stuck to the stop belong to the sentence it ends: «No trabajó.»
+    let j = i + 1;
+    let open = depth;
+    while (j < source.length && CLOSERS.includes(source[j])) {
+      if (source[j] === '»') open = Math.max(0, open - 1);
+      j++;
+    }
+    if (open > 0 || j >= source.length || !/\s/.test(source[j])) continue;
+    let k = j;
+    while (k < source.length && /\s/.test(source[k])) k++;
+    if (k >= source.length) continue;
+    const next = source[k];
+    if (!(next !== next.toLowerCase() || /\d/.test(next) || OPENERS.includes(next))) continue;
+    if (ch === '.' && ABBREVIATIONS.has((/([\p{L}º°]+)$/u.exec(source.slice(start, i))?.[1] ?? '').toLowerCase())) continue;
+    out.push(source.slice(start, j).trim());
+    depth = open;
+    start = k;
+    i = k - 1;
+  }
+  const rest = source.slice(start).trim();
+  if (rest) out.push(rest);
+  return out;
+}
+
+/** Where the diorama's camera stands and what it looks at for a shot (scene frame: x, y up, z). */
+export function shotPose(shot: SceneShot): { eye: [number, number, number]; target: [number, number, number] } {
+  const az = shot.azimuth * DEG;
+  const el = shot.elevation * DEG;
+  const [tx, ty, tz] = shot.target;
+  return {
+    target: [tx, ty, tz],
+    eye: [tx + Math.cos(az) * Math.cos(el) * shot.distance, ty + Math.sin(el) * shot.distance, tz + Math.sin(az) * Math.cos(el) * shot.distance],
+  };
+}

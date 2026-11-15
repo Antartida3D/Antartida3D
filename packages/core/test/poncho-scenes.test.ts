@@ -4,11 +4,14 @@ import {
   MAX_SCENE_PEOPLE,
   MAX_SCENE_RADIUS,
   MAX_POLAR_DEG,
+  SHOT_DISTANCE,
+  SHOT_ELEVATION_DEG,
+  SHOT_TARGET_HEIGHT,
+  essentialSentences,
+  shotPose,
   PONCHO_MILESTONES,
   PONCHO_SCENES,
   SCENE_ACTIONS,
-  SCENE_FADE_END,
-  SCENE_FADE_START,
   SCENE_STRIDE,
   SCENE_UNIT_MAX,
   SCENE_UNIT_MIN,
@@ -21,9 +24,7 @@ import {
   scenePathProgress,
   scenePathLength,
   scenePersonPhase,
-  sceneToMap,
   sceneUnit,
-  sceneVisibility,
   voyageHeading,
   voyageStops,
   walkPhase,
@@ -75,6 +76,25 @@ describe('scenes of Poncho: data', () => {
         expect(scene.camera.elevationDeg).toBeLessThan(90);
       });
 
+      it('has one shot per sentence of the stop, in order, looking inside the scene from a valid camera', () => {
+        const stop = PONCHO_MILESTONES.find((m) => m.id === id)!;
+        const sentences = essentialSentences(stop.essential.text);
+        expect(scene.shots.length).toBe(sentences.length);
+        scene.shots.forEach((shot, i) => {
+          expect(shot.sentence).toBe(i);
+          expect(Math.hypot(shot.target[0], shot.target[2]), `shot ${i} target`).toBeLessThanOrEqual(scene.radius);
+          expect(shot.target[1]).toBeGreaterThanOrEqual(SHOT_TARGET_HEIGHT[0]);
+          expect(shot.target[1]).toBeLessThanOrEqual(SHOT_TARGET_HEIGHT[1]);
+          expect(shot.distance).toBeGreaterThanOrEqual(SHOT_DISTANCE[0]);
+          expect(shot.distance).toBeLessThanOrEqual(SHOT_DISTANCE[1]);
+          expect(shot.elevation).toBeGreaterThanOrEqual(SHOT_ELEVATION_DEG[0]);
+          expect(shot.elevation).toBeLessThanOrEqual(SHOT_ELEVATION_DEG[1]);
+          expect(Math.abs(shot.azimuth)).toBeLessThanOrEqual(360);
+          // The camera stays above the ground.
+          expect(shotPose(shot).eye[1]).toBeGreaterThan(0);
+        });
+      });
+
       it('has no scene on a stop that does not exist on the dogs trip, and the stop has no place of its own', () => {
         const stop = voyageStops('dogs').find((s) => s.milestone.id === id);
         expect(stop).toBeDefined();
@@ -91,21 +111,6 @@ describe('scenes of Poncho: data', () => {
 });
 
 describe('scenes of Poncho: rules', () => {
-  it('sceneVisibility: out of range 0, in range 1, in between smooth and monotonic, whole with a card open', () => {
-    expect(sceneVisibility(SCENE_FADE_START + 1, false)).toBe(0);
-    expect(sceneVisibility(SCENE_FADE_END, false)).toBe(1);
-    expect(sceneVisibility(0, false)).toBe(1);
-    expect(sceneVisibility(500, true)).toBe(1);
-    let last = 0;
-    for (let d = SCENE_FADE_START; d >= SCENE_FADE_END; d -= 0.5) {
-      const v = sceneVisibility(d, false);
-      expect(v).toBeGreaterThanOrEqual(last);
-      last = v;
-    }
-    // Same before and after the stop.
-    expect(sceneVisibility(-8, false)).toBe(sceneVisibility(8, false));
-  });
-
   it('scenePersonPhase: deterministic, in [0, 2 pi) and moves with the clock', () => {
     for (const t of [-3, 0, 0.4, 7.9, 1234.5]) {
       const p = scenePersonPhase(t, 1.2);
@@ -173,16 +178,11 @@ describe('scenes of Poncho: rules', () => {
     expect(turned.z).toBeCloseTo(0, 9);
   });
 
-  it('sceneCenter is to the left of the team (local +z) and sceneToMap agrees', () => {
+  it('sceneCenter is to the left of the team (local +z)', () => {
     for (const heading of [0, 1, -2.75]) {
       const c = sceneCenter(100, 200, heading);
-      const back = sceneToMap({ x: 100, y: 200 }, heading, 1, 0, 0);
-      expect(back).toEqual({ x: 100, y: 200 });
-      // The middle of the scene is +z of the stop in the local frame.
-      const lateral = sceneToMap({ x: 100, y: 200 }, heading, 1, 0, 1);
-      const dir = [lateral.x - 100, lateral.y - 200];
-      const off = [c.x - 100, c.y - 200];
-      expect(dir[0] * off[0] + dir[1] * off[1]).toBeGreaterThan(0);
+      // Left of a heading is the next turn of 90 degrees.
+      expect((c.x - 100) * -Math.sin(heading) + (c.y - 200) * Math.cos(heading)).toBeGreaterThan(0);
     }
   });
 
@@ -194,5 +194,60 @@ describe('scenes of Poncho: rules', () => {
       expect(min).toBeLessThanOrEqual(25);
       expect(Number.isFinite(voyageHeading('dogs', stop.t))).toBe(true);
     }
+  });
+});
+
+describe('essentialSentences', () => {
+  it('splits plain sentences and gives back the text', () => {
+    const text = 'Uno es así. Dos es otra cosa. Tres cierra.';
+    expect(essentialSentences(text)).toEqual(['Uno es así.', 'Dos es otra cosa.', 'Tres cierra.']);
+    expect(essentialSentences(text).join(' ')).toBe(text);
+  });
+
+  it('does not split inside «quotes», and splits after a closing quote', () => {
+    expect(essentialSentences('Aparece una frase: «No trabajó. Nunca más». Poncho se cansa.')).toEqual([
+      'Aparece una frase: «No trabajó. Nunca más».',
+      'Poncho se cansa.',
+    ]);
+    expect(essentialSentences('Dice «No trabajó.» Después parte.')).toEqual(['Dice «No trabajó.»', 'Después parte.']);
+  });
+
+  it('keeps abbreviations and numbers whole', () => {
+    expect(essentialSentences('Llega a la Base Gral. Belgrano en 1964. Pesa 1.500 kg y mide 1,5 m. Sale mañana.')).toEqual([
+      'Llega a la Base Gral. Belgrano en 1964.',
+      'Pesa 1.500 kg y mide 1,5 m.',
+      'Sale mañana.',
+    ]);
+    expect(essentialSentences('Es el Nº 1 del tiro. Sigue.')).toEqual(['Es el Nº 1 del tiro.', 'Sigue.']);
+  });
+
+  it('handles questions, exclamations and openers', () => {
+    expect(essentialSentences('¿Quién va? ¡Poncho! ¿Y los demás?')).toEqual(['¿Quién va?', '¡Poncho!', '¿Y los demás?']);
+  });
+
+  it('gives one sentence for a text without a stop, and none for an empty one', () => {
+    expect(essentialSentences('  Sin punto final  ')).toEqual(['Sin punto final']);
+    expect(essentialSentences('   ')).toEqual([]);
+  });
+
+  it('gives two or three sentences for every stop of the trip, and joins back to its text', () => {
+    for (const m of PONCHO_MILESTONES) {
+      const sentences = essentialSentences(m.essential.text);
+      expect(sentences.length, m.id).toBeGreaterThanOrEqual(2);
+      expect(sentences.length, m.id).toBeLessThanOrEqual(3);
+      expect(sentences.join(' '), m.id).toBe(m.essential.text);
+    }
+  });
+});
+
+describe('shotPose', () => {
+  it('stands `distance` from the target at the elevation and azimuth of the shot', () => {
+    const { eye, target } = shotPose({ sentence: 0, target: [1, 0.5, -2], distance: 4, elevation: 30, azimuth: 90 });
+    expect(target).toEqual([1, 0.5, -2]);
+    expect(Math.hypot(eye[0] - 1, eye[1] - 0.5, eye[2] + 2)).toBeCloseTo(4, 9);
+    expect(eye[1] - 0.5).toBeCloseTo(4 * Math.sin(Math.PI / 6), 9);
+    // Azimuth 90: on the +z side of the target.
+    expect(eye[0]).toBeCloseTo(1, 9);
+    expect(eye[2]).toBeGreaterThan(-2);
   });
 });

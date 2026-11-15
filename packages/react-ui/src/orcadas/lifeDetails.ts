@@ -544,7 +544,7 @@ export function hasSnowOnPath(month: number): boolean {
 }
 
 /** Builds a single low-poly boot-sole footprint at origin pointing toward `+x`. */
-function footprintTris(x: number, z: number, yaw: number, heightAt: TerrainHeightFn): Tri[] {
+export function footprintTris(x: number, z: number, yaw: number, heightAt: TerrainHeightFn): Tri[] {
   const minGround = Math.min(
     heightAt(x, z),
     heightAt(x - 0.045, z - 0.045),

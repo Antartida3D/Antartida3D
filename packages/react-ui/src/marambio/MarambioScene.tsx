@@ -13,6 +13,7 @@ import {
   type MarambioSpotId,
 } from '@antartida/core';
 import { InkEffect } from '../map3d/InkEffect.ts';
+import { useMapGestures } from '../map3d/useMapGestures.ts';
 import { buildModuleTris, buildRadioTowerTris } from '../orcadas/lowPolyBuildings.ts';
 import { stationSkyFragmentShader, stationSkyVertexShader } from '../orcadas/stationSky.glsl.ts';
 import { HERCULES_PARKED_POLY } from '../voyage/herculesModel.ts';
@@ -165,6 +166,8 @@ function Sea() {
   );
 }
 
+const DEG = Math.PI / 180;
+
 function CameraAndDots({ focus, reduced, sheetTall, sidePanel, overlayRef }: MarambioSceneProps) {
   const controlsRef = useRef<CameraControls>(null);
   const camera = useThree((s) => s.camera);
@@ -180,18 +183,24 @@ function CameraAndDots({ focus, reduced, sheetTall, sidePanel, overlayRef }: Mar
 
   const portrait = size.width < 900 && size.height > size.width;
 
+  // The point looked at stays over the plateau, so the model cannot be dragged out of view.
+  const boundary = useMemo(() => new Box3(new Vector3(...VIEW_BOUNDARY.min), new Vector3(...VIEW_BOUNDARY.max)), []);
+  // The same gestures as the map and the Orcadas diorama: left drag or one finger moves over the
+  // ground, right drag turns and tilts, two fingers pinch, twist and tilt.
+  useMapGestures(controlsRef, {
+    minPolarAngle: (90 - VIEW_ELEVATION_DEG[1]) * DEG,
+    maxPolarAngle: (90 - VIEW_ELEVATION_DEG[0]) * DEG,
+    minDistance: VIEW_MIN_DISTANCE,
+    maxDistance: VIEW_MAX_DISTANCE,
+    smoothTime: 0.32,
+    boundary,
+    invalidate,
+  });
+
   useLayoutEffect(() => {
     const cc = controlsRef.current;
     if (!cc) return;
     (window as unknown as { __marambioCamera?: CameraControls }).__marambioCamera = cc;
-    const deg = Math.PI / 180;
-    cc.minPolarAngle = (90 - VIEW_ELEVATION_DEG[1]) * deg;
-    cc.maxPolarAngle = (90 - VIEW_ELEVATION_DEG[0]) * deg;
-    cc.minDistance = VIEW_MIN_DISTANCE;
-    cc.maxDistance = VIEW_MAX_DISTANCE;
-    cc.smoothTime = 0.32;
-    // The point looked at stays over the plateau, so the model cannot be dragged out of view.
-    cc.setBoundary(new Box3(new Vector3(...VIEW_BOUNDARY.min), new Vector3(...VIEW_BOUNDARY.max)));
 
     const pose = poseForSpot(focus, portrait, sheetTall, sidePanel);
     placed.current = false;

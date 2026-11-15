@@ -90,6 +90,91 @@ test.describe('with WebGL', () => {
     await expect(log(page)).toContainText('0/3');
     await expect(page.locator('.toast')).toHaveCount(0);
   });
+
+  test.describe('the diorama moves with the same gestures as the map', () => {
+    const cam = (page: Page) =>
+      page.evaluate(() => {
+        const cc = (window as unknown as { __marambioCamera: any }).__marambioCamera;
+        const t = cc.getTarget();
+        return { d: cc.distance as number, polar: cc.polarAngle as number, az: cc.azimuthAngle as number, tx: t.x as number, tz: t.z as number };
+      });
+    // The scene draws on demand: wait until the pose stops changing.
+    const waitRest = async (page: Page) => {
+      let last = JSON.stringify(await cam(page));
+      for (let i = 0; i < 40; i++) {
+        await page.waitForTimeout(150);
+        const now = JSON.stringify(await cam(page));
+        if (now === last) return;
+        last = now;
+      }
+    };
+    /** A point of the scene clear of the top bar, the panel and the dots, with room around it. */
+    const freePoint = (page: Page, reach: number) =>
+      page.evaluate((r) => {
+        const panel = document.querySelector('.mar .orc-panel')?.getBoundingClientRect();
+        const maxX = panel && panel.left > window.innerWidth / 3 ? panel.left - r - 10 : window.innerWidth - r - 10;
+        const maxY = panel && panel.top > window.innerHeight / 3 ? panel.top - r - 10 : window.innerHeight - r - 10;
+        const clear = (x: number, y: number) =>
+          [-r, 0, r].every((dx) => [-r, 0, r].every((dy) => document.elementFromPoint(x + dx, y + dy)?.tagName === 'CANVAS'));
+        for (let y = 140 + r; y <= maxY; y += 16) for (let x = r + 10; x <= maxX; x += 16) if (clear(x, y)) return { x, y };
+        throw new Error('no free point on the scene');
+      }, reach);
+
+    test('on a computer, the left button moves over the ground and the right one turns', async ({ page, isMobile }) => {
+      test.skip(isMobile, 'mouse gestures belong to the desktop layout');
+      await openMarambio(page);
+      await waitRest(page);
+      const drag = async (button: 'left' | 'right', dx: number) => {
+        const p = await freePoint(page, 70);
+        await page.mouse.move(p.x - dx / 2, p.y);
+        await page.mouse.down({ button });
+        await page.mouse.move(p.x + dx / 2, p.y, { steps: 10 });
+        await page.mouse.up({ button });
+        await waitRest(page);
+      };
+
+      const before = await cam(page);
+      await drag('left', 120);
+      const panned = await cam(page);
+      expect(Math.hypot(panned.tx - before.tx, panned.tz - before.tz)).toBeGreaterThan(0.5);
+      expect(panned.az).toBeCloseTo(before.az, 3);
+      expect(panned.polar).toBeCloseTo(before.polar, 3);
+
+      await drag('right', 120);
+      const turned = await cam(page);
+      expect(Math.abs(turned.az - panned.az)).toBeGreaterThan(0.05);
+      expect(Math.hypot(turned.tx - panned.tx, turned.tz - panned.tz)).toBeLessThan(0.01);
+    });
+
+    test('on a phone, one finger moves over the ground and two fingers pinch to come closer', async ({ page, isMobile }) => {
+      test.skip(!isMobile, 'touch gestures belong to the phone layout');
+      await openMarambio(page);
+      await waitRest(page);
+      const cdp = await page.context().newCDPSession(page);
+
+      const p = await freePoint(page, 50);
+      const before = await cam(page);
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: p.x - 40, y: p.y }] });
+      for (let i = 1; i <= 8; i++) await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: p.x - 40 + i * 10, y: p.y }] });
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      await waitRest(page);
+      const panned = await cam(page);
+      expect(Math.hypot(panned.tx - before.tx, panned.tz - before.tz)).toBeGreaterThan(0.5);
+      expect(panned.polar).toBeCloseTo(before.polar, 3);
+      expect(panned.az).toBeCloseTo(before.az, 3);
+
+      const q = await freePoint(page, 50);
+      const fingers = (u: number) => [
+        { x: q.x - 20 - 30 * u, y: q.y, id: 0 },
+        { x: q.x + 20 + 30 * u, y: q.y, id: 1 },
+      ];
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: fingers(0) });
+      for (let i = 1; i <= 10; i++) await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: fingers(i / 10) });
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      await waitRest(page);
+      expect((await cam(page)).d).toBeLessThan(panned.d * 0.8);
+    });
+  });
 });
 
 test('without WebGL the base shows its drawing and the visit still works', async ({ page }) => {

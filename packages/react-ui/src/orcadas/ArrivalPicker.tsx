@@ -5,10 +5,10 @@ import { KindChip } from './KindChip.tsx';
 // Its own chunk: it needs WebGL, which the 2D map does not.
 // Its own chunk: it needs WebGL, which the 2D map does not.
 const ArrivalPreview = lazy(async () => {
-  const [{ ModelPreview }, { VEHICLE_MODELS }, { buildHelicopterTris, buildHelicopterRotorTris }, { shift }, { HELICOPTER_ROTOR_ORIGIN }] =
+  const [{ ModelPreview }, { IRIZAR_POLY }, { buildHelicopterTris, buildHelicopterRotorTris }, { shift }, { HELICOPTER_ROTOR_ORIGIN }] =
     await Promise.all([
       import('../voyage/ModelPreview.tsx'),
-      import('../voyage/vehicles.ts'),
+      import('../voyage/irizarModel.ts'),
       import('./lowPolyProps.ts'),
       import('../voyage/lowPoly.ts'),
       import('./stationModels.ts'),
@@ -18,7 +18,7 @@ const ArrivalPreview = lazy(async () => {
   return {
     default: function ArrivalPreview({ id, reduced }: { id: ArrivalId; reduced: boolean }) {
       return id === 'ship' ? (
-        <ModelPreview boxes={VEHICLE_MODELS.irizar} motion="turn" reduced={reduced} />
+        <ModelPreview tris={IRIZAR_POLY} motion="turn" reduced={reduced} />
       ) : (
         <ModelPreview tris={helicopter} motion="turn" reduced={reduced} />
       );

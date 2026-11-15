@@ -1,4 +1,4 @@
-import { block, loftAlongX, mirrorZ, normalOf, shift, type LoftStation, type Tri, type Vec3 } from './lowPoly.ts';
+import { block, facingOut, loftAlongX, mirrorZ, shift, type LoftStation, type Tri, type Vec3 } from './lowPoly.ts';
 
 /**
  * C-130H Hercules of the Argentine Air Force, low-poly (rule 30): nose to +x, y up, one unit is the
@@ -27,13 +27,6 @@ const centroid = (ring: Ring): Vec3 => {
   const sum = ring.reduce<[number, number, number]>((s, p) => [s[0] + p[0], s[1] + p[1], s[2] + p[2]], [0, 0, 0]);
   return [sum[0] / ring.length, sum[1] / ring.length, sum[2] / ring.length];
 };
-
-/** The face wound so that it looks away from `inside`. */
-function facingOut(a: Vec3, b: Vec3, c: Vec3, color: number, inside: Vec3): Tri {
-  const n = normalOf([a, b, c, color]);
-  const out = n[0] * (a[0] + b[0] + c[0] - 3 * inside[0]) + n[1] * (a[1] + b[1] + c[1] - 3 * inside[1]) + n[2] * (a[2] + b[2] + c[2] - 3 * inside[2]);
-  return out < 0 ? [a, c, b, color] : [a, b, c, color];
-}
 
 /**
  * A skin over convex rings of the same number of points set in any direction (a wing along z, a fin

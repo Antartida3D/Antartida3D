@@ -5,10 +5,10 @@ import type { CameraControls } from '@react-three/drei';
 import {
   CAMERA_RETURN_SECONDS,
   DRAKE_STORM,
-  SLED_MAX_PITCH,
   easeToward,
-  sledPitch,
-  sledRideHeight,
+  sightLift,
+  sledFootprintPose,
+  sledSize,
   sledTrot,
   trotRate,
   findTransport,
@@ -48,9 +48,6 @@ import { NARROW_PX, type VoyageBus } from './useVoyage.ts';
 /** Vehicle length as a fraction of the camera distance: a 120 m ship is invisible on a 4000 km map. */
 export const SIZE_PER_DISTANCE = VEHICLE_SIZE_PER_DISTANCE;
 export const MIN_SIZE = VEHICLE_MIN_SIZE;
-/** The sled team is small next to a ship and the camera is close: it needs less to be read, and a lower floor not to cover the peninsula. */
-const SLED_SIZE_PER_DISTANCE = 0.09;
-const SLED_MIN_SIZE = 0.4;
 /** Height of a milestone pin as a fraction of its distance to the camera. */
 const PIN_PER_DISTANCE = 0.042;
 const MIN_PIN = 0.2;
@@ -59,8 +56,17 @@ const ROUTE_SAMPLES = 240;
 const PANEL_SHIFT = 0.14;
 /** Camera offset from the vehicle at departure: close and low, to see the Beagle Channel. */
 const DEPARTURE_OFFSET = new Vector3(3, 9, 12);
-/** Sled: close and a bit raised, to see the team with the peninsula behind it. Height is over the ground at the start. */
-const SLED_DEPARTURE_OFFSET = new Vector3(1.5, 4, 7);
+/**
+ * Sled: as close as the map lets the camera come (about ICE_MIN_DISTANCE, 25.4 here; minCameraDistance is 15 in
+ * Tierra del Fuego), 50 degrees from straight down (under MAX_POLAR_DEG), to see the team with the peninsula behind it.
+ * Height is over the ground at the start.
+ */
+const SLED_DEPARTURE_OFFSET = new Vector3(3, 16, 19.5);
+/** The sight line to the team keeps this fraction of its length over the ground; the lift eases at this rate (per second). */
+const SIGHT_MARGIN = 0.4;
+const SIGHT_LIFT_RATE = 3;
+/** The team is aimed at this fraction of its length over its belly. */
+const SIGHT_AIM = 0.3;
 /** How fast the team settles on the ground (per second): it neither sinks nor jumps while the relief loads. */
 const SLED_SETTLE_RATE = 10;
 /** Longest frame the trot advances, in seconds. */
@@ -103,10 +109,15 @@ function reliefReady(kind: TransportKind): boolean {
   });
 }
 
-/** World height of the ground under the sled's path at `t` (0 while the relief loads and on the sea). */
+/** World height of the ground at map position (x, y) (0 while the relief loads and on the sea). */
+function groundAt(x: number, y: number): number {
+  return Math.max(0, worldHeight(heightAt(x, y)));
+}
+
+/** World height of the ground under the sled's path at `t`. */
 function sledGround(kind: TransportKind, t: number): number {
   const p = voyageAt(kind, t);
-  return Math.max(0, worldHeight(heightAt(p.x, p.y)));
+  return groundAt(p.x, p.y);
 }
 
 /**
@@ -116,7 +127,10 @@ function sledGround(kind: TransportKind, t: number): number {
 export function heightOf(kind: TransportKind, t: number, size: number): number {
   const vehicle = vehicleAt(kind, t);
   if (vehicle === 'ship') return shipWaterY(size);
-  if (vehicle === 'sled') return sledRideHeight(sledGround(kind, t), size);
+  if (vehicle === 'sled') {
+    const p = voyageAt(kind, t);
+    return sledFootprintPose(groundAt, p.x, p.y, voyageHeading(kind, t), size).height;
+  }
   return Math.max(clearanceAt(t), Math.sin(Math.PI * Math.min(1, Math.max(0, t))) ** 0.6 * size * 0.9) + size * 0.07;
 }
 
@@ -133,6 +147,7 @@ const VISIT_DISTANCE = 6;
 const FOLLOW_EPSILON = 1e-4;
 const followGoal = new Vector3();
 const followTarget = new Vector3();
+const followEye = new Vector3();
 
 /** Nose down while it flies forward, in radians at the middle of the hop. */
 export const HELICOPTER_TILT = 0.14;
@@ -179,6 +194,8 @@ export function Voyage3D({ bus, reduced, overlay }: {
   const spray = useRef<(Mesh | null)[]>([]);
   // Sled: settled height over the ground, the phase of the trot and the frame count to know the pace.
   const sled = useRef({ height: null as number | null, phase: 0 });
+  // Height (world units) the camera has been raised to see the sled over a ridge.
+  const sight = useRef(0);
   const helicopter = useRef<Group>(null);
   const rotor = useRef<Group>(null);
   // Whether the vehicle is in the storm.
@@ -258,8 +275,11 @@ export function Voyage3D({ bus, reduced, overlay }: {
     const p = voyageAt(s.kind, s.t);
     const veh = vehicleAt(s.kind, s.t);
     const distance = camera.position.distanceTo(g.position);
-    const size = veh === 'sled' ? Math.max(SLED_MIN_SIZE, distance * SLED_SIZE_PER_DISTANCE) : vehicleSize(distance);
-    let height = heightOf(s.kind, s.t, size);
+    const size = veh === 'sled' ? sledSize(distance) : vehicleSize(distance);
+    const heading = voyageHeading(s.kind, s.t) + (bus.back ? Math.PI : 0);
+    // The team looks at all of its footprint, not only under its middle: height and tilt come from the same pose.
+    const sledPose = veh === 'sled' ? sledFootprintPose(groundAt, p.x, p.y, heading, size) : null;
+    let height = sledPose ? sledPose.height : heightOf(s.kind, s.t, size);
     const length = voyageLength(s.kind);
     const dt = Math.min(MAX_FRAME, delta);
     // The team settles on the ground: the first frame snaps, later ones ease, so a late relief does not make it jump.
@@ -274,7 +294,6 @@ export function Voyage3D({ bus, reduced, overlay }: {
       sled.current.phase += dt * trotRate(pace);
       trotLift = sledTrot(sled.current.phase, size, pace, reduced);
     }
-    const heading = voyageHeading(s.kind, s.t) + (bus.back ? Math.PI : 0);
 
     // Nose up while climbing, down while descending; a ship stays level.
     let pitch = 0;
@@ -282,12 +301,7 @@ export function Voyage3D({ bus, reduced, overlay }: {
       const rise = heightOf(s.kind, s.t + PITCH_SPAN, size) - heightOf(s.kind, s.t - PITCH_SPAN, size);
       pitch = Math.min(MAX_PITCH, Math.max(-MAX_PITCH, Math.atan2(rise, 2 * PITCH_SPAN * length))) * (bus.back ? -1 : 1);
     }
-    if (veh === 'sled') {
-      // Follows the slope between the ground behind and ahead of the team, half a length each way.
-      const half = (0.5 * size) / length;
-      const slope = sledPitch(sledGround(s.kind, Math.max(0, s.t - half)), sledGround(s.kind, Math.min(1, s.t + half)), size);
-      pitch = Math.min(SLED_MAX_PITCH, Math.max(-SLED_MAX_PITCH, slope)) * (bus.back ? -1 : 1);
-    }
+    if (sledPose) pitch = sledPose.pitch;
     // A gentle sway, so the vehicle is alive even when the trip is paused.
     const time = reduced ? 0 : performance.now() / 1000;
     const rough = stormAt(p.x, p.y);
@@ -365,6 +379,14 @@ export function Voyage3D({ bus, reduced, overlay }: {
       // The controls apply a move on the next frame, and the canvas draws on demand: a move asks for
       // that frame, or a move without animation (reduced motion) is not drawn until something else redraws (#76).
       let moved = false;
+      // A ridge between the camera and the team: how much higher the camera has to be to see it (sled only).
+      const wantedLift = () => {
+        if (veh !== 'sled') return 0;
+        const eyeY = camera.position.y - sight.current;
+        const eye = { x: camera.position.x + 500, y: camera.position.z + 500, height: eyeY };
+        const aim = { x: p.x, y: p.y, height: height + size * SIGHT_AIM };
+        return sightLift(groundAt, eye, aim, size * SIGHT_MARGIN);
+      };
       // Entering the storm, the camera comes down under the clouds. Leaving it, it keeps its distance:
       // going back to where it was before the storm pulled it far away (#127); over the ice it only
       // backs off to the closest distance there (minCameraDistance).
@@ -380,6 +402,7 @@ export function Voyage3D({ bus, reduced, overlay }: {
       const departing = s.t === 0 && (drawn.current.t !== 0 || drawn.current.transport !== s.transport);
       if (departing) {
         moved = true;
+        sight.current = 0; // the camera is placed anew, at its base height
         // At the vehicle, so the camera does not jump to it when the trip starts moving.
         // The sled starts over its ground, which the relief may place well above the sea.
         const offset = veh === 'sled' ? SLED_DEPARTURE_OFFSET : DEPARTURE_OFFSET;
@@ -403,6 +426,7 @@ export function Voyage3D({ bus, reduced, overlay }: {
           if (visit.current.id !== far.id) {
             visit.current = { id: far.id, back: null };
             moved = true;
+            sight.current = 0;
             void controls.moveTo(far.x - 500, 0, far.y - 500, !reduced);
           }
         } else {
@@ -430,6 +454,18 @@ export function Voyage3D({ bus, reduced, overlay }: {
             if (!reduced || controls.getTarget(followTarget).distanceToSquared(goal) > FOLLOW_EPSILON ** 2) {
               moved = true;
               void controls.moveTo(goal.x, goal.y, goal.z, false);
+            }
+            // The camera rises just enough to see the team over a ridge, and comes back down when it clears.
+            // Only the change is applied, so the user's orbit and zoom stay; the polar limit is not an issue
+            // since going higher means looking more from above.
+            const wanted = wantedLift();
+            const next = reduced ? wanted : easeToward(sight.current, wanted, dt, SIGHT_LIFT_RATE);
+            const delta = next - sight.current;
+            if (Math.abs(delta) > FOLLOW_EPSILON) {
+              moved = true;
+              const at = controls.getPosition(followEye, true);
+              void controls.setPosition(at.x, at.y + delta, at.z, false);
+              sight.current = next;
             }
           }
         }

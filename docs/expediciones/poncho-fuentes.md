@@ -2,6 +2,7 @@
 
 Fuentes citadas en [poncho.md](./poncho.md), conforme a las reglas del eje 2 de `AGENTS.md`: referencia o URL, organismo o autor que la publica y fecha de consulta (formato DD/MM/YYYY).
 
+- **Estado (issue #145):** el recorrido tiene 10 paradas en cuatro actos, con ganchos y diario de ruta. Cada dato del libro lleva su página del PDF (`pages`) y la cita abre esa página. Lo que sigue se actualizó con el contenido real; las páginas de la sección 2 se volvieron a verificar contra el PDF (`pdftotext` por página) el 15/11/2026. Los **ganchos** y el texto de unión no afirman nada y no llevan fuente.
 - **Fechas de consulta:**
   - `11/11/2026`: consulta inicial del equipo de `[P1]` y `[P2]`.
   - `12/11/2026`: segunda lectura de `[P1]` y `[P2]` y verificación contra fuentes oficiales `[V1]`–`[V3]` (agente de IA, issue #27).
@@ -23,34 +24,31 @@ Una fuente que dice lo que el contenido afirma **no es lo mismo** que una fuente
 
 ## 2. Dato → fuente
 
-| Dato (en `poncho.md`) | Fuente | Estado |
+Las páginas son las del PDF de `[P1]` (25 págs.). Los códigos de la interfaz son `P1` (libro), `P2`, `P3` (SCAR, equivale a `[V3]`), `O2` (equivale a `[V2]`) y `O12` (equivale a `[V1]`).
+
+| Dato (parada o línea del diario) | Fuente | Estado |
 | :--- | :--- | :--- |
-| Nacimiento el 10/04/1961 en Base Esperanza, hijo de «Coca» y «Flecha» | `[P1]` cronología y cap. I | Solo libro. No se encontró otra fuente |
-| Raza creada por el Ejército con Malamute, Groenlandés y Husky | `[P1]` cap. II | Solo libro |
-| Raza activa desde 1951 con la Base San Martín (21/03/1951) | `[P2]`; fundación de San Martín: `[V2]` | La fecha de la base está verificada en `[V2]`; que la raza «inicia sus actividades en 1951» es de `[P2]` |
-| Instrucción en 1961; a los seis meses, atado a un trineo | `[P1]` cronología y cap. III | Solo libro |
-| Voces «Auk» (derecha) y «Quierr» (izquierda) | `[P1]` cap. III | Solo libro |
-| Expedición invernal Esperanza–San Martín: salida 14/06/1962, llegada 25/08/1962, regreso a fines de octubre | `[P1]` cap. IV, V y cronología | Solo libro. La expedición no figura en `[V1]` |
-| Esperanza: fundación 17/12/1952, 63°24' S 57°00' O | `[V2]` | Verificado |
-| San Martín: fundación 21/03/1951, 68°08' S 67°07' O; desactivada en 02/1960 y reactivada en 03/1976 | `[V2]` | Verificado |
-| Poncho perro-guía, detecta grietas olfateando | `[P1]` cap. I y V | Solo libro. Relato narrado: rótulo `reconstruccion` |
-| 1963: refugio San Nicolás | `[P1]` cronología | Solo libro |
-| 12/1964: transferido a Base General Belgrano | `[P1]` cronología y cap. VII | Solo libro |
-| Operación 90: salida 26/10/1965, Polo el 10/12/1965, regreso 31/12/1965, 66 días | `[V1]`; `[P1]` cap. VII | Verificado en `[V1]` (fecha del Polo, salida, regreso, 66 días). «Casi 3.000 km» solo en `[P1]` |
-| Patrulla «Paralelo 82» con Poncho; pasó los 83° S; se separó del grupo motorizado el 18/11/1965 | `[P1]` cap. VII y cronología | Solo libro. No figura en `[V1]` |
-| Poncho no llegó al Polo; el Polo lo alcanzó el grupo motorizado | `[P1]` cap. VII; `[V1]` | Concuerdan |
-| Barranco frente al pico Santa Fe | `[P1]` cap. VII | Solo libro. `reconstruccion` |
-| Accidente del AE-205 (fines de septiembre de 1965) y rescate | `[P1]` cap. VIII y cronología | Solo libro |
-| Recuperación de los restos en 1968 | `[P1]` cap. VIII y cronología | Solo libro |
-| Salto en paracaídas en enero de 1966 (helicóptero S-55 del rompehielos San Martín, ~30 km al sur de Belgrano) | `[P1]` cap. IX y cronología | Solo libro. Hay discrepancia de mes (ver sección 5). Los «unos 30 kilómetros al sur» están en el cap. IX. La frase «nunca en la historia de nuestra Antártida se había hecho algo así» no está verificada y no se publica |
-| Patrulla a Shackleton y expedición a la barrera Filchner (noviembre de 1966) | `[P1]` cap. VI y cronología | Solo libro. Discrepancia de fecha (sección 5) |
-| Agosto de 1967: bahía Duse, ventisca, brújula perdida | `[P1]` cap. X | Solo libro. `reconstruccion` |
-| 1973: traslado en el rompehielos «San Martín» a Ushuaia; hotel «Antártida» | `[P1]` cronología y cap. XII | Solo libro |
-| 1976: accidente; 1977/78: lleva niños en trineo | `[P1]` cronología y cap. XII | Solo libro |
-| Primavera de 1978: muere en Ushuaia, casi 18 años; la taxidermia no prosperó | `[P1]` cronología y cap. XII | Solo libro |
-| Protocolo de Madrid (1991) y retiro de los perros | `[P1]` «Palabras finales»; `[P2]` | Fecha límite sin verificar en el texto oficial (sección 5) |
-| Coordenadas de Esperanza, San Martín | `[V2]` y `[V3]` | Verificado (ver sección 3) |
-| Coordenadas de otros lugares | `[V3]` (ver sección 3) | Parcial: varios `[Fuente a definir]` |
+| `nacimiento`: nace el 10/04/1961 en Esperanza; abrigos naranjas; cachorro más juguetón; instrucción con arneses, trineos y voces de mando | `[P1]` p. 5 (cronología en p. 4) | Solo libro |
+| `nacimiento`: padres Coca y Flecha; raza creada por el Ejército; seis meses en las yuntas; cincha, «Auk», «Quierr», slalom | `[P1]` p. 4, 6, 8, 9 | Solo libro |
+| Raza activa hacia 1951; Esperanza fundada el 17/12/1952 | `[P2]` p. 7 (libro); `[V2]` | Esperanza verificada en `[V2]` |
+| `expedicion-invernal-1962`: olfateo, zigzag, bastones y piquetas, grieta | `[P1]` p. 12 (también p. 6, 9) | Solo libro. Relato narrado |
+| `poncho-perro-guia`: puesto Número 1 en el regreso desde San Martín, un año y medio, costumbre de mirar al conductor; llegada a San Martín el 25/08/1962 | `[P1]` p. 12 y 10 | Solo libro. San Martín (fundación y desactivación): `[V2]` |
+| `rumbo-a-belgrano`: 12/1964, rompehielos, otros perros, preparativos de la marcha al Polo | `[P1]` p. 14 | Solo libro |
+| `rescate-ae-205`: avión caído, patrulla de dos hombres y siete perros, cuarto día; Cessna 185B; 1968 | `[P1]` p. 17 y 18 | Solo libro |
+| `patrulla-paralelo-82`: líder de la patrulla, separación del 18/11/1965, montañas Santa Fe, más allá de los 83° S | `[P1]` p. 15 | Solo libro |
+| `patrulla-paralelo-82`: salida del 26/10/1965; Polo el 10/12/1965 en 66 días; Poncho no llegó | `[V1]`; `[P1]` p. 17 | Verificado en `[V1]` |
+| `patrulla-paralelo-82`: barranco de unos 200 m frente al pico Santa Fe | `[P1]` p. 16 | Solo libro. Relato narrado |
+| `paracaidas`: salto, descenso, aterrizaje y rescate de una patrulla perdida | `[P1]` p. 19; Pato, Bucky, arnés, S-55: p. 18 | Solo libro. Discrepancia de mes (sección 5.2) |
+| `brujula-perdida`: ventisca, doce kilómetros, brújula hundida, dos horas a ciegas, luces de la base | `[P1]` p. 20 (p. 19 para la bahía Duse) | Solo libro. Relato narrado |
+| `adios-a-la-antartida`: «No trabajó», excepción por su prestigio, rompehielos a Ushuaia; traslado de 1973 | `[P1]` p. 21 y 5 | Solo libro |
+| `ushuaia`: años plácidos, casi 18 años, mañana de primavera de 1978; accidente de 1976; taxidermia | `[P1]` p. 22 (p. 21 y 5 para el resto) | Solo libro |
+| Diario de ruta: once perros, 30–45 kg, 40–50 km en más de seis horas, canto, perros que anticipan tormentas, 40 km/h | `[P1]` p. 12 | Solo libro |
+| Diario de ruta: perros bajo uno o dos metros de nieve, autonomía de 20 días, pemmican | `[P1]` p. 10 | Solo libro |
+| Diario de ruta: perros elegidos por su servicio en 1962 | `[P1]` p. 14 | Solo libro |
+| Diario de ruta: carne de foca y pelaje | `[P1]` p. 25 (pie de la foto de tapa) | Solo libro |
+| Coordenadas (Esperanza, San Martín, nunataks Foca, bahía Duse, pico Santa Fe) | `[V2]` y `[V3]` (ver sección 3) | Verificado. Belgrano I y varios otros: `[Fuente a definir]` |
+
+El recorrido dibujado sobre el mapa es una ilustración (aviso único del recorrido): las posiciones de las paradas son aproximadas y no un derrotero real.
 
 ## 3. Coordenadas de los hitos
 
@@ -58,23 +56,23 @@ Las coordenadas salen del gazetteer de SCAR `[V3]` o de la Armada `[V2]`. Format
 
 | Lugar (hito) | `[lon, lat]` | Fuente exacta | Estado |
 | :--- | :--- | :--- | :--- |
-| Base Esperanza (`nacimiento`, `grietas`, `refugio-san-nicolas`, `duse`) | `[-57.00, -63.40]` | `[V2]`: 63°24' S 57°00' O. `[V3]`, entrada «Esperanza Station» (registro COMNAP): `[-56.996111, -63.394722]` | Verificado |
+| Base Esperanza (`nacimiento`, `brujula-perdida`) | `[-57.00, -63.40]` | `[V2]`: 63°24' S 57°00' O. `[V3]`, entrada «Esperanza Station» (registro COMNAP): `[-56.996111, -63.394722]` | Verificado |
 | Base San Martín (`expedicion-invernal-1962`) | `[-67.10, -68.13]` | `[V2]`: 68°08' S 67°07' O. `[V3]`, «San Martín Station»: `[-67.103333, -68.129444]` | Verificado |
 | Bahía Margarita (`expedicion-invernal-1962`) | `[-68.0, -68.5]` | `[V3]`, «Margarita, bahía» (gazetteer ARG) | Verificado |
-| Bahía Duse (`duse`) | `[-57.333333, -63.5]` | `[V3]`, «Duse, bahía» (gazetteer ARG). Otros gazetteers difieren hasta unos 0,1° en latitud (por ejemplo `[-57.25, -63.566667]`) | Verificado, aproximado |
-| Pico Santa Fe (`operacion-90-patrulla-82`, `barranco`) | `[-41.333333, -82.05]` | `[V3]`, «Santa Fe, pico» (gazetteer ARG) | Verificado (el libro habla de «nunataks Santa Fe», un cordón; el gazetteer ubica el pico) |
+| Bahía Duse (`brujula-perdida`) | `[-57.333333, -63.5]` | `[V3]`, «Duse, bahía» (gazetteer ARG). Otros gazetteers difieren hasta unos 0,1° en latitud (por ejemplo `[-57.25, -63.566667]`) | Verificado, aproximado |
+| Pico Santa Fe (`patrulla-paralelo-82`) | `[-41.333333, -82.05]` | `[V3]`, «Santa Fe, pico» (gazetteer ARG) | Verificado (el libro habla de «nunataks Santa Fe», un cordón; el gazetteer ubica el pico) |
 | Cordillera Diamante (contexto de la patrulla) | `[-48.5, -82.666667]` | `[V3]`, «Diamante, cordillera» (gazetteer ARG) | Verificado |
-| Barrera de hielos Filchner (`filchner`) | `[-40, -79]` | `[V3]`, «Filchner, barrera de hielos» (gazetteer ARG). Es un punto central de una entidad muy grande | Verificado, muy aproximado |
-| Cabo Adams (`filchner`) | `[-62.333333, -75.033333]` | `[V3]`, «Adams, cabo» (gazetteer ARG) | Verificado |
-| Península Bowman (`filchner`) | `[-62.266667, -74.816667]` | `[V3]`, «Bowman, península» (gazetteer ARG) | Verificado |
+| Barrera de hielos Filchner (ya no es una parada) | `[-40, -79]` | `[V3]`, «Filchner, barrera de hielos» (gazetteer ARG). Es un punto central de una entidad muy grande | Verificado, muy aproximado |
+| Cabo Adams (ya no es una parada) | `[-62.333333, -75.033333]` | `[V3]`, «Adams, cabo» (gazetteer ARG) | Verificado |
+| Península Bowman (ya no es una parada) | `[-62.266667, -74.816667]` | `[V3]`, «Bowman, península» (gazetteer ARG) | Verificado |
 | Nunataks Foca (Base Teniente Matienzo, contexto de 1962) | `[-60.25, -65.066667]` | `[V3]`, «Foca, nunataks» (gazetteer ARG) | Verificado; la base Matienzo no figura con coordenada argentina propia en lo consultado |
-| Base General Belgrano (Belgrano I) (`traslado-belgrano`, `ae-205`, `paracaidas`) | `[Fuente a definir]` | Ver sección 5: los registros de `[V3]` se contradicen | Pendiente |
-| Polo Sur (`polo-sur`) | `[0, -90]` | Definición geográfica (90° S); no es un dato de gazetteer | No requiere fuente |
-| Sitio del accidente del AE-205 (`ae-205`) | `[Fuente a definir]` | El libro dice «al sudeste de la Base General Belgrano» sin coordenada | Pendiente |
-| Caleta Jardinero (`filchner`) | `[Fuente a definir]` | No se encontró en `[V3]` | Pendiente |
+| Base General Belgrano (Belgrano I) (`rumbo-a-belgrano`, `rescate-ae-205`, `paracaidas`) | `[Fuente a definir]` | Ver sección 5: los registros de `[V3]` se contradicen | Pendiente |
+| Polo Sur (ya no es una parada) | `[0, -90]` | Definición geográfica (90° S); no es un dato de gazetteer | No requiere fuente |
+| Sitio del accidente del AE-205 (`rescate-ae-205`) | `[Fuente a definir]` | El libro dice «al sudeste de la Base General Belgrano» sin coordenada | Pendiente |
+| Caleta Jardinero (ya no es una parada) | `[Fuente a definir]` | No se encontró en `[V3]` | Pendiente |
 | Caleta Carretera (`expedicion-invernal-1962`) | `[Fuente a definir]` | No se encontró en `[V3]` | Pendiente |
-| Refugio Cristo Redentor (`duse`) | `[Fuente a definir]` | `[V3]` solo lo trae en el gazetteer ruso: `[-57.366667, -63.55]`. No se toma como dato argentino | Pendiente |
-| Ushuaia, hotel «Antártida» (`ushuaia`, `muerte`) | `[Fuente a definir]` | Ushuaia está fuera de lo consultado (gazetteer antártico); el hotel está «desaparecido» según `[P1]` | Pendiente |
+| Refugio Cristo Redentor (`brujula-perdida`) | `[Fuente a definir]` | `[V3]` solo lo trae en el gazetteer ruso: `[-57.366667, -63.55]`. No se toma como dato argentino | Pendiente |
+| Ushuaia, hotel «Antártida» (`ushuaia`) | `[Fuente a definir]` | Ushuaia está fuera de lo consultado (gazetteer antártico); el hotel está «desaparecido» según `[P1]` | Pendiente |
 
 **Licencia del gazetteer `[V3]`:** no se verificó. Antes de copiar coordenadas a archivos del repo, `[Fuente a definir]` (condiciones de uso de SCAR/AADC). Una coordenada es un dato; aun así, se anota para que lo confirme quien revise.
 
@@ -123,6 +121,8 @@ Notas:
 | `[V3]` (SCAR / AADC) | No se verificó | Pendiente de revisar |
 
 ## 5. Pendientes y discrepancias
+
+Las paradas de Filchner, el Polo Sur, el Protocolo de Madrid y la raza ya no están en el recorrido (quedaron como datos de «Saber más» o se quitaron); sus discrepancias se conservan abajo como registro.
 
 Cada punto indica qué se sabe, qué no y cómo queda en la interfaz. **No se resolvió ninguna discrepancia por intuición.**
 

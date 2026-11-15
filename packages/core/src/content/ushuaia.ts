@@ -209,6 +209,8 @@ export interface Milestone {
   essential: VoyageFact;
   /** Profundizar: «Saber más». */
   more: readonly VoyageFact[];
+  /** Closing line of the card that opens curiosity for the next stop. It tells no fact, so it has no source. */
+  hook?: string;
 }
 
 const BOTH: readonly TransportKind[] = ['ship', 'plane'];

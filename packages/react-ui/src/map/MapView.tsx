@@ -12,6 +12,7 @@ import { Legend } from './Legend.tsx';
 import { ClaimsControl, type ClaimsSelection, type ClaimsStatus } from './ClaimsControl.tsx';
 import { ListView } from './ListView.tsx';
 import { PointSheet } from './PointSheet.tsx';
+import { OrcadasIntro } from '../orcadas/OrcadasIntro.tsx';
 import { ViewToggle } from './ViewToggle.tsx';
 import { Map2DLayer, type LayerProps } from './Map2DLayer.tsx';
 
@@ -117,6 +118,7 @@ export function MapView({
   const [anim, setAnim] = useState<Anim>('');
   const [touched, setTouched] = useState(false);
   const [sheet, setSheet] = useState<MapPoint | SeaPoint | null>(null);
+  const [pendingOrcadas, setPendingOrcadas] = useState<MapPoint | null>(null);
   // Key of the marker whose label a first touch brought into view.
   const [shown, setShown] = useState<string | null>(null);
   const [list, setList] = useState(false);
@@ -349,8 +351,14 @@ export function MapView({
 
   const openPoint = (p: MapPoint | SeaPoint) => {
     if (p.id === VOYAGE_POINT.id && onStartVoyage) onStartVoyage();
-    else if ('tier' in p && p.tier === 'A') onStart(p);
-    else {
+    else if ('tier' in p && p.tier === 'A') {
+      if (phase === 'idle') {
+        // One sheet at a time: the intro replaces the trip from Ushuaia, as starting Orcadas did before.
+        if (voyaging) onEndVoyage?.(false);
+        setSheet(null);
+        setPendingOrcadas(p);
+      }
+    } else {
       if (is3D && 'closeUp' in p && p.closeUp) send3D({ type: 'visit', id: p.id, distance: p.closeUp });
       setSheet(p);
       setTouched(true);
@@ -461,7 +469,7 @@ export function MapView({
                 vpRef.current?.focus();
               }}
               onSelect={setClaimsSelection} onCoverage={setClaimsCoverage} />}
-            <button type="button" className="btn" onClick={() => { setSheet(null); setList(true); }}>
+            <button type="button" className="btn" onClick={() => { setSheet(null); setPendingOrcadas(null); setList(true); }}>
               {Icon.list}
               Ver como lista
             </button>
@@ -491,6 +499,19 @@ export function MapView({
         )}
         {sheet && <PointSheet point={sheet} onClose={() => setSheet(null)} fallbackFocus={() => vpRef.current} preview={is3D} reduced={reduced}
           action={is3D && sheet.id === CLAIMS_POINT_ID ? { label: claimsEnabled ? 'Ver reclamos en el mapa' : 'Ver reclamos territoriales', onClick: showClaims } : undefined} />}
+        {pendingOrcadas && phase === 'idle' && (
+          <OrcadasIntro
+            onStart={() => {
+              const point = pendingOrcadas;
+              setPendingOrcadas(null);
+              onStart(point);
+            }}
+            onExit={() => setPendingOrcadas(null)}
+            fallbackFocus={() => vpRef.current}
+            preview={is3D}
+            reduced={reduced}
+          />
+        )}
       </div>
       <div className={'veil' + (phase === 'dive' ? ' on' : phase === 'approach' ? ' late' : '')} />
     </div>

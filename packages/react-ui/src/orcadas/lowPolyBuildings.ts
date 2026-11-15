@@ -704,9 +704,56 @@ export function buildRadioTowerTris(height = 30 / DIORAMA_METERS_PER_UNIT): Tri[
   return tris;
 }
 
+/** Clamp a number to [0, 1]. */
+export function clamp01(v: number): number {
+  return v < 0 ? 0 : v > 1 ? 1 : v;
+}
+
+/** Smooth Hermite interpolation over [0, 1]. */
+export function smooth01(t: number): number {
+  const c = clamp01(t);
+  return c * c * (3 - 2 * c);
+}
+
+/** V-shaped chevron louver slat along x from `x0` to `x1` (open ends inside stiles/posts). */
+function vSlat(x0: number, x1: number): Tri[] {
+  const pts: readonly [number, number][] = [
+    [0.034, 0],
+    [0, 0.05],
+    [-0.032, 0.008],
+    [-0.018, 0],
+    [0, 0.032],
+    [0.02, 0],
+  ];
+  const out: Tri[] = [];
+  for (let k = 0; k < pts.length; k++) {
+    const [az, ay] = pts[k];
+    const [bz, by] = pts[(k + 1) % pts.length];
+    out.push(...quad([x1, ay, az], [x1, by, bz], [x0, by, bz], [x0, ay, az], WHITE));
+  }
+  return out;
+}
+
+/** Hinge pivot of the Stevenson screen front door in model coordinates. */
+export const SCREEN_DOOR_HINGE: Vec3 = [-0.44, 1.365, 0.455];
+
+/** Duration (seconds) and maximum opening angle (radians, ~110 deg) of the Stevenson screen door. */
+export const SCREEN_DOOR_DURATION = 0.8;
+export const SCREEN_DOOR_OPEN_ANGLE = (110 * Math.PI) / 180;
+
 /**
- * 4. Meteorological Stevenson Screen (V-louvered white cabinet, hinged front door,
- * double ventilated roof with air gap, X-braced legs, wooden steps, resting on gravel pad).
+ * Opening angle (radians, 0 = closed, ~110 deg = open) of the Stevenson screen door after `t`
+ * seconds of transition. With `reduced` motion, jumps directly to the target angle.
+ */
+export function screenDoorAngle(open: boolean, t: number, reduced: boolean): number {
+  if (reduced) return open ? SCREEN_DOOR_OPEN_ANGLE : 0;
+  const u = smooth01(t / SCREEN_DOOR_DURATION);
+  return SCREEN_DOOR_OPEN_ANGLE * (open ? u : 1 - u);
+}
+
+/**
+ * 4a. Meteorological Stevenson Screen body (hollow dark interior, V-louvered back/side walls,
+ * fixed doorway frame, double ventilated roof with air gap, X-braced legs, wooden steps, gravel pad).
  */
 export function buildStevensonScreenTris(): Tri[] {
   const tris: Tri[] = [
@@ -752,10 +799,14 @@ export function buildStevensonScreenTris(): Tri[] {
     ...strut([0.44, 0.22, 0.38], [0.44, 0.66, -0.38], 0.024, ICE, false),
   );
 
-  // Screen floor platform and dark shadow interior core
+  // Screen floor platform and hollow dark interior (back, floor, side baffles, ceiling)
   tris.push(
     ...prism(chamferRect(0, 0, 1.14, 0.96, 0.04), 0.9, 0.98, ICE),
-    ...block(0, 1.36, 0, 0.92, 0.74, 0.74, SEA_GREY),
+    ...block(0, 0.99, 0.01, 0.91, 0.02, 0.78, BROWN_DARK),
+    ...block(0, 1.375, -0.375, 0.91, 0.75, 0.03, BLACK),
+    ...block(-0.465, 1.375, 0.015, 0.02, 0.75, 0.77, SEA_GREY),
+    ...block(0.465, 1.375, 0.015, 0.02, 0.75, 0.77, SEA_GREY),
+    ...block(0, 1.745, 0.015, 0.91, 0.02, 0.77, SEA_GREY),
   );
 
   // 4 corner posts of the louvered cabinet
@@ -763,49 +814,26 @@ export function buildStevensonScreenTris(): Tri[] {
     tris.push(...block(cx, 1.36, cz, 0.09, 0.8, 0.09, WHITE));
   }
 
-  // V-shaped chevron double louvers (persianas en V) along all 4 sides (open ends inside corner posts)
-  const vSlat = (x0: number, x1: number): Tri[] => {
-    const pts: readonly [number, number][] = [
-      [0.034, 0],
-      [0, 0.05],
-      [-0.032, 0.008],
-      [-0.018, 0],
-      [0, 0.032],
-      [0.02, 0],
-    ];
-    const out: Tri[] = [];
-    for (let k = 0; k < pts.length; k++) {
-      const [az, ay] = pts[k];
-      const [bz, by] = pts[(k + 1) % pts.length];
-      out.push(...quad([x1, ay, az], [x1, by, bz], [x0, by, bz], [x0, ay, az], WHITE));
-    }
-    return out;
-  };
+  // V-shaped chevron double louvers along back & sides (front louvers live on buildStevensonDoorTris)
   const slatBack = vSlat(-0.46, 0.46);
   const slatRight = turn(vSlat(-0.38, 0.38), Math.PI / 2);
   const slatLeft = turn(vSlat(-0.38, 0.38), -Math.PI / 2);
-  const slatFront = turn(vSlat(-0.39, 0.39), Math.PI);
 
   for (let i = 0; i < 6; i++) {
     const sy = 1.03 + i * 0.122;
     tris.push(
       ...shift(slatBack, 0, sy, -0.42),
-      ...shift(slatFront, 0, sy, 0.44),
       ...shift(slatRight, 0.51, sy, 0),
       ...shift(slatLeft, -0.51, sy, 0),
     );
   }
 
-  // Front door frame (+z) with two hinges on left and latch on right
+  // Fixed front doorway frame (+z opening)
   tris.push(
-    ...block(0, 1.72, 0.45, 0.88, 0.05, 0.03, WHITE),
-    ...block(0, 1.0, 0.45, 0.88, 0.05, 0.03, WHITE),
-    ...block(-0.42, 1.36, 0.45, 0.05, 0.72, 0.03, WHITE),
-    ...block(0.42, 1.36, 0.45, 0.05, 0.72, 0.03, WHITE),
-    // Hinges (left) and metal hasp latch (right)
-    ...block(-0.42, 1.56, 0.47, 0.08, 0.04, 0.024, BLACK),
-    ...block(-0.42, 1.16, 0.47, 0.08, 0.04, 0.024, BLACK),
-    ...block(0.39, 1.36, 0.47, 0.06, 0.1, 0.032, BLACK),
+    ...block(0, 1.74, 0.42, 0.91, 0.04, 0.04, WHITE),
+    ...block(0, 0.99, 0.42, 0.91, 0.04, 0.04, WHITE),
+    ...block(-0.445, 1.365, 0.42, 0.03, 0.71, 0.04, WHITE),
+    ...block(0.445, 1.365, 0.42, 0.03, 0.71, 0.04, WHITE),
   );
 
   // Double ventilated roof with clear air gap + 4 standoff spacers (width 1.28, depth 1.10, top 1.98)
@@ -838,6 +866,138 @@ export function buildStevensonScreenTris(): Tri[] {
     ...prism(rect(0.32, 0.54, 0.04, 0.04), 0.52, 1.02, WOOD),
     ...strut([0.32, 0.64, 0.96], [0.32, 1.02, 0.54], 0.018, WOOD_LIGHT),
   );
+
+  return tris;
+}
+
+/**
+ * 4b. Stevenson Screen front door leaf (louvered panel, two left hinges, right hasp latch),
+ * with its hinge axis at the origin `(0, y, 0)` so rotating around y swings it open outward.
+ */
+export function buildStevensonDoorTris(): Tri[] {
+  const tris: Tri[] = [
+    // Outer frame rails & stiles (spans x = 0..0.88, y = -0.38..+0.38)
+    ...block(0.44, 0.355, -0.005, 0.88, 0.05, 0.03, WHITE),
+    ...block(0.44, -0.365, -0.005, 0.88, 0.05, 0.03, WHITE),
+    ...block(0.03, -0.005, -0.005, 0.06, 0.72, 0.03, WHITE),
+    ...block(0.85, -0.005, -0.005, 0.06, 0.72, 0.03, WHITE),
+    // Right metal hasp latch & sliding bolt
+    ...block(0.84, 0, 0.016, 0.055, 0.09, 0.016, BLACK),
+    ...block(0.86, 0, 0.028, 0.07, 0.024, 0.016, ZINC),
+    ...block(0.83, -0.02, 0.034, 0.022, 0.036, 0.018, BLACK),
+  ];
+
+  // Two left hinges with cylindrical pins centered at x = 0, z = 0
+  for (const hy of [0.195, -0.205]) {
+    tris.push(
+      ...block(0.035, hy, 0.015, 0.07, 0.038, 0.016, BLACK),
+      ...lathe(0, 0, [[hy - 0.024, 0.002], [hy - 0.022, 0.014], [hy + 0.022, 0.014], [hy + 0.024, 0]], 6, ZINC),
+    );
+  }
+
+  // V-shaped chevron louvers spanning between the stiles
+  const slat = turn(vSlat(-0.39, 0.39), Math.PI);
+  for (let i = 0; i < 6; i++) {
+    const sy = -0.335 + i * 0.122;
+    tris.push(...shift(slat, 0.44, sy, -0.015));
+  }
+
+  return tris;
+}
+
+/**
+ * 4c. Illustrative 1903 Stevenson screen instruments mounted inside the cabinet:
+ * wooden rack with vertical dry-bulb and wet-bulb thermometers (wet-bulb with muslin sleeve,
+ * wick and water cup) and horizontal maximum and minimum thermometers.
+ * Existence sourced from `obs-instrumental-1903` (Mossman 1907) in `core/content/orcadas.ts`;
+ * shapes and arrangement are illustrative.
+ */
+export function buildStevensonInstrumentsTris(): Tri[] {
+  const rackZ = -0.155;
+  const boardZ = -0.13;
+  const tubeZ = -0.112;
+
+  const tris: Tri[] = [
+    // Wooden mounting stand resting on interior floor (y = 1.00)
+    ...block(-0.34, 1.015, -0.16, 0.055, 0.03, 0.14, WOOD_LIGHT),
+    ...block(0.34, 1.015, -0.16, 0.055, 0.03, 0.14, WOOD_LIGHT),
+    ...block(-0.34, 1.33, -0.17, 0.036, 0.66, 0.036, WOOD),
+    ...block(0.34, 1.33, -0.17, 0.036, 0.66, 0.036, WOOD),
+    ...block(0, 1.62, rackZ, 0.72, 0.034, 0.03, WOOD_LIGHT),
+    ...block(0, 1.38, rackZ, 0.72, 0.034, 0.03, WOOD_LIGHT),
+    ...block(0, 1.18, rackZ, 0.72, 0.034, 0.03, WOOD_LIGHT),
+    // Bracket shelf for the wet-bulb water vessel
+    ...block(-0.11, 1.015, -0.115, 0.11, 0.03, 0.11, WOOD),
+  ];
+
+  // Vertical dry-bulb (left) and wet-bulb (right) psychrometer thermometers
+  const addVerticalThermometer = (x: number, colTopY: number, isWet: boolean) => {
+    tris.push(
+      ...block(x, 1.40, boardZ, 0.085, 0.42, 0.018, WHITE),
+      ...block(x, 1.56, boardZ + 0.01, 0.055, 0.016, 0.012, ZINC),
+      ...block(x, 1.24, boardZ + 0.01, 0.055, 0.016, 0.012, ZINC),
+      // Mercury column and upper glass stem
+      ...block(x, (1.21 + colTopY) / 2, tubeZ, 0.014, colTopY - 1.21, 0.014, ZODIAC_TUBE),
+      ...block(x, (colTopY + 1.58) / 2, tubeZ, 0.012, 1.58 - colTopY, 0.012, ICE),
+    );
+    for (let i = 0; i < 5; i++) {
+      const ty = 1.27 + i * 0.068;
+      tris.push(
+        ...block(x - 0.025, ty, boardZ + 0.011, 0.022, 0.007, 0.005, BLACK),
+        ...block(x + 0.025, ty, boardZ + 0.011, 0.022, 0.007, 0.005, BLACK),
+      );
+    }
+    if (isWet) {
+      // Muslin-wrapped bulb, wick descending into water vessel, and water cup
+      tris.push(
+        ...lathe(x, tubeZ, [[1.15, 0.003], [1.162, 0.024], [1.185, 0.028], [1.208, 0.02], [1.218, 0]], 8, CREAM),
+        ...strut([x, 1.158, tubeZ], [x, 1.07, tubeZ], 0.007, CREAM, false),
+        ...lathe(
+          x,
+          tubeZ,
+          [[1.03, 0.032], [1.045, 0.044], [1.095, 0.048], [1.105, 0.042], [1.105, 0]],
+          10,
+          (_seg, band) => (band >= 3 ? SKY : ICE_BLUE)
+        ),
+      );
+    } else {
+      tris.push(
+        ...lathe(x, tubeZ, [[1.155, 0.003], [1.165, 0.02], [1.185, 0.024], [1.205, 0.016], [1.215, 0]], 8, ZODIAC_TUBE),
+      );
+    }
+  };
+  addVerticalThermometer(-0.25, 1.47, false);
+  addVerticalThermometer(-0.11, 1.43, true);
+
+  // Horizontal maximum (silver mercury) and minimum (red alcohol) thermometers on the right
+  const addHorizontalThermometer = (y: number, colEndX: number, colColor: number, hasIndex: boolean) => {
+    tris.push(
+      ...block(0.17, y, boardZ, 0.29, 0.078, 0.018, WHITE),
+      ...block(0.10, y, boardZ + 0.01, 0.016, 0.052, 0.012, ZINC),
+      ...block(0.27, y, boardZ + 0.01, 0.016, 0.052, 0.012, ZINC),
+      // Liquid column and upper glass stem
+      ...block((0.09 + colEndX) / 2, y, tubeZ, colEndX - 0.09, 0.014, 0.014, colColor),
+      ...block((colEndX + 0.29) / 2, y, tubeZ, 0.29 - colEndX, 0.012, 0.012, ICE),
+      ...shift(
+        latheAlongX(lathe(0, 0, [[0.045, 0.003], [0.055, 0.018], [0.072, 0.021], [0.088, 0.014], [0.095, 0]], 8, colColor)),
+        0,
+        y,
+        tubeZ
+      ),
+    );
+    for (let i = 0; i < 5; i++) {
+      const tx = 0.115 + i * 0.036;
+      tris.push(
+        ...block(tx, y + 0.022, boardZ + 0.011, 0.007, 0.02, 0.005, BLACK),
+        ...block(tx, y - 0.022, boardZ + 0.011, 0.007, 0.02, 0.005, BLACK),
+      );
+    }
+    if (hasIndex) {
+      tris.push(...block(colEndX - 0.015, y, tubeZ, 0.018, 0.016, 0.016, BLACK));
+    }
+  };
+  addHorizontalThermometer(1.50, 0.24, ZODIAC_TUBE, false);
+  addHorizontalThermometer(1.28, 0.21, RED, true);
 
   return tris;
 }

@@ -44,6 +44,7 @@ import {
   type BuildingId,
 } from '@antartida/core';
 import { InkEffect } from '../map3d/InkEffect.ts';
+import { useMapGestures } from '../map3d/useMapGestures.ts';
 import {
   ICEBERG_DRAFT,
   ICEBERG_PEAKS_POLY,
@@ -75,16 +76,23 @@ import {
   penguinSwimCorridor,
 } from './penguins.ts';
 import {
+  SCREEN_DOOR_DURATION,
+  SCREEN_DOOR_HINGE,
   buildFlagSegmentsTris,
   buildFlagpoleBaseTris,
   buildHelipadTris,
   buildModuleTris,
   buildOmondTris,
   buildRadioTowerTris,
+  buildStevensonDoorTris,
+  buildStevensonInstrumentsTris,
   buildStevensonScreenTris,
   buildWindCupsTris,
   buildWindMastBaseTris,
   buildWindVaneTris,
+  clamp01,
+  screenDoorAngle,
+  smooth01,
 } from './lowPolyBuildings.ts';
 import {
   SEA_ICE_FLOE_POLY_VARIANTS,
@@ -153,6 +161,7 @@ export interface StationSceneProps {
   animals: readonly string[];
   focus: HotspotId | null;
   reduced: boolean;
+  screenOpen?: boolean;
   panelExpanded?: boolean;
   panelHidden?: boolean;
   onReady?: () => void;
@@ -747,15 +756,6 @@ const HELI_START_OFFSET: readonly [number, number, number] = [-3.5, 5.2, 10.5];
 const HELI_START_YAW = Math.atan2(HELI_START_OFFSET[2], -HELI_START_OFFSET[0]);
 const HELI_START_PITCH = -0.12;
 
-function clamp01(v: number): number {
-  return v < 0 ? 0 : v > 1 ? 1 : v;
-}
-
-function smooth01(t: number): number {
-  const c = clamp01(t);
-  return c * c * (3 - 2 * c);
-}
-
 const ERA_BUILDING_IDS: readonly BuildingId[] = [
   'omond',
   'flag',
@@ -772,6 +772,7 @@ function StationElements({
   reduced,
   seaIce,
   showHelicopter,
+  screenOpen = false,
 }: {
   buildings: readonly BuildingId[];
   isNight: boolean;
@@ -780,6 +781,7 @@ function StationElements({
   reduced: boolean;
   seaIce: number;
   showHelicopter: boolean;
+  screenOpen?: boolean;
 }) {
   const vaneRef = useRef<Group>(null);
   const cupsRef = useRef<Group>(null);
@@ -787,6 +789,11 @@ function StationElements({
   const wakeRef = useRef<InstancedMesh>(null);
   const heliRef = useRef<Group>(null);
   const heliRotorRef = useRef<Group>(null);
+  const screenDoorRef = useRef<Group>(null);
+  const doorStateRef = useRef<{ open: boolean; elapsed: number }>({
+    open: screenOpen,
+    elapsed: screenOpen ? 0 : SCREEN_DOOR_DURATION,
+  });
   const elementRefs = useRef<Record<string, Group | null>>({});
 
   const presences = useRef<Record<BuildingId, number>>({
@@ -932,6 +939,8 @@ function StationElements({
   const cupsGeo = useMemo(() => buildPolyGeometry(buildWindCupsTris(), boxShade), []);
   const heliGeo = useMemo(() => buildPolyGeometry(buildHelicopterTris(), boxShade), []);
   const heliRotorGeo = useMemo(() => buildPolyGeometry(buildHelicopterRotorTris(), boxShade), []);
+  const screenDoorGeo = useMemo(() => buildPolyGeometry(buildStevensonDoorTris(), boxShade), []);
+  const screenInstrumentsGeo = useMemo(() => buildPolyGeometry(buildStevensonInstrumentsTris(), boxShade), []);
 
   const flagGeos = useMemo(() => buildFlagSegmentsTris().map((tris) => buildPolyGeometry(tris, boxShade)), []);
   const flagJointRefs = useRef<(Group | null)[]>([]);
@@ -945,13 +954,28 @@ function StationElements({
       cupsGeo.dispose();
       heliGeo.dispose();
       heliRotorGeo.dispose();
+      screenDoorGeo.dispose();
+      screenInstrumentsGeo.dispose();
       for (const g of flagGeos) g.dispose();
       boatBeachRest.chockGeo.dispose();
       boatGeo.dispose();
       wakeGeo.dispose();
       wakeMat.dispose();
     };
-  }, [geometries, vaneGeo, cupsGeo, heliGeo, heliRotorGeo, flagGeos, boatBeachRest, boatGeo, wakeGeo, wakeMat]);
+  }, [
+    geometries,
+    vaneGeo,
+    cupsGeo,
+    heliGeo,
+    heliRotorGeo,
+    screenDoorGeo,
+    screenInstrumentsGeo,
+    flagGeos,
+    boatBeachRest,
+    boatGeo,
+    wakeGeo,
+    wakeMat,
+  ]);
 
   useLayoutEffect(() => {
     if (reduced) waveFlag(flagJointRefs.current, 0, windKmh);
@@ -1012,6 +1036,23 @@ function StationElements({
       heliArrivalRef.current.active = false;
     }
 
+    const doorState = doorStateRef.current;
+    if (doorState.open !== screenOpen) {
+      doorState.open = screenOpen;
+      doorState.elapsed = Math.max(0, SCREEN_DOOR_DURATION - doorState.elapsed);
+    }
+    if (reduced) {
+      doorState.elapsed = SCREEN_DOOR_DURATION;
+    }
+    if (screenDoorRef.current) {
+      // Negative rotation around +y swings the left-hinged door outward toward +z and -x.
+      screenDoorRef.current.rotation.y = -screenDoorAngle(
+        doorState.open,
+        doorState.elapsed,
+        reduced
+      );
+    }
+
     if (reduced) {
       for (const id of ERA_BUILDING_IDS) {
         presences.current[id] = buildings.includes(id) ? 1 : 0;
@@ -1040,6 +1081,7 @@ function StationElements({
     strandedPose,
     buildingElements,
     showHelicopter,
+    screenOpen,
   ]);
 
   useFrame(({ clock }, delta) => {
@@ -1193,6 +1235,21 @@ function StationElements({
           arrivalMoving = true;
         }
       }
+      const doorState = doorStateRef.current;
+      if (doorState.elapsed < SCREEN_DOOR_DURATION) {
+        doorState.elapsed = Math.min(
+          SCREEN_DOOR_DURATION,
+          doorState.elapsed + Math.min(delta, 0.05)
+        );
+        if (screenDoorRef.current) {
+          screenDoorRef.current.rotation.y = -screenDoorAngle(
+            doorState.open,
+            doorState.elapsed,
+            false
+          );
+        }
+        arrivalMoving = true;
+      }
     }
 
     let moving = false;
@@ -1241,6 +1298,14 @@ function StationElements({
           >
             <group scale={scale}>
               {geo && <mesh geometry={geo} material={vehicleMaterial} />}
+              {el.id === 'screen' && (
+                <>
+                  <mesh geometry={screenInstrumentsGeo} material={vehicleMaterial} />
+                  <group ref={screenDoorRef} position={SCREEN_DOOR_HINGE}>
+                    <mesh geometry={screenDoorGeo} material={vehicleMaterial} />
+                  </group>
+                </>
+              )}
               {el.id === 'windMast' && (
                 <>
                   <group ref={vaneRef} position={[0, 3.85, 0]}>
@@ -1707,6 +1772,31 @@ function StationCameraAndProjection({
   // Same test as the landscape media query of orcadas.css, where the panel takes the right 46 %.
   const landscape = size.width > size.height && size.height <= 500;
 
+  // The diorama is always seen from Bahía Scotia: a little orbit, no top view, limited zoom.
+  const deg = Math.PI / 180;
+  const azimuth = (180 - VIEW_BEARING_DEG) * deg;
+  // Never farther than a little beyond the entry view: the stage ends past it.
+  const entry = poseForHotspot(null, mobile, Boolean(panelExpanded), landscape, Boolean(panelHidden));
+  const maxDistance =
+    Math.hypot(
+      entry.pos[0] - entry.target[0],
+      entry.pos[1] - entry.target[1],
+      entry.pos[2] - entry.target[2]
+    ) * VIEW_MAX_ZOOM_OUT;
+  const boundary = useMemo(() => new Box3(new Vector3(-20, -1, -14), new Vector3(20, 24, 60)), []);
+
+  useMapGestures(controlsRef, {
+    minAzimuthAngle: azimuth - VIEW_ORBIT_DEG * deg,
+    maxAzimuthAngle: azimuth + VIEW_ORBIT_DEG * deg,
+    minPolarAngle: (90 - VIEW_ELEVATION_DEG[1]) * deg,
+    maxPolarAngle: (90 - VIEW_ELEVATION_DEG[0]) * deg,
+    minDistance: 3,
+    maxDistance,
+    smoothTime: 0.32,
+    boundary,
+    invalidate,
+  });
+
   useLayoutEffect(() => {
     invalidate();
   }, [invalidate]);
@@ -1715,24 +1805,6 @@ function StationCameraAndProjection({
     const cc = controlsRef.current;
     if (!cc) return;
     (window as unknown as { __orcadasCamera?: CameraControls }).__orcadasCamera = cc;
-    // The diorama is always seen from Bahía Scotia: a little orbit, no top view, limited zoom.
-    const deg = Math.PI / 180;
-    const azimuth = (180 - VIEW_BEARING_DEG) * deg;
-    cc.minAzimuthAngle = azimuth - VIEW_ORBIT_DEG * deg;
-    cc.maxAzimuthAngle = azimuth + VIEW_ORBIT_DEG * deg;
-    cc.minPolarAngle = (90 - VIEW_ELEVATION_DEG[1]) * deg;
-    cc.maxPolarAngle = (90 - VIEW_ELEVATION_DEG[0]) * deg;
-    cc.minDistance = 3;
-    // Never farther than a little beyond the entry view: the stage ends past it.
-    const entry = poseForHotspot(null, mobile, Boolean(panelExpanded), landscape, Boolean(panelHidden));
-    cc.maxDistance =
-      Math.hypot(
-        entry.pos[0] - entry.target[0],
-        entry.pos[1] - entry.target[1],
-        entry.pos[2] - entry.target[2]
-      ) * VIEW_MAX_ZOOM_OUT;
-    cc.smoothTime = 0.32;
-    cc.setBoundary(new Box3(new Vector3(-20, -1, -14), new Vector3(20, 24, 60)));
 
     const pose = poseForHotspot(focus, mobile, Boolean(panelExpanded), landscape, Boolean(panelHidden));
     projectedRef.current = false;
@@ -1981,6 +2053,7 @@ export const StationScene = memo(function StationScene({
   animals,
   focus,
   reduced,
+  screenOpen = false,
   panelExpanded,
   panelHidden,
   onReady,
@@ -2108,6 +2181,7 @@ export const StationScene = memo(function StationScene({
           seaIce={seaIce}
           reduced={reduced}
           showHelicopter={helicopterOnPad(month)}
+          screenOpen={screenOpen}
         />
         <StationFauna
           animals={animals}
@@ -2126,7 +2200,7 @@ export const StationScene = memo(function StationScene({
           </EffectComposer>
         )}
         <StationCameraAndProjection
-          focus={focus}
+          focus={screenOpen ? 'screen' : focus}
           reduced={reduced}
           panelExpanded={panelExpanded}
           panelHidden={panelHidden}

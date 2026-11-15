@@ -11,6 +11,7 @@ import {
   factsFor,
   hotspotFacts,
   initialOrcadas,
+  observationDone,
   orcadasProgress,
   orcadasReducer,
   readingFor,
@@ -243,6 +244,8 @@ export function OrcadasExpedition({
   const activeStop = tourStop(s.chapter, s.tourIndex);
   const atTourEnd = tourAtEnd(s);
   const defaultFocus = chapterFocus(s.chapter, s.tourIndex);
+  // S4: open the screen door only while the temperature reading is active and unrecorded.
+  const screenOpen = s.chapter === 'observation' && !observationDone(s) && !openSpot;
 
   const tourCardElement = activeStop ? (
     <TourCard
@@ -428,6 +431,7 @@ export function OrcadasExpedition({
           animals={activeAnimals}
           focus={focus}
           reduced={reduced}
+          screenOpen={screenOpen}
           panelExpanded={panelExpanded}
           panelHidden={isPanelHidden}
           overlayRef={hotspotsRef}

@@ -109,6 +109,17 @@ test('a point with verified content shows its sources; Poncho stays provisional'
   await expect(poncho.getByRole('heading', { name: 'Fuentes verificadas' })).toHaveCount(0);
 });
 
+test('on a phone a point sheet closes when dragged down, like the other sheets', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'a phone gesture; on wide screens the sheet is a card');
+  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Volcán en el hielo/ }).click();
+  const erebus = page.getByRole('dialog', { name: 'Volcán en el hielo' });
+  await expect(erebus).toBeVisible();
+  const cdp = await page.context().newCDPSession(page);
+  await touchDrag(cdp, erebus.getByRole('heading', { name: 'Volcán en el hielo' }), 0, 200);
+  await expect(erebus).toBeHidden();
+});
+
 test('has no horizontal scroll', async ({ page }) => {
   const overflow = () =>
     page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);

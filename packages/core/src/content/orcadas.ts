@@ -2,6 +2,10 @@ import type { Chapter } from '../orcadas.ts';
 
 export const ORCADAS_GUIDING_QUESTION = '¿Cuánto cambió el clima de la isla Laurie en 120 años?';
 
+/** Activity summary for the pre-expedition intro sheet (describes user actions, not scientific data). */
+export const ORCADAS_INTRO_DESC =
+  'Recorré la base, registrá una observación del día, explorá la serie histórica y respondé la pregunta.';
+
 /** Short chapter names (buttons, Sources panel) and panel headings. Single source for the UI. */
 export const CHAPTER_NAMES: Record<Chapter, string> = {
   arrival: 'Llegar',
@@ -17,6 +21,13 @@ export const CHAPTER_HEADINGS: Record<Chapter, string> = {
   journey: 'Viaje en el tiempo',
   answer: 'La respuesta',
 };
+
+/** Real, sourced facts highlighted in the pre-expedition intro sheet. */
+export const ORCADAS_INTRO_FACT_IDS = [
+  'arrival-antiguedad',
+  'obs-registro-1903',
+  'eras-traspaso-1904',
+] as const;
 
 export type FactKind = 'real' | 'sim' | 'recon' | 'calc';
 
@@ -605,6 +616,13 @@ const TOUR_FACT_IDS = new Set(ORCADAS_TOUR.flatMap((stop) => [stop.factId, ...st
 
 export function factById(id: string): OrcadasFact | null {
   return FACT_MAP.get(id) ?? null;
+}
+
+/** Publishable real facts highlighted on the pre-expedition intro sheet. */
+export function introFacts(): OrcadasFact[] {
+  return ORCADAS_INTRO_FACT_IDS.map((id) => FACT_MAP.get(id)).filter(
+    (f): f is OrcadasFact => f !== undefined && f.kind === 'real' && isPublishable(f)
+  );
 }
 
 /** Publishable guided-tour stops for a chapter, in declared order. */

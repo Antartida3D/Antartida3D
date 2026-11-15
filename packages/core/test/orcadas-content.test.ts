@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ORCADAS_INTRO_FACT_IDS,
+  introFacts,
   FACT_KIND_LABEL,
   MONTH_NAMES,
   CHAPTER_HEADINGS,
@@ -238,5 +240,16 @@ describe('orcadas series control values', () => {
     const completeAnnualYears = ORCADAS_ANNUAL_TEMP.filter((y) => y.value !== null);
     expect(completeAnnualYears).toHaveLength(113);
     expect(ORCADAS_MONTHLY_TEMP[0].year).toBe(1903);
+  });
+});
+
+describe('intro sheet facts', () => {
+  it('shows every chosen fact, all real and with a source', () => {
+    const facts = introFacts();
+    expect(facts.map((f) => f.id)).toEqual([...ORCADAS_INTRO_FACT_IDS]);
+    for (const f of facts) {
+      expect(f.kind).toBe('real');
+      expect(f.sourceIds.length).toBeGreaterThan(0);
+    }
   });
 });

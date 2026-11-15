@@ -18,6 +18,8 @@ export * from './content/marambio-climate.ts';
 export * from './content/marambio.ts';
 export * from './content/fossils.ts';
 export * from './fossils.ts';
+export * from './content/marine.ts';
+export * from './marine-expedition.ts';
 export * from './projection.ts';
 export * from './route.ts';
 export * from './storm.ts';

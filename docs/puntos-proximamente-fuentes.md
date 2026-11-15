@@ -128,6 +128,8 @@ La aurora ya no se dibuja en el mapa 3D (#117): de día se leía como rayas verd
 
 ## `oceano` — Océano
 
+> **Ya no se muestra en la app.** Océano pasó a ser expedición (#8): al tocar el punto se abre la expedición, no esta ficha, y se quitaron el texto de `point-details.ts` y el modelo de la ficha (`oceano` en `pointModels.ts`). Queda registrado acá con sus fuentes.
+
 > Bajo el hielo marino viven microalgas que alimentan al krill en invierno y primavera, y casi todos los animales grandes de la Antártida dependen del krill. En el Mar de Weddell, el agua muy fría y salada se hunde hasta el fondo: es el Agua de Fondo Antártica, que ayuda a mover la circulación de todo el océano. Esa agua lleva oxígeno a las profundidades y guarda carbono lejos de la atmósfera durante siglos. Bajo el hielo fijo vive la foca de Weddell, que mantiene abiertos sus respiraderos raspando el hielo con los dientes.
 
 | Oración | Fuente | Cita |

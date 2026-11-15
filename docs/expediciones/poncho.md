@@ -1,184 +1,122 @@
 # Expedición #9 — Poncho, el perro polar argentino
 
-Contenido de los hitos de la expedición **«Poncho»** (issue #27, Prototipo B). Cuenta la vida de un perro de trineo del Ejército Argentino en la Antártida, entre 1961 y 1978.
+Contenido del recorrido de **«Poncho»** (issues #9, #27 y #145). Cuenta la vida de un perro de trineo del Ejército Argentino en la Antártida, entre 1961 y 1978, como un viaje sobre el mapa (el mismo motor que «Desde Ushuaia»). El texto vive en `packages/core/src/content/poncho.ts`; las posiciones, en `poncho-route.ts`.
 
-- **Fuentes:** cada afirmación lleva su código `[P#]` o `[V#]`, del [catálogo de fuentes](./poncho-fuentes.md). Fecha de consulta: ver ese catálogo.
-- **Reglas del eje 2:** un dato sin fuente no se publica; queda como `[Fuente a definir]`. Una reconstrucción nunca se presenta como dato real: cada hito lleva su rótulo (`hecho`, `reconstruccion`, `contexto`, tipo `MilestoneKind` de `packages/core/src/content/poncho.ts`).
-- **Personas:** el libro omite los nombres a propósito. Acá se usan roles («el oficial», «el suboficial»). No se nombra a ninguna persona.
-- **Revisión:** este texto fue redactado con asistencia de IA a partir de páginas abiertas por agentes. **Quien revise el PR debe abrir las fuentes** y confirmar que dicen lo que se afirma.
+- **Fuentes:** cada dato lleva su código (`P1` es el libro) y, si es del libro, la página del PDF donde está (`pages`): la cita abre esa página. Catálogo en [poncho-fuentes.md](./poncho-fuentes.md).
+- **Fiel en hechos, libre en forma:** los mismos hechos y el mismo orden que el libro; la forma (ritmo, ganchos, composición) es de este proyecto. **No hay diálogos ni pensamientos de Poncho inventados** y no se afirma nada que el libro no diga. El narrador va cerca del perro, en tercera persona, con frases cortas.
+- **Sin preguntas ni notas «así funciona»:** el recorrido no tiene cuestionario ni puntaje.
+- **Un solo aviso de ilustración:** «El recorrido y los modelos son una ilustración, no una ruta real.» Se muestra una vez, en el panel de inicio y en la página de fuentes; no se repite en cada ficha.
+- **Personas:** el libro omite los nombres a propósito. Acá se usan roles («el instructor», «el oficial», «el suboficial», «una familia de Ushuaia»). Los nombres de perros (Poncho, Coca, Flecha, Pato, Bucky) sí se usan. Una prueba (`packages/core/test/poncho-content.test.ts`) vigila los apellidos.
+- **Revisión:** redactado con asistencia de IA a partir del PDF del libro. **Quien revise el PR debe abrir las fuentes** y confirmar que dicen lo que se afirma.
 - **Licencia:** pendiente. Ver «Licencias y créditos» en [poncho-fuentes.md](./poncho-fuentes.md).
 
-## Rótulos en la interfaz
+## Cómo está contado
 
-| Rótulo (`MilestoneKind`) | Qué significa para el visitante | Cuándo se usa |
+El recorrido tiene **10 paradas** en **cuatro actos**. Cada parada es una ficha con:
+
+1. **Rótulo de acto** (solo en la primera parada de cada acto), arriba del título.
+2. **`essential`:** una mini-escena de dos o tres frases cortas, con algo que se ve y se hace (los abrigos naranjas, la cincha atada a la cintura, los hombres que sondean con bastones y piquetas, la brújula que se hunde en la nieve). Empieza con un eco del gancho de la parada anterior.
+3. **`hook`:** una frase de cierre, en cursiva, que abre la curiosidad por lo que viene. **No afirma hechos nuevos** y no lleva fuente: solo anticipa lo que la parada siguiente ya cuenta con la suya. No tiene cifras, años ni nombres propios (salvo «Poncho»), y no hace preguntas. Una prueba lo vigila.
+4. **«Saber más» (`more`):** los datos, cada uno con su fuente y su página.
+
+Entre paradas, mientras el equipo viaja, aparece el **diario de ruta**: una línea de una frase con un dato del libro y su página.
+
+### Actos
+
+| Acto | Título | Primera parada | Paradas |
+| :--- | :--- | :--- | :--- |
+| 1 | Un cachorro que aprende | `nacimiento` | `nacimiento` |
+| 2 | El guía en quien confían | `expedicion-invernal-1962` | `expedicion-invernal-1962`, `poncho-perro-guia` |
+| 3 | Salvar vidas en el hielo | `rumbo-a-belgrano` | `rumbo-a-belgrano`, `rescate-ae-205`, `patrulla-paralelo-82`, `paracaidas`, `brujula-perdida` |
+| 4 | Un retiro merecido | `adios-a-la-antartida` | `adios-a-la-antartida`, `ushuaia` |
+
+## Paradas (en orden de recorrido)
+
+La página es la del PDF del libro `[P1]` donde está el hecho principal de la ficha (`essential`).
+
+### 1. `nacimiento` — Nace Poncho (1961, tramo 0, trineo)
+
+- **Escena** (p. 5): los hombres de gruesos abrigos naranjas van y vienen por la Base Esperanza; nace Poncho el 10 de abril de 1961, el cachorro más juguetón de la camada; los hombres instruyen a los perros con arneses, trineos y voces de mando.
+- **Gancho:** «Faltaba poco para su primera gran travesía.»
+- **Saber más:** su aspecto (p. 5); sus padres, Coca y Flecha (p. 4); la raza (p. 6, p. 7 y `P2`); a los seis meses ocupó un lugar entre las yuntas (p. 8); la cincha atada a la cintura del instructor, «Auk» y «Quierr» y el slalom entre postes durante una semana (p. 9); Esperanza (`O2`).
+
+### 2. `expedicion-invernal-1962` — El olfato de Poncho (1962, tramo 0)
+
+- **Escena** (p. 12): la expedición invernal en marcha; Poncho olfatea la nieve, se detiene, mira al conductor, camina en zigzag y los hombres hunden bastones y piquetas hasta dar con una grieta.
+- **Gancho:** «La expedición todavía le tenía reservado un puesto nuevo.»
+- **Saber más:** salida el 14 de junio, nunataks Foca, distancia, el peligro de las grietas y que ciertos perros las detectaban con el olfato (p. 6, 9, 12).
+
+### 3. `poncho-perro-guia` — Poncho va al frente (1962, tramo 0)
+
+- **Escena** (p. 12): en el regreso desde la Base San Martín, el instructor le da el puesto Número 1 del tiro; tiene un año y medio; cuando el trineo se detiene se echa y mira al conductor.
+- **Gancho:** «Más adelante lo esperaba un viaje hacia el sur.»
+- **Saber más:** llegada a San Martín el 25 de agosto y los 1.842 metros (p. 10); estado de la base (`O2`); diez días de instrucción (p. 12); perro-guía el resto de su vida (p. 12).
+
+### 4. `rumbo-a-belgrano` — En rompehielos hacia Belgrano (1964, tramo 1, barco)
+
+- **Escena** (p. 14): diciembre de 1964, viaje a la Base General Belgrano con ayuda de un rompehielos y otros perros, como preparativo de la marcha al Polo.
+- **Gancho:** «Allá, en el hielo, pronto haría falta un perro como él.»
+- **Saber más:** perros elegidos por su servicio en 1962, la barrera Filchner y el nombre «Operación 90» (p. 14).
+
+### 5. `rescate-ae-205` — Al rescate de un avión (1965, tramo 2, trineo)
+
+- **Escena** (p. 18): un avión ha caído en el hielo y el mal tiempo impide buscarlo por aire; sale una patrulla de dos hombres y siete perros con Poncho al frente; al cuarto día, apenas olfatea el avión, acelera el paso.
+- **Gancho:** «Pero la gran marcha seguía su camino.»
+- **Saber más:** el avión Cessna 185B «AE-205» y el «blanqueo» (p. 17); tres jornadas entre grietas y ventiscas, los víveres que se tragó una grieta y el regreso de 1968 (p. 18).
+
+### 6. `patrulla-paralelo-82` — La patrulla «Paralelo 82» (1965, tramo 2)
+
+- **Escena** (p. 15): Poncho guía la patrulla de trineos de perros que va por delante de los tractores para detectar peligros; cuando los tractores se separan, conduce al grupo por portezuelos y valles helados de las montañas Santa Fe.
+- **Gancho:** «Y todavía le esperaba una aventura por el aire.»
+- **Saber más:** salida del 26 de octubre (`O12`), separación del 18 de noviembre y los 83° de latitud sur (p. 15), el barranco frente al pico Santa Fe (p. 16), la posición del pico (`P3`), y que Poncho no llegó al Polo: lo alcanzaron los tractores el 10 de diciembre, tras 66 días (p. 17, `O12`).
+
+### 7. `paracaidas` — Poncho paracaidista (1966, tramo 2)
+
+- **Escena** (p. 19): se abre la puerta del helicóptero, los perros saltan con paracaídas, aterrizan en el hielo y Poncho sale al frente del trineo a rescatar a una patrulla perdida.
+- **Gancho:** «Pero otra tormenta ya lo esperaba.»
+- **Saber más:** Pato y Bucky, el arnés, el afecto del suboficial a cargo, el trineo desarmable y los oficiales que saltaron antes, el helicóptero S-55 y los 30 km al sur de Belgrano (p. 18 y 19).
+
+### 8. `brujula-perdida` — La brújula perdida (1967, tramo 4, trineo)
+
+- **Escena** (p. 20): una ventisca sorprende a la patrulla a unos doce kilómetros de Esperanza; el trineo vuelca, la brújula se hunde en la nieve; los hombres solo pueden seguir a Poncho y, tras dos horas a ciegas, ven las luces de la base.
+- **Gancho:** «Esa noche su legajo sumó una proeza más.»
+- **Saber más:** la bahía Duse sobre mar congelado (p. 19), la «Cuesta de los Afligidos», las tres cañas con banderolas y la brújula recuperada tres días después (p. 20).
+
+### 9. `adios-a-la-antartida` — Poncho deja la Antártida (1973, tramo 5, barco)
+
+- **Escena** (p. 21): en su legajo aparece cada vez más «No trabajó»; ya no corre a la par de los jóvenes; llega el rompehielos y lo llevan a bordo rumbo a Ushuaia, una excepción por su prestigio.
+- **Gancho:** «Lejos de la nieve lo esperaba un mundo nuevo.»
+- **Saber más:** el traslado de 1973 con una familia de Ushuaia y su hotel (p. 5); legajo y excepción (p. 21).
+
+### 10. `ushuaia` — Un final tranquilo en Ushuaia (1978, tramo 5)
+
+- **Escena** (p. 22): en ese mundo nuevo, Poncho vive plácidamente en el hotel de un viejo compañero de patrulla; llega a casi 18 años; una mañana de primavera de 1978, en el jardín, ya no despierta.
+- **Gancho:** «Así termina el camino de Poncho.»
+- **Saber más:** el mundo nuevo (niños, árboles, caballos, calor) y el trineo improvisado (p. 21); el accidente de 1976 (p. 22); los desfiles de 1977 y 1978 (p. 5); la taxidermia que no prosperó (p. 22).
+
+## Diario de ruta
+
+Once líneas, todas del libro `[P1]` con su página, repartidas por los tramos de trineo (la función `logLineAt` de `packages/core/src/poncho-log.ts` elige la que corresponde al avance). En el tramo de barco hacia Belgrano hay una; en los otros dos tramos de barco ninguna, porque el libro dice poco de los perros a bordo.
+
+| Tramo | Línea | Página |
 | :--- | :--- | :--- |
-| **Hecho** | Algo que ocurrió, respaldado por la fuente citada. | El hecho figura en la foja de servicios o cronología del libro `[P1]`, o en una fuente oficial. |
-| **Reconstrucción** | Una escena contada en el libro con detalles narrados. Es el relato del autor, no un registro. | El episodio solo aparece en un capítulo narrado y no en la cronología ni en otra fuente. |
-| **Contexto** | Información de fondo que ayuda a entender, pero no es un hecho de la vida de Poncho. | Historia de la raza, Polo Sur, Protocolo de Madrid. |
+| 0 | Un equipo se armaba con cinco yuntas y un líder: once perros. | 12 |
+| 0 | Cada perro tiraba entre 30 y 45 kilos de carga. | 12 |
+| 0 | En terreno bastante llano, un equipo hacía de 40 a 50 kilómetros en más de seis horas sin descanso. | 12 |
+| 0 | En las travesías, algunos patrulleros cantaban a todo pulmón, y a los perros les gustaba muchísimo. | 12 |
+| 1 | La mayoría de los perros que viajaron con Poncho había trabajado bien en la expedición invernal de 1962. | 14 |
+| 2 | Antes de salir cada día, los hombres observaban a los perros veteranos: su conducta podía anunciar una tormenta. | 12 |
+| 2 | Tras una noche de tormenta, los perros esperaban acurrucados bajo uno o dos metros de nieve. | 10 |
+| 2 | Con carne fresca de foca, el pelaje de los perros quedaba brillante y untuoso, y la nieve no se les pegaba. | 25 (pie de foto) |
+| 2 | Los trineos de perros tenían una autonomía de 20 días, no más. | 10 |
+| 4 | Cada perro comía por día medio kilo de pemmican, una mezcla con carne en polvo, grasa y avena. | 10 |
+| 4 | Un trineo de patrulla rara vez superaba los 40 kilómetros por hora. | 12 |
 
-Las fotos reales se rotulan «foto»; cualquier dibujo o modelo 3D se rotula «ilustración» (`ImageKind`). Las coordenadas del mapa se rotulan por separado (ver `poncho-diseno.md`).
-
----
-
-## Hitos (en orden de recorrido)
-
-Cada hito lleva: `id`, fecha, lugar, título, resumen (texto para el visitante), rótulo, fuente y «Saber más».
-
-### 1. `nacimiento` — Nace Poncho
-
-- **Fecha:** 10/04/1961. **Lugar:** Base Esperanza. **Rótulo:** `hecho`.
-- **Resumen:** «Poncho nació el 10 de abril de 1961 en la Base Esperanza, en la Antártida. Sus padres también eran perros de trineo del Ejército. Desde cachorro fue juguetón y curioso.»
-- **Fuente:** `[P1]` (cronología y cap. I).
-- **Saber más:** el libro describe su aspecto: pelaje blanco cremoso con manchas grises y una «máscara» en la cara `[P1]` (cap. I). Esperanza es una base permanente argentina `[V2]`.
-
-### 2. `raza` — Un perro hecho para la Antártida
-
-- **Fecha:** desde 1951 (aprox.). **Lugar:** bases argentinas. **Rótulo:** `contexto`.
-- **Resumen:** «Los perros polares argentinos eran una raza que el Ejército fue formando con cruzas de Malamute, Groenlandés y Husky. Eran fuertes y resistentes, y tiraban de los trineos en las patrullas.»
-- **Fuente:** `[P1]` (cap. II), `[P2]` (origen en 1951).
-- **Saber más:** el libro dice que la raza estaba «en formación» `[P1]` (cap. II). Hay una diferencia de relato sobre cómo y cuándo empezó (ver «Pendientes y discrepancias» en `poncho-fuentes.md`).
-
-### 3. `instruccion` — Aprende a tirar del trineo
-
-- **Fecha:** 1961. **Lugar:** Base Esperanza. **Rótulo:** `hecho`.
-- **Resumen:** «Durante su primer año Poncho aprendió a trabajar en equipo. A los seis meses lo ataron por primera vez a un trineo, en la tercera yunta (la tercera pareja de perros). Aprendió voces de mando: "Auk" para ir a la derecha y "Quierr" para ir a la izquierda.»
-- **Fuente:** `[P1]` (cronología; cap. III para los seis meses y las voces de mando).
-- **Saber más:** el libro cuenta que su primera instrucción incluyó recorrer una línea de postes «en zigzag» `[P1]` (pie de la foto 1).
-
-### 4. `expedicion-invernal-1962` — La Expedición Terrestre Invernal
-
-- **Fecha:** 14/06/1962 a 10/1962 (fines de octubre). Llegada a San Martín: 25/08/1962. **Lugar:** de Base Esperanza a Base San Martín (bahía Margarita), por la Península Antártica. **Rótulo:** `hecho`.
-- **Resumen:** «En pleno invierno de 1962 una expedición del Ejército cruzó la Península Antártica con trineos de perros y tractores. Poncho tenía poco más de un año y comenzó como un perro más de la yunta. Al volver, a fines de octubre, ya era perro-guía: el que va adelante y marca el camino.»
-- **Fuente:** `[P1]` (cap. IV y cronología).
-- **Saber más:** el libro dice que Esperanza y San Martín están a unos 800 km en línea recta y que el viaje de ida y vuelta pasó los 2.000 km `[P1]` (cap. IV). Las bases son de la Armada: fundación de Esperanza el 17/12/1952 y de San Martín el 21/03/1951; San Martín estuvo desactivada entre febrero de 1960 y marzo de 1976 `[V2]`, lo que concuerda con que el libro la describa «desocupada» en 1962.
-- **Nota para el equipo:** el libro dice que se cruzó «el Círculo Polar Antártico (en la latitud 60 grados Sur)» `[P1]`. **Es un error del libro y no se copia**: el Círculo Polar Antártico está cerca de los 66,5° S (los 60° S son el límite del Tratado Antártico). Ver «Pendientes y discrepancias».
-
-### 5. `grietas` — El olfato que encuentra grietas
-
-- **Fecha:** durante la expedición de 1962 y después (sin fecha puntual). **Lugar:** hielo de la Península Antártica. **Rótulo:** `reconstruccion`.
-- **Resumen:** «Las grietas ocultas bajo la nieve son uno de los mayores peligros de la Antártida. Según el relato, Poncho iba olfateando el suelo y avisaba al conductor cuando había una. Así los trineos de perros las evitaban.»
-- **Fuente:** `[P1]` (cap. V, relato narrado; el propio libro dice «según se dice, las detectaban mediante el olfato» en el cap. I).
-- **Saber más:** es la descripción del autor de una conducta típica del perro-guía, no una medición. No hay otra fuente.
-
-### 6. `refugio-san-nicolas` — Materiales para un refugio
-
-- **Fecha:** 1963. **Lugar:** zona de Base Esperanza. **Rótulo:** `hecho`.
-- **Resumen:** «Desde 1963 Poncho fue siempre perro-guía. Ese año encabezó el transporte de materiales para construir el refugio San Nicolás.»
-- **Fuente:** `[P1]` (cronología).
-- **Saber más:** la cronología enumera otras patrullas de 1963 y estima más de 1.500 km recorridos ese año `[P1]`.
-
-### 7. `traslado-belgrano` — Rumbo a Belgrano
-
-- **Fecha:** 12/1964 (diciembre). **Lugar:** de Base Esperanza a Base General Belgrano. **Rótulo:** `hecho`.
-- **Resumen:** «A fines de 1964 Poncho fue trasladado a la Base General Belgrano, mucho más al sur, sobre la barrera de hielo. Se preparaba la primera marcha terrestre argentina al Polo Sur.»
-- **Fuente:** `[P1]` (cronología y cap. VII).
-- **Saber más:** estos traslados se hacían con ayuda del rompehielos `[P1]` (cap. VII).
-
-### 8. `operacion-90-patrulla-82` — La patrulla «Paralelo 82»
-
-- **Fecha:** salida de Belgrano 26/10/1965; el grupo motorizado se separa de la patrulla de perros el 18/11/1965. **Lugar:** desde Base General Belgrano hacia los nunataks Santa Fe. **Rótulo:** `hecho`.
-- **Resumen:** «En 1965 el Ejército Argentino organizó la "Operación 90", la primera expedición terrestre argentina al Polo Sur. Poncho no fue hasta el Polo: guió una patrulla de trineos de perros, la "Paralelo 82", que exploró el terreno por delante del grupo motorizado. Hizo tareas de cartografía y geología y llegó más allá de los 83° de latitud Sur.»
-- **Fuente:** `[P1]` (cronología y cap. VII). La salida (26/10/1965) y la llegada del grupo motorizado al Polo (10/12/1965) las confirma una fuente oficial `[V1]`.
-- **Saber más:** el libro cuenta que fueron «los primeros perros y los primeros hombres en recorrer esa región del planeta en trineo» `[P1]` (cap. VII). Esa frase es del autor y no se verificó en otra fuente: en la interfaz va como cita del libro, no como récord.
-- **Coordenadas:** pico Santa Fe, 82°03' S, 41°20' O (aprox.) `[V3]`. El libro no da la posición exacta del límite de los 83° S.
-
-### 9. `polo-sur` — El Polo Sur, alcanzado por el grupo motorizado
-
-- **Fecha:** 10/12/1965 (llegada al Polo); 31/12/1965 (regreso a Belgrano). **Lugar:** Polo Sur geográfico (90° S). **Rótulo:** `contexto`.
-- **Resumen:** «El 10 de diciembre de 1965 el grupo de tractores de la Operación 90 llegó al Polo Sur. Fueron 66 días de marcha. Poncho no estuvo allí: su patrulla se había separado antes y siguió explorando.»
-- **Fuente:** `[V1]` (fecha, salida, regreso y 66 días); `[P1]` (cap. VII, que además dice casi 3.000 km).
-- **Saber más:** la fuente oficial dice que el Ejército Argentino llegó al Polo «el 10 de diciembre de 1965» `[V1]`. No se nombra a los integrantes.
-
-### 10. `barranco` — El barranco frente al pico Santa Fe
-
-- **Fecha:** después del 18/11/1965 (cuando la patrulla de perros ya iba sola; sin día exacto). **Lugar:** frente al pico Santa Fe. **Rótulo:** `reconstruccion`.
-- **Resumen:** «Según el libro, el trineo de Poncho desapareció de pronto tras un filo de nieve: había un barranco de unos 200 metros. Los hombres quedaron aferrados a unas rocas mientras Poncho, sentado, comía nieve. Con una orden tranquila, Poncho tiró hacia arriba y sacaron el trineo.»
-- **Fuente:** `[P1]` (cap. VII, anécdota narrada; no aparece en la cronología).
-- **Saber más:** es una anécdota del autor, contada con detalles de ánimo. No hay otra fuente ni fecha exacta.
-
-### 11. `ae-205` — El rescate del avión AE-205
-
-- **Fecha:** fines de 09/1965 (accidente); 1968 (recuperación de los restos). **Lugar:** al sudeste de Base General Belgrano. **Rótulo:** `hecho`.
-- **Resumen:** «A fines de septiembre de 1965 un pequeño avión Cessna, el "AE-205", tuvo que aterrizar de emergencia por una nevada tan blanca que no dejaba ver el horizonte. Los cuatro tripulantes sobrevivieron. Una patrulla de dos hombres y siete perros, con Poncho al frente, salió a buscarlos y los encontró al cuarto día. En 1968 Poncho volvió al lugar para ayudar a recuperar partes del avión.»
-- **Fuente:** `[P1]` (cap. VIII; cronología para el rescate y 1968).
-- **Saber más:** el libro dice que el avión fue reparado, volvió a volar y hoy está en un museo `[P1]` (cap. VIII; el museo no se nombra y no se verificó). Hasta que se aclare, no se publica qué museo.
-
-### 12. `paracaidas` — Poncho paracaidista
-
-- **Fecha:** enero de 1966 (según el cap. IX); la cronología dice «en verano» `[P1]`. **Lugar:** a unos 30 km al sur de Base General Belgrano. **Rótulo:** `hecho`.
-- **Resumen:** «En un ejercicio de rescate, Poncho saltó en paracaídas desde un helicóptero del rompehielos San Martín, junto a otros dos perros y dos oficiales. El salto fue parte del entrenamiento para rescates en el hielo.»
-- **Fuente:** `[P1]` (cronología y cap. IX).
-- **Saber más:** el libro compara este salto con perros paracaidistas de la Segunda Guerra y de otras épocas `[P1]` (cap. IX). Esas comparaciones no se verificaron y no se publican.
-- **Discrepancia de fecha:** ver «Pendientes y discrepancias». Mientras tanto, el hito se muestra como «verano de 1966» sin mes.
-
-### 13. `filchner` — Hacia la barrera de hielos Filchner
-
-- **Fecha:** 1966 (patrulla a la estación Shackleton: febrero según el cap. VI, primavera según la cronología); expedición a la barrera Filchner: noviembre de 1966. **Lugar:** de Base General Belgrano a caleta Jardinero; costa de la barrera de hielos Filchner. **Rótulo:** `hecho`.
-- **Resumen:** «En 1966 Poncho participó en una patrulla de reconocimiento y después en la expedición a la barrera de hielos Filchner. Esta vez los perros viajaron como pasajeros sobre trineos arrastrados por tractores. Cuando el terreno se volvía peligroso por las grietas, los bajaban y volvían a trabajar adelante, como guías.»
-- **Fuente:** `[P1]` (cap. VI y cronología). Las fotos de 1966 llevan el crédito del libro.
-- **Saber más:** el libro dice que en total los hombres de Belgrano recorrieron casi 7.000 km en esa campaña `[P1]` (cap. VI); la cifra no se verificó.
-- **Discrepancia de fecha:** ver «Pendientes y discrepancias».
-- **Coordenadas:** barrera de hielos Filchner, 79° S, 40° O (punto aproximado de la entidad, no un punto exacto) `[V3]`; cabo Adams 75°02' S, 62°20' O y península Bowman 74°49' S, 62°16' O `[V3]`. Caleta Jardinero: `[Fuente a definir]`.
-
-### 14. `duse` — La brújula perdida en la bahía Duse
-
-- **Fecha:** 08/1967 (agosto). **Lugar:** bahía Duse, regreso a Base Esperanza. **Rótulo:** `reconstruccion`.
-- **Resumen:** «Según el libro, en agosto de 1967 una ventisca sorprendió a una patrulla que volvía a Esperanza. La brújula se cayó y se perdió en la nieve. Sin instrumentos y sin ver nada, la patrulla siguió a Poncho, que la llevó hasta las luces de la base.»
-- **Fuente:** `[P1]` (cap. X, relato narrado). La cronología solo dice que en 1967 hubo una campaña invernal con paradas en refugios.
-- **Saber más:** no hay otra fuente del episodio. La bahía Duse está en el extremo de la Península Antártica, cerca de Esperanza `[V3]`.
-- **Coordenadas:** bahía Duse, 63°30' S, 57°20' O `[V3]`.
-- **Nota:** otra página del mismo sitio ubica un accidente de trineo en 1956 cerca de la bahía «Dusse» `[P2]`. El libro no lo cuenta así y no se verificó: **no se publica**.
-
-### 15. `ushuaia` — Un retiro en Ushuaia
-
-- **Fecha:** 1973 (traslado); 1976 (accidente); 1977/78 (paseos). **Lugar:** de la Antártida a Ushuaia. **Rótulo:** `hecho`.
-- **Resumen:** «En 1973, ya veterano, Poncho dejó la Antártida a bordo del rompehielos San Martín y llegó a Ushuaia. Lo recibió una familia de la ciudad que tenía un hotel llamado "Antártida". En 1976 sufrió un accidente y, aunque un veterinario aconsejó sacrificarlo, la familia se negó. En 1977 y 1978 volvió a tirar de un trineo, esta vez con niños fueguinos, y participó en desfiles.»
-- **Fuente:** `[P1]` (cronología y cap. XII).
-- **Saber más:** la cronología dice que lo «recibe la familia» de ese hotel `[P1]`. Se omite el apellido a propósito.
-- **Coordenadas / lugar:** Ushuaia (ciudad): `[Fuente a definir]` para el punto exacto del hotel (el libro lo llama «desaparecido» `[P1]`; no se verificó).
-
-### 16. `muerte` — El final de Poncho
-
-- **Fecha:** primavera de 1978 (sin día). **Lugar:** Ushuaia. **Rótulo:** `hecho`.
-- **Resumen:** «En la primavera de 1978 Poncho murió en Ushuaia, con casi 18 años: una edad muy larga para un perro de trineo. Alguien intentó conservar su cuerpo, pero la taxidermia no prosperó.»
-- **Fuente:** `[P1]` (cronología y cap. XII).
-- **Saber más:** el libro cuenta que la noticia se publicó en 1979 en un periódico territorial y en un diario de Buenos Aires `[P1]` (cronología). Esas publicaciones no se consultaron.
-
-### 17. `protocolo-madrid` — Los perros dejan la Antártida
-
-- **Fecha:** 1991 (Protocolo de Madrid); retiro entre 1991 y 1994 (ver discrepancia). **Lugar:** bases antárticas argentinas. **Rótulo:** `contexto`.
-- **Resumen:** «En 1991 los países del Tratado Antártico firmaron el Protocolo de Madrid, que protege el ambiente de la Antártida. Una de sus normas pide no tener animales no nativos, como los perros. La Argentina retiró sus perros polares base por base, y esa raza ya no existe en la Antártida.»
-- **Fuente:** `[P1]` («Palabras finales»); `[P2]` (retiro 1991–1993). La fecha límite exacta del Protocolo: `[Fuente a definir]` (ver «Pendientes»).
-- **Saber más:** el libro cuenta que los perros fueron a destacamentos de Gendarmería (Mendoza, Neuquén, Ushuaia) y que muchos murieron poco después `[P1]`. Una página del mismo sitio ubica los últimos 13 perros de Esperanza en febrero de 1993 `[P2]`.
-
----
-
-## Resumen de rótulos
-
-| Hito | Rótulo |
-| :--- | :--- |
-| `nacimiento` | hecho |
-| `raza` | contexto |
-| `instruccion` | hecho |
-| `expedicion-invernal-1962` | hecho |
-| `grietas` | reconstruccion |
-| `refugio-san-nicolas` | hecho |
-| `traslado-belgrano` | hecho |
-| `operacion-90-patrulla-82` | hecho |
-| `polo-sur` | contexto |
-| `barranco` | reconstruccion |
-| `ae-205` | hecho |
-| `paracaidas` | hecho |
-| `filchner` | hecho |
-| `duse` | reconstruccion |
-| `ushuaia` | hecho |
-| `muerte` | hecho |
-| `protocolo-madrid` | contexto |
-
-## Texto no publicable (no pasar a la interfaz)
+## Qué no se publica
 
 - Los nombres de personas (el libro los omite a propósito).
-- «Círculo Polar Antártico a 60° S» (error del libro).
-- El accidente de 1956 en bahía «Dusse» `[P2]`, sin verificar.
-- Las comparaciones con perros paracaidistas de la Segunda Guerra y los demás datos de relleno del cap. IX.
-- Frases de superlativo («el mejor», «el más recordado») salvo como cita atribuida al libro.
+- «Círculo Polar Antártico a 60° S» (error del libro) y el accidente de 1956 en la bahía «Dusse» (`P2`, sin verificar).
+- Las comparaciones con perros paracaidistas de otras épocas y los demás datos de relleno del libro.
+- Diálogos y pensamientos de Poncho, aunque el libro los cuente como relato.
+- Frases de superlativo («el mejor», «el primero») salvo como cita atribuida al libro.
+- Un dato sin fuente: si falta el origen, queda `[Fuente a definir]`.

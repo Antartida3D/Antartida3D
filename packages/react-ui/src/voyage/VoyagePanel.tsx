@@ -4,6 +4,8 @@ import {
   expeditionAt,
   findTransport,
   formatIsoDate,
+  logLineAt,
+  ponchoActOpeningAt,
   quizScore,
   tripSources,
   FAUNA_COUNT,
@@ -21,6 +23,7 @@ import {
   voyageSightings,
   voyageStops,
   type TransportId,
+  type VoyageFact,
   type VoyageState,
   type VoyageSource,
   type VoyageSourceCode,
@@ -208,6 +211,8 @@ function MilestoneCard({ voyage, animated, onExit, onSource }: {
   const next = () => (last ? onExit(true) : voyage.closeCard());
   // The hop of the helicopter shows the answer of the arrival: offered once the question is answered.
   const transfer = animated && last && answered && state.transport === VOYAGE_TRANSFER.transport;
+  // The trip of Poncho is told in acts: the first stop of each one shows its title above its own.
+  const act = state.kind === 'dogs' ? ponchoActOpeningAt(milestone.id) : undefined;
   return (
     <section
       className="sheet voyage"
@@ -218,6 +223,7 @@ function MilestoneCard({ voyage, animated, onExit, onSource }: {
       onKeyDown={(e) => e.key === 'Escape' && next()}
     >
       <small className="vstep">Hito {state.card + 1} de {voyageStops(state.kind).length}</small>
+      {act && <small className="vact">Acto {act.number} · {act.act.title}</small>}
       <h2 id="voyage-title">{milestone.title}</h2>
       <ul className="vfacts">
         <Fact fact={milestone.essential} onSource={onSource} />
@@ -258,6 +264,7 @@ function MilestoneCard({ voyage, animated, onExit, onSource }: {
       )}
       {last && voyageSightings(state.kind).length > 0 && <Notebook voyage={voyage} animated={animated} />}
       {last && <p className="anno">{state.kind === 'dogs' ? 'Podés volver a recorrer su historia cuando quieras.' : 'Si te quedó curiosidad por otro medio, volvé a hacer la expedición.'}</p>}
+      {milestone.hook && <p className="vhook">{milestone.hook}</p>}
       <div className="row vactions">
         {/* With the buttons that stay in view, not under the notes. The main one until the hop was seen. */}
         {transfer && (
@@ -320,12 +327,27 @@ function tripLine({ transport, kind, t, reached }: VoyageState): string {
   return `Estimación: ≈ ${WHOLE.format(km)} de ${WHOLE.format(totalKm)} km · ≈ ${formatTripHours(hours)} ${kind === 'plane' ? 'de vuelo' : 'de navegación'}`;
 }
 
-function TravelBar({ voyage, animated, onExit }: { voyage: VoyageController; animated: boolean; onExit: () => void }) {
+/**
+ * Line of the route log for the trip at this moment, if the trip has one. When the path is not animated (2D map,
+ * reduced motion) the trip goes from stop to stop: the line is the one of the leg of the next stop, halfway there.
+ */
+function routeLogLine(state: VoyageState, animated: boolean): VoyageFact | null {
+  if (state.kind !== 'dogs') return null;
+  if (animated) return logLineAt(state.kind, state.t);
+  const stops = voyageStops(state.kind);
+  const next = stops[state.reached];
+  if (!next) return null;
+  const from = state.reached > 0 ? stops[state.reached - 1].t : 0;
+  return logLineAt(state.kind, (from + next.t) / 2, next.milestone.segment);
+}
+
+function TravelBar({ voyage, animated, onExit, onSource }: { voyage: VoyageController; animated: boolean; onExit: () => void; onSource: OpenSources }) {
   const state = voyage.state!;
   const bar = useRef<HTMLElement>(null);
   const trip = useRef<HTMLParagraphElement>(null);
   const { bus } = voyage;
   const [atStart, setAtStart] = useState(state.t <= 0);
+  const [log, setLog] = useState<VoyageFact | null>(() => routeLogLine(state, animated));
 
   // The progress bar follows the trip frame by frame without re-rendering React.
   useEffect(() => {
@@ -337,11 +359,12 @@ function TravelBar({ voyage, animated, onExit }: { voyage: VoyageController; ani
         if (trip.current.textContent !== text) trip.current.textContent = text;
       }
       if (bus.state) setAtStart(bus.state.t <= 0); // re-renders only when it changes
+      if (bus.state) setLog(routeLogLine(bus.state, animated)); // so does the line of the route log: a line is a constant
     };
     paint();
     bus.listeners.add(paint);
     return () => void bus.listeners.delete(paint);
-  }, [bus]);
+  }, [bus, animated]);
 
   const [hint, setHint] = useState(false);
   const hintTimer = useRef(0);
@@ -398,6 +421,12 @@ function TravelBar({ voyage, animated, onExit }: { voyage: VoyageController; ani
       <p className="vhint" role="status">
         {hint && <><strong>¿Sabías?</strong> Tocá el botón dos veces seguidas y mantenelo apretado para ir más rápido.</>}
       </p>
+      {/* The route log: a line of the book while the team travels between stops. Where the path is not animated, one per step. */}
+      {state.kind === 'dogs' && (
+        <ul className="vfacts vlog" aria-live="polite" aria-label="Diario de ruta">
+          {log && <Fact key={log.text} fact={log} onSource={onSource} />}
+        </ul>
+      )}
       <div className="vprog" aria-hidden="true"><i ref={bar} /></div>
       {/* Filled frame by frame, like the bar. Not a live region: it would be announced without pause. */}
       <p className="vtrip" ref={trip} />
@@ -473,7 +502,7 @@ export function VoyagePanel({ voyage, transport, animated, webgl, reduced, onExi
       ? <TransferBar voyage={voyage} onSource={setSources} />
     : state.card >= 0
       ? <MilestoneCard key={state.card} voyage={voyage} animated={animated} onExit={onExit} onSource={setSources} />
-      : <TravelBar voyage={voyage} animated={animated} onExit={() => onExit(false)} />;
+      : <TravelBar voyage={voyage} animated={animated} onExit={() => onExit(false)} onSource={setSources} />;
   const trip = state?.transport ?? transport;
   return (
     <TripContext.Provider value={trip && findTransport(trip).kind === 'dogs' ? trip : undefined}>

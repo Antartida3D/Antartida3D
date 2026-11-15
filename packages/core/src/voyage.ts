@@ -178,6 +178,10 @@ export const voyageAt = (kind: TransportKind, t: number): Point => TRIPS[kind].a
 /** What is drawn at fraction `t` of the trip: a trip of the dogs changes vehicle with its legs. */
 export const vehicleAt = (kind: TransportKind, t: number): VehicleKind => TRIPS[kind].vehicleAt(t);
 
+/** Fractions of the trip where leg `leg` of a transport starts and ends, and how many legs it has. */
+export const tripLegRange = (kind: TransportKind, leg: number) => TRIPS[kind].legRange(leg);
+export const tripLegCount = (kind: TransportKind) => TRIPS[kind].legCount;
+
 /** Direction of travel at `t` in map space, as an angle from +x towards +y (radians). */
 export function voyageHeading(kind: TransportKind, t: number): number {
   const step = 0.002;

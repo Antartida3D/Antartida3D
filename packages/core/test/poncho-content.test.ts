@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  PONCHO_MILESTONES, PONCHO_TRANSPORT, VOYAGE_SOURCES, VOYAGE_SOURCE_CODES, citationLabel, expeditionAt, quizScore, tripSourceNumber, tripSources, voyageSourceNumber, voyageStops,
+  PONCHO_ACTS, PONCHO_LOG, PONCHO_MILESTONES, PONCHO_TRANSPORT, VOYAGE_SOURCES, VOYAGE_SOURCE_CODES, citationLabel, expeditionAt, logLineAt, ponchoActOpeningAt, quizScore, tripLegCount, tripLegRange, tripSourceNumber, tripSources, voyageSourceNumber, voyageStops,
 } from '../src/index.ts';
 
 const allFacts = [
@@ -117,6 +117,109 @@ describe('content of the expedition of Poncho', () => {
       expect(tripSources(id)).toEqual(VOYAGE_SOURCE_CODES);
       expect(tripSourceNumber(id, 'P1')).toBe(voyageSourceNumber('P1'));
     }
+  });
+});
+
+// The hooks (closing line of each card) and the log lines tell no fact the card does not already source: the hooks
+// carry no source, so nothing that looks like a fact (figure, year, name, estimate) may get in through them.
+describe('hooks of the story', () => {
+  const hooks = PONCHO_MILESTONES.map((m) => ({ id: m.id, hook: m.hook }));
+
+  it('gives every stop a hook that ends with a period and asks nothing', () => {
+    for (const { id, hook } of hooks) {
+      expect(hook, id).toBeDefined();
+      expect(hook!.trim(), id).toMatch(/\.$/);
+      expect(hook, id).not.toMatch(/[?¿!]/);
+      expect(sentences(hook!), id).toBe(1);
+    }
+  });
+
+  it('has no figures, years, proper names (but Poncho), quotes or hedges', () => {
+    for (const { id, hook } of hooks) {
+      expect(hook, id).not.toMatch(/\d/);
+      expect(hook, id).not.toMatch(/aproximad|ilustrativ|a definir|«|»/i);
+      const words = hook!.replace(/[.,;:]/g, '').split(/\s+/).slice(1);
+      for (const word of words) if (/^\p{Lu}/u.test(word)) expect(word, id).toBe('Poncho');
+    }
+  });
+
+  it('names no person and no fire (the book talks about tents)', () => {
+    for (const { id, hook } of hooks) {
+      expect(hook, id).not.toMatch(/Giró|Sosa|Villar|Urruty|fuego|fogata/i);
+    }
+  });
+
+  it('keeps the essentials free of the doubtful words too', () => {
+    for (const m of PONCHO_MILESTONES) expect(m.essential.text, m.id).not.toMatch(/fuego|fogata|\?/i);
+  });
+});
+
+describe('acts of the story', () => {
+  it('are four, each opening at an existing stop, in the order of the story, and each with at least one stop', () => {
+    expect(PONCHO_ACTS).toHaveLength(4);
+    const ids = PONCHO_MILESTONES.map((m) => m.id);
+    const firsts = PONCHO_ACTS.map((a) => ids.indexOf(a.firstStop));
+    for (const index of firsts) expect(index).toBeGreaterThanOrEqual(0);
+    expect(firsts[0]).toBe(0);
+    for (let i = 1; i < firsts.length; i++) expect(firsts[i]!).toBeGreaterThan(firsts[i - 1]!);
+    for (const act of PONCHO_ACTS) expect(act.title.trim()).not.toBe('');
+  });
+
+  it('finds the act that opens at a stop, and none elsewhere', () => {
+    expect(ponchoActOpeningAt('nacimiento')?.number).toBe(1);
+    expect(ponchoActOpeningAt('adios-a-la-antartida')?.act.id).toBe('retiro');
+    expect(ponchoActOpeningAt('paracaidas')).toBeUndefined();
+  });
+});
+
+describe('route log of the trip of Poncho', () => {
+  it('has between 8 and 12 one-sentence lines, in order of the trip, on legs of the route', () => {
+    expect(PONCHO_LOG.length).toBeGreaterThanOrEqual(8);
+    expect(PONCHO_LOG.length).toBeLessThanOrEqual(12);
+    for (let i = 0; i < PONCHO_LOG.length; i++) {
+      const { leg, at, fact } = PONCHO_LOG[i]!;
+      expect(Number.isInteger(leg)).toBe(true);
+      expect(leg).toBeGreaterThanOrEqual(0);
+      expect(leg).toBeLessThan(tripLegCount('dogs'));
+      expect(at).toBeGreaterThanOrEqual(0);
+      expect(at).toBeLessThanOrEqual(1);
+      expect(sentences(fact.text), fact.text).toBe(1);
+      if (i > 0) {
+        const before = PONCHO_LOG[i - 1]!;
+        expect(leg * 10 + at, fact.text).toBeGreaterThan(before.leg * 10 + before.at);
+      }
+    }
+  });
+
+  it('has only real facts of the book with the page where each is', () => {
+    for (const { fact } of PONCHO_LOG) {
+      expect(fact.kind).toBe('real');
+      expect(fact.sources).toEqual(['P1']);
+      expect(Number.isInteger(fact.pages?.P1), fact.text).toBe(true);
+      expect(fact.pages!.P1!).toBeGreaterThanOrEqual(1);
+      expect(fact.pages!.P1!).toBeLessThanOrEqual(25);
+      expect(fact.text, fact.text).not.toMatch(/Giró|Sosa|Villar|Urruty|aproximad|ilustrativ|a definir/);
+    }
+  });
+
+  it('gives the line that corresponds to the progress of the trip, and none where the leg has none', () => {
+    const lines = new Set<string>();
+    for (const { leg, at, fact } of PONCHO_LOG) {
+      const [from, to] = tripLegRange('dogs', leg);
+      expect(logLineAt('dogs', from + at * (to - from))).toBe(fact);
+      lines.add(fact.text);
+    }
+    expect(lines.size).toBe(PONCHO_LOG.length);
+    const [shipFrom, shipTo] = tripLegRange('dogs', 3);
+    expect(logLineAt('dogs', (shipFrom + shipTo) / 2)).toBeNull();
+    expect(logLineAt('ship', 0.5)).toBeNull();
+    expect(logLineAt('dogs', 1)).toBeNull(); // the last leg is a ship one
+  });
+
+  it('forces a leg for the steps of a trip that does not animate the path', () => {
+    const [from, to] = tripLegRange('dogs', 2);
+    expect(logLineAt('dogs', (from + to) / 2, 2)).not.toBeNull();
+    expect(logLineAt('dogs', 0, 3)).toBeNull();
   });
 });
 

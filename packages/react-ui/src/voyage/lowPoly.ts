@@ -28,6 +28,13 @@ export function normalOf([a, b, c]: Tri): Vec3 {
   return l ? [n[0] / l, n[1] / l, n[2] / l] : [0, 0, 0];
 }
 
+/** The face wound so that it looks away from `inside`. */
+export function facingOut(a: Vec3, b: Vec3, c: Vec3, color: number, inside: Vec3): Tri {
+  const n = normalOf([a, b, c, color]);
+  const out = n[0] * (a[0] + b[0] + c[0] - 3 * inside[0]) + n[1] * (a[1] + b[1] + c[1] - 3 * inside[1]) + n[2] * (a[2] + b[2] + c[2] - 3 * inside[2]);
+  return out < 0 ? [a, c, b, color] : [a, b, c, color];
+}
+
 /**
  * A color with this bit already carries its shade (reliefColor): the geometry draws it as it is.
  * Faces that must look like the painted relief use it.

@@ -2,7 +2,7 @@ import type { TransportId } from '@antartida/core';
 import { HERCULES_FLIGHT_POLY, HERCULES_SPAN } from './herculesModel.ts';
 import { scaled } from './lowPoly.ts';
 import { ModelPreview } from './ModelPreview.tsx';
-import { VEHICLE_MODELS } from './vehicles.ts';
+import { VEHICLE_MODELS, VEHICLE_POLY_MODELS } from './vehicles.ts';
 
 /**
  * The camera of ModelPreview frames a model one unit across, and the wing of the Hercules is wider
@@ -13,6 +13,7 @@ const HERCULES_PREVIEW = scaled(HERCULES_FLIGHT_POLY, PREVIEW_SPAN / HERCULES_SP
 
 /** Small turntable of the picked vehicle, as in a game's vehicle select. */
 export function VehiclePreview({ id, reduced }: { id: TransportId; reduced: boolean }) {
-  if (id === 'hercules') return <ModelPreview tris={HERCULES_PREVIEW} motion="turn" reduced={reduced} />;
+  const tris = id === 'hercules' ? HERCULES_PREVIEW : VEHICLE_POLY_MODELS[id];
+  if (tris) return <ModelPreview tris={tris} motion="turn" reduced={reduced} />;
   return <ModelPreview boxes={VEHICLE_MODELS[id]} motion="turn" reduced={reduced} />;
 }

@@ -84,11 +84,21 @@ La página de cada archivo en Commons se abrió el 14 de noviembre de 2026 para 
 
 La columna «Qué muestra» resume la lectura de las fotos hecha en la investigación previa. Al abrir las páginas el 14 de noviembre se confirmaron autor, fecha y licencia, no el contenido de cada imagen: queda para la revisión humana del PR.
 
+## Maqueta en el mapa 3D (15 de noviembre de 2026)
+
+Pedido de NeichS: la base también se ve sobre el mapa abierto, como Orcadas. Es la misma base del diorama, más chica (`voyage/marambioSiteModel.ts`), y se apoya sobre el relieve en la Isla Marambio (`map3d/MarambioSite.tsx`).
+
+- **Qué se toma del diorama:** las posiciones, los rumbos y las plantas de `marambio-layout.ts`, achicadas 60 veces. Así la maqueta y el diorama muestran la misma base en el mismo orden.
+- **Orientación:** la pista sigue su rumbo de OpenStreetMap (64,7°), calculado sobre la proyección del mapa en el punto de la base. La base queda al sureste de la pista, como en la realidad.
+- **Qué es ilustrativo:** las alturas están exageradas 2,2 veces para que se lean desde lejos. La pista se dibuja más angosta que su planta y solo en un tramo. La meseta, sus bordes y las manchas de nieve son ilustrativos, igual que la torre de control, el cartel blanco del hangar, las balizas y el Hércules estacionado.
+- **Tamaño en pantalla:** como las otras maquetas de lugares, mantiene su tamaño en pantalla de cerca y se achica con la distancia (`placeModelSize`). Es un poco más grande que la de Orcadas porque la base ocupa más.
+- **Durante el viaje desde Ushuaia no se dibuja:** el viaje aterriza su propio Hércules o su Sea King en la base, mucho más grandes que la maqueta, y quedarían uno encima del otro.
+- **Apoyo sobre el relieve:** la lógica que usaba la maqueta de Orcadas pasó a `map3d/SiteOnRelief.tsx` y la usan las dos. El de Marambio aplana una zona más grande, para que la pista no se hunda en el relieve.
+
 ## Lo que queda para después
 
 - Capítulos guiados, como en Orcadas.
 - La pregunta de las 70 personas del invierno como juego de preguntas. Hoy el dato está en una ficha de «Los edificios».
 - El viaje de Marambio a Orcadas.
 - La entrada a la base desde el final de «Desde Ushuaia».
-- El modelo del sitio sobre el mapa 3D abierto, como el de Orcadas.
 - Los pendientes de fuente listados en [`base-marambio.md`](base-marambio.md).

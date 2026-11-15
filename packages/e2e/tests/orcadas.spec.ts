@@ -53,7 +53,7 @@ test.beforeEach(async ({ page }) => {
   await page.goto('/');
   await clearStorage(page);
   await page.reload();
-  await expect(log(page)).toContainText('0/2');
+  await expect(log(page)).toContainText('0/3');
 });
 
 test.afterEach(() => {
@@ -145,9 +145,9 @@ test('completes all chapters and stops of Orcadas with the keyboard only (deskto
   await tabTo(page, /^Terminar expedición$/);
   await page.keyboard.press('Enter');
 
-  await expect(log(page)).toContainText('1/2');
+  await expect(log(page)).toContainText('1/3');
   await expect(page.locator('.toast')).toHaveText(
-    'Estación Orcadas quedó explorado. Registro de exploración: 1/2'
+    'Estación Orcadas quedó explorado. Registro de exploración: 1/3'
   );
   await expect.poll(() => focusedName(page)).toContain('Estación Orcadas');
 });
@@ -227,7 +227,7 @@ test('completes the full mobile tour without typing any numbers (390x844 and 360
   await expect(checklist.locator('.orc-check:not(.is-done)')).toContainText('Presión, viento y nubes: 0 de 3 (opcional)');
 
   await primary(page).click();
-  await expect(log(page)).toContainText('1/2');
+  await expect(log(page)).toContainText('1/3');
 });
 
 test('opens Orcadas from the 2D map, completes it, and updates the log', async ({ page }) => {
@@ -238,18 +238,18 @@ test('opens Orcadas from the 2D map, completes it, and updates the log', async (
     .click();
   await page.getByRole('button', { name: 'Terminar expedición' }).click();
 
-  await expect(log(page)).toContainText('1/2');
+  await expect(log(page)).toContainText('1/3');
   await expect(page.locator('.toast')).toHaveText(
-    'Estación Orcadas quedó explorado. Registro de exploración: 1/2'
+    'Estación Orcadas quedó explorado. Registro de exploración: 1/3'
   );
   await expect(page.locator('.stage.ret')).toHaveCount(0);
 
-  // Fósiles is now an "Ampliación prevista" point, opening a sheet rather than an expedition
+  // An "Ampliación prevista" point opens a sheet rather than an expedition
   await page.getByRole('button', { name: 'Ver como lista' }).click();
-  const fosilesBtn = page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Fósiles/ });
-  await expect(fosilesBtn).toBeVisible();
-  await fosilesBtn.click();
-  await expect(page.getByRole('dialog').getByRole('heading', { name: 'Fósiles' })).toBeVisible();
+  const oceanoBtn = page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Océano/ });
+  await expect(oceanoBtn).toBeVisible();
+  await oceanoBtn.click();
+  await expect(page.getByRole('dialog').getByRole('heading', { name: 'Océano' })).toBeVisible();
 });
 
 test('from the 3D map with motion allowed, the camera zooms down to the island before the station opens', async ({

@@ -115,6 +115,8 @@ La aurora ya no se dibuja en el mapa 3D (#117): de día se leía como rayas verd
 
 ## `fosiles` — Fósiles
 
+**Nota del 14 nov 2026 (#74):** la ficha «Fósiles» salió del mapa. En su lugar, sobre la Isla Marambio, está el punto «Base Marambio» ([`docs/expediciones/base-marambio.md`](expediciones/base-marambio.md)), y la expedición de fósiles va a vivir en otro lugar. El texto ya no está en `point-details.ts`; la descripción y sus fuentes verificadas se conservan acá para esa expedición.
+
 > La Isla Marambio tiene laderas sin hielo con fósiles de plantas, invertebrados y vertebrados. Sus maderas fósiles muestran que en el Eoceno crecían allí bosques de coníferas, en un clima templado. Cerca de la Base Marambio, un investigador del CONICET halló en 2018 al reptil marino Marambionectes molinai, de unos 67 millones de años. De la misma época es el ave buceadora Pujatopouli soberana, que nadaba en un mar mucho más templado que el actual.
 
 | Oración | Fuente | Cita |

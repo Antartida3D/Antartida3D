@@ -1,6 +1,7 @@
 import { createSeededRng, DIORAMA_METERS_PER_UNIT, type RoofShape, type SiteColour } from '@antartida/core';
 import {
   block,
+  chamferRect,
   chunk,
   extrude,
   lathe,
@@ -9,6 +10,7 @@ import {
   quad,
   rect,
   shift,
+  strut,
   turn,
   type Tri,
   type Vec3,
@@ -49,63 +51,6 @@ const GRAVEL_DARK = 0x8c887f;
 /** Ground embed depth so foundations and snowbanks sit firmly in terrain without floating. */
 const GROUND_SINK = -0.015;
 
-const sub = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
-const cross = (a: Vec3, b: Vec3): Vec3 => [
-  a[1] * b[2] - a[2] * b[1],
-  a[2] * b[0] - a[0] * b[2],
-  a[0] * b[1] - a[1] * b[0],
-];
-const norm = (v: Vec3): Vec3 => {
-  const l = Math.hypot(v[0], v[1], v[2]);
-  return l ? [v[0] / l, v[1] / l, v[2] / l] : [0, 1, 0];
-};
-const addScaled = (p: Vec3, u: Vec3, su: number, v: Vec3, sv: number): Vec3 => [
-  p[0] + u[0] * su + v[0] * sv,
-  p[1] + u[1] * su + v[1] * sv,
-  p[2] + u[2] * su + v[2] * sv,
-];
-
-/** Square-section strut from `a` to `b` with half-thickness `r`, outward-facing in any 3D direction. */
-function strut(a: Vec3, b: Vec3, r: number, color: number, caps = true): Tri[] {
-  const dir = norm(sub(b, a));
-  const ref: Vec3 = Math.abs(dir[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];
-  const u = norm(cross(ref, dir));
-  const v = cross(dir, u);
-  const ring = (p: Vec3): [Vec3, Vec3, Vec3, Vec3] => [
-    addScaled(p, u, r, v, r),
-    addScaled(p, u, -r, v, r),
-    addScaled(p, u, -r, v, -r),
-    addScaled(p, u, r, v, -r),
-  ];
-  const ra = ring(a);
-  const rb = ring(b);
-  const out: Tri[] = [];
-  for (let i = 0; i < 4; i++) {
-    const j = (i + 1) % 4;
-    out.push([ra[i], ra[j], rb[j], color], [ra[i], rb[j], rb[i], color]);
-  }
-  if (caps) {
-    out.push([ra[0], ra[3], ra[2], color], [ra[0], ra[2], ra[1], color]);
-    out.push([rb[0], rb[1], rb[2], color], [rb[0], rb[2], rb[3], color]);
-  }
-  return out;
-}
-
-/** Octagonal chamfered rectangle ring in (x, z), counter-clockwise seen from above. */
-function chamferRect(cx: number, cz: number, w: number, d: number, c: number): [number, number][] {
-  const hx = w / 2;
-  const hz = d / 2;
-  return [
-    [cx + hx, cz - hz + c],
-    [cx + hx - c, cz - hz],
-    [cx - hx + c, cz - hz],
-    [cx - hx, cz - hz + c],
-    [cx - hx, cz + hz - c],
-    [cx - hx + c, cz + hz],
-    [cx + hx - c, cz + hz],
-    [cx + hx, cz + hz - c],
-  ];
-}
 
 /** Rotate lathe output around x by +90 deg so the lathe y axis points along +z. */
 function latheAlongZ(tris: readonly Tri[]): Tri[] {

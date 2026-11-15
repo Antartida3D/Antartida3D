@@ -1,7 +1,8 @@
 import type { SeaPoint } from '@antartida/core';
 import { ModelPreview, type PreviewMotion } from './ModelPreview.tsx';
 import { SEA_MODELS } from './sightingModels.ts';
-import { VEHICLE_MODELS, type Box } from './vehicles.ts';
+import type { Box } from './vehicles.ts';
+import { IRIZAR_POLY } from './irizarModel.ts';
 import { ICEBERG_TABULAR_POLY } from './icebergs.ts';
 import type { Tri } from './lowPoly.ts';
 
@@ -14,7 +15,7 @@ const PREVIEWS: Record<Species, { boxes?: readonly Box[]; tris?: readonly Tri[];
   orca: { boxes: SEA_MODELS.orca, motion: 'swim' },
   minke: { boxes: SEA_MODELS.minke, motion: 'swim' },
   seal: { boxes: SEA_MODELS.seal, motion: 'still' },
-  irizar: { boxes: VEHICLE_MODELS.irizar, motion: 'still' },
+  irizar: { tris: IRIZAR_POLY, motion: 'still' },
   iceberg: { tris: ICEBERG_TABULAR_POLY, motion: 'still' },
 };
 

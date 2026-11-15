@@ -123,9 +123,10 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid #1E3E5C;outline-
 .claims-switch::after{content:'';position:absolute;left:2px;top:2px;width:9px;height:9px;border-radius:50%;background:var(--pencil)}
 [aria-checked=true] .claims-switch{background:var(--deep)}
 [aria-checked=true] .claims-switch::after{left:12px;background:var(--ice)}
-.claims-details{position:absolute;left:0;bottom:calc(100% + 10px);width:min(330px,calc(100vw - 32px));max-height:min(440px,calc(100dvh - 330px));overflow:auto;overscroll-behavior:contain;padding:12px;background:var(--paper);border:1.5px solid var(--ink);border-radius:10px 16px 12px 14px;box-shadow:2px 3px 0 color-mix(in srgb,var(--ink) 20%,transparent);font-size:13px;line-height:1.35}
-.claims-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:16px}
-.claims-details p{margin:8px 0}
+/* The claims details are a BottomSheet (#148): on a phone at half the screen, like the point sheets. */
+.claims-sheet{font-size:13px;line-height:1.35}
+.sheet h2.claims-heading{font-size:20px;margin:4px 0}
+.claims-sheet p{margin:8px 0}
 .claims-coverage{display:grid;gap:5px;font-weight:700}
 .claims-coverage select{width:100%;min-height:40px;padding:6px;color:var(--ink);background:var(--paper);border:1px solid var(--pencil);border-radius:6px;font:inherit}
 .claims-countries{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin:12px 0}
@@ -133,8 +134,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid #1E3E5C;outline-
 .claims-countries [aria-pressed=true]{background:var(--deep);color:var(--ice)}
 .claims-swatch{width:12px;height:12px;border:1px solid currentColor;border-radius:3px;flex:none}
 .claims-note{color:var(--pencil);font-size:12px}
-.claims-details a{color:var(--deep);text-underline-offset:2px}
-@media(max-height:650px) and (min-width:650px){.claims-details{max-height:calc(100dvh - 120px);left:calc(100% + 10px);bottom:0;width:min(330px,calc(100vw - 320px))}}
+.claims-sheet a{color:var(--deep);text-underline-offset:2px}
 
 .legend{background:rgba(251,244,230,.96);border:1.5px solid var(--ink);border-radius:8px 14px 10px 12px;padding:8px 10px;max-width:230px;box-shadow:2px 3px 0 rgba(31,42,54,.15)}
 .legend button.lt{border:0;background:transparent;padding:4px 2px;min-height:32px;display:flex;align-items:center;gap:6px;font-weight:700;font-size:14px}
@@ -172,6 +172,11 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid #1E3E5C;outline-
 /* Tall, it goes over the title and the log at the top of the screen: it must be on top of them to take presses. */
 .sheet.grows.full,.sheet.grows.dragging{max-height:92%;z-index:21}
 .sheet.grows.dragging{transition:none}
+/* Point sheets (#148): on a phone they open at half the screen, so the point is seen on the map above; dragged up they take the tall size. */
+@media (max-width:819.98px){.sheet.half{max-height:50%}}
+.sheet.point .tag{display:inline-block;margin-top:2px}
+/* Light: the map around the sheet stays in sight, and a tap on it closes the sheet. */
+.scrim.clear{background:rgba(31,42,54,.08)}
 .sheet-handle{position:sticky;top:-10px;z-index:2;display:flex;align-items:center;justify-content:center;width:calc(100% + 40px);height:34px;margin:-10px -20px 0;padding:0;border:0;border-radius:22px 22px 0 0;background:var(--paper);cursor:grab;touch-action:none}
 .sheet-handle span{width:44px;height:5px;border-radius:3px;background:rgba(31,42,54,.35)}
 .sheet-handle:active{cursor:grabbing}
@@ -337,6 +342,8 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid #1E3E5C;outline-
   .sheet{left:auto;right:24px;bottom:24px;width:400px;border:2px solid var(--ink);border-radius:18px}
   /* A card in a corner has nothing to be dragged to. */
   .sheet-handle{display:none}
+  /* The map stays usable beside the claims details: they leave the zoom buttons free, like the trip panel (voyage.css). */
+  .sheet.claims-sheet{right:88px}
   .hint{top:120px}
   .toast{top:120px}
   .etop{padding:16px 28px 26px}

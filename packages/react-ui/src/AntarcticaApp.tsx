@@ -18,10 +18,12 @@ import {
   loadWelcomeSeen,
   saveWelcomeSeen,
   showsWelcome,
+  map3dLoadingStore,
   type ArrivalId,
   type MapPoint,
 } from '@antartida/core';
 import { useReducedMotion, useTimers } from './hooks.ts';
+import { LoadingScreen } from './loading/LoadingScreen.tsx';
 import { MapView, type Layer3DProps, type Phase, type ViewMode } from './map/MapView.tsx';
 import { Filters } from './ui.tsx';
 import { NARROW_PX } from './voyage/useVoyage.ts';
@@ -29,7 +31,25 @@ import { NARROW_PX } from './voyage/useVoyage.ts';
 const loadOrcadas = () => import('./orcadas/OrcadasExpedition.tsx');
 const OrcadasExpedition = lazy(() => loadOrcadas().then((m) => ({ default: m.OrcadasExpedition })));
 
-const loadMap3D = () => import('./map3d/Map3DLayer.tsx');
+const loadMarambio = () => import('./marambio/MarambioExpedition.tsx');
+const MarambioExpedition = lazy(() => loadMarambio().then((m) => ({ default: m.MarambioExpedition })));
+
+/** Expeditions with a screen of their own, by the id of their point on the map. */
+const EXPEDITIONS = { orcadas: loadOrcadas, marambio: loadMarambio } as const;
+type ExpeditionId = keyof typeof EXPEDITIONS;
+const isExpedition = (id: string): id is ExpeditionId => id in EXPEDITIONS;
+
+const loadMap3D = () =>
+  import('./map3d/Map3DLayer.tsx').then(
+    (m) => {
+      map3dLoadingStore.markStepDone('chunk');
+      return m;
+    },
+    (err: unknown) => {
+      map3dLoadingStore.setError('No pudimos cargar el mapa 3D.');
+      throw err;
+    }
+  );
 const Map3DLayerLazy = lazy(() => loadMap3D().then((m) => ({ default: m.Map3DLayer })));
 
 // Module-level so its identity is stable: an inline arrow would be a new component type on every
@@ -52,7 +72,7 @@ function hasWebGL(): boolean {
 }
 
 export function AntarcticaApp() {
-  const [screen, setScreen] = useState<'map' | 'orcadas'>('map');
+  const [screen, setScreen] = useState<'map' | ExpeditionId>('map');
   const [phase, setPhase] = useState<Phase>('idle');
   const [arrival, setArrival] = useState<ArrivalId>('ship');
   const [explored, setExplored] = useState<string[]>([]);
@@ -69,6 +89,7 @@ export function AntarcticaApp() {
   const [webglSupported, setWebglSupported] = useState<boolean | null>(null);
   // First visit: the map comes close to «Desde Ushuaia» (#115). True until MapView has shown it.
   const [welcome, setWelcome] = useState(false);
+  const [map3dLoaderDismissed, setMap3dLoaderDismissed] = useState(false);
 
   const reduced = useReducedMotion();
   const later = useTimers();
@@ -123,12 +144,12 @@ export function AntarcticaApp() {
     saveViewMode(next);
   };
 
-  const enterApproach = () => {
+  const enterApproach = (id: ExpeditionId) => {
     setPhase('approach');
     later(
       'enter',
       () => {
-        setScreen('orcadas');
+        setScreen(id);
         setPhase('idle');
       },
       APPROACH_MS
@@ -136,29 +157,37 @@ export function AntarcticaApp() {
   };
 
   const skipTravel = () => {
-    if (phase !== 'travel') return;
+    // Only the way to Orcadas is a trip on the map (#135).
+    if (phase !== 'travel' || !isExpedition(activePoint.id)) return;
     later('travel', () => {}, 0);
-    enterApproach();
+    enterApproach(activePoint.id);
   };
 
   const start = (point: MapPoint, chosenArrival: ArrivalId = 'ship') => {
-    if (phase !== 'idle' || point.id !== 'orcadas') return;
-    setArrival(chosenArrival);
+    const id = point.id;
+    if (phase !== 'idle' || !isExpedition(id)) return;
     setToast('');
     setActivePoint(point);
-    void loadOrcadas();
-    // Orcadas on the 3D map: animate the final Scotia Sea leg first, then zoom down to the island.
+    void EXPEDITIONS[id]();
     const can3D = !reduced && mode === '3d' && document.querySelector('.stage.m3d canvas') !== null;
-    if (can3D) {
-      setPhase('travel');
-      later('travel', enterApproach, orcadasTravelMs(chosenArrival));
+    if (id === 'orcadas') {
+      setArrival(chosenArrival);
+      // Orcadas on the 3D map: animate the final Scotia Sea leg first, then zoom down to the island.
+      if (can3D) {
+        setPhase('travel');
+        later('travel', () => enterApproach(id), orcadasTravelMs(chosenArrival));
+        return;
+      }
+    } else if (can3D) {
+      // Any other expedition: the camera zooms all the way down to the place, like the trip from Ushuaia.
+      enterApproach(id);
       return;
     }
     setPhase(reduced ? 'fade' : 'dive');
     later(
       'enter',
       () => {
-        setScreen('orcadas');
+        setScreen(id);
         setPhase('idle');
       },
       reduced ? FADE_MS : DIVE_MS
@@ -200,33 +229,45 @@ export function AntarcticaApp() {
     <div className="app">
       <Filters />
       {screen === 'map' ? (
-        <MapView
-          phase={phase}
-          arrival={arrival}
-          explored={explored}
-          voyaging={voyaging}
-          // Poncho has one team: his trip starts without a vehicle picker.
-          voyageTransport={voyagePoint.id === PONCHO_POINT.id ? 'poncho' : undefined}
-          diveTarget={activePoint}
-          toast={toast}
-          legend={legend}
-          focusExpedition={returned}
-          welcome={welcome}
-          onWelcomeShown={welcomeShown}
-          mode={mode}
-          showToggle={webglSupported !== null}
-          available3D={webglSupported === true}
-          Layer3D={Layer3D}
-          onToggleLegend={() => setLegend((l) => !l)}
-          onToggleMode={toggleMode}
-          onStart={start}
-          onSkipTravel={skipTravel}
-          onStartVoyage={startVoyage}
-          onEndVoyage={endVoyage}
-        />
+        <>
+          <MapView
+            phase={phase}
+            arrival={arrival}
+            explored={explored}
+            voyaging={voyaging}
+            // Poncho has one team: his trip starts without a vehicle picker.
+            voyageTransport={voyagePoint.id === PONCHO_POINT.id ? 'poncho' : undefined}
+            diveTarget={activePoint}
+            toast={toast}
+            legend={legend}
+            focusExpedition={returned}
+            welcome={welcome}
+            onWelcomeShown={welcomeShown}
+            mode={mode}
+            showToggle={webglSupported !== null}
+            available3D={webglSupported === true}
+            Layer3D={Layer3D}
+            onToggleLegend={() => setLegend((l) => !l)}
+            onToggleMode={toggleMode}
+            onStart={start}
+            onSkipTravel={skipTravel}
+            onStartVoyage={startVoyage}
+            onEndVoyage={endVoyage}
+          />
+          {mode === '3d' && !map3dLoaderDismissed && (
+            <LoadingScreen
+              onDone={() => setMap3dLoaderDismissed(true)}
+              onFallback2D={() => toggleMode('2d')}
+            />
+          )}
+        </>
       ) : (
         <Suspense fallback={null}>
-          <OrcadasExpedition reduced={reduced} arrival={arrival} onLeave={leave} />
+          {screen === 'marambio' ? (
+            <MarambioExpedition reduced={reduced} onLeave={leave} />
+          ) : (
+            <OrcadasExpedition reduced={reduced} arrival={arrival} onLeave={leave} />
+          )}
         </Suspense>
       )}
     </div>

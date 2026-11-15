@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { PONCHO_MODELS, PONCHO_SHIP_DOG_COUNT } from '../src/voyage/ponchoModels.ts';
 import { SCENE_MODELS } from '../src/voyage/sightingModels.ts';
-import { VEHICLE_MODELS, VOXEL_MIN_BOXES, VOXEL_MIN_COLORS } from '../src/voyage/vehicles.ts';
+import { VEHICLE_POLY_MODELS, VOXEL_MIN_BOXES, VOXEL_MIN_COLORS } from '../src/voyage/vehicles.ts';
 
 describe('Poncho voxel models', () => {
   it('are registered in the scene models', () => {
@@ -63,10 +63,11 @@ describe('Poncho voxel models', () => {
     });
 
     it('is a different ship than the Irizar', () => {
-      const irizar = VEHICLE_MODELS.irizar;
-      expect(ship.length).not.toBe(irizar.length);
-      const tallest = (boxes: readonly (readonly number[])[]) => Math.max(...boxes.map((b) => b[1] + b[4] / 2));
-      expect(tallest(ship)).not.toBeCloseTo(tallest(irizar), 3);
+      // The Irízar is low-poly now (triangles), this ship is made of boxes: compare their height.
+      const irizar = VEHICLE_POLY_MODELS.irizar;
+      const tallestIrizar = Math.max(...irizar.flatMap(([a, b, c]) => [a[1], b[1], c[1]]));
+      const tallestShip = Math.max(...ship.map((b) => b[1] + b[4] / 2));
+      expect(tallestShip).not.toBeCloseTo(tallestIrizar, 3);
     });
   });
 });

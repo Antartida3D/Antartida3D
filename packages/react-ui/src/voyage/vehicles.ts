@@ -1,25 +1,17 @@
 import { BufferAttribute, BufferGeometry, Color, MeshBasicMaterial } from 'three';
 import { findTransport, type TransportId, type VehicleKind } from '@antartida/core';
+import { HERCULES_FLIGHT_POLY } from './herculesModel.ts';
+import { BLACK, CREAM, DECK, HULL_RED, IRIZAR_POLY, LIFEBOAT } from './irizarModel.ts';
+import { boxShade, buildPolyGeometry, type Tri } from './lowPoly.ts';
 import { PONCHO_MODELS } from './ponchoModels.ts';
 
 /** [centerX, centerY, centerZ, sizeX, sizeY, sizeZ, color]. The bow or nose points to +x, y is up. */
 export type Box = readonly [number, number, number, number, number, number, number];
 
-// Approximate liveries, from photos. The models are illustrations, not measured.
-const HULL_RED = 0xc8472a;
-const CREAM = 0xf1e6c8;
-const BLACK = 0x1f2a36;
-const DECK = 0x5e656c;
+// Approximate liveries, from photos. The models are illustrations, not measured. The red, cream,
+// black, deck and lifeboat colors are the Irízar's (irizarModel.ts).
 const NAVY_GREY = 0x8e989f;
 const LIGHT_GREY = 0xc9d0d4;
-const PLANE_DARK = 0x6f787e;
-const CAMO_GREEN = 0x55603f;
-const CAMO_SAND = 0xa7845f;
-const BELLY_GREY = 0xaab2b4;
-// Same values as SKY and WHITE in sightingModels.ts, which imports this file and so cannot be imported here.
-const FLAG_SKY = 0x7fb6dc;
-const FLAG_WHITE = 0xf7fafb;
-const LIFEBOAT = 0xd9822b;
 
 /**
  * Least detail of every model of the app (docs/diseno/estilo-voxel.md): enough boxes and colors
@@ -28,33 +20,14 @@ const LIFEBOAT = 0xd9822b;
 export const VOXEL_MIN_BOXES = 12;
 export const VOXEL_MIN_COLORS = 2;
 
+/** Vehicles still drawn with blocks. The Hercules and the Irízar are low-poly (herculesModel.ts, irizarModel.ts). */
+type BlockVehicleId = Exclude<TransportId, 'hercules' | 'irizar'>;
+
 /** One unit is the length of the vehicle. */
-const MODELS: Record<TransportId, readonly Box[]> = {
+const MODELS: Record<BlockVehicleId, readonly Box[]> = {
   // Poncho's team, his dog and the icebreaker with dogs on board, in ponchoModels.ts.
   ...PONCHO_MODELS,
   poncho: PONCHO_MODELS.poncho,
-  // Icebreaker: superstructure on the forward half, hangar and flight deck aft, red hull.
-  irizar: [
-    [-0.03, 0.03, 0, 0.86, 0.1, 0.2, HULL_RED],
-    [0.43, 0.035, 0, 0.08, 0.09, 0.14, HULL_RED],
-    [0.485, 0.045, 0, 0.05, 0.07, 0.07, HULL_RED],
-    [0.14, 0.125, 0, 0.3, 0.09, 0.17, CREAM],
-    [0.2, 0.195, 0, 0.16, 0.05, 0.19, CREAM],
-    [0.21, 0.25, 0, 0.015, 0.08, 0.015, BLACK],
-    [0.04, 0.2, 0, 0.07, 0.08, 0.08, HULL_RED],
-    [0.04, 0.25, 0, 0.07, 0.02, 0.08, BLACK],
-    [-0.12, 0.115, 0, 0.16, 0.07, 0.16, CREAM],
-    [-0.33, 0.085, 0, 0.24, 0.012, 0.19, DECK],
-    // Bridge windows, lifeboats on both sides, helicopter on the flight deck.
-    [0.282, 0.2, 0, 0.006, 0.025, 0.17, BLACK],
-    [0.2, 0.2, 0.096, 0.13, 0.02, 0.004, BLACK],
-    [0.2, 0.2, -0.096, 0.13, 0.02, 0.004, BLACK],
-    [0.08, 0.13, 0.095, 0.09, 0.03, 0.03, LIFEBOAT],
-    [0.08, 0.13, -0.095, 0.09, 0.03, 0.03, LIFEBOAT],
-    [-0.33, 0.11, 0, 0.1, 0.035, 0.04, LIFEBOAT],
-    [-0.4, 0.115, 0, 0.07, 0.012, 0.012, LIFEBOAT],
-    [-0.32, 0.135, 0, 0.14, 0.004, 0.012, BLACK],
-  ],
   // Antarctic service ship: superstructure on the forward third, long low work deck aft, crane.
   'puerto-argentino': [
     [-0.03, 0.025, 0, 0.86, 0.09, 0.2, NAVY_GREY],
@@ -77,38 +50,6 @@ const MODELS: Record<TransportId, readonly Box[]> = {
     [-0.2, 0.1, -0.03, 0.09, 0.04, 0.07, HULL_RED],
     [-0.34, 0.095, 0.03, 0.07, 0.03, 0.06, CREAM],
   ],
-  // C-130 of the Argentine Air Force: high straight wing, four engines, conventional tail, blunt
-  // nose with a black radome; green and sand camouflage over a light grey belly.
-  hercules: [
-    [0, 0, 0, 0.72, 0.11, 0.11, CAMO_GREEN],
-    [0.39, -0.008, 0, 0.07, 0.09, 0.09, CAMO_GREEN],
-    [0.435, -0.015, 0, 0.03, 0.06, 0.06, BLACK],
-    [-0.42, 0.03, 0, 0.14, 0.06, 0.07, CAMO_GREEN],
-    [0.04, 0.065, 0, 0.13, 0.018, 1.2, CAMO_GREEN],
-    [-0.43, 0.14, 0, 0.12, 0.17, 0.015, CAMO_GREEN],
-    [-0.45, 0.065, 0, 0.08, 0.012, 0.4, CAMO_GREEN],
-    // Sand patches of the camouflage, a hair larger than what they cover.
-    [0.22, 0.012, 0, 0.1, 0.09, 0.114, CAMO_SAND],
-    [-0.1, 0.02, 0, 0.16, 0.074, 0.114, CAMO_SAND],
-    [0.04, 0.065, 0.32, 0.132, 0.022, 0.26, CAMO_SAND],
-    [0.04, 0.065, -0.12, 0.132, 0.022, 0.2, CAMO_SAND],
-    [-0.455, 0.11, 0, 0.06, 0.07, 0.017, CAMO_SAND],
-    // Argentine flag high on the fin, larger than the real one so it reads on screen.
-    [-0.42, 0.198, 0, 0.07, 0.016, 0.019, FLAG_SKY],
-    [-0.42, 0.182, 0, 0.07, 0.016, 0.019, FLAG_WHITE],
-    [-0.42, 0.166, 0, 0.07, 0.016, 0.019, FLAG_SKY],
-    [0.09, 0.045, 0.2, 0.13, 0.04, 0.04, PLANE_DARK],
-    [0.09, 0.045, -0.2, 0.13, 0.04, 0.04, PLANE_DARK],
-    [0.09, 0.045, 0.4, 0.13, 0.04, 0.04, PLANE_DARK],
-    [0.09, 0.045, -0.4, 0.13, 0.04, 0.04, PLANE_DARK],
-    [0.16, 0.045, 0.2, 0.006, 0.11, 0.11, BLACK],
-    [0.16, 0.045, -0.2, 0.006, 0.11, 0.11, BLACK],
-    [0.16, 0.045, 0.4, 0.006, 0.11, 0.11, BLACK],
-    [0.16, 0.045, -0.4, 0.006, 0.11, 0.11, BLACK],
-    // Cockpit windows and the light grey belly, up the lower sides of the fuselage.
-    [0.4, 0.025, 0, 0.05, 0.022, 0.092, BLACK],
-    [0, -0.04, 0, 0.722, 0.034, 0.116, BELLY_GREY],
-  ],
 };
 
 /** Flat colors with the shading baked into the vertices: no lights needed. */
@@ -126,11 +67,22 @@ const FACES: readonly { corners: readonly (readonly [number, number, number])[];
 
 export const VEHICLE_MODELS: Readonly<Record<string, readonly Box[]>> = MODELS;
 
-/** Voxel-style vehicle. */
+const POLY_MODELS: Record<Exclude<TransportId, BlockVehicleId>, readonly Tri[]> = { hercules: HERCULES_FLIGHT_POLY, irizar: IRIZAR_POLY };
+
+/** Low-poly vehicles, one unit long like the block ones. */
+export const VEHICLE_POLY_MODELS: Readonly<Record<string, readonly Tri[]>> = POLY_MODELS;
+
+const isBlockVehicle = (id: string): id is BlockVehicleId => id in MODELS;
+
 /** Id of the model drawn for a vehicle of a trip: the one the transport names for it, or its own. */
 export const vehicleModel = (transport: TransportId, vehicle: VehicleKind): string => findTransport(transport).models?.[vehicle] ?? transport;
 
-export const buildVehicleGeometry = (id: string) => buildBoxGeometry(VEHICLE_MODELS[id]);
+/**
+ * The vehicle as one geometry, of blocks or low-poly. The low-poly ones take the fixed light per
+ * face of the blocks (boxShade), so every vehicle of the voyage is lit alike.
+ */
+export const buildVehicleGeometry = (id: string) =>
+  isBlockVehicle(id) ? buildBoxGeometry(MODELS[id]) : buildPolyGeometry(POLY_MODELS[id as keyof typeof POLY_MODELS], boxShade);
 
 /**
  * Voxel-style model: every box merged into one geometry with vertex colors, so each model is a

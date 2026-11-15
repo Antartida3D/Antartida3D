@@ -167,7 +167,7 @@ function buildOmondRuin(x: number, y: number, z: number, angle: number): Tri[] {
  * Miniature modern orange station module with elevated plinth/stilts, chamfered walls,
  * framed windows, entrance door + step, and either a round barrel-vault roof or a gabled roof.
  */
-function buildMiniModule(
+export function buildMiniModule(
   x: number,
   y: number,
   z: number,
@@ -266,7 +266,7 @@ function buildMiniModule(
 /**
  * Red-and-white tapered lattice radio tower on a stepped stone pad.
  */
-function buildMiniRadioTower(x: number, y: number, z: number, height: number): Tri[] {
+export function buildMiniRadioTower(x: number, y: number, z: number, height: number): Tri[] {
   const tris: Tri[] = [
     ...prism(chamferRect(0, 0, 0.1, 0.1, 0.014), 0, 0.025, ROCK_DARK),
     ...prism(chamferRect(0, 0, 0.072, 0.072, 0.01), 0.025, 0.036, ROCK),

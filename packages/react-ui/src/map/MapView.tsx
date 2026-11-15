@@ -9,7 +9,7 @@ import { useVoyage, type VoyageBus } from '../voyage/useVoyage.ts';
 import { Icon } from '../ui.tsx';
 import { ExplorationLog } from './ExplorationLog.tsx';
 import { Legend } from './Legend.tsx';
-import { ClaimsControl, type ClaimsSelection, type ClaimsStatus } from './ClaimsControl.tsx';
+import { ClaimsControl, ClaimsDetails, type ClaimsSelection, type ClaimsStatus } from './ClaimsControl.tsx';
 import { ListView } from './ListView.tsx';
 import { PointSheet } from './PointSheet.tsx';
 import { KindChip } from '../orcadas/KindChip.tsx';
@@ -168,6 +168,13 @@ export function MapView({
   const [claimsCoverage, setClaimsCoverage] = useState<ClaimsCoverage>('sectors');
   const [claimsStatus, setClaimsStatus] = useState<ClaimsStatus>('loading');
   const claimsSwitch = useRef<HTMLButtonElement>(null);
+  // The claims details sheet: open when the layer turns on, hidden and shown with its button.
+  const [claimsDetails, setClaimsDetails] = useState(true);
+  const claimsDetailsButton = useRef<HTMLButtonElement>(null);
+  const closeClaimsDetails = () => {
+    setClaimsDetails(false);
+    claimsDetailsButton.current?.focus();
+  };
   const later = useTimers();
   const reduced = useReducedMotion();
   const voyage = useVoyage();
@@ -397,7 +404,10 @@ export function MapView({
         // One sheet at a time: the intro replaces the trip from Ushuaia, as starting Orcadas did before.
         if (voyaging) onEndVoyage?.(false);
         setSheet(null);
-        setPendingOrcadas(p);
+        // Orcadas first shows its intro, where the visitor picks how to arrive (#125, #135); any
+        // other expedition starts at once.
+        if (p.id === EXPEDITION_POINT.id) setPendingOrcadas(p);
+        else onStart(p);
       }
     } else {
       if (is3D && 'closeUp' in p && p.closeUp) send3D({ type: 'visit', id: p.id, distance: p.closeUp });
@@ -409,6 +419,7 @@ export function MapView({
   /** From the South Pole sheet: closes it, turns the claims layer on, shows the whole continent and focuses the control. */
   const showClaims = () => {
     setSheet(null);
+    setClaimsDetails(true);
     if (!claimsEnabled) {
       if (legend) onToggleLegend();
       setClaimsEnabled(true);
@@ -504,14 +515,13 @@ export function MapView({
           <div className="leftcol">
             <Legend open={legend} onToggle={onToggleLegend} mode={mode} />
             {/* Off, the claims open from the South Pole sheet; on, this control turns them off. */}
-            {is3D && claimsEnabled && <ClaimsControl enabled selection={claimsSelection} coverage={claimsCoverage} status={claimsStatus}
-              switchRef={claimsSwitch}
+            {is3D && claimsEnabled && <ClaimsControl enabled details={claimsDetails} onDetails={setClaimsDetails}
+              switchRef={claimsSwitch} detailsRef={claimsDetailsButton}
               onToggle={() => {
                 setClaimsEnabled(false);
                 setClaimsStatus('loading');
                 vpRef.current?.focus();
-              }}
-              onSelect={setClaimsSelection} onCoverage={setClaimsCoverage} />}
+              }} />}
             <button type="button" className="btn" onClick={() => { setSheet(null); setPendingOrcadas(null); setList(true); }}>
               {Icon.list}
               Ver como lista
@@ -542,7 +552,13 @@ export function MapView({
             <VoyagePanel voyage={voyage} transport={voyageTransport} animated={is3D && !reduced} webgl={is3D} reduced={reduced} onExit={onEndVoyage} />
           </Suspense>
         )}
+        {/* One sheet at a time: a point sheet hides the claims details until it closes. */}
+        {is3D && claimsEnabled && claimsDetails && !sheet && (
+          <ClaimsDetails selection={claimsSelection} coverage={claimsCoverage} status={claimsStatus}
+            onSelect={setClaimsSelection} onCoverage={setClaimsCoverage} onClose={closeClaimsDetails} />
+        )}
         {sheet && <PointSheet point={sheet} onClose={() => setSheet(null)} fallbackFocus={() => vpRef.current} preview={is3D} reduced={reduced}
+          onMap={is3D && 'closeUp' in sheet && !!sheet.closeUp}
           action={is3D && sheet.id === CLAIMS_POINT_ID ? { label: claimsEnabled ? 'Ver reclamos en el mapa' : 'Ver reclamos territoriales', onClick: showClaims } : undefined} />}
         {pendingOrcadas && phase === 'idle' && (
           <OrcadasIntro

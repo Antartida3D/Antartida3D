@@ -7,7 +7,9 @@ Una lista de cajas de color plano. No hay texturas, luces ni archivos de modelo:
 
 - Constructor: `buildBoxGeometry` (`packages/react-ui/src/voyage/vehicles.ts`).
 - Material: `vehicleMaterial` (colores por vértice).
-- Vehículos: `VEHICLE_MODELS` en `vehicles.ts`.
+- Vehículos: `VEHICLE_MODELS` en `vehicles.ts` (Puerto Argentino).
+- Hércules C-130 (14-11-2026, issue #74): ya no es de bloques sino low-poly, una lista de triángulos de color plano en `packages/react-ui/src/voyage/herculesModel.ts`. `HERCULES_FLIGHT_POLY` es el avión en vuelo (mapa abierto, viaje y selector de vehículos) y `HERCULES_PARKED_POLY` el avión en tierra, con el tren abajo y las ruedas en `y = 0`. Conserva los colores aprobados en #103. Se registra en `VEHICLE_POLY_MODELS` y lo revisa `packages/react-ui/test/hercules.test.ts`. Es una ilustración: proporciones aproximadas y bandera más grande que la real.
+- Irízar (15-11-2026, issue #158): también pasó a low-poly, en `packages/react-ui/src/voyage/irizarModel.ts` (`IRIZAR_POLY`). Casco rojo con proa de rompehielos (el pie de roda sube en rampa desde la quilla), superestructura crema en dos pisos con una franja de ventanas, puente con ventanas oscuras y alerones, mástil con radar, chimenea roja con tope negro, botes salvavidas naranjas a cada lado, dos grúas en la cubierta de proa, hangar y cubierta de vuelo gris con el círculo del helipuerto. Conserva las medidas de `@antartida/core`: la cubierta de vuelo a `IRIZAR_DECK_TOP` y `IRIZAR_DECK_AFT` (de ahí despega el Sea King) y el ancho con botes `IRIZAR_HALF_BEAM`. La quilla apoya en `y = 0`; la parte sobre el agua queda igual que en el modelo de bloques. El helicóptero que el modelo de bloques llevaba dibujado en la cubierta ya no está: el Sea King del traslado sale de la cubierta vacía. Lo revisa `packages/react-ui/test/irizar.test.ts`. Es una ilustración: disposición aproximada a partir de fotos, sin medidas reales.
 - Animales, hielo, faros, pingüinera y Ushuaia: `SCENE_MODELS` en `sightingModels.ts`.
 
 ## Mínimo de detalle
@@ -26,7 +28,7 @@ Una lista de cajas de color plano. No hay texturas, luces ni archivos de modelo:
 - **Marcadores, etiquetas y retícula:** son interfaz y no cambian de tamaño en pantalla. Con ellos se encuentra cada cosa, también con teclado.
 
 ## Vista previa en las fichas (13-11-2026, issue #50)
-- **Un solo lienzo:** `ModelPreview` (`packages/react-ui/src/voyage/ModelPreview.tsx`) dibuja cualquier modelo de bloques dentro de una ficha. Lo usan el selector de vehículos (`VehiclePreview`, sin cambios a la vista) y las fichas de «Vida en el mar» (`SeaPreview`).
+- **Un solo lienzo:** `ModelPreview` (`packages/react-ui/src/voyage/ModelPreview.tsx`) dibuja cualquier modelo de bloques o low-poly dentro de una ficha. Lo usan el selector de vehículos (`VehiclePreview`, sin cambios a la vista) y las fichas de «Vida en el mar» (`SeaPreview`).
 - **Movimiento** (`motion`): `turn` gira (solo vehículos del selector); `swim` sube y baja suave con leve balanceo (ballena); `sway` balanceo mínimo de pie (pingüino); `still` quieto (Irízar, témpano). En las fichas el modelo no gira. Los movimientos son ilustrativos, no datos.
 - **Movimiento reducido:** con «reducir movimiento» activo ningún modelo se mueve y el lienzo solo se dibuja a pedido.
 - **Qué modelo va en cada ficha:** se elige por `targetSpecies` del punto, en `SeaPreview.tsx`. No cambió nada en `@antartida/core`.

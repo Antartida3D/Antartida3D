@@ -21,6 +21,7 @@ import {
   loadTerrainMesh,
   type TerrainMesh,
   MAP_RASTER_3D,
+  map3dLoadingStore,
 } from '@antartida/core';
 import relief4096Url from '@antartida/core/assets/terrain-relief-4096.webp';
 import relief2048Url from '@antartida/core/assets/terrain-relief-2048.webp';
@@ -42,9 +43,13 @@ export function Terrain({ wide }: { wide: boolean }) {
 
   useEffect(() => {
     let alive = true;
-    loadTerrainMesh(wide ? 'hi' : 'lo').then((m) => {
-      if (alive) setMeshData(m);
-    });
+    loadTerrainMesh(wide ? 'hi' : 'lo')
+      .then((m) => {
+        if (alive) setMeshData(m);
+      })
+      .catch(() => {
+        if (alive) map3dLoadingStore.setError('No pudimos cargar la malla del relieve.');
+      });
     return () => {
       alive = false;
     };
@@ -62,24 +67,38 @@ export function Terrain({ wide }: { wide: boolean }) {
       loader.loadAsync(reliefUrl),
       loader.loadAsync(paper512Url),
       loader.loadAsync(light2048Url),
-    ]).then(([paint, relief, paper, light]) => {
-      if (!alive) return;
-      paint.colorSpace = SRGBColorSpace;
-      paint.flipY = false;
+    ])
+      .then(([paint, relief, paper, light]) => {
+        if (!alive) return;
+        paint.colorSpace = SRGBColorSpace;
+        paint.flipY = false;
 
-      relief.colorSpace = NoColorSpace;
-      relief.flipY = false;
+        relief.colorSpace = NoColorSpace;
+        relief.flipY = false;
 
-      // R = ambient occlusion, G = sun shadow: data, not color.
-      light.colorSpace = NoColorSpace;
-      light.flipY = false;
+        // R = ambient occlusion, G = sun shadow: data, not color.
+        light.colorSpace = NoColorSpace;
+        light.flipY = false;
 
-      paper.colorSpace = SRGBColorSpace;
-      paper.wrapS = RepeatWrapping;
-      paper.wrapT = RepeatWrapping;
-      setTextures({ paint, relief, light, paper });
-    });
+        paper.colorSpace = SRGBColorSpace;
+        paper.wrapS = RepeatWrapping;
+        paper.wrapT = RepeatWrapping;
+        setTextures({ paint, relief, light, paper });
+      })
+      .catch(() => {
+        if (alive) map3dLoadingStore.setError('No pudimos cargar las texturas del relieve.');
+      });
+
+    return () => {
+      alive = false;
+    };
   }, [wide]);
+
+  useEffect(() => {
+    if (meshData && textures) {
+      map3dLoadingStore.markStepDone('terrain');
+    }
+  }, [meshData, textures]);
 
   const geometry = useMemo(() => {
     if (!meshData) return null;

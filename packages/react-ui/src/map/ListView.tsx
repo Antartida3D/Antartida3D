@@ -5,7 +5,7 @@ import { useFocusReturn } from '../hooks.ts';
 const GROUPS: { tier: Tier; id: string; tag: string; label?: string; desc: string }[] = [
   { tier: 'A', id: 'g-a', tag: 'Disponible', label: 'Expediciones', desc: 'Se pueden recorrer ahora.' },
   { tier: 'B', id: 'g-b', tag: 'Ampliación prevista', desc: 'Planificadas para la próxima etapa.' },
-  { tier: 'C', id: 'g-c', tag: 'Próximamente', desc: 'Ideas por explorar más adelante.' },
+  { tier: 'C', id: 'g-c', tag: 'Punto de interés', desc: 'Lugares para conocer, con su ficha y fuentes.' },
 ];
 
 export function ListView({ explored, onClose, onPick }: {

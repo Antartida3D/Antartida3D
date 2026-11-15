@@ -68,6 +68,7 @@ import {
 } from '../voyage/icebergs.ts';
 import { boxShade, buildPolyGeometry, type Tri } from '../voyage/lowPoly.ts';
 import { vehicleMaterial } from '../voyage/vehicles.ts';
+import { canUseWebGL, CONTEXT_RESTORE_MS } from '../webgl.ts';
 import {
   HOTSPOTS,
   VIEW_BEARING_DEG,
@@ -183,16 +184,6 @@ export interface StationSceneProps {
   onReady?: () => void;
   onDepartureDone?: () => void;
   overlayRef?: RefObject<HTMLDivElement | null>;
-}
-
-function canUseWebGL(): boolean {
-  if (typeof document === 'undefined') return false;
-  try {
-    const canvas = document.createElement('canvas');
-    return Boolean(canvas.getContext('webgl2') ?? canvas.getContext('webgl'));
-  } catch {
-    return false;
-  }
 }
 
 function computeSunDirection(month: number, hour: number): {
@@ -2162,6 +2153,7 @@ function StationCameraAndProjection({
     const panelTop = panelRect && isPortrait ? panelRect.top - overlayRect.top - 28 : null;
     const panelLeft = panelRect && !isPortrait ? panelRect.left - overlayRect.left - 28 : null;
 
+    camera.updateMatrixWorld();
     for (const spot of HOTSPOTS) {
       const btn = map.get(spot.id);
       if (!btn) continue;
@@ -2230,8 +2222,6 @@ const LOW_QUALITY_FPS = 30;
  */
 const qualityFpsBounds = (lowQuality: boolean): [number, number] =>
   lowQuality ? [LOW_QUALITY_FPS * 0.8, LOW_QUALITY_FPS * 0.9] : [36, 42];
-/** How long a lost WebGL context has to come back before the scene falls back to 2D. */
-const CONTEXT_RESTORE_MS = 4000;
 /** Quality changes allowed before the monitor settles on low quality: a slow GPU stops flickering. */
 const QUALITY_FLIPFLOPS = 4;
 

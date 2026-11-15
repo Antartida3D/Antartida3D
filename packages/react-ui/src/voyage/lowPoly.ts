@@ -28,6 +28,13 @@ export function normalOf([a, b, c]: Tri): Vec3 {
   return l ? [n[0] / l, n[1] / l, n[2] / l] : [0, 0, 0];
 }
 
+/** The face wound so that it looks away from `inside`. */
+export function facingOut(a: Vec3, b: Vec3, c: Vec3, color: number, inside: Vec3): Tri {
+  const n = normalOf([a, b, c, color]);
+  const out = n[0] * (a[0] + b[0] + c[0] - 3 * inside[0]) + n[1] * (a[1] + b[1] + c[1] - 3 * inside[1]) + n[2] * (a[2] + b[2] + c[2] - 3 * inside[2]);
+  return out < 0 ? [a, c, b, color] : [a, b, c, color];
+}
+
 /**
  * A color with this bit already carries its shade (reliefColor): the geometry draws it as it is.
  * Faces that must look like the painted relief use it.
@@ -353,3 +360,84 @@ export function emperor(x: number, z: number, k: number, facing = 0): Tri[] {
   const feet = block(0.06, 0.012, 0, 0.12, 0.024, 0.16, PENGUIN_BLACK);
   return shift(scaled(turn([...body, ...head, ...bill, ...feet], facing), k), x, 0, z);
 }
+
+const unit = (v: Vec3): Vec3 => {
+  const l = Math.hypot(v[0], v[1], v[2]);
+  return l ? [v[0] / l, v[1] / l, v[2] / l] : [0, 1, 0];
+};
+const along = (p: Vec3, u: Vec3, su: number, v: Vec3, sv: number): Vec3 => [p[0] + u[0] * su + v[0] * sv, p[1] + u[1] * su + v[1] * sv, p[2] + u[2] * su + v[2] * sv];
+
+/** A square-section bar from `a` to `b` of half-thickness `r`, in any direction: masts, braces, rails. */
+export function strut(a: Vec3, b: Vec3, r: number, color: number, caps = true): Tri[] {
+  const dir = unit(sub(b, a));
+  const ref: Vec3 = Math.abs(dir[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];
+  const u = unit(cross(ref, dir));
+  const v = cross(dir, u);
+  const ring = (p: Vec3): [Vec3, Vec3, Vec3, Vec3] => [along(p, u, r, v, r), along(p, u, -r, v, r), along(p, u, -r, v, -r), along(p, u, r, v, -r)];
+  const ra = ring(a);
+  const rb = ring(b);
+  const out: Tri[] = [];
+  for (let i = 0; i < 4; i++) {
+    const j = (i + 1) % 4;
+    out.push([ra[i], ra[j], rb[j], color], [ra[i], rb[j], rb[i], color]);
+  }
+  if (caps) {
+    out.push([ra[0], ra[3], ra[2], color], [ra[0], ra[2], ra[1], color]);
+    out.push([rb[0], rb[1], rb[2], color], [rb[0], rb[2], rb[3], color]);
+  }
+  return out;
+}
+
+/** A rectangle ring with its corners cut by `c` (eight points), counter-clockwise seen from above. */
+export function chamferRect(cx: number, cz: number, w: number, d: number, c: number): [number, number][] {
+  const hx = w / 2;
+  const hz = d / 2;
+  return [
+    [cx + hx, cz - hz + c], [cx + hx - c, cz - hz], [cx - hx + c, cz - hz], [cx - hx, cz - hz + c],
+    [cx - hx, cz + hz - c], [cx - hx + c, cz + hz], [cx + hx - c, cz + hz], [cx + hx, cz + hz - c],
+  ];
+}
+
+export interface LoftStation {
+  readonly x: number;
+  /** Ring of [z, y] points counter-clockwise seen from +x. */
+  readonly ring: readonly (readonly [number, number])[];
+}
+
+/**
+ * A skin over cross-sections set along x (a fuselage, a hull): the stations go in ascending x and
+ * every ring has the same number of points. `colorAt(band, segment)` colors each face; an end is
+ * closed only when its cap color is given.
+ */
+export function loftAlongX(stations: readonly LoftStation[], colorAt: (bandIdx: number, segIdx: number) => number, backCapColor?: number, frontCapColor?: number): Tri[] {
+  const out: Tri[] = [];
+  const n = stations[0].ring.length;
+  for (let k = 0; k < stations.length - 1; k++) {
+    const x0 = stations[k].x;
+    const x1 = stations[k + 1].x;
+    const r0 = stations[k].ring;
+    const r1 = stations[k + 1].ring;
+    for (let i = 0; i < n; i++) {
+      const j = (i + 1) % n;
+      const [az0, ay0] = r0[i];
+      const [bz0, by0] = r0[j];
+      const [az1, ay1] = r1[i];
+      const [bz1, by1] = r1[j];
+      out.push(...quad([x1, ay1, az1], [x1, by1, bz1], [x0, by0, bz0], [x0, ay0, az0], colorAt(k, i)));
+    }
+  }
+  const cap = (s: LoftStation, color: number, front: boolean) => {
+    const [cz, cy] = s.ring.reduce(([sz, sy], [z, y]) => [sz + z / n, sy + y / n], [0, 0]);
+    for (let i = 0; i < n; i++) {
+      const [az, ay] = s.ring[i];
+      const [bz, by] = s.ring[(i + 1) % n];
+      out.push(front ? [[s.x, cy, cz], [s.x, by, bz], [s.x, ay, az], color] : [[s.x, cy, cz], [s.x, ay, az], [s.x, by, bz], color]);
+    }
+  };
+  if (backCapColor !== undefined) cap(stations[0], backCapColor, false);
+  if (frontCapColor !== undefined) cap(stations[stations.length - 1], frontCapColor, true);
+  return out;
+}
+
+/** The faces mirrored across the plane z = 0 (the other wing, the other engine), still facing out. */
+export const mirrorZ = (tris: readonly Tri[]): Tri[] => tris.map(([a, b, c, col]) => [[a[0], a[1], -a[2]], [c[0], c[1], -c[2]], [b[0], b[1], -b[2]], col]);

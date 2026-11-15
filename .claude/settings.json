@@ -1,4 +1,20 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(pnpm typecheck)",
+      "Bash(pnpm typecheck *)",
+      "Bash(pnpm test)",
+      "Bash(pnpm test *)",
+      "Bash(pnpm --filter @antartida/react-ui typecheck *)",
+      "Bash(pnpm --filter @antartida/react-ui test *)",
+      "Bash(pnpm --filter @antartida/core test *)",
+      "Bash(pnpm --filter @antartida/core typecheck *)",
+      "mcp__codegraph__codegraph_explore"
+    ],
+    "deny": [
+      "Bash(git push*)"
+    ]
+  },
   "hooks": {
     "Stop": [
       {

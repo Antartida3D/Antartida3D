@@ -26,6 +26,7 @@ const projected = new Vector3();
  * at the edge of the screen in its direction, so it can still be found and opened.
  */
 function placeOnScreen(el: Object3D, camera: Camera, size: { width: number; height: number }): number[] {
+  camera.updateMatrixWorld();
   projected.setFromMatrixPosition(el.matrixWorld).project(camera);
   const x = ((projected.x + 1) / 2) * size.width;
   const y = ((1 - projected.y) / 2) * size.height;

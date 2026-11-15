@@ -12,8 +12,8 @@ const PONCHO_CREAM_SHADE = 0xd9c8a0;
 const PONCHO_GREY_PATCH = 0x8a8478;
 const PONCHO_MUZZLE_GREY = 0xa39d92;
 const PONCHO_EAR_DARK = 0x3b3a3a;
-const PONCHO_EYE_ALMOND = 0x8a5a2b;
-const PONCHO_NOSE = 0x1f2a36;
+export const PONCHO_EYE_ALMOND = 0x8a5a2b;
+export const PONCHO_NOSE = 0x1f2a36;
 const PONCHO_TAIL_WHITE = 0xfaf6ec;
 
 // Pack dogs and the Nansen sled.
@@ -47,7 +47,7 @@ const SHIP_RIGGING = 0x4a4744;
 const SHIP_CRATE = 0x9b7b4f;
 const SHIP_CRATE_STRAP = 0x5e4630;
 
-interface DogPalette {
+export interface DogPalette {
   coat: number;
   shade: number;
   patch: number;
@@ -56,7 +56,7 @@ interface DogPalette {
   tail: number;
 }
 
-const PONCHO_PALETTE: DogPalette = {
+export const PONCHO_PALETTE: DogPalette = {
   coat: PONCHO_CREAM,
   shade: PONCHO_CREAM_SHADE,
   patch: PONCHO_GREY_PATCH,

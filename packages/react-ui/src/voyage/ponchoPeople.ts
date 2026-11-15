@@ -8,7 +8,7 @@ import {
   type ObserverPolyParts,
 } from '../orcadas/lowPolyPeople.ts';
 import { VOXEL_PALETTE } from '../orcadas/stationModels.ts';
-import { shift, type Tri, type Vec3 } from './lowPoly.ts';
+import { block, prism, shift, type Tri, type Vec3 } from './lowPoly.ts';
 
 /**
  * People of Poncho's stops, low-poly (rule 30): the articulated Orcadas figure (lowPolyPeople.ts)
@@ -21,7 +21,7 @@ import { shift, type Tri, type Vec3 } from './lowPoly.ts';
  * `phase`. Poses follow the book's work (walk, hammer a stake, probe, shovel, haul by a harness).
  */
 
-const { ORANGE, RED, RED_DARK, NAVY_ROOF } = VOXEL_PALETTE;
+const { ORANGE, RED, RED_DARK, NAVY_ROOF, CREAM, ZINC } = VOXEL_PALETTE;
 
 /** Angles of the limbs and the trunk for one instant. */
 export interface PersonPose {
@@ -35,8 +35,8 @@ export interface PersonPose {
   readonly grip: number;
 }
 
-export type PersonAction = 'stand' | 'walk' | 'hammer' | 'probe' | 'shovel' | 'haul';
-export const PERSON_ACTIONS: readonly PersonAction[] = ['stand', 'walk', 'hammer', 'probe', 'shovel', 'haul'];
+export type PersonAction = 'stand' | 'walk' | 'hammer' | 'probe' | 'shovel' | 'haul' | 'tend';
+export const PERSON_ACTIONS: readonly PersonAction[] = ['stand', 'walk', 'hammer', 'probe', 'shovel', 'haul', 'tend'];
 
 /** Period of every pose, in radians of `phase`. */
 export const PONCHO_PHASE_PERIOD = Math.PI * 2;
@@ -80,8 +80,16 @@ export function haulPose(phase: number): PersonPose {
   return { legL: s.legL * 0.8, legR: s.legR * 0.8, armL: s.armL * 0.7 - 0.15, armR: 0.5 + 0.08 * Math.sin(phase), torsoPitch: -0.45, grip: 0 };
 }
 
+/** Tend: bent over, both hands working at something low in front (a harness on a dog), the hands moving a little. */
+export function tendPose(phase: number): PersonPose {
+  const work = Math.sin(phase);
+  return { legL: 0.28, legR: -0.2, armL: 1.25 + 0.12 * work, armR: 1.15 - 0.12 * work, torsoPitch: -0.7, grip: GRIP };
+}
+
 export function ponchoPose(action: PersonAction, phase: number): PersonPose {
   switch (action) {
+    case 'tend':
+      return tendPose(phase);
     case 'walk':
       return walkPose(phase);
     case 'hammer':
@@ -119,6 +127,30 @@ export function ponchoHandAt(pose: PersonPose, side: 'L' | 'R'): Vec3 {
   const [hx, hy] = rot(HAND_LOCAL[0], HAND_LOCAL[1], arm);
   const [x, y] = rot(hx, OBSERVER_SHOULDER_Y + hy, pose.torsoPitch, 0, OBSERVER_HIP_Y);
   return [x, y + ponchoPoseLift(pose), side === 'L' ? -(OBSERVER_SHOULDER_Z - pose.grip) : OBSERVER_SHOULDER_Z - pose.grip];
+}
+
+/**
+ * Wide harness belt round the waist (book p. 9): a ring over the waist band of the parka (the model's
+ * `loftY` ring at y 0.45 is 0.108 x 0.140 wide), and the point on its front where the line is tied. In
+ * the model frame of the person grounded by `ponchoPoseLift`, so it follows the hips and the lean of the torso.
+ */
+export const BELT_Y: readonly [number, number] = [OBSERVER_HIP_Y - 0.03, OBSERVER_HIP_Y + 0.09];
+export const BELT_RADIUS: readonly [number, number] = [0.122, 0.156];
+/** Where the line is tied: the front of the belt, at its middle height, in the frame of the hips (x ahead, y up from the hips). */
+const BELT_TIE: readonly [number, number] = [BELT_RADIUS[0] + 0.01, (BELT_Y[0] + BELT_Y[1]) / 2 - OBSERVER_HIP_Y];
+
+/** The belt, in the model frame of the person (as the torso): a canvas band round the waist and a buckle on its front. */
+export function buildBeltTris(): Tri[] {
+  const ring = Array.from({ length: 8 }, (_, i): [number, number] => {
+    const a = Math.PI / 8 + (i / 8) * Math.PI * 2;
+    return [Math.cos(a) * BELT_RADIUS[0] * 1.08, Math.sin(a) * BELT_RADIUS[1] * 1.08];
+  });
+  return [...prism(ring, BELT_Y[0], BELT_Y[1], CREAM), ...block(BELT_RADIUS[0] + 0.012, (BELT_Y[0] + BELT_Y[1]) / 2, 0, 0.03, 0.05, 0.06, ZINC)];
+}
+
+export function ponchoWaistAt(pose: PersonPose): Vec3 {
+  const [x, y] = rot(BELT_TIE[0], OBSERVER_HIP_Y + BELT_TIE[1], pose.torsoPitch, 0, OBSERVER_HIP_Y);
+  return [x, y + ponchoPoseLift(pose), 0];
 }
 
 /** Parka colors: the book's orange as the base, and two variations so a group is not made of clones. */
@@ -191,6 +223,14 @@ export function buildPonchoPerson(pose: PersonPose, variant: PersonVariant = 'or
   );
 }
 
+/** The boot print number `index` of a person who is at (x, z) walking towards `yaw`: alternating feet, a gauge apart. */
+export function ponchoPrint(x: number, z: number, yaw: number, index: number, heightAt: TerrainHeightFn, halfGauge = 0.045): Tri[] {
+  const dx = Math.cos(yaw);
+  const dz = -Math.sin(yaw);
+  const side = index % 2 === 0 ? -1 : 1;
+  return footprintTris(x - dz * halfGauge * side, z + dx * halfGauge * side, yaw, heightAt);
+}
+
 /** Boot prints of a person walking from `from` towards `yaw` (same yaw as `turn`), alternating feet. */
 export function ponchoFootprints(
   from: readonly [number, number],
@@ -203,11 +243,6 @@ export function ponchoFootprints(
   const dx = Math.cos(yaw);
   const dz = -Math.sin(yaw);
   const out: Tri[] = [];
-  for (let i = 0; i < count; i++) {
-    const side = i % 2 === 0 ? -1 : 1;
-    const x = from[0] + dx * stride * i - dz * halfGauge * side;
-    const z = from[1] + dz * stride * i + dx * halfGauge * side;
-    out.push(...footprintTris(x, z, yaw, heightAt));
-  }
+  for (let i = 0; i < count; i++) out.push(...ponchoPrint(from[0] + dx * stride * i, from[1] + dz * stride * i, yaw, i, heightAt, halfGauge));
   return out;
 }

@@ -1,6 +1,6 @@
-import { printCount, scenePathYaw, SCENE_STRIDE, type SceneDef, type SceneElement } from '@antartida/core';
+import { printCount, printPlace, type ScenePath, type SceneDef, type SceneElement } from '@antartida/core';
 import { resolveRelief, type Tri, type Vec3 } from './lowPoly.ts';
-import { ponchoFootprints } from './ponchoPeople.ts';
+import { ponchoPrint } from './ponchoPeople.ts';
 import { HAMMER_STAKE_AT, PONCHO_PROPS, type PonchoPropId } from './ponchoProps.ts';
 import { snowMound } from './ponchoShapes.ts';
 
@@ -39,20 +39,20 @@ function atPerson(e: SceneElement, offset: readonly [number, number]): [number, 
   return [e.x + (offset[0] * c + offset[1] * s) * k, e.z + (-offset[0] * s + offset[1] * c) * k];
 }
 
+/** The still faces of one element, seated on the ground (relief colors not resolved): its prop, the stake it drives or the drift it sleeps in. Empty for the ones that move. */
+export function elementStaticTris(e: SceneElement, i: number, ground: Ground): Tri[] {
+  if (e.kind === 'prop') return seatAt(PONCHO_PROPS[e.id as PonchoPropId].tris, e.x, e.z, e.yaw, e.scale ?? 1, ground);
+  if (e.kind === 'person' && e.action === 'hammer') {
+    const [sx, sz] = atPerson(e, HAMMER_STAKE_AT);
+    return seatAt(PONCHO_PROPS.stakeAndPick.tris, sx, sz, e.yaw, e.scale ?? 1, ground);
+  }
+  if (e.kind === 'dog' && e.curled) return seatAt(snowMound(0, 0, DRIFT[0], DRIFT[1], DRIFT[2], 200 + i, 9), e.x, e.z, e.yaw, 1, ground);
+  return [];
+}
+
 /** Props, the stake each hammerer drives and the drifts of the curled dogs, seated and colored as the relief (worldY: height in the world). */
 export function sceneStaticTris(scene: SceneDef, ground: Ground, worldY: (y: number) => number): Tri[] {
-  const out: Tri[] = [];
-  scene.elements.forEach((e, i) => {
-    if (e.kind === 'prop') {
-      out.push(...seatAt(PONCHO_PROPS[e.id as PonchoPropId].tris, e.x, e.z, e.yaw, e.scale ?? 1, ground));
-    } else if (e.kind === 'person' && e.action === 'hammer') {
-      const [sx, sz] = atPerson(e, HAMMER_STAKE_AT);
-      out.push(...seatAt(PONCHO_PROPS.stakeAndPick.tris, sx, sz, e.yaw, e.scale ?? 1, ground));
-    } else if (e.kind === 'dog' && e.curled) {
-      out.push(...seatAt(snowMound(0, 0, DRIFT[0], DRIFT[1], DRIFT[2], 200 + i, 9), e.x, e.z, e.yaw, 1, ground));
-    }
-  });
-  return resolveRelief(out, worldY);
+  return resolveRelief(scene.elements.flatMap((e, i) => elementStaticTris(e, i, ground)), worldY);
 }
 
 export interface ScenePrints {
@@ -62,12 +62,18 @@ export interface ScenePrints {
   readonly count: number;
 }
 
-/** The boot prints of the scene's walker (the path that has `prints`), in order along the path, or null. */
-export function sceneFootprints(scene: SceneDef, ground: Ground): ScenePrints | null {
-  const path = scene.paths.find((p) => p.prints);
-  if (!path) return null;
+/** The boot prints along a path, in order, following its corners. */
+export function pathFootprints(path: ScenePath, ground: Ground): ScenePrints {
   const count = printCount(path);
-  const tris = ponchoFootprints(path.from, scenePathYaw(path), count, SCENE_STRIDE, ground);
+  const tris = Array.from({ length: count }, (_, k) => {
+    const p = printPlace(path, k);
+    return ponchoPrint(p.x, p.z, p.yaw, k, ground);
+  }).flat();
   return { tris, perPrint: tris.length / count, count };
 }
 
+/** The boot prints of the scene's walker (the path that has `prints`), in order along the path, or null. */
+export function sceneFootprints(scene: SceneDef, ground: Ground): ScenePrints | null {
+  const path = scene.paths.find((p) => p.prints);
+  return path ? pathFootprints(path, ground) : null;
+}

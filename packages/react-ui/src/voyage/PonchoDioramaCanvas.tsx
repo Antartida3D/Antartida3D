@@ -1,10 +1,12 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { BackSide, BufferAttribute, Color, MeshBasicMaterial, SphereGeometry } from 'three';
 import { Canvas, useThree } from '@react-three/fiber';
 import { CameraControls, CameraControlsImpl, PerformanceMonitor } from '@react-three/drei';
 import { SHOT_DISTANCE, shotPose, type SceneDef } from '@antartida/core';
 import { buildPolyGeometry } from './lowPoly.ts';
 import { DioramaActors } from './PonchoDioramaActors.tsx';
-import { buildDioramaGround } from './ponchoDioramaGround.ts';
+import { DIORAMA_FOG_FAR, buildDioramaWorld } from './ponchoDioramaGround.ts';
+import { SKY_HAZE, skyColorAt } from './ponchoSky.ts';
 import { vehicleMaterial } from './vehicles.ts';
 
 /**
@@ -26,14 +28,39 @@ const SHOT_SMOOTH_S = 0.55;
 const DRAG_SMOOTH_S = 0.12;
 /** How far the visitor can zoom in and out from the stage, and how low or high the camera may go (degrees over the horizon). */
 const ZOOM_MIN = SHOT_DISTANCE[0] * 0.55;
-const ZOOM_MAX = 13;
+const ZOOM_MAX = 22;
 const ELEVATION_LIMITS_DEG: readonly [number, number] = [6, 82];
 const DEG = Math.PI / 180;
 
-/** The snow, the rocks and the prints: one mesh, built once per scene. */
-function Floor({ geometry }: { geometry: ReturnType<typeof buildPolyGeometry> }) {
+/** Where the fog begins (scene units from the camera): the stage is clear, the far ground fades to the haze of the sky. */
+const FOG_NEAR = 55;
+/** Radius of the dome of the sky, and how far the camera sees: past the fog, which already hides the ground. */
+const SKY_RADIUS = 300;
+const CAMERA_FAR = 400;
+const skyMaterial = new MeshBasicMaterial({ vertexColors: true, side: BackSide, fog: false, depthWrite: false });
+
+/** A mesh built once per scene, with its geometry freed when it goes. */
+function Faces({ geometry }: { geometry: ReturnType<typeof buildPolyGeometry> }) {
   useEffect(() => () => geometry.dispose(), [geometry]);
   return <mesh geometry={geometry} material={vehicleMaterial} frustumCulled={false} />;
+}
+
+/** The sky: a dome with a vertical gradient (skyColorAt), drawn first and never fogged. */
+function Sky() {
+  const geometry = useMemo(() => {
+    const g = new SphereGeometry(SKY_RADIUS, 20, 12);
+    const pos = g.getAttribute('position');
+    const colors = new Float32Array(pos.count * 3);
+    const c = new Color();
+    for (let i = 0; i < pos.count; i++) {
+      c.setHex(skyColorAt(pos.getY(i) / SKY_RADIUS));
+      colors.set([c.r, c.g, c.b], i * 3);
+    }
+    g.setAttribute('color', new BufferAttribute(colors, 3));
+    return g;
+  }, []);
+  useEffect(() => () => geometry.dispose(), [geometry]);
+  return <mesh geometry={geometry} material={skyMaterial} renderOrder={-1} frustumCulled={false} />;
 }
 
 /** Takes the camera to the shot of the step: with a glide, or at once with reduced motion. */
@@ -81,14 +108,18 @@ function ShotCamera({ scene, step, reduced }: { scene: SceneDef; step: number; r
   return <CameraControls ref={controls} makeDefault />;
 }
 
-/** The scene: floor and actors, with the camera on its shot. Mounted inside the Canvas. */
+/** The scene: sky, ground and sea out to the horizon, and the actors, with the camera on its shot. Mounted inside the Canvas. */
 function Stage({ scene, step, reduced }: { scene: SceneDef; step: number; reduced: boolean }) {
-  const world = useMemo(() => buildDioramaGround(scene), [scene]);
-  const floor = useMemo(() => buildPolyGeometry(world.tris), [world]);
+  const world = useMemo(() => buildDioramaWorld(scene), [scene]);
+  const land = useMemo(() => buildPolyGeometry(world.land), [world]);
+  const sea = useMemo(() => (world.sea.length ? buildPolyGeometry(world.sea) : null), [world]);
   return (
     <>
-      <Floor geometry={floor} />
-      <DioramaActors scene={scene} ground={world.ground} reduced={reduced} />
+      <fog attach="fog" args={[SKY_HAZE, FOG_NEAR, DIORAMA_FOG_FAR]} />
+      <Sky />
+      <Faces geometry={land} />
+      {sea && <Faces geometry={sea} />}
+      <DioramaActors scene={scene} step={step} ground={world.ground} reduced={reduced} />
       <ShotCamera scene={scene} step={step} reduced={reduced} />
     </>
   );
@@ -111,13 +142,13 @@ export function PonchoDioramaCanvas({ scene, step, reduced, onLost }: {
   return (
     <Canvas
       className="pdio-canvas"
-      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', background: 'var(--paper, #F3EBDD)' }}
+      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', background: `#${SKY_HAZE.toString(16)}` }}
       frameloop="demand"
       // Low quality also renders fewer pixels, as in the station of Orcadas.
       dpr={lowQuality ? 0.7 : 1}
       shadows={false}
       gl={{ antialias: true, powerPreference: 'high-performance' }}
-      camera={{ fov: FOV, near: 0.1, far: 80, position: first.eye }}
+      camera={{ fov: FOV, near: 0.1, far: CAMERA_FAR, position: first.eye }}
       onCreated={({ gl }) => {
         const dom = gl.domElement;
         // A browser may drop the context of a page in the background and give it back on return: wait for it.

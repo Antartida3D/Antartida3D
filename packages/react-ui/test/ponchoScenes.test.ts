@@ -4,6 +4,7 @@ import '../src/voyage/sightingModels.ts';
 import {
   MAX_POLAR_DEG,
   PONCHO_SCENES,
+  printCount,
   minCameraDistance,
   sceneUnit,
   voyageStops,
@@ -11,7 +12,7 @@ import {
 import { PERSON_VARIANTS } from '../src/voyage/ponchoPeople.ts';
 import { PONCHO_PROP_IDS } from '../src/voyage/ponchoProps.ts';
 import { PONCHO_MODELS } from '../src/voyage/ponchoModels.ts';
-import { sceneFootprints, sceneStaticTris } from '../src/voyage/ponchoSceneBuild.ts';
+import { elementStaticTris, pathFootprints, sceneFootprints, sceneStaticTris } from '../src/voyage/ponchoSceneBuild.ts';
 import { sceneLookAt } from '../src/voyage/ponchoSceneFocus.ts';
 import type { Tri } from '../src/voyage/lowPoly.ts';
 
@@ -58,6 +59,32 @@ describe('scenes of Poncho: ids against the models', () => {
       }
     });
   }
+});
+
+describe('scenes of Poncho: the parts that come and go', () => {
+  it('has the still faces of each element on their own, which together are the ones of the scene', () => {
+    for (const [, scene] of scenes) {
+      const each = scene.elements.flatMap((e, i) => elementStaticTris(e, i, flat));
+      expect(sceneStaticTris(scene, flat, (y) => y)).toHaveLength(each.length);
+      scene.elements.forEach((e, i) => {
+        const tris = elementStaticTris(e, i, flat);
+        if (e.kind === 'prop') expect(tris.length, e.id).toBeGreaterThan(0);
+        if (e.kind === 'sled' || (e.kind === 'dog' && !e.curled)) expect(tris).toHaveLength(0);
+      });
+    }
+  });
+
+  it('lays the prints of a walk with corners along its whole length, in order, one block of faces each', () => {
+    const walk = PONCHO_SCENES.nacimiento.paths.find((p) => p.prints)!;
+    const prints = pathFootprints(walk, flat);
+    expect(prints.count).toBe(printCount(walk));
+    expect(prints.tris.length).toBe(prints.perPrint * prints.count);
+    for (const t of prints.tris) expect(t.slice(0, 3).flat().every(Number.isFinite)).toBe(true);
+    // The prints are along the lane the walker follows, within a gauge of it.
+    const lanes = [-1.1, -0.9, -0.7];
+    const near = prints.tris.filter((t) => lanes.some((z) => Math.abs(t[0][2] - z) < 0.3));
+    expect(near.length).toBeGreaterThan(prints.tris.length * 0.8);
+  });
 });
 
 describe('scenes of Poncho: camera of the descent to the stop', () => {

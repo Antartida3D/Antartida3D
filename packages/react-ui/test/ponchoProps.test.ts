@@ -20,6 +20,7 @@ const EXPECTED_BOX: Readonly<Record<PonchoPropId, readonly [number, number, numb
   crashedPlane: [3.7, 1.9, 4.5],
   iceTunnelEntrance: [1.95, 0.95, 2.3],
   nansenSled: [2.3, 0.95, 0.75],
+  baseHut: [3.7, 1.9, 2.3],
 };
 
 const heights = (tris: readonly Tri[]) => tris.flatMap(([a, b, c]) => [a[1], b[1], c[1]]);
@@ -66,6 +67,13 @@ describe('Poncho props (rule 30, low-poly)', () => {
       });
     });
   }
+
+  it('the base hut is a low orange hut with a door and windows, taller than a person and with its door on +z', () => {
+    const hut = PONCHO_PROPS.baseHut;
+    expect(hut.height).toBeGreaterThan(1.2);
+    expect(hut.tris.some((t) => t[3] === VOXEL_PALETTE.WINDOW_DAY)).toBe(true);
+    expect(hut.tris.some((t) => t[3] === 0xff4500)).toBe(true);
+  });
 
   it('is deterministic', () => {
     expect(PONCHO_PROPS.tent.tris).toEqual(PONCHO_PROPS.tent.tris);

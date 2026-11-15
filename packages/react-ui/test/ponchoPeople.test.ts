@@ -6,7 +6,10 @@ import { VOXEL_PALETTE } from '../src/orcadas/stationModels.ts';
 import {
   PERSON_ACTIONS,
   PERSON_VARIANTS,
+  BELT_RADIUS,
+  BELT_Y,
   PONCHO_PHASE_PERIOD,
+  buildBeltTris,
   buildPonchoPerson,
   hammerPose,
   ponchoFootprints,
@@ -14,6 +17,8 @@ import {
   ponchoPersonParts,
   ponchoPose,
   ponchoPoseLift,
+  ponchoWaistAt,
+  tendPose,
   probePose,
   standPose,
   walkPose,
@@ -129,5 +134,58 @@ describe('people of Poncho: footprints', () => {
     for (const t of tris) expect(t.slice(0, 3).flat().every(Number.isFinite)).toBe(true);
     const xs = tris.flatMap(([a, b, c]) => [a[0], b[0], c[0]]);
     expect(Math.max(...xs)).toBeGreaterThan(1.4);
+  });
+});
+
+describe('people of Poncho: the harness belt (book p. 9) and tending a dog', () => {
+  const hip = 0.44;
+
+  it('has a belt round the waist, wider than the parka there, with a buckle, between the hips and the ribs', () => {
+    const tris = buildBeltTris();
+    const pts = tris.flatMap(([a, b, c]) => [a, b, c]);
+    expect(tris.length).toBeGreaterThan(20);
+    for (const p of pts) expect(p.every(Number.isFinite)).toBe(true);
+    expect(Math.min(...pts.map((p) => p[1]))).toBeGreaterThanOrEqual(BELT_Y[0] - 1e-9);
+    expect(Math.max(...pts.map((p) => p[1]))).toBeLessThanOrEqual(BELT_Y[1] + 1e-9);
+    expect(Math.max(...pts.map((p) => p[0]))).toBeGreaterThan(BELT_RADIUS[0]);
+    expect(Math.max(...pts.map((p) => Math.abs(p[2])))).toBeGreaterThan(BELT_RADIUS[1] * 0.95);
+    expect(new Set(tris.map((t) => t[3])).size).toBeGreaterThanOrEqual(2);
+  });
+
+  it('ties the line on the front of the belt, at the waist, not at the feet', () => {
+    const w = ponchoWaistAt(standPose());
+    expect(w[0]).toBeGreaterThan(BELT_RADIUS[0]);
+    expect(w[1]).toBeGreaterThan(hip - 0.05);
+    expect(w[1]).toBeLessThan(hip + 0.15);
+    expect(w[2]).toBe(0);
+  });
+
+  it('follows the lean of the torso and the lift of the legs: the same distance from the hips in every pose, and always at the waist', () => {
+    const rest = ponchoWaistAt(standPose());
+    const reach = Math.hypot(rest[0], rest[1] - hip);
+    for (const action of PERSON_ACTIONS) {
+      for (const phase of PHASES) {
+        const pose = ponchoPose(action, phase);
+        const w = ponchoWaistAt(pose);
+        expect(w.every(Number.isFinite)).toBe(true);
+        // The pivot of the torso is the hips, which are lifted with the person.
+        expect(Math.hypot(w[0], w[1] - ponchoPoseLift(pose) - hip)).toBeCloseTo(reach, 6);
+        expect(w[1]).toBeGreaterThan(0.2);
+        expect(w[1]).toBeLessThan(0.8);
+      }
+    }
+    // Leaning forward (hauling) it goes forward and down.
+    const lean = ponchoWaistAt({ ...standPose(), torsoPitch: -0.45 });
+    expect(lean[1]).toBeLessThan(rest[1]);
+  });
+
+  it('tends bent over with the hands low in front, working a little', () => {
+    const a = tendPose(0);
+    const b = tendPose(Math.PI / 2);
+    expect(a.torsoPitch).toBeLessThan(-0.4);
+    expect(a.armL).not.toBe(b.armL);
+    const hand = ponchoHandAt(a, 'L');
+    expect(hand[0]).toBeGreaterThan(0.2);
+    expect(hand[1]).toBeLessThan(0.7);
   });
 });

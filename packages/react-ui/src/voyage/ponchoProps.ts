@@ -1,6 +1,7 @@
 import { block, chunk, prism, quad, RELIEF_ICE, shift, type Tri, type Vec3 } from './lowPoly.ts';
 import { VOXEL_PALETTE } from '../orcadas/stationModels.ts';
 import { loftAlongX, lowestY, rope, slab, snowMound, thinTriangle, tube } from './ponchoShapes.ts';
+import { buildBaseHut } from './ponchoBase.ts';
 
 /**
  * Low-poly props of Poncho's stops (rule 30, docs/diseno/estilo-voxel.md): the objects of the
@@ -445,6 +446,7 @@ export const PONCHO_PROP_IDS = [
   'crashedPlane',
   'iceTunnelEntrance',
   'nansenSled',
+  'baseHut',
 ] as const;
 
 export type PonchoPropId = (typeof PONCHO_PROP_IDS)[number];
@@ -471,6 +473,7 @@ const BUILDERS: Readonly<Record<PonchoPropId, readonly [string, () => Tri[]]>> =
   crashedPlane: ['Avioncito accidentado en la nieve', buildCrashedPlane],
   iceTunnelEntrance: ['Entrada de un túnel de hielo', buildIceTunnelEntrance],
   nansenSled: ['Trineo Nansen', buildNansenSled],
+  baseHut: ['Casilla baja de la base', buildBaseHut],
 };
 
 const extentOf = (tris: readonly Tri[]): [number, number, number] => {
@@ -500,4 +503,5 @@ export const PONCHO_PROPS: Readonly<Record<PonchoPropId, PonchoProp>> = {
   crashedPlane: makeProp('crashedPlane'),
   iceTunnelEntrance: makeProp('iceTunnelEntrance'),
   nansenSled: makeProp('nansenSled'),
+  baseHut: makeProp('baseHut'),
 };

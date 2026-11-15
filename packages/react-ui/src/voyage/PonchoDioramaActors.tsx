@@ -1,26 +1,31 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { Group, Mesh, Quaternion, Vector3, type BufferGeometry } from 'three';
+import { BufferAttribute, BufferGeometry, Color, DoubleSide, Group, Mesh, MeshBasicMaterial, Quaternion, Vector3 } from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import {
-  scenePathProgress,
-  scenePersonPhase,
+  SCENE_STRIDE,
+  sceneElementShown,
   sceneHop,
+  scenePathLength,
+  scenePersonPhase,
+  sceneWalk,
   printsShown,
-  walkPhase,
-  walkPosition,
+  stageProgress,
+  stageScale,
   type SceneDef,
   type SceneElement,
   type ScenePath,
 } from '@antartida/core';
 import { OBSERVER_HIP_Y, OBSERVER_HIP_Z, OBSERVER_SHOULDER_Y, OBSERVER_SHOULDER_Z } from '../orcadas/lowPolyPeople.ts';
 import { VOXEL_PALETTE } from '../orcadas/stationModels.ts';
-import { buildPolyGeometry } from './lowPoly.ts';
-import { ponchoPersonParts, ponchoPoseLift, type PersonVariant } from './ponchoPeople.ts';
-import { PONCHO_MODELS } from './ponchoModels.ts';
+import { boxShade, buildPolyGeometry, resolveRelief, type Vec3 } from './lowPoly.ts';
+import { buildBeltTris, ponchoPersonParts, ponchoPoseLift, ponchoWaistAt, type PersonPose, type PersonVariant } from './ponchoPeople.ts';
+import { ponchoDogTris } from './ponchoDog.ts';
+import { PONCHO_PALETTE, type DogPalette } from './ponchoModels.ts';
 import { PONCHO_PROPS } from './ponchoProps.ts';
-import { DOG_SCALE, sceneFootprints, sceneStaticTris, type Ground } from './ponchoSceneBuild.ts';
+import { DOG_SCALE, elementStaticTris, pathFootprints, type Ground } from './ponchoSceneBuild.ts';
+import { ROPE_SEGMENTS, ropeIndices, ropePoints, ropeVertexCount, fillRopeTube } from './ponchoRope.ts';
 import { TOOL_THICKNESS, heldTool, scenePose } from './ponchoTools.ts';
-import { buildBoxGeometry, vehicleMaterial, type Box } from './vehicles.ts';
+import { buildBoxGeometry, vehicleMaterial } from './vehicles.ts';
 
 /**
  * What happens in a diorama of Poncho (issue #146), at human scale and never scaled by the camera: the
@@ -28,10 +33,15 @@ import { buildBoxGeometry, vehicleMaterial, type Box } from './vehicles.ts';
  * and the dogs, drawn low-poly (rule 30). What each scene shows is in `PONCHO_SCENES` (@antartida/core);
  * here only how it is drawn. All is illustration, and the screen says so once.
  *
- * Cost: the still parts (props, drifts) are ONE mesh per scene, built once; the prints are one more mesh
- * revealed with the draw range; each person is five meshes (torso, two arms, two legs) turned by their
- * pose, plus two for the tool; each dog and sled is one. No shadows, no per-frame geometry. With reduced
- * motion nothing moves.
+ * Stages (issue #146): every element shows only at the steps of the tour it belongs to (`appearAt`, `until`
+ * of the scene, core/poncho-scenes.ts) and grows out of the ground when it comes and sinks back when it goes
+ * (`stageProgress`, `stageScale`); the clock of its walk starts when it shows. With reduced motion it simply is
+ * or is not there.
+ *
+ * Cost: each prop (and the stake or drift of a person or dog) is ONE mesh, built once; the prints are one more
+ * mesh revealed with the draw range; each person is five meshes (torso, two arms, two legs) turned by their
+ * pose, plus two for the tool and one for the belt; each dog and sled is one; a line is one small mesh whose
+ * ten points are moved every frame. No shadows. With reduced motion nothing moves.
  */
 
 /** Longest frame the clock of a scene advances, in seconds. */
@@ -52,14 +62,23 @@ const DOG_SWAY_RATE = 1.3;
 const DOG_BOB_RATE = 13;
 /** The sled leans with the ground over this length (scene units). */
 const SLED_SPAN = 0.55;
+/** Where the line is tied on a dog (its model frame: x ahead, y up): the back, over the hips. */
+const DOG_HARNESS: Vec3 = [-0.28, 0.58, 0];
+/** The line shows once both its ends are this grown. */
+const ROPE_SHOW = 0.95;
+const ropeMaterial = new MeshBasicMaterial({ vertexColors: true, side: DoubleSide });
+const ROPE_COLOR = VOXEL_PALETTE.CREAM;
 
-const tint = (boxes: readonly Box[], k: number): Box[] =>
-  boxes.map(([cx, cy, cz, sx, sy, sz, hex]) => {
-    const r = Math.round(((hex >> 16) & 255) * k);
-    const g = Math.round(((hex >> 8) & 255) * k);
-    const b = Math.round((hex & 255) * k);
-    return [cx, cy, cz, sx, sy, sz, (r << 16) | (g << 8) | b];
-  });
+const darken = (hex: number, k: number): number =>
+  (Math.round(((hex >> 16) & 255) * k) << 16) | (Math.round(((hex >> 8) & 255) * k) << 8) | Math.round((hex & 255) * k);
+const darkened = (p: DogPalette, k: number): DogPalette => ({
+  coat: darken(p.coat, k),
+  shade: darken(p.shade, k),
+  patch: darken(p.patch, k),
+  muzzle: darken(p.muzzle, k),
+  ear: p.ear,
+  tail: darken(p.tail, k),
+});
 
 /** Geometries shared by every scene, built on first use. */
 interface Shared {
@@ -67,16 +86,18 @@ interface Shared {
   sled: BufferGeometry;
   woodBar: BufferGeometry;
   metalBar: BufferGeometry;
+  belt: BufferGeometry;
   parts: Map<PersonVariant, Record<'torso' | 'legL' | 'legR' | 'armL' | 'armR', BufferGeometry>>;
 }
 let shared: Shared | null = null;
 function sharedGeometry(): Shared {
   return (shared ??= {
-    dogs: { poncho: buildBoxGeometry(PONCHO_MODELS['poncho-dog']), pack: buildBoxGeometry(tint(PONCHO_MODELS['poncho-dog'], PACK_DARKEN)) },
+    dogs: { poncho: buildPolyGeometry(ponchoDogTris(), boxShade), pack: buildPolyGeometry(ponchoDogTris(darkened(PONCHO_PALETTE, PACK_DARKEN)), boxShade) },
     // The ground faces of the prop (colored as the relief) would drag along with a moving sled: left out.
     sled: buildPolyGeometry(PONCHO_PROPS.nansenSled.tris.filter((t) => t[3] >= 0)),
     woodBar: buildBoxGeometry([[0, 0, 0, 1, 1, 1, WOOD_LIGHT]]),
     metalBar: buildBoxGeometry([[0, 0, 0, 1, 1, 1, ZINC]]),
+    belt: buildPolyGeometry(buildBeltTris()),
     parts: new Map(),
   });
 }
@@ -104,8 +125,8 @@ interface PersonRig {
   head: Mesh;
 }
 
-/** A person: the five parts of the articulated figure of Orcadas on pivots, and the two meshes of the tool. */
-function Person({ variant, onRig }: { variant: PersonVariant; onRig: (rig: PersonRig | null) => void }) {
+/** A person: the five parts of the articulated figure of Orcadas on pivots, the two meshes of the tool and, if they wear it, the belt. */
+function Person({ variant, belt, onRig }: { variant: PersonVariant; belt: boolean; onRig: (rig: PersonRig | null) => void }) {
   const g = personGeometry(variant);
   const s = sharedGeometry();
   const root = useRef<Group>(null);
@@ -127,6 +148,7 @@ function Person({ variant, onRig }: { variant: PersonVariant; onRig: (rig: Perso
       <group ref={lift}>
         <group ref={upper} position={[0, OBSERVER_HIP_Y, 0]}>
           <mesh geometry={g.torso} material={vehicleMaterial} position={[0, -OBSERVER_HIP_Y, 0]} />
+          {belt && <mesh geometry={s.belt} material={vehicleMaterial} position={[0, -OBSERVER_HIP_Y, 0]} />}
           <group ref={armL} position={[0, OBSERVER_SHOULDER_Y - OBSERVER_HIP_Y, -OBSERVER_SHOULDER_Z]}>
             <mesh geometry={g.armL} material={vehicleMaterial} />
           </group>
@@ -147,6 +169,22 @@ function Person({ variant, onRig }: { variant: PersonVariant; onRig: (rig: Perso
   );
 }
 
+/** The line from the waist of a person to the harness of a dog: its tube, moved every frame (the vertices only; faces and colors never change). */
+function RopeLine({ onMesh }: { onMesh: (m: Mesh | null) => void }) {
+  const geometry = useMemo(() => {
+    const g = new BufferGeometry();
+    g.setAttribute('position', new BufferAttribute(new Float32Array(ropeVertexCount() * 3), 3));
+    const colors = new Float32Array(ropeVertexCount() * 3);
+    const c = new Color(ROPE_COLOR);
+    for (let i = 0; i < ropeVertexCount(); i++) colors.set([c.r, c.g, c.b], i * 3);
+    g.setAttribute('color', new BufferAttribute(colors, 3));
+    g.setIndex(ropeIndices());
+    return g;
+  }, []);
+  useEffect(() => () => geometry.dispose(), [geometry]);
+  return <mesh ref={onMesh} geometry={geometry} material={ropeMaterial} frustumCulled={false} visible={false} />;
+}
+
 const X_AXIS = new Vector3(1, 0, 0);
 const shaft = new Vector3();
 const turn = new Quaternion();
@@ -161,30 +199,42 @@ interface Stance {
   phase: number;
 }
 
-/** The place of an element that follows a path (or its own place), at the clock `t`. */
-function placeOf(e: SceneElement, paths: ReadonlyMap<string, ScenePath>, t: number, reduced: boolean): { x: number; z: number; yaw: number; moving: boolean; u: number } {
-  const path = e.path ? paths.get(e.path) : undefined;
-  if (!path) return { x: e.x, z: e.z, yaw: e.yaw, moving: false, u: 0 };
-  const u = reduced ? 1 : scenePathProgress(path, t);
-  const p = walkPosition(path, u);
-  // Ahead of the point of the path and to its left: (cos, -sin) is where a yaw faces; its left is the next turn of 90 degrees.
-  const dx = Math.cos(p.yaw);
-  const dz = -Math.sin(p.yaw);
-  const lead = e.lead ?? 0;
-  const side = e.side ?? 0;
-  return { x: p.x + dx * lead - dz * side, z: p.z + dz * lead + dx * side, yaw: p.yaw, moving: u > 0 && u < 1, u };
+/** The place an element has: its own, or the one on its path `t` seconds after it showed (ahead of the point of the path and to its left, if it has a lead or a side). */
+interface Spot {
+  x: number;
+  z: number;
+  yaw: number;
+  moving: boolean;
+  /** Distance walked so far, without wrapping on a loop. */
+  travel: number;
 }
 
-const stanceOf = (e: SceneElement, spot: ReturnType<typeof placeOf>, path: ScenePath | undefined, t: number, reduced: boolean): Stance => {
-  // A walker walks while it goes along its path, then stands.
-  if (path && e.action === 'walk') {
-    return { ...spot, action: spot.moving ? 'walk' : 'stand', phase: spot.moving ? walkPhase(path, spot.u) + (e.phaseOffset ?? 0) : 0 };
+function placeOf(e: SceneElement, path: ScenePath | undefined, t: number): Spot {
+  if (!path) return { x: e.x, z: e.z, yaw: e.yaw, moving: false, travel: 0 };
+  const w = sceneWalk(path, t, e.lag ?? 0);
+  // (cos, -sin) is where a yaw faces; its left is the next turn of 90 degrees.
+  const dx = Math.cos(w.yaw);
+  const dz = -Math.sin(w.yaw);
+  const lead = e.lead ?? 0;
+  const side = e.side ?? 0;
+  return { x: w.x + dx * lead - dz * side, z: w.z + dz * lead + dx * side, yaw: w.yaw, moving: w.moving, travel: w.travel };
+}
+
+/** The clock of an element at rest (reduced motion): the end of a walk, half way round a loop. */
+const restClock = (path: ScenePath | undefined): number => (path ? (path.loop ? path.delay + path.duration / 2 : REDUCED_CLOCK) : 0);
+
+const stanceOf = (e: SceneElement, spot: Spot, t: number, reduced: boolean): Stance => {
+  // A walker walks while it goes along its path, then stands; with reduced motion it stands.
+  if (e.path && e.action === 'walk') {
+    const walking = spot.moving && !reduced;
+    return { ...spot, moving: walking, action: walking ? 'walk' : 'stand', phase: walking ? (spot.travel * Math.PI) / SCENE_STRIDE + (e.phaseOffset ?? 0) : 0 };
   }
   const offset = e.phaseOffset ?? 0;
   return { ...spot, action: e.action ?? 'stand', phase: reduced ? offset : scenePersonPhase(t, offset) };
 };
 
-function turnPerson(rig: PersonRig, st: Stance, scale: number, groundY: number, reduced: boolean) {
+/** Turns the figure to the stance; returns its pose and where the line is tied on it (scene frame), for the one who wears the belt. */
+function turnPerson(rig: PersonRig, st: Stance, scale: number, groundY: number, reduced: boolean): { pose: PersonPose; waist: Vec3 } {
   const pose = scenePose(st.action ?? 'stand', st.phase);
   rig.upper.rotation.z = pose.torsoPitch;
   rig.armL.rotation.z = pose.armL;
@@ -200,7 +250,9 @@ function turnPerson(rig: PersonRig, st: Stance, scale: number, groundY: number, 
   rig.root.scale.setScalar(scale);
   const tool = heldTool(st.action ?? 'stand', pose);
   rig.stick.visible = rig.head.visible = !!tool;
-  if (!tool) return;
+  const waist = ponchoWaistAt(pose);
+  const at = placed(waist, st.x, groundY, st.z, st.yaw, scale);
+  if (!tool) return { pose, waist: at };
   // The shaft goes from `a` to `b`: a box one unit long along x, moved to the middle, turned and stretched.
   shaft.set(tool.b[0] - tool.a[0], tool.b[1] - tool.a[1], tool.b[2] - tool.a[2]);
   const length = shaft.length();
@@ -211,30 +263,49 @@ function turnPerson(rig: PersonRig, st: Stance, scale: number, groundY: number, 
   rig.head.position.set(...tool.b);
   rig.head.quaternion.copy(turn);
   rig.head.scale.set(...tool.head);
+  return { pose, waist: at };
 }
 
+/** A point of a model (feet on y = 0, facing +x) placed in the scene: scaled, turned by `yaw` (as three's rotation.y) and moved. */
+function placed(p: Vec3, x: number, y: number, z: number, yaw: number, scale: number): Vec3 {
+  const c = Math.cos(yaw);
+  const s = Math.sin(yaw);
+  return [x + (p[0] * c + p[2] * s) * scale, y + p[1] * scale, z + (-p[0] * s + p[2] * c) * scale];
+}
 
 /**
- * The still and moving parts of a scene, in its own frame (x ahead, z to the left, y up) on `ground`.
- * The canvas draws on demand: while something can move (not reduced, page in view) every frame asks for
- * the next one; with reduced motion it draws once, everything at rest.
+ * The still and moving parts of a scene, in its own frame (x ahead, z to the left, y up) on `ground`, as the
+ * tour reaches `step`. The canvas draws on demand: while something can move (not reduced, page in view) every
+ * frame asks for the next one; with reduced motion it draws once per change, everything at rest.
  */
-export function DioramaActors({ scene, ground, reduced }: { scene: SceneDef; ground: Ground; reduced: boolean }) {
+export function DioramaActors({ scene, step, ground, reduced }: { scene: SceneDef; step: number; ground: Ground; reduced: boolean }) {
   const invalidateAll = useThree((st) => st.invalidate);
   const printsMesh = useRef<Mesh>(null);
   const rigs = useRef<(PersonRig | null)[]>([]);
   const nodes = useRef<(Group | null)[]>([]);
-  const clock = useRef(0);
+  const ropeMeshes = useRef<(Mesh | null)[]>([]);
+  const stills = useRef<(Group | null)[]>([]);
+  const stepRef = useRef(step);
+  stepRef.current = step;
+  // How far each element has grown out of the ground (0 to 1), and the clock of each since it showed.
+  const grown = useRef<number[]>([]);
+  const clocks = useRef<number[]>([]);
+  const travels = useRef<number[]>([]);
   const paths = useMemo(() => new Map(scene.paths.map((p) => [p.id, p])), [scene]);
   const printed = scene.paths.find((p) => p.prints);
-  const still = useMemo(() => buildPolyGeometry(sceneStaticTris(scene, ground, () => 0)), [scene, ground]);
-  const prints = useMemo(() => sceneFootprints(scene, ground), [scene, ground]);
+  const printedIndex = printed ? scene.elements.findIndex((e) => e.path === printed.id) : -1;
+  // One mesh for each element that has a still part, seated on the ground.
+  const stillGeometries = useMemo(() => scene.elements.map((e, i) => {
+    const tris = elementStaticTris(e, i, ground);
+    return tris.length ? buildPolyGeometry(resolveRelief(tris, () => 0)) : null;
+  }), [scene, ground]);
+  const prints = useMemo(() => (printed ? pathFootprints(printed, ground) : null), [printed, ground]);
   const printsGeometry = useMemo(() => buildPolyGeometry(prints?.tris ?? []), [prints]);
 
-  useEffect(() => () => still.dispose(), [still]);
+  useEffect(() => () => stillGeometries.forEach((g) => g?.dispose()), [stillGeometries]);
   useEffect(() => () => printsGeometry.dispose(), [printsGeometry]);
-  // With reduced motion switched on or off, draw once more so everything settles.
-  useEffect(() => invalidateAll(), [reduced, invalidateAll]);
+  // With reduced motion switched on or off, or a new step, draw once more so everything settles.
+  useEffect(() => invalidateAll(), [reduced, step, invalidateAll]);
   // Back on the page, the loop that stopped while it was hidden starts again.
   useEffect(() => {
     const wake = () => invalidateAll();
@@ -243,20 +314,48 @@ export function DioramaActors({ scene, ground, reduced }: { scene: SceneDef; gro
   }, [invalidateAll]);
 
   useFrame(({ invalidate }, delta) => {
-    if (!reduced) clock.current += Math.min(MAX_FRAME, delta);
-    const t = reduced ? REDUCED_CLOCK : clock.current;
+    const dt = reduced ? 0 : Math.min(MAX_FRAME, delta);
+    let settling = false;
+    // Where the ends of the lines are tied this frame: the waist of the one who wears the belt, the harness of the dog.
+    const waists = new Map<number, Vec3>();
+    const harnesses = new Map<number, Vec3>();
     scene.elements.forEach((e, i) => {
-      const path = e.path ? paths.get(e.path) : undefined;
-      const spot = placeOf(e, paths, t, reduced);
-      const k = e.scale ?? 1;
+      const shown = sceneElementShown(e, stepRef.current);
+      const before = grown.current[i] ?? 0;
+      const p = stageProgress(before, shown, dt, reduced);
+      grown.current[i] = p;
+      if (p !== (shown ? 1 : 0)) settling = true;
+      // The clock of the element runs from the moment it shows; it starts over each time it comes back.
+      clocks.current[i] = p <= 0 ? 0 : (clocks.current[i] ?? 0) + dt;
+      const t = reduced ? restClock(e.path ? paths.get(e.path) : undefined) : clocks.current[i];
+      const grow = stageScale(p);
+      const k = (e.scale ?? 1) * grow;
+      const spot = placeOf(e, e.path ? paths.get(e.path) : undefined, t);
+      travels.current[i] = spot.travel;
+      const gy = ground(spot.x, spot.z);
+      const still = stills.current[i];
+      if (still) {
+        // Grows out of its foot: the faces are already seated, so the group scales about the foot.
+        const gx = e.x;
+        const gz = e.z;
+        const base = ground(gx, gz);
+        still.visible = p > 0;
+        still.scale.setScalar(grow);
+        still.position.set(gx * (1 - grow), base * (1 - grow), gz * (1 - grow));
+      }
       if (e.kind === 'person') {
         const rig = rigs.current[i];
-        if (rig) turnPerson(rig, stanceOf(e, spot, path, t, reduced), k, ground(spot.x, spot.z), reduced);
+        if (!rig) return;
+        rig.root.visible = p > 0;
+        if (p <= 0) return;
+        const out = turnPerson(rig, stanceOf(e, spot, t, reduced), k, gy, reduced);
+        if (e.rope) waists.set(i, out.waist);
         return;
       }
       const node = nodes.current[i];
       if (!node) return;
-      const gy = ground(spot.x, spot.z);
+      node.visible = p > 0;
+      if (p <= 0) return;
       if (e.kind === 'sled') {
         const fx = Math.cos(spot.yaw) * SLED_SPAN;
         const fz = -Math.sin(spot.yaw) * SLED_SPAN;
@@ -267,35 +366,73 @@ export function DioramaActors({ scene, ground, reduced }: { scene: SceneDef; gro
         return;
       }
       // A dog sways a little where it stands, and bobs while it trots with the team.
+      const moving = spot.moving && !reduced;
       const sway = reduced || e.curled ? 0 : Math.sin(t * DOG_SWAY_RATE + i) * DOG_SWAY;
-      const bob = reduced || !spot.moving ? 0 : Math.abs(Math.sin(t * DOG_BOB_RATE + i)) * DOG_BOB;
+      const bob = !moving ? 0 : Math.abs(Math.sin(t * DOG_BOB_RATE + i)) * DOG_BOB;
       node.position.set(spot.x, gy + bob - (e.curled ? CURLED_SINK : 0), spot.z);
       node.rotation.set(sway, spot.yaw, 0, 'YZX');
       node.scale.set(DOG_SCALE * k, DOG_SCALE * k * (e.curled ? CURLED_HEIGHT : 1), DOG_SCALE * k);
+      harnesses.set(i, placed(DOG_HARNESS, spot.x, gy + bob, spot.z, spot.yaw, DOG_SCALE * k));
+    });
+
+    // The lines: from the waist to the harness, slack when the two are close and tight when they are far.
+    scene.elements.forEach((e, i) => {
+      const mesh = ropeMeshes.current[i];
+      if (!e.rope || !mesh) return;
+      const a = waists.get(i);
+      const b = harnesses.get(e.rope.to);
+      const both = (grown.current[i] ?? 0) >= ROPE_SHOW && (grown.current[e.rope.to] ?? 0) >= ROPE_SHOW;
+      mesh.visible = both && !!a && !!b;
+      if (!mesh.visible || !a || !b) return;
+      const attr = mesh.geometry.getAttribute('position') as BufferAttribute;
+      fillRopeTube(attr.array as Float32Array, ropePoints(a, b, e.rope.length, ground, ROPE_SEGMENTS));
+      attr.needsUpdate = true;
     });
 
     // The prints show as far as the walker has come.
     const pm = printsMesh.current;
     if (printed && prints && pm) {
-      const u = reduced ? 1 : scenePathProgress(printed, t);
-      pm.geometry.setDrawRange(0, (u > 0 ? printsShown(printed, u) : 0) * prints.perPrint * 3);
+      const here = printedIndex >= 0 ? (grown.current[printedIndex] ?? 0) : 0;
+      const walked = reduced ? 1 : Math.min(1, (travels.current[printedIndex] ?? 0) / scenePathLength(printed));
+      pm.visible = here > 0;
+      pm.geometry.setDrawRange(0, (walked > 0 ? printsShown(printed, walked) : 0) * prints.perPrint * 3);
     }
-    if (!reduced && !document.hidden) invalidate();
+    if ((!reduced && !document.hidden) || settling) invalidate();
   });
 
   return (
     <group>
-      <mesh geometry={still} material={vehicleMaterial} frustumCulled={false} />
       <mesh ref={printsMesh} geometry={printsGeometry} material={vehicleMaterial} frustumCulled={false} />
       {scene.elements.map((e, i) => {
+        const still = stillGeometries[i];
+        const stillNode = still ? (
+          <group key={`still-${i}`} ref={(n) => void (stills.current[i] = n)} visible={false}>
+            <mesh geometry={still} material={vehicleMaterial} frustumCulled={false} />
+          </group>
+        ) : null;
         if (e.kind === 'person') {
-          return <Person key={i} variant={e.id as PersonVariant} onRig={(rig) => void (rigs.current[i] = rig)} />;
+          return (
+            <group key={i}>
+              {stillNode}
+              <Person variant={e.id as PersonVariant} belt={!!e.rope} onRig={(rig) => void (rigs.current[i] = rig)} />
+              {e.rope && (
+                <RopeLine
+                  onMesh={(m) => {
+                    ropeMeshes.current[i] = m;
+                  }}
+                />
+              )}
+            </group>
+          );
         }
-        if (e.kind === 'prop') return null;
+        if (e.kind === 'prop') return stillNode;
         const geometry = e.kind === 'sled' ? sharedGeometry().sled : sharedGeometry().dogs[e.id];
         return (
-          <group key={i} ref={(n) => void (nodes.current[i] = n)}>
-            <mesh geometry={geometry} material={vehicleMaterial} />
+          <group key={i}>
+            {stillNode}
+            <group ref={(n) => void (nodes.current[i] = n)}>
+              <mesh geometry={geometry} material={vehicleMaterial} />
+            </group>
           </group>
         );
       })}

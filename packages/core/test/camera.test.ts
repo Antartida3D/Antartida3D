@@ -4,6 +4,7 @@ import {
   groundTarget,
   CAMERA_RETURN_SECONDS,
   FOV,
+  liftToward,
   MAX_POLAR_DEG,
   cameraReturn,
   OCEAN_SIZE,
@@ -283,5 +284,32 @@ describe('groundTarget (#127)', () => {
     expect(t.y).toBe(0);
     const s = 73.7 / (73.7 - 61.3);
     expect(t.z).toBeCloseTo(12.5 + (-9 - 12.5) * s, 6);
+  });
+});
+
+describe('liftToward (#148)', () => {
+  const polar = (52 * Math.PI) / 180;
+  // Height on screen (-1 bottom, 1 top) of a point on the target plane, `ahead` units past the target.
+  const ndcOf = (distance: number, ahead: number) => {
+    const height = distance * Math.cos(polar);
+    const across = distance * Math.sin(polar);
+    const axis = Math.PI / 2 - polar;
+    return Math.tan(axis - Math.atan(height / (across + ahead))) / Math.tan((FOV * Math.PI) / 360);
+  };
+
+  it('does not move the target to keep the point in the middle of the screen', () => {
+    expect(liftToward(3, polar, 0)).toBeCloseTo(0, 9);
+  });
+
+  it('puts the point at the asked height on screen, at any distance', () => {
+    for (const distance of [2.2, 4.5, 7]) {
+      for (const ndcY of [0.25, 0.5]) expect(ndcOf(distance, liftToward(distance, polar, ndcY))).toBeCloseTo(ndcY, 9);
+    }
+  });
+
+  it('above the middle of a phone, the point is in the free half over the sheet', () => {
+    const lift = liftToward(3, polar, 0.5);
+    expect(lift).toBeGreaterThan(0);
+    expect(ndcOf(3, lift)).toBeGreaterThan(0);
   });
 });

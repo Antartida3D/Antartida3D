@@ -70,7 +70,9 @@ test('dialogs close with Escape and return focus to their trigger', async ({ pag
   const sheet = page.getByRole('dialog', { name: 'Océano' });
   await expect(sheet.getByRole('heading', { name: 'Fuentes verificadas' })).toBeVisible();
   await expect(sheet).not.toContainText('[Contenido provisional]');
-  await expectFocused(page, 'Cerrar ficha');
+  // No close button (#148): the title takes the focus; a tap outside, a drag down, Escape and «Volver al mapa» close it.
+  await expectFocused(page, 'Océano');
+  await expect(sheet.getByRole('button', { name: 'Cerrar ficha' })).toHaveCount(0);
   await page.keyboard.press('Escape');
   await expect(sheet).toHaveCount(0);
   await expectFocused(page, 'Ver como lista');
@@ -118,6 +120,24 @@ test('on a phone a point sheet closes when dragged down, like the other sheets',
   const cdp = await page.context().newCDPSession(page);
   await touchDrag(cdp, erebus.getByRole('heading', { name: 'Volcán en el hielo' }), 0, 200);
   await expect(erebus).toBeHidden();
+});
+
+test('on a phone a point sheet opens at half the screen, grows when dragged up, and is a point of interest (#148)', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'a phone layout; on wide screens the sheet is a card');
+  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Volcán en el hielo/ }).click();
+  const erebus = page.getByRole('dialog', { name: 'Volcán en el hielo' });
+  await expect(erebus.locator('.tag.tc')).toHaveText('Punto de interés');
+  await expect(erebus).not.toContainText('Próximamente');
+  await expect(erebus).not.toContainText('todavía no está disponible');
+  await expect(erebus.getByRole('button', { name: 'Cerrar ficha' })).toHaveCount(0);
+  const viewport = page.viewportSize()!.height;
+  const height = () => erebus.evaluate((el) => el.getBoundingClientRect().height);
+  // Wait for the opening animation and the max-height transition.
+  await expect.poll(height).toBeLessThanOrEqual(viewport * 0.5 + 1);
+  const cdp = await page.context().newCDPSession(page);
+  await touchDrag(cdp, erebus.getByRole('heading', { name: 'Volcán en el hielo' }), 0, -200);
+  await expect.poll(height).toBeGreaterThan(viewport * 0.6);
 });
 
 test('has no horizontal scroll', async ({ page }) => {

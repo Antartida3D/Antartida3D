@@ -95,6 +95,16 @@ Pedido de NeichS: la base también se ve sobre el mapa abierto, como Orcadas. Es
 - **Durante el viaje desde Ushuaia no se dibuja:** el viaje aterriza su propio Hércules o su Sea King en la base, mucho más grandes que la maqueta, y quedarían uno encima del otro.
 - **Apoyo sobre el relieve:** la lógica que usaba la maqueta de Orcadas pasó a `map3d/SiteOnRelief.tsx` y la usan las dos. El de Marambio aplana una zona más grande, para que la pista no se hunda en el relieve.
 
+## El Irízar, los meses y el blizzard (#160, 15 de noviembre de 2026)
+
+Pedido de NeichS: el Irízar a lo lejos, que al tocarlo pregunte si se quiere viajar a Orcadas, y los meses como en Orcadas, con el blizzard en los meses que corresponda.
+
+- **El Irízar:** está fondeado en el mar, lejos de la meseta, entre la tira de meses y el panel de la vista inicial en escritorio. En un celular la vista es angosta y el barco queda fuera de cuadro: su punto queda en el borde, del lado del barco. Se dibuja con `buildVehicleGeometry('irizar')`, así toma el modelo low-poly de #158 cuando entre. Su lugar es ilustrativo (ver «Pendientes» en `base-marambio.md`).
+- **El viaje:** al aceptar, se sale de Marambio al mapa y se ve la travesía del Irízar de la Isla Marambio a la Isla Laurie que ya hacía #135, y se abre Orcadas llegando en barco. El cuadro de la pregunta dice que el recorrido es ilustrativo. Si la visita a Marambio llegó al último punto, cuenta como explorada.
+- **La tira de meses:** es la de Orcadas, con su tira de luz y, en lugar del hielo de la bahía, los días con ventisca alta de cada mes según el SMN (normales 1991-2020). La luz del día se calcula con la latitud de la estación del SMN (64,24° S). El mes inicial es el de hoy.
+- **El sol del mes:** el cielo sigue la posición del sol a las 13 (hora solar) en la mitad del mes. Los modelos conservan su luz fija, como en Orcadas.
+- **El blizzard:** nieve que vuela desde el sudoeste y una neblina blanca, más oscura cuando el sol está bajo. Su intensidad es los días de ventisca alta del mes divididos por los de julio, el mes con más. Es una simulación y la ficha `months-simulacion` lo dice. Con movimiento reducido la nieve queda quieta. Sin WebGL, el dibujo muestra trazos de nieve en la misma proporción.
+
 ## Lo que queda para después
 
 - Capítulos guiados, como en Orcadas.

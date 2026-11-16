@@ -848,8 +848,8 @@ export function generateSeaLifeInstances(
     });
   }
 
-  // 3. Orcas: 1 pod of 3 on desktop, 1 pod of 2 on mobile (staggered surfacing with fade)
-  const orcaPodSize = mobile ? 2 : 3;
+  // 3. Orcas: 1 pod of 2 well-separated on desktop and mobile
+  const orcaPodSize = 2;
   const orcaZones = SEA_ZONES.filter((z) => z.species === 'orca');
   const podZone = [orcaZones[0]];
   const podRadius = 12;
@@ -858,9 +858,8 @@ export function generateSeaLifeInstances(
   const podBasePhase = 0.22 + rng() * 0.04;
   const podSpeed = 1 / (21 + rng() * 3);
   const offsets = [
-    { dx: -4.5, dy: -2.0 },
-    { dx: 4.2, dy: -1.5 },
-    { dx: 0.0, dy: 4.0 },
+    { dx: -9.5, dy: -4.0 },
+    { dx: 9.5, dy: 4.5 },
   ];
   for (let m = 0; m < orcaPodSize; m++) {
     const ox = podCenter.x + offsets[m].dx;
@@ -874,9 +873,9 @@ export function generateSeaLifeInstances(
       x: ox,
       y: oy,
       radius: 4.5,
-      phase: (podBasePhase + m * 0.11) % 1,
+      phase: (podBasePhase + m * 0.5) % 1,
       speed: podSpeed,
-      scale: m === 0 ? 1.04 : 0.9 + m * 0.04,
+      scale: m === 0 ? 1.04 : 0.94,
       seed: 200,
       zoneId: podCenter.zoneId,
     });
@@ -907,11 +906,11 @@ export function generateSeaLifeInstances(
     });
   }
 
-  // 5. Penguins on small ice floe: 2 on desktop, 1 on mobile
-  const penguinCount = mobile ? 1 : 2;
+  // 5. Single larger penguin floe on desktop and mobile
+  const penguinCount = 1;
   const penguinZones = SEA_ZONES.filter((z) => z.species === 'penguins');
   for (let i = 0; i < penguinCount; i++) {
-    const radius = 1.2;
+    const radius = 1.4;
     const pt = samplePointInZones(penguinZones, rng, radius, placedCenters, 38, customGrid);
     placedCenters.push(pt);
     instances.push({
@@ -925,7 +924,7 @@ export function generateSeaLifeInstances(
       radius,
       phase: rng(),
       speed: 0.025,
-      scale: 1.0,
+      scale: 1.18,
       seed: 400 + i * 23,
       zoneId: pt.zoneId,
     });

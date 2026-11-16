@@ -4,12 +4,14 @@ import {
   restAmmonite, restDino, restGeologist, restPlesio, type Geologist,
 } from '../src/fossils/fossilPoses.ts';
 import {
-  CAMP_FLAT, FOREST_PLANTS, MESA_TOP, WATER_LEVEL, buildFieldBoxes, buildForestBoxes, buildSeaFloorBoxes,
+  CAMP_FLAT, DISTANT_MESAS, FOREST_PLANTS, MESA_TOP, WATER_LEVEL, buildFieldTris, buildForestTris, buildSeaFloorTris,
   fieldHeight, seaFloorHeight,
 } from '../src/fossils/fossilTerrain.ts';
 import { FOSSIL_MODELS, PLESIO_VERTEBRAE, plesioVertebra } from '../src/fossils/models.ts';
 import { PLESIO_NECK_SEGMENTS } from '../src/fossils/lowPolyFossils.ts';
 import { SCENE_MODELS } from '../src/voyage/sightingModels.ts';
+import { normalOf } from '../src/voyage/lowPoly.ts';
+import { inward } from './polyHelpers.ts';
 
 const times = Array.from({ length: 200 }, (_, i) => i * 0.137);
 
@@ -22,13 +24,28 @@ describe('fossil scene ground', () => {
     expect(fieldHeight(-14, 0)).toBeLessThan(WATER_LEVEL);
   });
 
-  it('is deterministic and builds a bounded number of blocks', () => {
-    const a = buildFieldBoxes();
-    expect(buildFieldBoxes()).toEqual(a);
-    expect(a.length).toBeGreaterThan(1500);
+  it('is deterministic and builds a bounded number of faces', () => {
+    const a = buildFieldTris();
+    expect(buildFieldTris()).toEqual(a);
+    expect(a.length).toBeGreaterThan(3000);
     expect(a.length).toBeLessThan(12000);
-    expect(buildForestBoxes().length).toBeLessThan(6000);
-    expect(buildSeaFloorBoxes(true).length).toBeLessThan(6000);
+    expect(buildForestTris().length).toBeLessThan(6000);
+    expect(buildSeaFloorTris(true).length).toBeLessThan(6000);
+  });
+
+  it('in low-poly the cliffs of the mesa show their strata and the camp ground stays flat', () => {
+    const field = buildFieldTris();
+    const steep = field.filter((t) => Math.abs(normalOf(t)[1]) < 0.45);
+    expect(steep.length).toBeGreaterThan(50);
+    expect(new Set(steep.map((t) => t[3])).size).toBeGreaterThanOrEqual(3);
+    const camp = field.filter((t) => Math.hypot(t[0][0], t[0][2]) < CAMP_FLAT - 2);
+    for (const t of camp) expect(Math.abs(normalOf(t)[1])).toBeGreaterThan(0.95);
+    // Each far island, seen from its own middle, has every face turned out.
+    for (const [x, z] of [[-62, -40], [-48, -78], [-90, -10], [20, -60]]) {
+      const mesa = DISTANT_MESAS.filter((t) => Math.hypot(t[0][0] - x, t[0][2] - z) < 28);
+      expect(mesa.length).toBeGreaterThan(30);
+      expect(inward(mesa, [x, 1, z])).toBe(0);
+    }
   });
 
   it('raises a hard rock wall behind the Eocene sea floor only', () => {

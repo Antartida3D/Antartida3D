@@ -1,10 +1,11 @@
-import { type Box } from '../voyage/vehicles.ts';
+import { chunk, normalOf, prism, type Tri, type Vec3 } from '../voyage/lowPoly.ts';
 import { FOSSIL_PALETTE as C } from './models.ts';
 
 /**
- * Ground of the Fossils scenes, as blocks: the gravel plain of James Ross Island with its layered
- * mesas (after the camp photographs of the family archive), the Cretaceous forest floor and two
- * sea floors. Illustrative landscapes, not a survey of any site.
+ * Ground of the Fossils scenes, in low-poly (rule 30): the gravel plain of James Ross Island with
+ * its layered mesas (after the camp photographs of the family archive), the Cretaceous forest floor
+ * and two sea floors. A field of faces over the height of each landscape; steep faces show the
+ * strata. Illustrative landscapes, not a survey of any site.
  */
 
 function hash(x: number, z: number, seed: number): number {
@@ -51,7 +52,6 @@ export function fieldHeight(x: number, z: number): number {
   return h;
 }
 
-const quantize = (h: number) => Math.round(h / 0.1) * 0.1;
 
 /** Surface color of a present-day cell: gravel shades, snow patches, scree or snow-capped plateau. */
 function fieldSurface(x: number, z: number, h: number): number {
@@ -67,58 +67,77 @@ function fieldSurface(x: number, z: number, h: number): number {
 export interface GridSpec { x0: number; x1: number; z0: number; z1: number; cell: number; floor: number }
 export const FIELD_GRID: GridSpec = { x0: -15, x1: 24, z0: -26, z1: 12, cell: 0.6, floor: -1.2 };
 
+/** Faces steeper than this (0 flat, 1 a wall) are rock walls: they show the strata, not the surface. */
+const CLIFF = 0.55;
+
 /**
- * One column of blocks per cell. Where a neighbour is lower, the exposed side is split into
- * strata, so the cliffs show their layers; a thin cap carries the color of the surface.
+ * Ground as faces over a grid of corners at the height of the landscape. The inner corners are
+ * jittered a little so the facets look like terrain, not a grid; cells split along alternating
+ * diagonals. A face gets its surface color, or, if it is a steep wall, the color of the stratum at
+ * its height. The edge of the grid drops to its floor, so the ground does not end in the air.
  */
-export function columnsFromHeight(
+export function heightField(
   grid: GridSpec, height: (x: number, z: number) => number, surface: (x: number, z: number, h: number) => number,
   strata: readonly number[], skipBelow = -Infinity,
-): Box[] {
+): Tri[] {
   const nx = Math.round((grid.x1 - grid.x0) / grid.cell);
   const nz = Math.round((grid.z1 - grid.z0) / grid.cell);
-  const hs: number[] = [];
-  for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) {
-    hs.push(quantize(height(grid.x0 + (i + 0.5) * grid.cell, grid.z0 + (j + 0.5) * grid.cell)));
-  }
-  const at = (i: number, j: number) => (i < 0 || j < 0 || i >= nx || j >= nz ? grid.floor : hs[j * nx + i]);
-  const boxes: Box[] = [];
-  for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) {
-    const h = at(i, j);
-    if (h < skipBelow) continue;
-    const x = grid.x0 + (i + 0.5) * grid.cell;
-    const z = grid.z0 + (j + 0.5) * grid.cell;
-    const cap = 0.08;
-    const low = Math.max(grid.floor, Math.min(at(i - 1, j), at(i + 1, j), at(i, j - 1), at(i, j + 1)));
-    const body = h - cap;
-    if (body - low > STRATUM * 0.6 && strata.length > 0) {
-      if (low > grid.floor) boxes.push([x, (grid.floor + low) / 2, z, grid.cell, low - grid.floor, grid.cell, strata[0]]);
-      let y = low;
-      while (y < body - 0.01) {
-        const top = Math.min(body, (Math.floor(y / STRATUM + 1e-6) + 1) * STRATUM);
-        const k = ((Math.floor(y / STRATUM + 1e-6) % strata.length) + strata.length) % strata.length;
-        boxes.push([x, (y + top) / 2, z, grid.cell, top - y, grid.cell, strata[k]]);
-        y = top;
-      }
-    } else if (body > grid.floor) {
-      boxes.push([x, (grid.floor + body) / 2, z, grid.cell, body - grid.floor, grid.cell, strata[0] ?? surface(x, z, h)]);
+  const pts: Vec3[][] = [];
+  for (let i = 0; i <= nx; i++) {
+    pts.push([]);
+    for (let j = 0; j <= nz; j++) {
+      const edge = i === 0 || j === 0 || i === nx || j === nz;
+      const jx = edge ? 0 : (hash(i, j, 61) - 0.5) * grid.cell * 0.5;
+      const jz = edge ? 0 : (hash(i, j, 62) - 0.5) * grid.cell * 0.5;
+      const x = grid.x0 + i * grid.cell + jx;
+      const z = grid.z0 + j * grid.cell + jz;
+      pts[i].push([x, edge ? grid.floor : height(x, z), z]);
     }
-    boxes.push([x, h - cap / 2, z, grid.cell, cap, grid.cell, surface(x, z, h)]);
   }
-  return boxes;
+  const out: Tri[] = [];
+  const face = (a: Vec3, b: Vec3, c: Vec3) => {
+    if (Math.max(a[1], b[1], c[1]) < skipBelow) return;
+    const n = normalOf([a, b, c, 0]);
+    const steep = 1 - Math.abs(n[1]);
+    const mx = (a[0] + b[0] + c[0]) / 3, my = (a[1] + b[1] + c[1]) / 3, mz = (a[2] + b[2] + c[2]) / 3;
+    const k = ((Math.floor(my / STRATUM + 1e-6) % strata.length) + strata.length) % strata.length;
+    out.push([a, b, c, steep > CLIFF && strata.length > 0 ? strata[k] : surface(mx, mz, my)]);
+  };
+  for (let i = 0; i < nx; i++) {
+    for (let j = 0; j < nz; j++) {
+      const a = pts[i][j], b = pts[i + 1][j], c = pts[i + 1][j + 1], e = pts[i][j + 1];
+      if ((i + j) % 2) { face(a, e, c); face(a, c, b); } else { face(a, e, b); face(b, e, c); }
+    }
+  }
+  return out;
 }
 
-export function buildFieldBoxes(): Box[] {
-  return columnsFromHeight(FIELD_GRID, fieldHeight, fieldSurface, STRATA, WATER_LEVEL - 0.15);
+export function buildFieldTris(): Tri[] {
+  return heightField(FIELD_GRID, fieldHeight, fieldSurface, STRATA, WATER_LEVEL - 0.15);
 }
 
-/** Flat-topped islands across the sea, like the view from the camp photographs. */
-export const DISTANT_MESAS: readonly Box[] = [
-  [-62, 2.5, -40, 30, 5, 12, C.strataGrey], [-62, 5.6, -40, 26, 1.2, 10, C.basalt], [-62, 6.3, -40, 22, 0.3, 9, C.snow],
-  [-48, 1.6, -78, 40, 3.2, 14, C.strataBrown], [-48, 3.6, -78, 34, 0.8, 12, C.basalt], [-48, 4.1, -78, 30, 0.25, 11, C.snow],
-  [-90, 3, -10, 14, 6, 34, C.strataGrey], [-90, 6.4, -10, 12, 0.8, 30, C.snow],
-  [20, 3.5, -60, 50, 7, 10, C.strataGrey], [20, 7.4, -60, 46, 0.8, 9, C.snow],
+/**
+ * Flat-topped islands across the sea, like the view from the camp photographs: an irregular footprint
+ * that narrows as it rises, a dark basalt cap and snow on top. [x, z, width, depth, height, rock].
+ */
+const MESAS: readonly (readonly [number, number, number, number, number, number])[] = [
+  [-62, -40, 30, 12, 6.2, C.strataGrey], [-48, -78, 40, 14, 4.2, C.strataBrown], [-90, -10, 14, 34, 6.6, C.strataGrey], [20, -60, 50, 10, 7.6, C.strataGrey],
 ];
+export const DISTANT_MESAS: readonly Tri[] = MESAS.flatMap(([x, z, w, d, h, rock], m) => {
+  const ring = (k: number): [number, number][] => Array.from({ length: 10 }, (_, i) => {
+    const a = (i / 10) * Math.PI * 2;
+    const r = 1 - k + (hash(i, m, 71) - 0.5) * 0.12;
+    return [x + (Math.cos(a) * w * r) / 2, z - (Math.sin(a) * d * r) / 2];
+  });
+  return [
+    ...prism(ring(0), -0.5, h * 0.8, rock),
+    ...prism(ring(0.08), h * 0.8, h * 0.95, C.basalt),
+    ...prism(ring(0.12), h * 0.95, h, C.snow),
+  ];
+});
+
+/** A floe: a flat, rough slab of ice with a bluish underside. */
+export const FLOE_TRIS: readonly Tri[] = [...chunk(0, 0.02, 0, 1, 0.14, 0.7, 81, C.snow), ...chunk(0.05, -0.04, 0, 0.9, 0.08, 0.6, 82, C.iceBlue)];
 
 /** Ice floes on the water, each [x, z, size, seed]. */
 export const FLOES: readonly (readonly [number, number, number, number])[] = Array.from({ length: 26 }, (_, i) => {
@@ -134,12 +153,13 @@ export function forestHeight(x: number, z: number): number {
   const hills = (noise(x * 0.12, z * 0.12, 31) - 0.5) * 2.2 + Math.max(0, -z - 8) * 0.18;
   return hills * smooth(3, 8, Math.hypot(x, z));
 }
+/** Forest floor in broad patches of moss and, here and there, bare soil (not face by face). */
 function forestSurface(x: number, z: number): number {
-  const v = hash(Math.floor(x * 1.5), Math.floor(z * 1.5), 4);
-  return v < 0.55 ? C.forestFloor : v < 0.94 ? C.forestMoss : C.forestSoil;
+  const v = noise(x * 0.35, z * 0.35, 4);
+  return v < 0.5 ? C.forestFloor : v < 0.8 ? C.forestMoss : C.forestSoil;
 }
-export function buildForestBoxes(): Box[] {
-  return columnsFromHeight(FOREST_GRID, forestHeight, forestSurface, [C.forestSoil, C.strataBrown]);
+export function buildForestTris(): Tri[] {
+  return heightField(FOREST_GRID, forestHeight, forestSurface, [C.forestSoil, C.strataBrown]);
 }
 export type ForestPlant = 'conifer' | 'cycad' | 'fern' | 'broadleaf';
 /** Plants of the forest, kept out of the clearing where the dinosaur walks. */
@@ -167,10 +187,11 @@ export function seaFloorHeight(x: number, z: number, eocene: boolean): number {
   const wall = eocene ? smooth(-4.5, -8.5, z + (noise(x * 0.2, 0, 53) - 0.5) * 3) * 3.2 : 0;
   return ripples + swell * smooth(2, 6, Math.hypot(x, z)) + wall;
 }
-export function buildSeaFloorBoxes(eocene: boolean): Box[] {
-  return columnsFromHeight(
+export function buildSeaFloorTris(eocene: boolean): Tri[] {
+  return heightField(
     SEA_GRID, (x, z) => seaFloorHeight(x, z, eocene),
-    (x, z, h) => (h > 1 ? (hash(Math.floor(x * 2), Math.floor(z * 2), 6) > 0.5 ? C.seaFloorDark : C.rock) : hash(Math.floor(x * 2), Math.floor(z * 2), 5) > 0.3 ? C.seaFloor : C.seaFloorDark),
+    // Broad patches of sand and darker mud; the rock wall of the Eocene valley in its own tones.
+    (x, z, h) => (h > 1 ? (noise(x * 0.4, z * 0.4, 6) > 0.5 ? C.seaFloorDark : C.rock) : noise(x * 0.3, z * 0.3, 5) > 0.68 ? C.seaFloorDark : C.seaFloor),
     eocene ? [C.seaFloorDark, C.rock, C.strataGrey] : [C.seaFloorDark],
   );
 }

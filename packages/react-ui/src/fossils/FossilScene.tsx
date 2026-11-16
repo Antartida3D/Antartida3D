@@ -16,7 +16,7 @@ import {
   restAmmonite, restDino, restGeologist, restPlesio, type Geologist, type Loop,
 } from './fossilPoses.ts';
 import {
-  DISTANT_MESAS, FLOES, FOREST_PLANTS, WATER_LEVEL, buildFieldBoxes, buildForestBoxes, buildSeaFloorBoxes,
+  DISTANT_MESAS, FLOES, FLOE_TRIS, FOREST_PLANTS, WATER_LEVEL, buildFieldTris, buildForestTris, buildSeaFloorTris,
   fieldHeight, forestHeight, scatter, seaFloorHeight,
 } from './fossilTerrain.ts';
 import {
@@ -78,6 +78,12 @@ function Model({ boxes, position = [0, 0, 0], scale = 1, rotation = [0, 0, 0] }:
   useEffect(() => () => geometry.dispose(), [geometry]);
   return <mesh geometry={geometry} material={vehicleMaterial} position={[...position]} scale={scale} rotation={[...rotation]} />;
 }
+/** A static low-poly model (a ground, far islands) built once per mount and released on unmount. */
+function PolyModel({ tris }: { tris: readonly Tri[] }) {
+  const geometry = useMemo(() => buildPolyGeometry(tris, boxShade), [tris]);
+  useEffect(() => () => geometry.dispose(), [geometry]);
+  return <mesh geometry={geometry} material={vehicleMaterial} />;
+}
 /** A repeated model: the geometry is shared. */
 function Prop({ id, boxes, position, scale = 1, rotation = [0, 0, 0] }: {
   id: string; boxes: readonly Box[]; position: Vec3; scale?: number; rotation?: Vec3;
@@ -85,7 +91,8 @@ function Prop({ id, boxes, position, scale = 1, rotation = [0, 0, 0] }: {
   return <mesh geometry={partGeometry(id, () => boxes)} material={vehicleMaterial} position={[...position]} scale={scale} rotation={[...rotation]} />;
 }
 
-const fieldY = (x: number, z: number) => Math.round(fieldHeight(x, z) / 0.1) * 0.1;
+// The ground is a field of faces over this height: things stand on it as it is, not on steps.
+const fieldY = fieldHeight;
 const at = (x: number, z: number, lift = 0): Vec3 => [x, fieldY(x, z) + lift, z];
 
 // Spots of the present-day field where each find waits.
@@ -550,7 +557,7 @@ const FROZEN: readonly Box[] = [
 const TARP: readonly Box[] = [[0, 0.01, 0, 2.2, 0.02, 1.4, C.canvas], [0, 0.015, 0.68, 2.2, 0.02, 0.04, C.tent], [0, 0.015, -0.68, 2.2, 0.02, 0.04, C.tent]];
 
 function FieldWorld({ view, state, reduced }: { view: FossilView; state: FossilState; reduced: boolean }) {
-  const ground = useMemo(() => buildFieldBoxes(), []);
+  const ground = useMemo(() => buildFieldTris(), []);
   const floes = useRef<Group>(null);
   useFrame(({ clock }) => {
     if (reduced || !floes.current) return;
@@ -570,11 +577,11 @@ function FieldWorld({ view, state, reduced }: { view: FossilView; state: FossilS
     <>
       <Sky sun={closing ? [-0.75, 0.05, -0.65] : [0.35, 0.3, -0.85]} clouds={closing ? 0.35 : 0.55} reduced={reduced} />
       <fog attach="fog" args={[closing ? '#E9C9A0' : '#DCE4E7', 30, 110]} />
-      <Model boxes={ground} />
-      <Model boxes={DISTANT_MESAS} />
+      <PolyModel tris={ground} />
+      <PolyModel tris={DISTANT_MESAS} />
       <mesh position={[-40, WATER_LEVEL - 0.05, -20]}><boxGeometry args={[110, 0.1, 110]} /><meshBasicMaterial color={C.sea} /></mesh>
       <group ref={floes}>{FLOES.map(([x, z, s, seed]) => (
-        <Prop key={seed} id={`floe-${seed % 3}`} boxes={[[0, 0, 0, 1, 0.12, 0.7, C.snow], [0.1, 0.07, 0.05, 0.7, 0.06, 0.45, C.iceBlue]]} position={[x, WATER_LEVEL + 0.04, z]} scale={s} rotation={[0, seed, 0]} />
+        <PolyProp key={seed} id="floe" tris={FLOE_TRIS} position={[x, WATER_LEVEL + 0.04, z]} scale={s} rotation={[0, seed, 0]} />
       ))}</group>
 
       {/* Camp: pyramid tents, crates, radio mast and a fossil trunk on the gravel */}
@@ -656,8 +663,8 @@ function FieldWorld({ view, state, reduced }: { view: FossilView; state: FossilS
 }
 
 function SeaWorld({ eocene, view, reduced }: { eocene: boolean; view: FossilView; reduced: boolean }) {
-  const floor = useMemo(() => buildSeaFloorBoxes(eocene), [eocene]);
-  const floorY = (x: number, z: number) => Math.round(seaFloorHeight(x, z, eocene) / 0.1) * 0.1;
+  const floor = useMemo(() => buildSeaFloorTris(eocene), [eocene]);
+  const floorY = (x: number, z: number) => seaFloorHeight(x, z, eocene);
   const dwellers = useMemo(() => scatter(eocene ? 46 : 26, eocene ? 61 : 62, 11), [eocene]);
   const water = eocene ? { top: '#A9D3D2', mid: '#4C9AA3', bottom: '#1F5865', fog: '#4E95A0' } : { top: '#8CC2C8', mid: '#3B8293', bottom: '#173F52', fog: '#3A7D8E' };
   const focusPlesio = view === 'plesiosaur';
@@ -667,7 +674,7 @@ function SeaWorld({ eocene, view, reduced }: { eocene: boolean; view: FossilView
       <fog attach="fog" args={[water.fog, 1, 28]} />
       <mesh position={[0, 11, -4]}><boxGeometry args={[80, 0.1, 80]} /><meshBasicMaterial color={water.top} transparent opacity={0.6} fog={false} /></mesh>
       <LightShafts reduced={reduced} color={eocene ? '#E4F6F2' : '#D6F0F2'} />
-      <Model boxes={floor} />
+      <PolyModel tris={floor} />
       {eocene ? <>
         {dwellers.map(([x, z, s, seed], i) => {
           const pos: Vec3 = [x, floorY(x, z), z];
@@ -710,15 +717,15 @@ function SeaWorld({ eocene, view, reduced }: { eocene: boolean; view: FossilView
 }
 
 function ForestWorld({ view, reduced }: { view: FossilView; reduced: boolean }) {
-  const ground = useMemo(() => buildForestBoxes(), []);
-  const groundY = (x: number, z: number) => Math.round(forestHeight(x, z) / 0.1) * 0.1;
+  const ground = useMemo(() => buildForestTris(), []);
+  const groundY = forestHeight;
   const plantBoxes = { conifer: CONIFER_BOXES, cycad: CYCAD_BOXES, fern: FERN_BOXES, broadleaf: BROADLEAF_BOXES } as const;
   const walking: Loop = { cx: 0, cz: -0.5, rx: 2.8, rz: 1.6, period: 46 };
   return (
     <>
       <Sky sun={[0.45, 0.42, -0.7]} clouds={0.3} reduced={reduced} />
       <fog attach="fog" args={['#E8E4CF', 22, 70]} />
-      <Model boxes={ground} />
+      <PolyModel tris={ground} />
       {FOREST_PLANTS.map((p, i) => (
         <Prop key={i} id={`plant-${p.kind}`} boxes={plantBoxes[p.kind]} position={[p.x, groundY(p.x, p.z), p.z]} scale={p.scale} rotation={[0, i, 0]} />
       ))}

@@ -150,6 +150,9 @@ test('on the 2D map Fósiles and Base Marambio stay in one group, and tapping it
   await group.click();
   const picker = page.getByRole('dialog', { name: 'Puntos en este lugar' });
   await expect(picker.getByRole('button', { name: /Base Marambio/ })).toBeVisible();
+  // A small window over the map, not a whole screen: the map stays in view around it.
+  const box = (await picker.boundingBox())!;
+  expect(box.height).toBeLessThan(page.viewportSize()!.height * 0.8);
   await picker.getByRole('button', { name: /Fósiles/ }).click();
   await expect(page.getByRole('region', { name: 'Expedición Fósiles' })).toBeVisible();
 });

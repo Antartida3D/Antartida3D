@@ -626,7 +626,6 @@ export function MapView({
           <ListView
             explored={explored}
             points={picking}
-            title="Puntos en este lugar"
             onClose={() => setPicking(null)}
             onPick={(p) => { setPicking(null); openPoint(p); }}
           />

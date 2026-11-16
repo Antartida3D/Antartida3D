@@ -9,21 +9,25 @@ const GROUPS: { tier: Tier; id: string; tag: string; label?: string; desc: strin
 ];
 
 /**
- * Every point of the map by tier. With `points`, only those, under `title`: the points of a group
- * on the map that zooming no longer separates.
+ * Every point of the map by tier, on its own screen. With `points`, only those, in a small window
+ * over the map (`title`): the points of a group that zooming no longer separates.
  */
-export function ListView({ explored, onClose, onPick, points = PTS, title = 'Todos los puntos' }: {
+export function ListView({ explored, onClose, onPick, points }: {
   explored: readonly string[];
   onClose: () => void;
   onPick: (p: MapPoint) => void;
   points?: readonly MapPoint[];
-  title?: string;
 }) {
+  const shown = points ?? PTS;
+  const pick = points !== undefined;
   const ref = useRef<HTMLDivElement>(null);
   useFocusReturn(true, ref);
   return (
+    <>
+    {/* A tap on the map around the window closes it. */}
+    {pick && <div className="scrim" onClick={onClose} />}
     <div
-      className="listview"
+      className={'listview' + (pick ? ' pick' : '')}
       role="dialog"
       aria-modal="true"
       aria-labelledby="list-title"
@@ -32,10 +36,10 @@ export function ListView({ explored, onClose, onPick, points = PTS, title = 'Tod
     >
       <div className="inner">
         <div className="listhead">
-          <h2 id="list-title">{title}</h2>
-          <button type="button" className="btn" onClick={onClose}>Ver mapa</button>
+          <h2 id="list-title">{pick ? 'Puntos en este lugar' : 'Todos los puntos'}</h2>
+          <button type="button" className="btn" onClick={onClose}>{pick ? 'Volver al mapa' : 'Ver mapa'}</button>
         </div>
-        {GROUPS.filter((g) => points.some((p) => p.tier === g.tier)).map((g) => (
+        {GROUPS.filter((g) => shown.some((p) => p.tier === g.tier)).map((g) => (
           <section key={g.tier} aria-labelledby={g.id}>
             <h3 id={g.id}>
               <span className={'tag t' + g.tier.toLowerCase()}>{g.tag}</span>
@@ -43,7 +47,7 @@ export function ListView({ explored, onClose, onPick, points = PTS, title = 'Tod
             </h3>
             <p className="gdesc">{g.desc}</p>
             <ul>
-              {points.filter((p) => p.tier === g.tier).map((p) => (
+              {shown.filter((p) => p.tier === g.tier).map((p) => (
                 <li key={p.id}>
                   <button type="button" className="li" onClick={() => onPick(p)}>
                     <span className="t"><strong>{p.title}</strong><span className="p">{p.place}</span></span>
@@ -58,5 +62,6 @@ export function ListView({ explored, onClose, onPick, points = PTS, title = 'Tod
         ))}
       </div>
     </div>
+    </>
   );
 }

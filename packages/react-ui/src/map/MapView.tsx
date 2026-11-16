@@ -1,8 +1,8 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import {
-  DOUBLE_TAP_ZOOM, DRAG_THRESHOLD, EXPEDITION_POINT, HOME, KEY_PAN, MIN_K, ONE_FINGER_IDLE, PTS, VOYAGE_POINT, ZOOM_MS,
+  DOUBLE_TAP_ZOOM, DRAG_THRESHOLD, EXPEDITION_POINT, HOME, KEY_PAN, MIN_K, ONE_FINGER_IDLE, PTS, VOYAGE_POINT, VOYAGE_POINTS, ZOOM_MS,
   buildMarkers, diveView, markerPress, geometry, isWheelNotch, keyView, oneFingerDown, oneFingerMove, oneFingerUp, panBy, welcomeView, wheelFactor, zoomAround, zoomCenter,
-  type ArrivalId, type MapPoint, type Marker, type OneFingerZoomState, type SeaPoint, type Size, type View, type ClaimsCoverage,
+  type ArrivalId, type MapPoint, type Marker, type OneFingerZoomState, type SeaPoint, type Size, type TransportId, type View, type ClaimsCoverage,
 } from '@antartida/core';
 import { useBackLayer, usePageSettled, useReducedMotion, useTimers } from '../hooks.ts';
 import { useVoyage, type VoyageBus } from '../voyage/useVoyage.ts';
@@ -81,7 +81,9 @@ export interface MapViewProps {
   onToggleMode?: (next: ViewMode) => void;
   onStart: (point: MapPoint, arrival?: ArrivalId) => void;
   onSkipTravel?: () => void;
-  onStartVoyage?: () => void;
+  /** Transport the trip starts with when it is not picked (Poncho's team); undefined: the traveller picks. */
+  voyageTransport?: TransportId;
+  onStartVoyage?: (point: MapPoint) => void;
   onEndVoyage?: (done: boolean) => void;
 }
 
@@ -148,6 +150,7 @@ export function MapView({
   onToggleMode,
   onStart,
   onSkipTravel,
+  voyageTransport,
   onStartVoyage,
   onEndVoyage,
 }: MapViewProps) {
@@ -467,7 +470,7 @@ export function MapView({
   };
 
   const openPoint = (p: MapPoint | SeaPoint) => {
-    if (p.id === VOYAGE_POINT.id && onStartVoyage) onStartVoyage();
+    if (onStartVoyage && VOYAGE_POINTS.some((v) => v.id === p.id)) onStartVoyage(p as MapPoint);
     else if ('tier' in p && p.tier === 'A') {
       if (phase === 'idle') {
         // One sheet at a time: the intro replaces the trip from Ushuaia, as starting Orcadas did before.
@@ -618,7 +621,7 @@ export function MapView({
         )}
         {voyaging && onEndVoyage && (
           <Suspense fallback={null}>
-            <VoyagePanel voyage={voyage} animated={is3D && !reduced} webgl={is3D} reduced={reduced} onExit={onEndVoyage} />
+            <VoyagePanel voyage={voyage} transport={voyageTransport} animated={is3D && !reduced} webgl={is3D} reduced={reduced} onExit={onEndVoyage} />
           </Suspense>
         )}
         {/* One sheet at a time: a point sheet hides the claims details until it closes. */}

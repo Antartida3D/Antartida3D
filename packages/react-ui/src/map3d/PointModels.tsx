@@ -135,7 +135,7 @@ function HuddlePart({ parts }: { parts: MutableRefObject<Part[]> }) {
 }
 
 /** World height of the relief at a world position. */
-const reliefAt = (wx: number, wz: number) => worldHeight(heightAt(wx + 500, wz + 500));
+export const reliefAt = (wx: number, wz: number) => worldHeight(heightAt(wx + 500, wz + 500));
 
 /** Where a model sits on the map: its pad height and how its ground lies on the relief. */
 interface Seat {

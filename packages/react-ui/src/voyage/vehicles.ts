@@ -1,9 +1,10 @@
 import { BufferAttribute, BufferGeometry, Color, MeshBasicMaterial } from 'three';
-import type { TransportId } from '@antartida/core';
+import { findTransport, type TransportId, type VehicleKind } from '@antartida/core';
 import { HERCULES_FLIGHT_POLY } from './herculesModel.ts';
 import { IRIZAR_POLY } from './irizarModel.ts';
 import { PUERTO_ARGENTINO_POLY } from './puertoArgentinoModel.ts';
 import { boxShade, buildPolyGeometry, type Tri } from './lowPoly.ts';
+import { PONCHO_MODELS } from './ponchoModels.ts';
 
 /** [centerX, centerY, centerZ, sizeX, sizeY, sizeZ, color]. The bow or nose points to +x, y is up. */
 export type Box = readonly [number, number, number, number, number, number, number];
@@ -15,8 +16,8 @@ export type Box = readonly [number, number, number, number, number, number, numb
 export const VOXEL_MIN_BOXES = 12;
 export const VOXEL_MIN_COLORS = 2;
 
-/** All transport vehicles are now low-poly (herculesModel.ts, irizarModel.ts, puertoArgentinoModel.ts). */
-const MODELS: Record<string, readonly Box[]> = {};
+/** Vehicles drawn with blocks: Poncho's team, his dog and the ship with dogs (ponchoModels.ts). The rest are low-poly (herculesModel.ts, irizarModel.ts, puertoArgentinoModel.ts). */
+const MODELS: Record<string, readonly Box[]> = { ...PONCHO_MODELS };
 
 /** Flat colors with the shading baked into the vertices: no lights needed. */
 export const vehicleMaterial = new MeshBasicMaterial({ vertexColors: true });
@@ -33,7 +34,7 @@ const FACES: readonly { corners: readonly (readonly [number, number, number])[];
 
 export const VEHICLE_MODELS: Readonly<Record<string, readonly Box[]>> = MODELS;
 
-const POLY_MODELS: Record<TransportId, readonly Tri[]> = {
+const POLY_MODELS: Record<string, readonly Tri[]> = {
   hercules: HERCULES_FLIGHT_POLY,
   irizar: IRIZAR_POLY,
   'puerto-argentino': PUERTO_ARGENTINO_POLY,
@@ -42,11 +43,17 @@ const POLY_MODELS: Record<TransportId, readonly Tri[]> = {
 /** Low-poly vehicles, one unit long like the block ones. */
 export const VEHICLE_POLY_MODELS: Readonly<Record<string, readonly Tri[]>> = POLY_MODELS;
 
+const isBlockVehicle = (id: string): id is keyof typeof MODELS => id in MODELS;
+
+/** Id of the model drawn for a vehicle of a trip: the one the transport names for it, or its own. */
+export const vehicleModel = (transport: TransportId, vehicle: VehicleKind): string => findTransport(transport).models?.[vehicle] ?? transport;
+
 /**
  * The vehicle as one geometry, of blocks or low-poly. The low-poly ones take the fixed light per
  * face of the blocks (boxShade), so every vehicle of the voyage is lit alike.
  */
-export const buildVehicleGeometry = (id: TransportId) => buildPolyGeometry(POLY_MODELS[id], boxShade);
+export const buildVehicleGeometry = (id: string) =>
+  isBlockVehicle(id) ? buildBoxGeometry(MODELS[id]) : buildPolyGeometry(POLY_MODELS[id], boxShade);
 
 /**
  * Voxel-style model: every box merged into one geometry with vertex colors, so each model is a

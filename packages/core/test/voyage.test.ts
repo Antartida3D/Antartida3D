@@ -9,6 +9,8 @@ import {
   ICE_MIN_DISTANCE,
   MAX_POLAR_DEG,
   FUEGIA_LAND_MASK,
+  PONCHO_MILESTONES,
+  PONCHO_TRANSPORT,
   IRIZAR_ARRIVAL_POSE,
   IRIZAR_HALF_BEAM,
   ORCADAS_DEFAULT_SHIP_SIZE,
@@ -92,6 +94,9 @@ const facts: VoyageFact[] = [
   ...MILESTONES.flatMap((m) => [m.essential, ...m.more]),
   ...SIGHTINGS.map((s) => s.fact),
   ...Object.values(EXPEDITION).flatMap((stop) => stop.notes.map((n) => n.fact)),
+  // The trip of Poncho follows the same rules: a source for every real fact, and no source left uncited.
+  ...PONCHO_TRANSPORT.facts,
+  ...PONCHO_MILESTONES.flatMap((m) => [m.essential, ...m.more]),
   ...VOYAGE_TRANSFER.facts,
 ];
 

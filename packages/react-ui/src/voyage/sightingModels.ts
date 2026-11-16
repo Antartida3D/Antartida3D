@@ -4,6 +4,7 @@ import { buildBoxGeometry, type Box } from './vehicles.ts';
 import { HELICOPTER_BOXES, HELICOPTER_ROTOR_BOXES, HELICOPTER_ROTOR_ORIGIN, offsetBoxes } from '../orcadas/stationModels.ts';
 import { MALVINAS_FLAG_BOXES } from '../map3d/malvinasFlagModel.ts';
 import { CLAIM_FLAG_MODELS } from '../map3d/claimFlagModels.ts';
+import { PONCHO_MODELS } from './ponchoModels.ts';
 
 // Approximate colors. The models are illustrations, not portraits: one unit is about the length of the model.
 export const BLACK = 0x1f2a36;
@@ -516,6 +517,7 @@ export type SeaModelId = keyof typeof SEA_MODELS;
 export const SCENE_MODELS: Readonly<Record<string, readonly Box[]>> = {
   ...Object.fromEntries(Object.entries(CLAIM_FLAG_MODELS).map(([country, boxes]) => [`claimFlag:${country}`, boxes])),
   malvinasFlag: MALVINAS_FLAG_BOXES,
+  ...PONCHO_MODELS,
   ...Object.fromEntries(Object.entries(MODELS).map(([id, m]) => [id, [...m.body, ...(m.wing ?? []), ...(m.wing ?? [])]])),
   ...Object.fromEntries(Object.entries(SEA_MODELS).map(([id, boxes]) => [`sea:${id}`, boxes])),
   ushuaia: TOWN,

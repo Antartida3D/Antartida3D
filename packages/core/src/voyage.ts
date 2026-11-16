@@ -1,20 +1,26 @@
 import { toWorld } from './camera.ts';
 import { ORCADAS_POINT } from './content/points.ts';
 import {
-  EXPEDITION, MILESTONES, SIGHTINGS, TRANSPORTS,
-  type Milestone, type Sighting, type TransportId, type TransportKind, type VoyageFact, type VoyageQuestion,
+  EXPEDITION, MILESTONES, SIGHTINGS, TRANSPORTS, VOYAGE_SOURCE_CODES,
+  type Milestone, type Sighting, type Transport, type TransportId, type TransportKind, type VehicleKind, type VoyageFact, type VoyageQuestion, type VoyageSourceCode,
 } from './content/ushuaia.ts';
+import { PONCHO_MILESTONES, PONCHO_TRANSPORT } from './content/poncho.ts';
+import { PONCHO_SEGMENTS } from './content/poncho-route.ts';
 import { FLIGHT_GROUND_M } from './flight-ground.ts';
 import { FLIGHT_GROUND_STEP, flightAt } from './flight-path.ts';
 import { fuegiaWorldHeight } from './fuegia.ts';
 import type { ArrivalId } from './orcadas-arrival.ts';
 import { project, unproject } from './projection.ts';
 import { worldHeight } from './relief.ts';
-import { ROUTE_LENGTH, routeAt } from './route.ts';
+import { ROUTE_LENGTH, buildCurve, routeAt } from './route.ts';
 import { stormCeiling } from './storm.ts';
 import { heightAt, type TerrainMesh } from './terrain.ts';
 
 type Point = { x: number; y: number };
+
+/** The transports of every trip: the ones of Ushuaia and the team of Poncho. */
+const ALL_TRANSPORTS: readonly Transport[] = [...TRANSPORTS, PONCHO_TRANSPORT];
+export const findTransport = (id: TransportId): Transport => ALL_TRANSPORTS.find((v) => v.id === id)!;
 
 export const clamp01 = (t: number) => Math.min(1, Math.max(0, t));
 /** Smoothstep on [0, 1], clamped. */
@@ -106,13 +112,75 @@ const SHIP_START = SHIP_HEAD_START / ROUTE_LENGTH;
 export const SHIP_ANCHORAGE = 7;
 const SHIP_END = 1 - SHIP_ANCHORAGE / ROUTE_LENGTH;
 
-/**
- * Position in map space at fraction `t` of the trip: 0 is the departure from Ushuaia and 1 the
- * arrival, at Base Marambio by plane and off its island by ship.
- */
-export function voyageAt(kind: TransportKind, t: number): Point {
-  return kind === 'plane' ? flightAt(clamp01(t)) : routeAt(SHIP_START + clamp01(t) * (SHIP_END - SHIP_START));
+/** A leg of a trip as the engine walks it: a vehicle along a path, for some seconds of steady advance. */
+export interface TripLeg {
+  vehicle: VehicleKind;
+  /** Position in map space at fraction `u` (0..1) of the leg. */
+  at: (u: number) => Point;
+  seconds: number;
 }
+
+export interface Trip {
+  /** Seconds of steady advance along the whole trip. */
+  seconds: number;
+  legCount: number;
+  /** Position in map space at fraction `t` of the trip. A leg takes the share of the trip that its seconds are of the total. */
+  at: (t: number) => Point;
+  /** Vehicle of the leg that `t` falls in. */
+  vehicleAt: (t: number) => VehicleKind;
+  /** Fractions of the trip where a leg starts and ends. */
+  legRange: (leg: number) => readonly [from: number, to: number];
+}
+
+/** Joins legs into one trip. The end of a leg must be the start of the next one: the vehicle changes at a port, it does not jump. */
+export function buildTrip(legs: readonly TripLeg[]): Trip {
+  const seconds = legs.reduce((sum, leg) => sum + leg.seconds, 0);
+  const starts = legs.map((_, i) => legs.slice(0, i).reduce((sum, leg) => sum + leg.seconds, 0) / seconds);
+  const locate = (t: number) => {
+    const at = clamp01(t);
+    let i = legs.length - 1;
+    while (i > 0 && at < starts[i]) i--;
+    const span = legs[i].seconds / seconds;
+    return { i, u: clamp01((at - starts[i]) / span) };
+  };
+  return {
+    seconds,
+    legCount: legs.length,
+    at: (t) => {
+      const { i, u } = locate(t);
+      return legs[i].at(u);
+    },
+    vehicleAt: (t) => legs[locate(t).i].vehicle,
+    legRange: (leg) => [starts[leg], leg + 1 < legs.length ? starts[leg + 1] : 1],
+  };
+}
+
+const TRIPS: Record<TransportKind, Trip> = {
+  // The ship starts a little into the sea route and stops off the island; the plane flies the great circle.
+  ship: buildTrip([{ vehicle: 'ship', seconds: 48, at: (u) => routeAt(SHIP_START + u * (SHIP_END - SHIP_START)) }]),
+  plane: buildTrip([{ vehicle: 'plane', seconds: 30, at: flightAt }]),
+  // The dogs: one curve per leg, drawn with the same curve as the sea route.
+  dogs: buildTrip(
+    PONCHO_SEGMENTS.map((leg) => ({
+      vehicle: leg.vehicle,
+      seconds: leg.seconds,
+      at: buildCurve(leg.waypoints.map(([lon, lat]) => project(lon, lat))).at,
+    })),
+  ),
+};
+
+/**
+ * Position in map space at fraction `t` of the trip: 0 is the departure and 1 the arrival. From
+ * Ushuaia, at Base Marambio by plane and off its island by ship; for the dogs, the end of their story.
+ */
+export const voyageAt = (kind: TransportKind, t: number): Point => TRIPS[kind].at(t);
+
+/** What is drawn at fraction `t` of the trip: a trip of the dogs changes vehicle with its legs. */
+export const vehicleAt = (kind: TransportKind, t: number): VehicleKind => TRIPS[kind].vehicleAt(t);
+
+/** Fractions of the trip where leg `leg` of a transport starts and ends, and how many legs it has. */
+export const tripLegRange = (kind: TransportKind, leg: number) => TRIPS[kind].legRange(leg);
+export const tripLegCount = (kind: TransportKind) => TRIPS[kind].legCount;
 
 /** Direction of travel at `t` in map space, as an angle from +x towards +y (radians). */
 export function voyageHeading(kind: TransportKind, t: number): number {
@@ -405,7 +473,7 @@ export function orcadasTravelAt(
 }
 
 const PATH_SAMPLES = 400;
-const pathLength =(kind: TransportKind) => {
+const pathLength = (kind: TransportKind) => {
   let total = 0;
   for (let i = 1; i <= PATH_SAMPLES; i++) {
     const a = voyageAt(kind, (i - 1) / PATH_SAMPLES);
@@ -414,7 +482,7 @@ const pathLength =(kind: TransportKind) => {
   }
   return total;
 };
-const LENGTHS: Record<TransportKind, number> = { ship: pathLength('ship'), plane: pathLength('plane') };
+const LENGTHS: Record<TransportKind, number> = { ship: pathLength('ship'), plane: pathLength('plane'), dogs: pathLength('dogs') };
 
 /** Length of the whole trip in map units. */
 export const voyageLength = (kind: TransportKind) => LENGTHS[kind];
@@ -438,7 +506,7 @@ const pathKm = (kind: TransportKind) => {
   }
   return km;
 };
-const KM: Record<TransportKind, readonly number[]> = { ship: pathKm('ship'), plane: pathKm('plane') };
+const KM: Record<TransportKind, readonly number[]> = { ship: pathKm('ship'), plane: pathKm('plane'), dogs: pathKm('dogs') };
 
 export interface VoyageProgress {
   /** Km travelled along the drawn path. */
@@ -454,7 +522,7 @@ export interface VoyageProgress {
  * path is the drawn one and the speed is the cruise speed of the transport.
  */
 export function voyageProgress(transport: TransportId, t: number): VoyageProgress {
-  const { kind, cruiseKmh } = TRANSPORTS.find((v) => v.id === transport)!;
+  const { kind, cruiseKmh } = findTransport(transport);
   const at = clamp01(t) * PATH_SAMPLES;
   const i = Math.min(PATH_SAMPLES - 1, Math.floor(at));
   const km = KM[kind][i] + (KM[kind][i + 1] - KM[kind][i]) * (at - i);
@@ -473,15 +541,21 @@ const STOP_SAMPLES = 800;
 
 function buildStops(kind: TransportKind): VoyageStop[] {
   const samples = Array.from({ length: STOP_SAMPLES + 1 }, (_, i) => voyageAt(kind, i / STOP_SAMPLES));
-  const stops = MILESTONES.filter((m) => m.kinds.includes(kind)).map((milestone) => {
+  const stops = [...MILESTONES, ...PONCHO_MILESTONES].filter((m) => m.kinds.includes(kind)).map((milestone) => {
     const { anchor } = milestone;
+    // A milestone of a leg looks for its place only along that leg.
+    const [from, to] = milestone.segment === undefined ? [0, 1] : TRIPS[kind].legRange(milestone.segment);
+    const lo = Math.floor(from * STOP_SAMPLES);
+    const hi = Math.ceil(to * STOP_SAMPLES);
     let index: number;
     if ('lat' in anchor) {
-      index = samples.findIndex((p) => unproject(p.x, p.y).lat <= anchor.lat);
-      if (index < 0) index = STOP_SAMPLES;
+      index = samples.findIndex((p, i) => i >= lo && i <= hi && unproject(p.x, p.y).lat <= anchor.lat);
+      if (index < 0) index = hi;
     } else {
       const target = project(anchor[0], anchor[1]);
-      index = samples.reduce((best, p, i) => (Math.hypot(p.x - target.x, p.y - target.y) < Math.hypot(samples[best].x - target.x, samples[best].y - target.y) ? i : best), 0);
+      const gap = (i: number) => Math.hypot(samples[i].x - target.x, samples[i].y - target.y);
+      index = lo;
+      for (let i = lo + 1; i <= hi; i++) if (gap(i) < gap(index)) index = i;
     }
     const pin = milestone.place ? project(milestone.place[0], milestone.place[1]) : samples[index];
     return { milestone, t: index / STOP_SAMPLES, pin: { x: pin.x, y: pin.y } };
@@ -489,7 +563,7 @@ function buildStops(kind: TransportKind): VoyageStop[] {
   return stops;
 }
 
-const STOPS: Record<TransportKind, VoyageStop[]> = { ship: buildStops('ship'), plane: buildStops('plane') };
+const STOPS: Record<TransportKind, VoyageStop[]> = { ship: buildStops('ship'), plane: buildStops('plane'), dogs: buildStops('dogs') };
 
 /** Milestones a transport passes, in trip order, with the fraction where each one opens. */
 export function voyageStops(kind: TransportKind): readonly VoyageStop[] {
@@ -546,7 +620,7 @@ export function sightingsInView(kind: TransportKind, t: number): SightingSpot[] 
   return voyageSightings(kind).filter((s) => t >= s.from && t <= s.to);
 }
 
-const kindOf = (transport: TransportId) => TRANSPORTS.find((v) => v.id === transport)!.kind;
+const kindOf = (transport: TransportId) => findTransport(transport).kind;
 
 /**
  * «Así funciona la expedición» at a milestone for the chosen transport: only the notes that hold
@@ -578,8 +652,24 @@ export function quizScore(transport: TransportId, answers: Readonly<Record<strin
   };
 }
 
+/**
+ * Sources a trip lists, in the order it cites them. The trips from Ushuaia share the whole registry (numbered as
+ * `voyageSourceNumber`); the team of Poncho lists only what it cites, numbered from 1.
+ */
+export function tripSources(transport: TransportId): VoyageSourceCode[] {
+  if (kindOf(transport) !== 'dogs') return VOYAGE_SOURCE_CODES;
+  const codes = new Set<VoyageSourceCode>();
+  for (const fact of [...PONCHO_TRANSPORT.facts, ...PONCHO_MILESTONES.flatMap((m) => [m.essential, ...m.more])]) {
+    for (const code of fact.sources) codes.add(code);
+  }
+  return [...codes];
+}
+
+/** Number of a source in the list of the trip (see `tripSources`). */
+export const tripSourceNumber = (transport: TransportId, code: VoyageSourceCode) => tripSources(transport).indexOf(code) + 1;
+
 /** Seconds the whole trip takes while the user keeps advancing. Not a real duration. */
-export const VOYAGE_SECONDS: Record<TransportKind, number> = { ship: 48, plane: 30 };
+export const VOYAGE_SECONDS: Record<TransportKind, number> = { ship: TRIPS.ship.seconds, plane: TRIPS.plane.seconds, dogs: TRIPS.dogs.seconds };
 
 /**
  * Holding "advance" the trip picks up speed little by little (#166): it sets off at ×1 and in
@@ -627,13 +717,17 @@ export interface VoyageState {
   card: number;
 }
 
+/** The trip of Poncho is a story told in order: every milestone stops the trip and opens its card (the others are optional, #157). */
+export const storyInOrder = (kind: TransportKind): boolean => kind === 'dogs';
+
 /** Index of the arrival, the last stop: the only one whose card opens by itself. */
 const lastStop = (kind: TransportKind) => voyageStops(kind).length - 1;
 
 export function startVoyage(transport: TransportId): VoyageState {
-  const kind = TRANSPORTS.find((v) => v.id === transport)!.kind;
-  // The departure is passed at once, its card closed: it is offered, not shown (#157).
-  return { transport, kind, t: 0, reached: 1, card: -1 };
+  const kind = findTransport(transport).kind;
+  // The departure is passed at once, its card closed: it is offered, not shown (#157). Poncho's story
+  // is told in order, so there the first milestone is the departure and its card opens right away.
+  return { transport, kind, t: 0, reached: 1, card: storyInOrder(kind) ? 0 : -1 };
 }
 
 export const voyageArrived = (s: VoyageState) => s.reached >= voyageStops(s.kind).length;
@@ -649,6 +743,11 @@ export function advanceVoyage(s: VoyageState, seconds: number, toNext = false): 
   const stops = voyageStops(s.kind);
   const last = lastStop(s.kind);
   const t = s.t + seconds / VOYAGE_SECONDS[s.kind];
+  if (storyInOrder(s.kind)) {
+    // Stops exactly at the next milestone and opens its card: the user sets the pace and never skips one.
+    const next = stops[s.reached];
+    return t < next.t ? { ...s, t } : { ...s, t: next.t, reached: s.reached + 1, card: s.reached };
+  }
   let reached = s.reached;
   while (reached < stops.length && t >= stops[reached].t) {
     if (reached === last) return { ...s, t: stops[last].t, reached: last + 1, card: last };
@@ -670,7 +769,7 @@ export function retreatVoyage(s: VoyageState, seconds: number): VoyageState {
 /** Jumps to the next milestone without opening it, except the arrival: the step-by-step trip for reduced motion and the 2D map. */
 export function skipToNextStop(s: VoyageState): VoyageState {
   if (s.card >= 0 || voyageArrived(s)) return s;
-  const arriving = s.reached === lastStop(s.kind);
+  const arriving = storyInOrder(s.kind) || s.reached === lastStop(s.kind);
   return { ...s, t: voyageStops(s.kind)[s.reached].t, reached: s.reached + 1, card: arriving ? s.reached : -1 };
 }
 

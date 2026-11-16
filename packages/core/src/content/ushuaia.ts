@@ -17,6 +17,8 @@ export interface VoyageSource {
   url: string;
   /** Date it was read, when it is not VOYAGE_SOURCES_CONSULTED. */
   consulted?: string;
+  /** Short name shown in a citation with a page instead of the number (the book: «Libro · p. 9»). */
+  short?: string;
 }
 
 /** Date the sources below were read, unless one gives its own. */
@@ -55,6 +57,10 @@ export const VOYAGE_SOURCES = {
   O45: { org: 'Fuerza Aérea Argentina', title: '«51° Aniversario de la Base Marambio: más de medio siglo de soberanía en el Continente Antártico» (31-10-2020)', url: 'https://www.argentina.gob.ar/noticias/51deg-aniversario-de-la-base-marambio-mas-de-medio-siglo-de-soberania-en-el-continente' },
   // The page shows no date; its metadata says 25-11-2019.
   O46: { org: 'Armada Argentina', title: '«Cruzando el Pasaje de Drake a bordo del rompehielos ARA "Almirante Irízar"» (25-11-2019, según los metadatos de la página)', url: 'https://www.argentina.gob.ar/noticias/cruzando-el-pasaje-de-drake-bordo-del-rompehielos-ara-almirante-irizar', consulted: '2026-11-12' },
+  // The book as a PDF of 25 pages: a fact of the book links to its page with `pages` (see VoyageFact). A secondary source.
+  P1: { org: 'Emilio Urruty (autor), Fundación Marambio (transcripción)', title: 'Libro de Urruty: «Poncho. La legendaria vida de un perro polar argentino», 2009 (PDF; fuente secundaria)', url: 'https://www.marambio.aq/pdf/poncho.pdf', consulted: '2026-11-12', short: 'Libro' },
+  P2: { org: 'Carlos Alberto Montenegro (autor), Fundación Marambio (publicación)', title: '«El perro polar argentino»', url: 'https://www.marambio.aq/perropolar.html', consulted: '2026-11-12' },
+  P3: { org: 'SCAR (Scientific Committee on Antarctic Research), servido por el Australian Antarctic Data Centre', title: 'Composite Gazetteer of Antarctica (topónimos y coordenadas)', url: 'https://placenames.aq/', consulted: '2026-11-12' },
   I1: { org: 'Secretaría del Tratado Antártico', title: 'Tratado Antártico (1959), art. VI', url: 'https://documents.ats.aq/keydocs/vol_1/vol1_2_AT_Antarctic_Treaty_e.pdf' },
   I2: { org: 'Secretaría del Tratado Antártico', title: 'Protocolo al Tratado Antártico sobre Protección del Medio Ambiente (Protocolo de Madrid)', url: 'https://www.ats.aq/s/protocol.html' },
   I3: { org: 'Secretaría del Tratado Antártico', title: 'Anexo III del Protocolo de Madrid: eliminación y tratamiento de residuos', url: 'https://documents.ats.aq/recatt/Att010_s.pdf' },
@@ -77,15 +83,40 @@ export type VoyageSourceCode = keyof typeof VOYAGE_SOURCES;
 export const VOYAGE_SOURCE_CODES = Object.keys(VOYAGE_SOURCES) as VoyageSourceCode[];
 export const voyageSourceNumber = (code: VoyageSourceCode) => VOYAGE_SOURCE_CODES.indexOf(code) + 1;
 
+/** Text of a citation: «Libro · p. 9» for a source with a short name and a page, «32 · p. 9» with a page only, «32» without. */
+export function citationLabel(code: VoyageSourceCode, number: number, page?: number): string {
+  if (page === undefined) return String(number);
+  return `${(VOYAGE_SOURCES[code] as VoyageSource).short ?? number} · p. ${page}`;
+}
+
 /** One statement with what it is and where it comes from. Estimates explain their own calculation. */
 export interface VoyageFact {
   text: string;
   kind: VoyageDataKind;
   sources: readonly VoyageSourceCode[];
+  /** Page of the source (a PDF) where the fact is, by source code: its citation links straight to that page. */
+  pages?: Partial<Record<VoyageSourceCode, number>>;
 }
 
-export type TransportId = 'irizar' | 'hercules' | 'puerto-argentino';
-export type TransportKind = 'ship' | 'plane';
+export type TransportId = 'irizar' | 'hercules' | 'puerto-argentino' | 'poncho';
+/** What is drawn on the map at a moment of a trip. */
+export type VehicleKind = 'ship' | 'plane' | 'sled';
+
+/**
+ * Family of trip: the path, the stops and the pace. A ship or a plane makes a trip of one leg with its own vehicle;
+ * `dogs` is the trip of the sled dogs (content/poncho.ts), which changes vehicle along the way (sled on the ice,
+ * ship on the sea).
+ */
+export type TransportKind = 'ship' | 'plane' | 'dogs';
+
+/** A leg of a trip: one vehicle along one route, ending where the next leg starts. */
+export interface TripSegment {
+  vehicle: VehicleKind;
+  /** The route as [lon, lat] waypoints. */
+  waypoints: readonly (readonly [number, number])[];
+  /** Seconds of steady advance along the leg. Not a real duration. */
+  seconds: number;
+}
 
 export interface Transport {
   id: TransportId;
@@ -96,6 +127,10 @@ export interface Transport {
   pitch: string;
   /** Cruise speed in km/h, for the estimated hours of the trip. Not a measured speed of any one trip. */
   cruiseKmh: number;
+  /** Model drawn for a vehicle of the trip when it is not the transport's own (the id of the transport by default). */
+  models?: Partial<Record<VehicleKind, string>>;
+  /** One short warning for the whole trip, shown once: on its first card and on the sources page. */
+  notice?: string;
   facts: readonly VoyageFact[];
 }
 
@@ -166,10 +201,16 @@ export interface Milestone {
   place?: readonly [lon: number, lat: number];
   /** Transports that pass by it. */
   kinds: readonly TransportKind[];
+  /** Leg of the trip where it opens, when the path passes the same place on another leg. */
+  segment?: number;
+  /** Year of the story it tells, when the trip is a life told in order (the trip of Poncho). */
+  year?: number;
   /** Explorar: the essential, one or two sentences. */
   essential: VoyageFact;
   /** Profundizar: «Saber más». */
   more: readonly VoyageFact[];
+  /** Closing line of the card that opens curiosity for the next stop. It tells no fact, so it has no source. */
+  hook?: string;
 }
 
 const BOTH: readonly TransportKind[] = ['ship', 'plane'];

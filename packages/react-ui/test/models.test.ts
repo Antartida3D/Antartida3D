@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { TRANSPORTS } from '@antartida/core';
 import { POLY_MIN_COLORS, POLY_MIN_TRIS } from '../src/voyage/lowPoly.ts';
+import { PONCHO_MODELS } from '../src/voyage/ponchoModels.ts';
 import { SCENE_MODELS } from '../src/voyage/sightingModels.ts';
 import { VEHICLE_MODELS, VEHICLE_POLY_MODELS, VOXEL_MIN_BOXES, VOXEL_MIN_COLORS } from '../src/voyage/vehicles.ts';
 
@@ -13,7 +14,9 @@ describe('voxel models (docs/diseno/estilo-voxel.md)', () => {
 
   it('has a model, of blocks or low-poly, for every vehicle of the voyage', () => {
     const registered = [...Object.keys(VEHICLE_MODELS), ...Object.keys(VEHICLE_POLY_MODELS)].sort();
-    expect(registered).toEqual(TRANSPORTS.map((v) => v.id).sort());
+    // The vehicles of every transport, plus the models Poncho's trip names for its own (his dog, the ship).
+    const ids = new Set([...TRANSPORTS.map((v) => v.id), ...Object.keys(PONCHO_MODELS)]);
+    expect(registered).toEqual([...ids].sort());
   });
 
   for (const [name, tris] of Object.entries(VEHICLE_POLY_MODELS)) {

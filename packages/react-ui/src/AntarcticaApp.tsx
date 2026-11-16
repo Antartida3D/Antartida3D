@@ -7,6 +7,7 @@ import {
   EXPEDITION_POINT,
   MARAMBIO_POINT,
   ORCADAS_POINT,
+  PONCHO_POINT,
   orcadasTravelMs,
   RETURN_MS,
   VOYAGE_POINT,
@@ -78,6 +79,8 @@ export function AntarcticaApp() {
   const [arrival, setArrival] = useState<ArrivalId>('ship');
   const [explored, setExplored] = useState<string[]>([]);
   const [voyaging, setVoyaging] = useState(false);
+  // The point whose trip is on the map: Ushuaia (the traveller picks a vehicle) or Poncho (one team, no picking).
+  const [voyagePoint, setVoyagePoint] = useState<MapPoint>(VOYAGE_POINT);
   const [activePoint, setActivePoint] = useState<MapPoint>(EXPEDITION_POINT);
   const [toast, setToast] = useState('');
   // On a phone the legend starts closed: open, it covers much of the map (#114).
@@ -223,16 +226,17 @@ export function AntarcticaApp() {
     later('toast', () => setToast(''), TOAST_MS);
   };
 
-  // The trip from Ushuaia happens on the 3D map; without WebGL it advances step by step on the 2D one.
-  const startVoyage = () => {
+  // The trips happen on the 3D map; without WebGL they advance step by step on the 2D one.
+  const startVoyage = (point: MapPoint) => {
     setToast('');
+    setVoyagePoint(point);
     if (webglSupported) setMode('3d');
     setVoyaging(true);
   };
 
   const endVoyage = (done: boolean) => {
     setVoyaging(false);
-    if (done) complete(VOYAGE_POINT);
+    if (done) complete(voyagePoint);
   };
 
   const leave = (done: boolean) => {
@@ -257,6 +261,8 @@ export function AntarcticaApp() {
             arrival={arrival}
             explored={explored}
             voyaging={voyaging}
+            // Poncho has one team: his trip starts without a vehicle picker.
+            voyageTransport={voyagePoint.id === PONCHO_POINT.id ? 'poncho' : undefined}
             diveTarget={activePoint}
             toast={toast}
             legend={legend}

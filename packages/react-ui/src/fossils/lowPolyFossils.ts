@@ -1,5 +1,5 @@
-import { block, lathe, loftAlongX, mirrorZ, normalOf, prism, type LoftStation, type Tri, type Vec3 } from '../voyage/lowPoly.ts';
-import { FOSSIL_PALETTE as C } from './models.ts';
+import { block, lathe, loftAlongX, mirrorZ, normalOf, prism, strut, type LoftStation, type Tri, type Vec3 } from '../voyage/lowPoly.ts';
+import { FOSSIL_PALETTE as C, PARKA_COLORS, type Parka } from './models.ts';
 
 /**
  * Low-poly models of the four finds of Fósiles (#7, rule 30): the ammonite, the plesiosaur, the
@@ -346,6 +346,88 @@ export const STAR_TRIS: readonly Tri[] = (() => {
   return outward(tris, ([x, y, z]) => [x * 0.5, y > 0.05 ? 0.02 : 0.05, z * 0.5]);
 })();
 
+// --- Geologists ----------------------------------------------------------------------------
+
+/**
+ * A stack of horizontal rings round a vertical axis at (cx, cz), each [y, half depth (x), half width
+ * (z)], bottom to top, closed at both ends; faces turned out from the axis.
+ */
+function column(cx: number, cz: number, rings: readonly (readonly [number, number, number])[], segments: number, color: number | ((band: number, seg: number) => number)): Tri[] {
+  const at = (k: number, i: number): Vec3 => {
+    const [y, rx, rz] = rings[k];
+    const a = (i / segments) * Math.PI * 2;
+    return [cx + Math.cos(a) * rx, y, cz + Math.sin(a) * rz];
+  };
+  const col = (k: number, i: number) => (typeof color === 'number' ? color : color(k, i));
+  const tris: Tri[] = [];
+  for (let k = 0; k < rings.length - 1; k++) {
+    for (let i = 0; i < segments; i++) tris.push([at(k, i), at(k, i + 1), at(k + 1, i + 1), col(k, i)], [at(k, i), at(k + 1, i + 1), at(k + 1, i), col(k, i)]);
+  }
+  const last = rings.length - 1;
+  for (let i = 0; i < segments; i++) {
+    tris.push([[cx, rings[0][0], cz], at(0, i), at(0, i + 1), col(0, i)]);
+    tris.push([[cx, rings[last][0], cz], at(last, i), at(last, i + 1), col(last - 1, i)]);
+  }
+  const mid = (rings[0][0] + rings[last][0]) / 2;
+  return outward(tris, ([, y]) => [cx, Math.min(rings[last][0] - 1e-3, Math.max(rings[0][0] + 1e-3, y === rings[0][0] || y === rings[last][0] ? mid : y)), cz]);
+}
+
+/**
+ * A person in a field parka, about one unit tall, facing +x, with the pivots of the block figure:
+ * legs hang from the hips, arms from the shoulders, the head turns on the neck. One arm can carry a
+ * geologist's hammer. Eduardo (`beard`) has his beard. Illustrations of the camp photographs.
+ */
+export function geologistPolyParts(parka: Parka, beard: boolean) {
+  const coat = PARKA_COLORS[parka];
+  // Parka from the hips to the shoulders, a dark zip down the front, the backpack behind.
+  const torso: Tri[] = [
+    ...column(0, 0, [[0.44, 0.105, 0.155], [0.52, 0.11, 0.16], [0.68, 0.105, 0.155], [0.77, 0.09, 0.14], [0.8, 0.06, 0.09]], 10, coat),
+    ...block(0.104, 0.62, 0, 0.012, 0.3, 0.022, C.ink),
+    ...block(0.104, 0.55, 0.08, 0.012, 0.05, 0.06, C.ink),
+    ...block(-0.16, 0.66, 0, 0.11, 0.28, 0.24, C.pants),
+    ...block(-0.16, 0.81, 0, 0.1, 0.04, 0.2, C.crateDark),
+  ];
+  // Round face, knitted cap with a pompom, two eyes; Eduardo's beard over the chin.
+  const head: Tri[] = [
+    ...column(0, 0, [[0, 0.06, 0.06], [0.04, 0.08, 0.08], [0.12, 0.08, 0.08], [0.15, 0.07, 0.07]], 8, C.skin),
+    ...column(0, 0, [[0.14, 0.088, 0.088], [0.2, 0.075, 0.075], [0.23, 0.035, 0.035]], 8, C.hat),
+    ...column(0, 0, [[0.23, 0.022, 0.022], [0.26, 0.018, 0.018]], 5, C.hat),
+    ...block(0.082, 0.1, 0.035, 0.012, 0.024, 0.022, C.ink),
+    ...block(0.082, 0.1, -0.035, 0.012, 0.024, 0.022, C.ink),
+    ...(beard ? column(0.045, 0, [[-0.01, 0.045, 0.06], [0.04, 0.055, 0.075], [0.06, 0.04, 0.07]], 8, C.beard) : []),
+  ];
+  // Trousers tapering to the boot.
+  const leg: Tri[] = [
+    ...column(0, 0, [[-0.38, 0.045, 0.05], [-0.2, 0.05, 0.055], [0, 0.058, 0.062]], 7, C.pants),
+    ...block(0.025, -0.415, 0, 0.16, 0.07, 0.13, C.boot),
+  ];
+  const arm: Tri[] = [
+    ...column(0, 0, [[-0.29, 0.04, 0.04], [-0.15, 0.045, 0.045], [0, 0.05, 0.05]], 7, coat),
+    ...column(0, 0, [[-0.35, 0.03, 0.035], [-0.29, 0.042, 0.042]], 6, C.glove),
+  ];
+  const hammerArm: Tri[] = [
+    ...arm,
+    ...strut([-0.005, -0.33, 0], [0.17, -0.33, 0], 0.012, C.handle),
+    ...block(0.17, -0.33, 0, 0.035, 0.07, 0.1, C.metal),
+  ];
+  return { torso, head, leg, arm, hammerArm };
+}
+
+/** Pivots of the figure, shared with the poses of fossilPoses.ts. */
+export const GEOLOGIST_HIP: Vec3 = [0, 0.45, 0.075];
+export const GEOLOGIST_SHOULDER: Vec3 = [0, 0.76, 0.19];
+export const GEOLOGIST_NECK: Vec3 = [0, 0.82, 0];
+
+function geologistAtRest(parka: Parka, beard: boolean): Tri[] {
+  const p = geologistPolyParts(parka, beard);
+  const at = (tris: readonly Tri[], o: Vec3) => tris.map(([a, b, c, col]): Tri => [add(a, o), add(b, o), add(c, o), col]);
+  return [
+    ...p.torso, ...at(p.head, GEOLOGIST_NECK),
+    ...at(p.leg, GEOLOGIST_HIP), ...at(p.leg, [GEOLOGIST_HIP[0], GEOLOGIST_HIP[1], -GEOLOGIST_HIP[2]]),
+    ...at(p.arm, GEOLOGIST_SHOULDER), ...at(p.hammerArm, [GEOLOGIST_SHOULDER[0], GEOLOGIST_SHOULDER[1], -GEOLOGIST_SHOULDER[2]]),
+  ];
+}
+
 /** Every model of this file, joined at rest, for the test of least detail. */
 export const FOSSIL_POLY_MODELS: Readonly<Record<string, readonly Tri[]>> = {
   'fossil-ammonite': AMMONITE_FOSSIL_TRIS,
@@ -356,4 +438,6 @@ export const FOSSIL_POLY_MODELS: Readonly<Record<string, readonly Tri[]>> = {
   'plesiosaur-illustration': plesiosaurAtRest(),
   'antarctopelta-illustration': dinosaurAtRest(),
   'eocene-sea-star': STAR_TRIS,
+  'field-geologist-red': geologistAtRest('red', true), 'field-geologist-yellow': geologistAtRest('yellow', false),
+  'field-geologist-orange': geologistAtRest('orange', true),
 };

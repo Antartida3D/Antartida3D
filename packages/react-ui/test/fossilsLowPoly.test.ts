@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { POLY_MIN_COLORS, POLY_MIN_TRIS, normalOf, type Tri, type Vec3 } from '../src/voyage/lowPoly.ts';
 import {
   AMMONITE_APERTURE, AMMONITE_BODY_TRIS, AMMONITE_FOSSIL_TRIS, FOSSIL_POLY_MODELS, STAR_TRIS, ammoniteShell, dinosaurAtRest, dinosaurParts,
-  plesiosaurParts,
+  geologistPolyParts, plesiosaurParts,
 } from '../src/fossils/lowPolyFossils.ts';
 import { FOSSIL_PALETTE as C } from '../src/fossils/models.ts';
 import { inward } from './polyHelpers.ts';
@@ -59,5 +59,15 @@ describe('Fósiles in low-poly (#7, rule 30)', () => {
     for (const c of [C.ink, C.tooth, C.plesioSpot]) expect(colors(FOSSIL_POLY_MODELS['plesiosaur-illustration']).has(c)).toBe(true);
     for (const c of [C.ink, C.shellStripe, C.ammoniteSoft]) expect(colors(FOSSIL_POLY_MODELS['living-ammonite']).has(c)).toBe(true);
     for (const c of [C.starPlate, C.starSpot]) expect(colors(STAR_TRIS).has(c)).toBe(true);
+  });
+
+  it('the geologists stand on their boots, with face, eyes and cap; only Eduardo has a beard', () => {
+    const red = FOSSIL_POLY_MODELS['field-geologist-red'];
+    expect(minY(red)).toBeCloseTo(0, 2);
+    expect(Math.max(...red.flatMap((t) => [t[0][1], t[1][1], t[2][1]]))).toBeGreaterThan(1);
+    for (const c of [C.skin, C.ink, C.hat, C.parkaRed, C.boot, C.beard]) expect(red.some((t) => t[3] === c)).toBe(true);
+    expect(FOSSIL_POLY_MODELS['field-geologist-yellow'].some((t) => t[3] === C.beard)).toBe(false);
+    const p = geologistPolyParts('yellow', false);
+    expect(inward(p.leg.slice(0, 42), [0, -0.19, 0])).toBe(0);
   });
 });

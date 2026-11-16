@@ -56,62 +56,10 @@ export const JAW_BOXES: readonly Box[] = [
 ];
 export const JAW_TOOTH_CENTER: readonly [number, number, number] = [0.06, 0.31, 0];
 
-// --- Geologist ------------------------------------------------------------------------------
+// --- Geologist colors (the figures are in lowPolyFossils.ts) --------------------------------
 
 export type Parka = 'red' | 'yellow' | 'orange';
-const PARKA = { red: C.parkaRed, yellow: C.parkaYellow, orange: C.parkaOrange } as const;
-export const GEOLOGIST_HIP: readonly [number, number, number] = [0, 0.45, 0.075];
-export const GEOLOGIST_SHOULDER: readonly [number, number, number] = [0, 0.76, 0.19];
-export const GEOLOGIST_NECK: readonly [number, number, number] = [0, 0.82, 0];
-
-export interface GeologistParts { torso: Box[]; head: Box[]; leg: Box[]; arm: Box[]; hammerArm: Box[] }
-
-/** Person in a field parka, about one unit tall, facing +x. Legs and arms hang from their pivots. */
-export function geologistParts(parka: Parka, beard: boolean): GeologistParts {
-  const coat = PARKA[parka];
-  const torso: Box[] = [
-    [0, 0.62, 0, 0.2, 0.34, 0.3, coat],
-    [0, 0.47, 0, 0.21, 0.06, 0.31, coat],
-    [0.101, 0.63, 0, 0.008, 0.3, 0.025, C.ink],
-    [0.101, 0.56, 0.08, 0.008, 0.05, 0.06, C.ink],
-    [-0.16, 0.66, 0, 0.11, 0.28, 0.24, C.pants],
-    [-0.16, 0.81, 0, 0.1, 0.04, 0.2, C.crateDark],
-  ];
-  const head: Box[] = [
-    [0, 0.08, 0, 0.16, 0.16, 0.16, C.skin],
-    [0, 0.175, 0, 0.17, 0.06, 0.17, C.hat],
-    [0, 0.21, 0, 0.06, 0.03, 0.06, C.hat],
-    [0.081, 0.1, 0.04, 0.01, 0.025, 0.025, C.ink],
-    [0.081, 0.1, -0.04, 0.01, 0.025, 0.025, C.ink],
-    ...(beard ? [[0.06, 0.03, 0, 0.06, 0.07, 0.15, C.beard] as Box] : []),
-  ];
-  const leg: Box[] = [
-    [0, -0.2, 0, 0.11, 0.4, 0.12, C.pants],
-    [0.025, -0.42, 0, 0.16, 0.07, 0.13, C.boot],
-  ];
-  const arm: Box[] = [
-    [0, -0.15, 0, 0.09, 0.3, 0.09, coat],
-    [0, -0.32, 0, 0.09, 0.06, 0.09, C.glove],
-  ];
-  const hammerArm: Box[] = [
-    ...arm,
-    [0.08, -0.33, 0, 0.17, 0.025, 0.025, C.handle],
-    [0.17, -0.33, 0, 0.035, 0.07, 0.1, C.metal],
-  ];
-  return { torso, head, leg, arm, hammerArm };
-}
-
-function geologistAtRest(parka: Parka, beard: boolean): Box[] {
-  const p = geologistParts(parka, beard);
-  const at = (boxes: Box[], [px, py, pz]: readonly [number, number, number]) =>
-    boxes.map(([x, y, z, sx, sy, sz, c]): Box => [x + px, y + py, z + pz, sx, sy, sz, c]);
-  return [
-    ...p.torso,
-    ...at(p.head, GEOLOGIST_NECK),
-    ...at(p.leg, GEOLOGIST_HIP), ...at(p.leg, [GEOLOGIST_HIP[0], GEOLOGIST_HIP[1], -GEOLOGIST_HIP[2]]),
-    ...at(p.arm, GEOLOGIST_SHOULDER), ...at(p.hammerArm, [GEOLOGIST_SHOULDER[0], GEOLOGIST_SHOULDER[1], -GEOLOGIST_SHOULDER[2]]),
-  ];
-}
+export const PARKA_COLORS = { red: C.parkaRed, yellow: C.parkaYellow, orange: C.parkaOrange } as const;
 
 // --- Remains: dinosaur bones and plesiosaur skeleton (the living animals are in lowPolyFossils.ts)
 
@@ -321,8 +269,7 @@ export const FOSSIL_MODELS: Readonly<Record<string, readonly Box[]>> = {
   'fossil-jaw': JAW_BOXES, 'antarctopelta-bones': DINO_BONES,
   'plesiosaur-skeleton': PLESIO_SKELETON,
   'field-tent': TENT_BOXES, 'field-crate': CRATE_BOXES, 'field-sled': SLED_BOXES, 'field-mast': MAST_BOXES,
-  'field-geologist-red': geologistAtRest('red', true), 'field-geologist-yellow': geologistAtRest('yellow', false),
-  'field-geologist-orange': geologistAtRest('orange', true), 'fossil-log': LOG_BOXES,
+  'fossil-log': LOG_BOXES,
   'cretaceous-conifer': CONIFER_BOXES, 'cretaceous-cycad': CYCAD_BOXES, 'cretaceous-fern': FERN_BOXES,
   'cretaceous-broadleaf': BROADLEAF_BOXES, 'inoceramid-bivalve': INOCERAMUS_BOXES,
   'eocene-bryozoan': BRYOZOAN_BOXES, 'eocene-brachiopod': BRACHIOPOD_BOXES,

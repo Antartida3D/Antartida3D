@@ -23,12 +23,13 @@ import {
   BRACHIOPOD_BOXES, BROADLEAF_BOXES, BRYOZOAN_BOXES,
   CHITON_BOXES, CONIFER_BOXES, CRATE_BOXES, CRINOID_CROWN, CRINOID_STALK, CRINOID_TOP, CYCAD_BOXES,
   DINO_BONES, FERN_BOXES, FOSSIL_PALETTE as C,
-  GEOLOGIST_HIP, GEOLOGIST_NECK, GEOLOGIST_SHOULDER, INOCERAMUS_BOXES, JAW_BOXES, JAW_TOOTH_CENTER, LOG_BOXES,
+  INOCERAMUS_BOXES, JAW_BOXES, JAW_TOOTH_CENTER, LOG_BOXES,
   MAST_BOXES, PLESIO_BONES, PLESIO_VERTEBRAE, SLED_BOXES, STAR_SLAB_BOXES, TENT_BOXES, URCHIN_BOXES,
-  geologistParts, plesioVertebra, type Parka,
+  plesioVertebra, type Parka,
 } from './models.ts';
 import {
   AMMONITE_ARM_COUNT, AMMONITE_BODY_TRIS, AMMONITE_FOSSIL_TRIS, DINO_HIPS, DINO_NECK, DINO_TAIL, DINO_TAIL_SEGMENT,
+  GEOLOGIST_HIP, GEOLOGIST_NECK, GEOLOGIST_SHOULDER, geologistPolyParts,
   PLESIO_FLIPPERS, PLESIO_NECK, PLESIO_NECK_LENGTH, PLESIO_NECK_SEGMENTS, STAR_TRIS, ammoniteArm, dinosaurParts,
   plesiosaurParts,
 } from './lowPolyFossils.ts';
@@ -202,13 +203,14 @@ function GeologistFigure({ who, parka, beard, scale = 1.1, reduced, heightAt = f
   who: Geologist; parka: Parka; beard: boolean; scale?: number; reduced: boolean; heightAt?: (x: number, z: number) => number;
 }) {
   const key = `${parka}-${beard}`;
-  const p = useMemo(() => geologistParts(parka, beard), [parka, beard]);
+  const p = useMemo(() => geologistPolyParts(parka, beard), [parka, beard]);
   const geo = {
-    torso: partGeometry(`geo-torso-${key}`, () => p.torso.map(([x, y, z, ...r]): Box => [x, y - GEOLOGIST_HIP[1], z, ...r])),
-    head: partGeometry(`geo-head-${key}`, () => p.head),
-    leg: partGeometry(`geo-leg-${key}`, () => p.leg),
-    arm: partGeometry(`geo-arm-${key}`, () => p.arm),
-    hammer: partGeometry(`geo-hammer-${key}`, () => p.hammerArm),
+    torso: polyGeometry(`geo-torso-${key}`, () => p.torso.map(([a, b, c, col]): Tri => [
+      [a[0], a[1] - GEOLOGIST_HIP[1], a[2]], [b[0], b[1] - GEOLOGIST_HIP[1], b[2]], [c[0], c[1] - GEOLOGIST_HIP[1], c[2]], col])),
+    head: polyGeometry(`geo-head-${key}`, () => p.head),
+    leg: polyGeometry(`geo-leg-${key}`, () => p.leg),
+    arm: polyGeometry(`geo-arm-${key}`, () => p.arm),
+    hammer: polyGeometry(`geo-hammer-${key}`, () => p.hammerArm),
   };
   const root = useRef<Group>(null);
   const upper = useRef<Group>(null);

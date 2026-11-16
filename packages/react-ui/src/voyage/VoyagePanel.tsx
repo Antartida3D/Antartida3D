@@ -236,7 +236,7 @@ function MilestoneLog({ voyage }: { voyage: VoyageController }) {
 
 /**
  * Card of a milestone: a sheet with what the stop tells, its notes and its question. The stops of Poncho with a scene
- * do not use it (their card is `PonchoDioramaCard`, at the bottom of the diorama): it is the one of the trips from
+ * do not use it (their panel is `PonchoPanel`, beside the diorama): it is the one of the trips from
  * Ushuaia and the common card of Poncho where there is no WebGL.
  */
 function MilestoneCard({ voyage, animated, onExit, onSource }: {

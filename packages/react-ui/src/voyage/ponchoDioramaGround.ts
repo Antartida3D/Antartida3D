@@ -11,7 +11,7 @@ import { snowMound } from './ponchoShapes.ts';
  * The world round a diorama of Poncho (issue #146), at human scale (rule 30): not a slab that floats but
  * ground that reaches the horizon. Round the stage it is snow with gentle swells, pebbles, rocks, drifts and
  * the prints of the team; farther the swells grow into low rolling hills and, past them, a ring of far
- * ridges that fade into the haze (the canvas adds fog and a sky of its own). On a `coast` scene one side
+ * ridges that fade into the haze (the canvas adds fog and a sky of its own). On a `coast` scene (or, mirrored, a `station`) one side
  * of the stage gives onto the sea: the ice ends in a low cliff with a band of foam at its foot, and the
  * water, with floes and small icebergs, goes to the horizon. Everything is flat-colored facets of the
  * palette of Orcadas and of the relief; all of it is illustration, invented to read well.
@@ -87,14 +87,24 @@ export function stationMountain(x: number, z: number): number {
   return (foothills + smooth(12, 50, z) * crest) * (1 - smooth(80, 122, z));
 }
 
-/** True when (x, z) is on the ice and not in the sea (always, on a plain). */
-export const dioramaOnLand = (scene: SceneDef, x: number, z: number): boolean => scene.setting !== 'coast' || z < sceneCoastZ(x) - 0.6;
+/** A `coast` scene has its sea on +z; a `station` has it on -z, in front of the base as in its photographs (the same coast line, mirrored). */
+const hasSea = (scene: SceneDef): boolean => scene.setting === 'coast' || scene.setting === 'station';
+const seaSide = (scene: SceneDef): 1 | -1 => (scene.setting === 'station' ? -1 : 1);
+/** The sea of a station is farther from the stage than the one of a coast: there is room for a beach of gravel before the water, and the sea fills the front. */
+const STATION_SHORE_SHIFT = 0.8;
+/** The coast line of a scene with sea, in the frame turned so that the sea is on its +z side (`sceneCoastZ`, farther out on a station). */
+const shoreAt = (scene: SceneDef, x: number): number => sceneCoastZ(x) + (scene.setting === 'station' ? STATION_SHORE_SHIFT : 0);
+/** Where the sea begins at `x`, in the world: z of the edge of the land (positive on a coast, negative on a station). */
+export const dioramaShoreZ = (scene: SceneDef, x: number): number => seaSide(scene) * shoreAt(scene, x);
+
+/** True when (x, z) is on land and not in the sea (always, on a plain). */
+export const dioramaOnLand = (scene: SceneDef, x: number, z: number): boolean => !hasSea(scene) || seaSide(scene) * z < shoreAt(scene, x) - 0.6;
 
 /** Height of the ground at (x, z) in the world: land, or its cliff and the sea bed on the coast. */
 function worldHeight(scene: SceneDef, x: number, z: number): number {
   const land = dioramaGround(x, z) + farLand(x, z) + (scene.setting === 'station' ? stationMountain(x, z) : 0);
-  if (scene.setting !== 'coast') return land;
-  const t = smooth(CLIFF_START, CLIFF_END, z - sceneCoastZ(x));
+  if (!hasSea(scene)) return land;
+  const t = smooth(CLIFF_START, CLIFF_END, seaSide(scene) * z - shoreAt(scene, x));
   return land + (SEA_BED - land) * t;
 }
 
@@ -234,7 +244,7 @@ function distanceToSegment(x: number, z: number, a: readonly [number, number], b
 /** True when a detail of `size` at (x, z) would sit on an element of the scene or on one of its paths, or in the sea. */
 export function dioramaBlocked(scene: SceneDef, x: number, z: number, size = 0): boolean {
   // The whole detail must stay on land, not just its middle.
-  if (!dioramaOnLand(scene, x, z + size)) return true;
+  if (!dioramaOnLand(scene, x, z + seaSide(scene) * size)) return true;
   return (
     scene.elements.some((e) => Math.hypot(e.x - x, e.z - z) < sceneBodyRadius(e) + DIORAMA_CLEAR_MARGIN + size) ||
     scene.paths.some((p) => {
@@ -385,6 +395,14 @@ function floatingIce(seed: number): Tri[] {
   return out;
 }
 
+/** The faces as they are for a sea on +z, or mirrored to -z (the winding is kept so no face looks inwards). */
+function turnedTo(side: 1 | -1, shift: number, tris: readonly Tri[]): Tri[] {
+  if (side === 1) return [...tris];
+  // Farther out by `shift` (the sea of a station starts away from the stage), then mirrored.
+  const flip = ([x, y, z]: Vec3): Vec3 => [x, y, -(z + shift)];
+  return tris.map(([a, b, c, col]): Tri => [flip(a), flip(c), flip(b), col]);
+}
+
 /** What a diorama stands in: the land with its details and far ridges, the sea, and the height of the snow under the stage. */
 export interface DioramaWorld {
   /** Ground, details and ridges: colors resolved as the relief. */
@@ -398,9 +416,11 @@ export interface DioramaWorld {
 export function buildDioramaWorld(scene: SceneDef, seed = 146000): DioramaWorld {
   const s = seed + Math.round(scene.radius * 10);
   const radius = dioramaRadius(scene);
-  // A station has its own mountain (stationMountain) in place of the ring of far ridges.
-  const far = scene.setting === 'station' ? [] : ridgeFaces(s + 2);
+  // A station has its own mountain behind it (stationMountain): of the ring of far ridges it keeps only the ones across the sea, on -z.
+  const ridges = ridgeFaces(s + 2);
+  const far = scene.setting === 'station' ? ridges.filter((t) => t[0][2] + t[1][2] + t[2][2] < 0) : ridges;
   const land = resolveRelief([...groundFaces(scene, s), ...far, ...dioramaDetails(scene, radius, s + 1)], () => 0);
-  const sea = scene.setting === 'coast' ? [...waterFaces(s + 3), ...foamFaces(), ...floatingIce(s + 4)] : [];
+  // The sea is built for a coast on +z and, on a station, turned to -z (every face mirrored, its winding kept outwards).
+  const sea = hasSea(scene) ? turnedTo(seaSide(scene), scene.setting === 'station' ? STATION_SHORE_SHIFT : 0, [...waterFaces(s + 3), ...foamFaces(), ...floatingIce(s + 4)]) : [];
   return { land, sea, ground: dioramaGround };
 }

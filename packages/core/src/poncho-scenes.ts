@@ -215,7 +215,7 @@ export const PONCHO_SCENES: Readonly<Record<string, SceneDef>> = {
     ],
     camera: { distanceFactor: 1.05, elevationDeg: 42, azimuthDeg: -112 },
     shots: [
-      shot(0, [0, 1.4, 2.6], 18, 17, -92),
+      shot(0, [0, 1.5, 2.4], 22, 10, -92),
       shot(1, [-0.3, 0.3, -0.5], 9, 26, -96),
       shot(2, [-0.5, 0.5, 0], 11, 24, -100),
     ],

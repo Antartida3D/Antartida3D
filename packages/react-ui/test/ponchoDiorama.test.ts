@@ -13,6 +13,7 @@ import {
   dioramaGround,
   dioramaOnLand,
   dioramaRadius,
+  dioramaShoreZ,
   stationMountain,
 } from '../src/voyage/ponchoDioramaGround.ts';
 import { PRESHADED } from '../src/voyage/lowPoly.ts';
@@ -93,7 +94,8 @@ describe('ground of the diorama', () => {
       it('reports a place on an element as blocked and a free one as open', () => {
         const e = scene.elements[0];
         expect(dioramaBlocked(scene, e.x, e.z)).toBe(true);
-        expect(dioramaBlocked(scene, -9, -9)).toBe(false);
+        // A free place: on land, away from the scene (a station has its sea on -z).
+        expect(dioramaBlocked(scene, -9, scene.setting === 'station' ? 9 : -9)).toBe(false);
       });
     });
   }
@@ -157,10 +159,32 @@ describe('the sky of the diorama', () => {
 describe('the ground of a station (#216)', () => {
   const station = PONCHO_SCENES.nacimiento;
 
-  it('is a station: bare ground with a mountain and no sea', () => {
+  it('is a station: bare ground with a mountain behind it and the sea in front, on -z', () => {
     expect(station.setting).toBe('station');
-    expect(buildDioramaWorld(station).sea).toHaveLength(0);
     expect(dioramaOnLand(station, 0, 3)).toBe(true);
+    expect(dioramaOnLand(station, 0, -2)).toBe(true);
+    expect(dioramaOnLand(station, 0, dioramaShoreZ(station, 0))).toBe(false);
+    // There is room of land in front of the stage before the water.
+    expect(dioramaShoreZ(station, 0)).toBeLessThan(-4.5);
+    const { sea } = buildDioramaWorld(station);
+    expect(sea.length).toBeGreaterThan(500);
+    expect(sea.length).toBeLessThanOrEqual(MAX_SEA_TRIS);
+    const pts = faces(sea);
+    // Water at its level, as far as the haze, and none of it behind the base.
+    for (const p of faces(sea.filter((t) => t[3] >= PRESHADED))) expect(Math.abs(p[1] - DIORAMA_WATER_Y)).toBeLessThan(0.05);
+    expect(Math.min(...pts.map((p) => p[2]))).toBeLessThan(-DIORAMA_FOG_FAR * 0.9);
+    for (const p of pts) if (p[1] > DIORAMA_WATER_Y + 0.02) expect(p[2]).toBeLessThan(dioramaShoreZ(station, p[0]) + 0.3);
+  });
+
+  it('has its sea faces turned up, as the sea of a coast', () => {
+    const { sea } = buildDioramaWorld(station);
+    const water = sea.filter((t) => t[3] >= PRESHADED);
+    expect(water.length).toBeGreaterThan(200);
+    for (const t of water.slice(0, 200)) {
+      const [a, b, c] = t;
+      const nY = (b[2] - a[2]) * (c[0] - a[0]) - (b[0] - a[0]) * (c[2] - a[2]);
+      expect(Math.abs(nY)).toBeGreaterThan(0);
+    }
   });
 
   it('is flat round the stage and rises behind it, to a mountain, and comes down again in the haze', () => {

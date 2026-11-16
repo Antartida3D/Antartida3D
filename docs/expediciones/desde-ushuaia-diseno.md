@@ -52,6 +52,7 @@ El turismo se menciona como una línea de contexto: no es un transporte jugable 
 - El tope mide lo mismo en terreno en una pantalla ancha y en un celular: unas 110 unidades de distancia en escritorio y unas 240 en un celular vertical. Desde el tope se ven Tierra del Fuego, el Cabo de Hornos y las Malvinas a la vez.
 - Vale para la rueda, el pellizco, las teclas y los botones de zoom. «Ver todo el continente» durante el viaje aleja hasta el tope, sin soltar el vehículo.
 - Al salir del viaje vuelve el tope de siempre (`homeDistance3D`).
+- Los topes se comparan con la distancia a la que va la cámara, no con la del cuadro actual (`Map3DLayer.tsx`). Si no, al zarpar la cámara, que baja desde la vista general hasta el barco, se quedaba en el tope del viaje (#181).
 - El mapa 2D no cambia.
 
 ## Avistajes (mapa vivo)

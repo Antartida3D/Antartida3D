@@ -1,0 +1,45 @@
+{
+  "checks": [
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "bounds": {
+        "x": 12,
+        "y": 189.109375,
+        "width": 366,
+        "height": 642.890625
+      }
+    },
+    {
+      "viewport": {
+        "width": 360,
+        "height": 740
+      },
+      "bounds": {
+        "x": 12,
+        "y": 90.703125,
+        "width": 336,
+        "height": 637.296875
+      }
+    },
+    {
+      "viewport": {
+        "width": 844,
+        "height": 390
+      },
+      "bounds": {
+        "x": 364,
+        "y": 24,
+        "width": 456,
+        "height": 342
+      }
+    }
+  ],
+  "longTitleOverflow": false,
+  "closeButton": true,
+  "escape": true,
+  "focusReturn": true,
+  "pageErrors": []
+}

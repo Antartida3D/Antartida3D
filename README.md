@@ -10,7 +10,9 @@ Equipo **DOT ENV**, hackatón SoberaníaTech (Ushuaia, 2026), Eje 2: Antártida,
 
 ## Aplicación
 
-**`apps/dibujado`** (puerto 5103): mapa dibujado estilo acuarela con relieve (2D y 3D) y expediciones interactivas en Marambio («¿Cómo era la Antártida antes del hielo?») y Estación Orcadas («¿Cuánto cambió el clima de la isla Laurie en 120 años?»). Máxima optimización de interacción, foco en accesibilidad completa por teclado y zoom fluido.
+**`apps/dibujado`** (puerto 5103): mapa dibujado estilo acuarela con relieve (2D y 3D), viaje Desde Ushuaia y expedición Estación Orcadas («¿Cuánto cambió el clima de la isla Laurie en 120 años?»). Las demás expediciones se presentan como ampliaciones previstas o próximas. La interfaz ofrece navegación por teclado y alternativas al mapa 3D.
+
+El sistema visual de la UI está en [DESIGN.md](DESIGN.md), siguiendo el formato abierto de Google Labs (alpha), con tokens YAML y reglas de uso: pergamino claro, tinta marrón neutra y lenguaje cartográfico. La ficha «Océano» aprobó esta dirección; la revisión posterior acepta paneles flotantes con radio de 13 px y botones rectangulares con radio de 9 px, conservando círculos, chips, gráficos, separadores y esquinas pegadas al borde según su semántica. La aplicación global queda en migración y verificación. El [plan de migración](docs/diseno/plan-migracion-ui.md) conserva el inventario, la referencia aprobada, las capturas y los límites de verificación.
 
 ## Boceto de Fósiles (#7)
 
@@ -164,12 +166,14 @@ Cada PR declara su impacto documental y registra las decisiones nuevas o reempla
 
 En cumplimiento con las bases de la hackatón, se declara el uso de herramientas de inteligencia artificial en el desarrollo de los prototipos:
 
+- **Sistema visual cartográfico y migración local de la UI:**
+  > Orquestación y revisión de root; Codex Luna High implementó el lenguaje visual, Codex Luna XHigh realizó la interacción y las pruebas, y Codex Luna Medium mantiene la documentación y la evidencia. La dirección parte de las referencias aportadas por el usuario: composición cartográfica ocre de la primera y soporte claro de la segunda, refinada hasta el Pergamino claro aprobado en la ficha «Océano». El sistema se documentó en [DESIGN.md](DESIGN.md), con el formato de Google Labs solicitado. Se reutilizan las costas de Natural Earth, las fuentes tipográficas y la textura de papel del proyecto; la rosa y la retícula son decorativas. La migración se entrega en la rama `202-ui-pergamino-claro` (issue #202), con la ficha aprobada versionada. La E2E global terminó con 366 casos: 322 pasaron, 44 se omitieron y no hubo fallos. La evidencia visual revisada sigue siendo acotada a los estados documentados.
 - **Pulido general: bienvenida, «Desde Ushuaia» y toques en el celular (#190):**
-  > Diagnóstico, arreglo y pruebas (unitarias y e2e) con Claude Code (modelo Claude Fable 5.2), con revisión de quien lleva el issue. No se agregaron datos ni fuentes. Las citas y los títulos de las fuentes cambiaron solo de marcas (comillas “ ” en itálica); el texto citado es el mismo.
+  > Diagnóstico, arreglo y pruebas (unitarias y e2e) con Codex, con revisión del equipo. No se agregaron datos ni fuentes.
 - **Expedición Poncho (#9, #146):**
-  > Planificación, implementación de los dioramas por etapas, integración de las fotos, pruebas y revisión con capturas, con Claude Code (modelos Claude Sonnet 5.5 y Opus 5.5), bajo revisión de quien lleva el issue. Las escenas y los modelos de personas, perros, barco y helicóptero son ilustraciones, no registros; no se presenta ninguna imagen generada como dato. Las dos fotos vienen de las páginas de la Fundación Marambio; sus derechos están pendientes (ver `docs/expediciones/poncho-fuentes.md`).
+  > Planificación, implementación de los dioramas por etapas, integración de las fotos, pruebas y revisión con capturas, con Codex, bajo revisión del equipo. Las escenas y los modelos son ilustraciones, no registros; las fuentes y derechos de las fotos se documentan en `docs/expediciones/poncho-fuentes.md`.
 - **Botón «atrás» del navegador (#185):**
-  > Análisis del problema, implementación, pruebas e2e y registro de la decisión con Claude Code (modelo Claude Sonnet 5.5), con revisión de quien lleva el issue. No se agregaron datos ni fuentes.
+  > Análisis, implementación, pruebas E2E y registro de la decisión con asistencia de Codex, bajo revisión del equipo. No se agregaron datos ni fuentes.
 - **Control de documentación por PR (#109):**
   > Diseño del control, implementación, pruebas y documentación con asistencia de Codex, a partir de la aprobación del usuario. La revisión del PR y la activación del requisito obligatorio en GitHub quedan pendientes de su entrega.
 - **Reclamos territoriales antárticos (#108):**
@@ -179,6 +183,8 @@ En cumplimiento con las bases de la hackatón, se declara el uso de herramientas
   > Modelado e inspección en Blender mediante MCP, integración y verificaciones con Codex. Asta con soporte horizontal y bandera desplegada, sin animación. Por pedido del usuario, mantiene un tamaño fijo en el mundo tanto en 2D como en 3D, sin compensar el zoom. Es un símbolo ilustrativo: su ubicación y tamaño no representan un mástil real. Usa la cartografía existente; no agrega datos históricos ni recursos de terceros. Modelo editable en [`malvinas-flag.blend`](docs/diseno/modelos/malvinas-flag.blend); script de construcción y exportación en [`build-malvinas-flag.py`](packages/react-ui/scripts/build-malvinas-flag.py).
 - **App dibujada:**
   > Como exigen las bases de la hackatón: se dibujo un boceto con todas las posibles ideas y luego **el diseño se generó con Claude Design** (prototipo en `docs/diseno/design/Main.dc.html`) y **el código de este repositorio se escribió con Claude Code**, con multiples revisiones del equipo.
+- **Pantalla de carga cartográfica (#202):**
+  > Rediseño del contrato de carga, pruebas E2E y documentación con asistencia de Codex, con issue #202 asignado a GiulianoPoeta99. La entrega conserva el loader compartido para 2D/3D, la salida a 2D y la dirección Pergamino claro con paneles de 13 px y botones rectangulares de 9 px. La evidencia automatizada registrada reúne 1.356 pruebas (`19` documentales, `650` de `core` y `687` de `react-ui`), además de `pnpm typecheck` y `pnpm build` sin errores. La E2E global terminó con 366 casos: 322 pasaron, 44 se omitieron y no hubo fallos.
 - **Prototipo atlas (descartado, ya no está en el repositorio; se recupera en el commit `2ab6f80`):**
   > Interfaz y código de este prototipo desarrollados con Codex a partir de la revisión de los dos proyectos y del borrador provisto por el equipo.
 - **Expedición Estación Orcadas:**

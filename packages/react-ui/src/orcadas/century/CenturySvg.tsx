@@ -115,8 +115,8 @@ export function CenturySvg({
           width={plotW}
           height={plotH}
           rx="4"
-          fill="#FAF4E8"
-          stroke="#1F2A36"
+          fill="var(--chart-paper)"
+          stroke="var(--chart-ink)"
           strokeOpacity="0.28"
           strokeWidth="1"
         />
@@ -132,7 +132,7 @@ export function CenturySvg({
                   y1={y}
                   x2={padL + plotW}
                   y2={y}
-                  stroke="#5E656C"
+                  stroke="var(--chart-muted)"
                   strokeOpacity="0.3"
                   strokeDasharray="2.5 2.5"
                   strokeWidth="0.8"
@@ -149,13 +149,13 @@ export function CenturySvg({
             );
           })}
 
-          {/* Annual means: thin grey line under everything (broken at incomplete years) (broken at missing years) */}
+          {/* Annual means: thin muted line under everything; incomplete years remain broken. */}
           {annualPaths.map((d, idx) => (
             <path
               key={`ann-path-${idx}`}
               d={d}
               fill="none"
-              stroke="#8A9096"
+              stroke="var(--chart-muted)"
               strokeWidth="1"
               strokeLinejoin="round"
               pathLength={1}
@@ -174,7 +174,7 @@ export function CenturySvg({
                 cx={cx}
                 cy={cy}
                 r={1.3}
-                fill="#8A9096"
+                fill="var(--chart-muted)"
               />
             );
           })}
@@ -196,7 +196,7 @@ export function CenturySvg({
               <path
                 d={d}
                 fill="none"
-                stroke="#1E3E5C"
+                stroke="var(--deep)"
                 strokeWidth="2.8"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -225,7 +225,7 @@ export function CenturySvg({
                       y1={y1}
                       x2={x2}
                       y2={y2}
-                      stroke="#A4471F"
+                      stroke="var(--oxide)"
                       strokeWidth="2"
                       strokeDasharray="6 3.5"
                       strokeLinecap="round"
@@ -242,8 +242,8 @@ export function CenturySvg({
               cx={xOfYear(selectedRecord.year)}
               cy={yOfAnnual(selectedRecord.annual)}
               r={3.8}
-              fill="#C0862F"
-              stroke="#1F2A36"
+              fill="var(--ocre)"
+              stroke="var(--chart-ink)"
               strokeWidth={1.4}
             />
           )}
@@ -254,7 +254,7 @@ export function CenturySvg({
             y1={padT}
             x2={cursorX}
             y2={padT + plotH}
-            stroke="#1F2A36"
+            stroke="var(--chart-ink)"
             strokeWidth="1.2"
             strokeDasharray="2 2"
           />
@@ -270,7 +270,7 @@ export function CenturySvg({
                 y1={padT + plotH}
                 x2={x}
                 y2={padT + plotH + 4}
-                stroke="#1F2A36"
+                stroke="var(--chart-ink)"
                 strokeWidth="1"
               />
               <text
@@ -300,7 +300,7 @@ export function CenturySvg({
             width="40"
             height="14"
             rx="4"
-            fill="#1F2A36"
+            fill="var(--chart-ink)"
           />
           <text
             x="0"

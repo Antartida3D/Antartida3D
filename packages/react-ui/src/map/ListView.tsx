@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { PTS, type MapPoint, type Tier } from '@antartida/core';
 import { useFocusReturn } from '../hooks.ts';
+import { CompassRose } from '../Cartography.tsx';
 
 const GROUPS: { tier: Tier; id: string; tag: string; label?: string; desc: string }[] = [
   { tier: 'A', id: 'g-a', tag: 'Disponible', label: 'Expediciones', desc: 'Se pueden recorrer ahora.' },
@@ -8,10 +9,6 @@ const GROUPS: { tier: Tier; id: string; tag: string; label?: string; desc: strin
   { tier: 'C', id: 'g-c', tag: 'Punto de interés', desc: 'Lugares para conocer, con su ficha y fuentes.' },
 ];
 
-/**
- * Every point of the map by tier, on its own screen. With `points`, only those, in a small window
- * over the map (`title`): the points of a group that zooming no longer separates.
- */
 export function ListView({ explored, onClose, onPick, points }: {
   explored: readonly string[];
   onClose: () => void;
@@ -24,7 +21,6 @@ export function ListView({ explored, onClose, onPick, points }: {
   useFocusReturn(true, ref);
   return (
     <>
-    {/* A tap on the map around the window closes it. */}
     {pick && <div className="scrim" onClick={onClose} />}
     <div
       className={'listview' + (pick ? ' pick' : '')}
@@ -36,7 +32,10 @@ export function ListView({ explored, onClose, onPick, points }: {
     >
       <div className="inner">
         <div className="listhead">
-          <h2 id="list-title">{pick ? 'Puntos en este lugar' : 'Todos los puntos'}</h2>
+          <div className="listhead-title">
+            <CompassRose className="chart-compass list-emblem" />
+            <div><span className="editorial-kicker">Índice del atlas</span><h2 id="list-title">{pick ? 'Puntos en este lugar' : 'Todos los puntos'}</h2></div>
+          </div>
           <button type="button" className="btn" onClick={onClose}>{pick ? 'Volver al mapa' : 'Ver mapa'}</button>
         </div>
         {GROUPS.filter((g) => shown.some((p) => p.tier === g.tier)).map((g) => (

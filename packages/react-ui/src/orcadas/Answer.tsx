@@ -133,8 +133,8 @@ export function Answer({
             width={chartGeom.plotW}
             height={chartGeom.plotH}
             rx="4"
-            fill="#FAF4E8"
-            stroke="#1F2A36"
+            fill="var(--chart-paper)"
+            stroke="var(--chart-ink)"
             strokeOpacity="0.28"
             strokeWidth="1"
           />
@@ -149,7 +149,7 @@ export function Answer({
                   y1={y}
                   x2={chartGeom.padL + chartGeom.plotW}
                   y2={y}
-                  stroke="#5E656C"
+                  stroke="var(--chart-muted)"
                   strokeOpacity="0.25"
                   strokeDasharray="2.5 2.5"
                   strokeWidth="0.8"
@@ -172,7 +172,7 @@ export function Answer({
             y1={chartGeom.padT}
             x2={chartGeom.splitX}
             y2={chartGeom.padT + chartGeom.plotH}
-            stroke="#5E656C"
+            stroke="var(--chart-muted)"
             strokeWidth="1.3"
             strokeDasharray="3 3"
           />
@@ -182,7 +182,7 @@ export function Answer({
             textAnchor="end"
             fontSize="14"
             fontWeight="700"
-            fill="#5E656C"
+            fill="var(--chart-muted)"
           >
             1950
           </text>
@@ -192,7 +192,7 @@ export function Answer({
             textAnchor="start"
             fontSize="14"
             fontWeight="700"
-            fill="#5E656C"
+            fill="var(--chart-muted)"
           >
             1951
           </text>
@@ -203,7 +203,7 @@ export function Answer({
             y1={chartGeom.threshY}
             x2={chartGeom.padL + chartGeom.plotW}
             y2={chartGeom.threshY}
-            stroke={hasUserTemp ? '#A4471F' : '#1E3E5C'}
+            stroke={hasUserTemp ? 'var(--oxide)' : 'var(--deep)'}
             strokeWidth="1.8"
             strokeDasharray="4 3"
           />
@@ -213,8 +213,8 @@ export function Answer({
             textAnchor="end"
             fontSize="14"
             fontWeight="800"
-            fill={hasUserTemp ? '#A4471F' : '#1E3E5C'}
-            stroke="#FAF4E8"
+            fill="var(--chart-ink)"
+            stroke="var(--chart-paper)"
             strokeWidth="4"
             paintOrder="stroke"
           >
@@ -234,7 +234,7 @@ export function Answer({
                 cy={cy}
                 r={2.4}
                 fill={isCold ? '#3D6B8E' : '#CE8F3A'}
-                stroke="#1F2A36"
+                stroke="var(--chart-ink)"
                 strokeWidth="0.6"
               />
             );
@@ -250,7 +250,7 @@ export function Answer({
                   y1={chartGeom.padT + chartGeom.plotH}
                   x2={x}
                   y2={chartGeom.padT + chartGeom.plotH + 4}
-                  stroke="#1F2A36"
+                  stroke="var(--chart-ink)"
                   strokeWidth="1"
                 />
                 <text

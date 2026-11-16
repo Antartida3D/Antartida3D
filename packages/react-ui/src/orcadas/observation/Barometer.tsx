@@ -129,7 +129,7 @@ export function Barometer({
           cy="17"
           r="8"
           fill="none"
-          stroke="#1F2A36"
+          stroke="var(--chart-ink)"
           strokeWidth="1.2"
         />
 
@@ -139,15 +139,15 @@ export function Barometer({
           cy={cy}
           r={r + 5}
           fill="#C0862F"
-          stroke="#1F2A36"
+          stroke="var(--chart-ink)"
           strokeWidth="1.8"
         />
         <circle
           cx={cx}
           cy={cy}
           r={r}
-          fill="#FBF4E6"
-          stroke="#1F2A36"
+          fill="var(--chart-paper)"
+          stroke="var(--chart-ink)"
           strokeWidth="1.5"
         />
         <circle
@@ -155,7 +155,7 @@ export function Barometer({
           cy={cy}
           r={r - 6}
           fill="none"
-          stroke="#1F2A36"
+          stroke="var(--chart-ink)"
           strokeWidth="0.8"
           strokeDasharray="2 2"
         />
@@ -183,7 +183,7 @@ export function Barometer({
               y1={t.y1}
               x2={t.x2}
               y2={t.y2}
-              stroke="#1F2A36"
+              stroke="var(--chart-ink)"
               strokeWidth={t.isMajor ? 1.8 : t.isMid ? 1.2 : 0.7}
             />
             {t.isMajor && (
@@ -217,19 +217,19 @@ export function Barometer({
         <g transform={`translate(${cx}, ${cy}) rotate(${needleDeg})`}>
           <g className="orc-obs-baro-tremor">
             {/* Counterweight tail */}
-            <line x1="0" y1="0" x2="0" y2="20" stroke="#1F2A36" strokeWidth="2.6" />
-            <circle cx="0" cy="18" r="3.5" fill="#1F2A36" />
+            <line x1="0" y1="0" x2="0" y2="20" stroke="var(--chart-ink)" strokeWidth="2.6" />
+            <circle cx="0" cy="18" r="3.5" fill="var(--chart-ink)" />
             {/* Main spear shaft */}
             <path
               d={`M -2.2 0 L -0.8 ${-(r - 9)} L 0 ${-(r - 4)} L 0.8 ${-(r - 9)} L 2.2 0 Z`}
-              fill="#1F2A36"
+              fill="var(--chart-ink)"
             />
           </g>
         </g>
 
         {/* Center brass cap */}
-        <circle cx={cx} cy={cy} r="6.5" fill="#C0862F" stroke="#1F2A36" strokeWidth="1.5" />
-        <circle cx={cx} cy={cy} r="2.2" fill="#1F2A36" />
+        <circle cx={cx} cy={cy} r="6.5" fill="#C0862F" stroke="var(--chart-ink)" strokeWidth="1.5" />
+        <circle cx={cx} cy={cy} r="2.2" fill="var(--chart-ink)" />
 
         {/* Sight lines connecting dial rim to Vernier zoom window */}
         <line
@@ -258,7 +258,7 @@ export function Barometer({
           width={vW}
           height={vH}
           rx="10"
-          fill="#FBF4E6"
+          fill="var(--chart-paper)"
           stroke="#C0862F"
           strokeWidth="4"
         />
@@ -269,7 +269,7 @@ export function Barometer({
           height={vH}
           rx="10"
           fill="none"
-          stroke="#1F2A36"
+          stroke="var(--chart-ink)"
           strokeWidth="1.5"
         />
 
@@ -284,7 +284,7 @@ export function Barometer({
                   y1={y}
                   x2={vX + (isMajor ? 46 : isHalf ? 56 : 64)}
                   y2={y}
-                  stroke="#1F2A36"
+                  stroke="var(--chart-ink)"
                   strokeWidth={isMajor ? 2 : isHalf ? 1.4 : 0.9}
                   strokeLinecap="round"
                 />
@@ -318,7 +318,7 @@ export function Barometer({
             y1={vY}
             x2={vX + 76}
             y2={vY + vH}
-            stroke="#1F2A36"
+            stroke="var(--chart-ink)"
             strokeWidth="1.5"
           />
 
@@ -335,13 +335,13 @@ export function Barometer({
             />
             <polygon
               points={`${vX + 77},${needleY} ${vX + 92},${needleY - 5} ${vX + 92},${needleY + 5}`}
-              fill="#1F2A36"
+              fill="var(--chart-ink)"
             />
             <text
               x={vX + 96}
               y={needleY + 3.5}
               className="orc-obs-svg-callout"
-              fill="#1F2A36"
+              fill="var(--chart-ink)"
             >
               aguja
             </text>
@@ -361,7 +361,7 @@ export function Barometer({
             <polygon
               points={`${vX + 77},${draftY} ${vX + 87},${draftY - 4} ${vX + 87},${draftY + 4}`}
               fill="#C0862F"
-              stroke="#1F2A36"
+              stroke="var(--chart-ink)"
               strokeWidth="0.9"
             />
           </g>
@@ -374,8 +374,8 @@ export function Barometer({
           width="116"
           height="19"
           rx="9"
-          fill="#FBF4E6"
-          stroke="#1F2A36"
+          fill="var(--chart-paper)"
+          stroke="var(--chart-ink)"
           strokeWidth="1.2"
         />
         <text x={vX + vW / 2} y="25" textAnchor="middle" className="orc-obs-svg-tag">

@@ -246,7 +246,7 @@ export function SunArc({
             y1={geom.horizonY}
             x2={geom.w - geom.padR}
             y2={geom.horizonY}
-            stroke={isNight ? '#7FA8C4' : '#1F2A36'}
+            stroke={isNight ? '#7FA8C4' : 'var(--chart-ink)'}
             strokeWidth="1.4"
           />
           {/* Label inside the night band, away from the sun curve above the horizon */}
@@ -288,7 +288,7 @@ export function SunArc({
               cy={geom.horizonY}
               r="3.2"
               fill="#C0862F"
-              stroke="#1F2A36"
+              stroke="var(--chart-ink)"
               strokeWidth="1.2"
             />
             <circle
@@ -296,7 +296,7 @@ export function SunArc({
               cy={geom.horizonY}
               r="3.2"
               fill="#A4471F"
-              stroke="#1F2A36"
+              stroke="var(--chart-ink)"
               strokeWidth="1.2"
             />
           </g>
@@ -343,7 +343,7 @@ export function SunArc({
                   cy="0"
                   r="6"
                   fill="#C0862F"
-                  stroke="#1F2A36"
+                  stroke="var(--chart-ink)"
                   strokeWidth="1.6"
                 />
               </>

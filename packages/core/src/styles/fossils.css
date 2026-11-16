@@ -19,7 +19,7 @@
 .fossil-workspace { position: relative; flex: 1; min-height: 0; }
 .fossil-stage { position: absolute; inset: 0 405px 0 0; background: color-mix(in srgb, var(--paper) 80%, var(--glacier)); overflow: hidden; }
 .fossil-stage canvas { touch-action: none; }
-.fossil-panel { position: absolute; inset: 0 0 0 auto; width: 405px; display: flex; flex-direction: column; border-left: 1px solid color-mix(in srgb, var(--ink) 20%, transparent); background: var(--paper); box-sizing: border-box; }
+.fossil-panel { position: absolute; inset: 0 0 0 auto; width: 405px; display: flex; flex-direction: column; border-left: 1px solid color-mix(in srgb, var(--ink) 20%, transparent); border-radius: var(--chart-radius) 0 0 var(--chart-radius); background: var(--paper); box-sizing: border-box; }
 .fossil-panel-content { flex: 1; overflow-y: auto; min-height: 0; padding: 27px 30px 20px; scrollbar-width: thin; }
 .fossil-section-line { display: flex; justify-content: space-between; gap: 12px; padding-bottom: 16px; margin-bottom: 28px; border-bottom: 1px solid color-mix(in srgb, var(--ink) 18%, transparent); font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: var(--pencil); }
 .fossil-eyebrow { font-size: 12px; color: var(--pencil); margin: 0 0 10px; line-height: 1.5; }
@@ -45,13 +45,13 @@
 .fossil-archive b { font-size: 14px; font-weight: 400; }
 .fossil-archive span > span { font-size: 11px; text-decoration: underline; text-underline-offset: 3px; }
 .fossil-panel-footer { padding: 18px 24px 24px; display: flex; flex-shrink: 0; gap: 10px; border-top: 1px solid color-mix(in srgb, var(--ink) 15%, transparent); background: var(--paper); }
-.fossil-panel-footer .btn { min-height: 48px; border-radius: 3px; }
+.fossil-panel-footer .btn { min-height: 48px; border-radius: var(--chart-button-radius); }
 .fossil-prev { width: 48px; flex-shrink: 0; display: grid; place-items: center; }
 .fossil-prev svg { width: 18px; height: 18px; }
 .fossil-next { flex: 1; display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 14px; }
 .fossil-expedition button:disabled { cursor: default; opacity: .48; }
 .fossil-interaction { border-left: 2px solid var(--ocre); padding: 3px 0 3px 15px; margin: 0 0 22px; }
-.fossil-interaction .fossil-action { display: block; border-radius: 3px; font-size: 13px; margin: 8px 0; padding: 10px 13px; }
+.fossil-interaction .fossil-action { display: block; border-radius: var(--chart-button-radius); font-size: 13px; margin: 8px 0; padding: 10px 13px; }
 .fossil-interaction small { display: block; font-size: 11px; color: var(--pencil); line-height: 1.5; }
 .fossil-rubbing { display: flex; align-items: center; gap: 5px; }
 .fossil-rubbing > span:not(:last-child) { width: 13px; height: 4px; background: color-mix(in srgb, var(--ink) 18%, transparent); }
@@ -59,25 +59,25 @@
 .fossil-rubbing > span:last-child { font-size: 11px; margin-left: 5px; }
 .fossil-observation { font-size: 13px; line-height: 1.5; }
 .fossil-habitats { display: flex; gap: 8px; flex-direction: column; margin: 0 0 22px; }
-.fossil-habitats button { padding: 12px; text-align: left; border: 1px solid var(--pencil); background: transparent; color: var(--ink); font: inherit; font-size: 13px; border-radius: 3px; }
+.fossil-habitats button { padding: 12px; text-align: left; border: 1px solid var(--pencil); background: transparent; color: var(--ink); font: inherit; font-size: 13px; border-radius: var(--chart-button-radius); }
 .fossil-habitats button small { display: block; margin-top: 3px; font-size: 11px; color: var(--pencil); }
 .fossil-habitats button[aria-pressed=true] small { color: color-mix(in srgb, var(--ice) 80%, transparent); }
 .fossil-habitats button[aria-pressed=true] { background: var(--deep); border-color: var(--deep); color: var(--ice); }
 .fossil-checklist { list-style: none; padding: 0; margin: 0 0 24px; display: flex; flex-direction: column; gap: 13px; font-size: 13px; line-height: 1.4; }
 .fossil-checklist li { display: flex; gap: 10px; }
 .fossil-checklist li span { color: var(--deep); }
-.fossil-location { position: absolute; top: 20px; left: 22px; display: flex; align-items: flex-start; gap: 10px; pointer-events: none; font-size: 12px; padding: 8px 12px; background: color-mix(in srgb, var(--paper) 92%, transparent); border: 1.5px solid var(--ink); border-radius: 6px 12px 8px 10px; box-shadow: 2px 3px 0 color-mix(in srgb, var(--ink) 18%, transparent); }
+.fossil-location { position: absolute; top: 20px; left: 22px; display: flex; align-items: flex-start; gap: 10px; pointer-events: none; font-size: 12px; padding: 8px 12px; background: color-mix(in srgb, var(--paper) 92%, transparent); border: 1.5px solid var(--ink); border-radius: var(--chart-radius); box-shadow: 2px 3px 0 color-mix(in srgb, var(--ink) 18%, transparent); }
 .fossil-location small { display: block; font-size: 10px; color: var(--pencil); margin-top: 4px; }
 .fossil-location-dot { width: 7px; height: 7px; border: 2px solid var(--oxide); border-radius: 50%; margin-top: 2px; }
 .fossil-reset { position: absolute; top: 20px; right: 23px; width: 38px; height: 38px; border: 1px solid color-mix(in srgb, var(--ink) 30%, transparent); border-radius: 50%; background: var(--paper); padding: 8px; }
 .fossil-reset svg { width: 100%; height: 100%; }
-.fossil-scene-note { position: absolute; bottom: 20px; left: 22px; pointer-events: none; display: flex; flex-direction: column; gap: 4px; padding: 7px 11px; background: color-mix(in srgb, var(--paper) 92%, transparent); border: 1.5px dashed color-mix(in srgb, var(--ink) 70%, transparent); border-radius: 8px 12px 6px 10px; }
+.fossil-scene-note { position: absolute; bottom: 20px; left: 22px; pointer-events: none; display: flex; flex-direction: column; gap: 4px; padding: 7px 11px; background: color-mix(in srgb, var(--paper) 92%, transparent); border: 1.5px dashed color-mix(in srgb, var(--ink) 70%, transparent); border-radius: var(--chart-radius); }
 .fossil-scene-note > span { font-size: 11px; }
 .fossil-scene-note small { color: var(--pencil); font-size: 10px; }
 .fossil-found { position: absolute; bottom: 75px; left: 50%; transform: translateX(-50%) rotate(-2deg); padding: 10px 16px; font: 22px 'Caveat', cursive; background: var(--paper); white-space: nowrap; box-shadow: 1px 2px 0 color-mix(in srgb, var(--ink) 20%, transparent); pointer-events: none; }
 .fossil-found small { display: block; font: 10px 'Atkinson Hyperlegible', sans-serif; margin-top: 4px; }
 .fossil-loading { display: grid; place-items: center; height: 100%; font: 24px 'Caveat', cursive; }
-.fossil-dialog { width: min(650px, calc(100vw - 32px)); max-height: calc(100dvh - 40px); padding: 25px; border: 1px solid var(--ink); background: var(--paper); color: var(--ink); box-sizing: border-box; }
+.fossil-dialog { width: min(650px, calc(100vw - 32px)); max-height: calc(100dvh - 40px); padding: 25px; border: 1px solid var(--ink); border-radius: var(--chart-radius); background: var(--paper); color: var(--ink); box-sizing: border-box; }
 .fossil-dialog::backdrop { background: color-mix(in srgb, var(--ink) 55%, transparent); }
 .fossil-dialog-heading { display: flex; align-items: center; justify-content: space-between; gap: 15px; }
 .fossil-dialog h2 { font: 28px 'Fraunces', serif; margin: 0; }
@@ -104,7 +104,7 @@
   .fossil-chapters button { gap: 4px; min-height: 50px; font-size: 10.5px; min-width: 0; flex-direction: column; justify-content: center; padding: 6px 5px; }
   .fossil-chapters button > span { font-size: 9px; }
   .fossil-stage { inset: 0 0 var(--fossil-panel-h) 0; }
-  .fossil-panel.sheet.grows { inset: auto 0 0; width: 100%; max-width: none; max-height: 45dvh; padding: 0; border: 0; border-top: 1px solid color-mix(in srgb, var(--ink) 25%, transparent); border-radius: 16px 16px 0 0; box-shadow: none; overflow: hidden; }
+  .fossil-panel.sheet.grows { inset: auto 0 0; width: 100%; max-width: none; max-height: 45dvh; padding: 0; border: 0; border-top: 1px solid color-mix(in srgb, var(--ink) 25%, transparent); border-radius: var(--chart-radius) var(--chart-radius) 0 0; box-shadow: none; overflow: hidden; }
   .fossil-panel.sheet.grows.full { max-height: 78dvh; }
   .fossil-panel .sheet-handle { flex-shrink: 0; }
   .fossil-panel-content { padding: 0 23px 18px; }

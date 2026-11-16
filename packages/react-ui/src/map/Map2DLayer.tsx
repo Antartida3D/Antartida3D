@@ -23,6 +23,8 @@ export interface LayerProps {
   /** Key of the marker whose label is in view after a first press. */
   shown: string | null;
   onPick: MarkerPick;
+  /** The base map and its ink layer have either loaded or reached their fallback. */
+  onReady?: () => void;
 }
 
 const LAYER_TRANSITION: Record<Anim, string> = {
@@ -32,14 +34,31 @@ const LAYER_TRANSITION: Record<Anim, string> = {
   dive: 'transform 1.5s cubic-bezier(.55,0,.3,1)',
 };
 
-export function Map2DLayer({ geo, view, anim, phase, markers, shown, onPick }: LayerProps) {
+export function Map2DLayer({ geo, view, anim, phase, markers, shown, onPick, onReady }: LayerProps) {
   const [ink, setInk] = useState('');
   const [src, setSrc] = useState(MAP_RASTER.base);
   const [painted, setPainted] = useState(false);
+  const [paintReady, setPaintReady] = useState(false);
+  const [inkReady, setInkReady] = useState(false);
+
+  useEffect(() => {
+    if (!paintReady || !inkReady) return;
+    onReady?.();
+  }, [inkReady, onReady, paintReady]);
 
   useEffect(() => {
     let alive = true;
-    loadMapInk().then((html) => alive && setInk(html));
+    loadMapInk().then(
+      (html) => {
+        if (!alive) return;
+        setInk(html);
+        setInkReady(true);
+      },
+      () => {
+        // The placeholder remains usable without the optional vector ink layer.
+        if (alive) setInkReady(true);
+      },
+    );
     return () => {
       alive = false;
     };
@@ -75,7 +94,11 @@ export function Map2DLayer({ geo, view, anim, phase, markers, shown, onPick }: L
           decoding="async"
           fetchPriority="high"
           style={MAP_RASTER_BOX}
-          onLoad={() => setPainted(true)}
+          onLoad={() => {
+            setPainted(true);
+            setPaintReady(true);
+          }}
+          onError={() => setPaintReady(true)}
         />
         <svg
           viewBox="0 0 1000 1000"

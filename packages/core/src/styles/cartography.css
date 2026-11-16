@@ -1,0 +1,66 @@
+/* Shared material from DESIGN.md. Layout stays with each screen. */
+.brand, .reg, .legend, .sheet, .listview, .vbar, .vpop, .vhint,
+.orc-top, .orc-panel, .orc-sources, .orc-month-strip, .orc-month-chip,
+.orc-month-popover, .orc-scene-help-popover, .orc-panel-show {
+  background: var(--chart-surface);
+  background-size: auto;
+  background-blend-mode: normal;
+  border-radius: var(--chart-radius);
+  box-shadow: var(--chart-shadow);
+  color: var(--chart-ink);
+  scrollbar-width: thin;
+  scrollbar-color: var(--chart-rule) var(--chart-paper);
+}
+.listview {
+  border-radius: 0;
+}
+.listview.pick {
+  border-radius: var(--chart-radius);
+}
+.brand {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  column-gap: 12px;
+  align-items: center;
+  padding: 16px 20px;
+  border: 1px solid var(--chart-ink);
+  min-width: 0;
+}
+.brand .chart-compass { grid-row: 1 / 3; width: 42px; height: 42px; }
+.chart-compass { color: var(--chart-ink); flex: none; }
+.chart-compass .chart-needle { fill: var(--oxide); }
+.view-toggle { display: flex; gap: 4px; }
+.view-toggle .chip {
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--chart-ink);
+  border-radius: var(--chart-button-radius);
+  background: var(--chart-paper);
+  color: var(--chart-ink);
+}
+.view-toggle .chip[aria-pressed="true"] {
+  border: 3px double var(--chart-paper);
+  background: var(--chart-ink);
+  color: var(--chart-paper);
+}
+.list-emblem { width: 38px; height: 38px; }
+.listhead-title { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.editorial-kicker {
+  display: block;
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--chart-muted);
+}
+@media (max-width: 600px) {
+  .brand { grid-template-columns: minmax(0, 1fr); padding: 12px 14px; }
+  .brand .chart-compass { display: none; }
+  .list-emblem { width: 26px; height: 26px; }
+  .listhead-title { gap: 6px; }
+}
+@media (forced-colors: active) {
+  .brand, .reg, .legend, .sheet, .listview, .orc-panel, .orc-top { background: Canvas; color: CanvasText; }
+  button:focus-visible { outline-color: Highlight; }
+}

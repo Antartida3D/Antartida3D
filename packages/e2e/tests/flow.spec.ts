@@ -104,7 +104,7 @@ test('Fósiles is available and opens its own expedition', async ({ page }) => {
   await expect(page.getByRole('region', { name: 'Expedición Fósiles' })).toHaveCount(0);
 });
 
-test('a point with verified content shows its sources; Poncho stays provisional', async ({ page }) => {
+test('a point with verified content shows its sources; Poncho expedition cites its provenance', async ({ page }) => {
   await page.getByRole('button', { name: 'Ver como lista' }).click();
   await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Volcán en el hielo/ }).click();
   const erebus = page.getByRole('dialog', { name: 'Volcán en el hielo' });
@@ -119,9 +119,24 @@ test('a point with verified content shows its sources; Poncho stays provisional'
 
   await page.getByRole('button', { name: 'Ver como lista' }).click();
   await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Poncho/ }).click();
-  const poncho = page.getByRole('dialog', { name: 'Poncho' });
-  await expect(poncho).toContainText('[Contenido provisional]');
-  await expect(poncho.getByRole('heading', { name: 'Fuentes verificadas' })).toHaveCount(0);
+  // Poncho's map voyage switches to 3D; its intro is behind the shared loader until the map is ready.
+  await expect(page.locator('.ld')).toHaveCount(0, { timeout: 10_000 });
+  const poncho = page.getByRole('dialog', { name: 'Poncho, perro polar argentino' });
+  await expect(poncho).toContainText('Poncho nació el 10 de abril de 1961');
+  await expect(poncho).toContainText('Reconstrucción ilustrada');
+  await expect(poncho).not.toContainText('[Contenido provisional]');
+  await expect(poncho.getByRole('link', { name: /Fuente 1, página 4:/ }).first()).toHaveAttribute(
+    'href',
+    /^https:\/\//,
+  );
+  await poncho.getByRole('button', { name: 'Ver las fuentes' }).click();
+  const sources = page.getByRole('dialog', { name: 'Fuentes' });
+  await expect(sources.locator('[data-source="P1"] a')).toHaveAttribute(
+    'href',
+    'https://www.marambio.aq/pdf/poncho.pdf',
+  );
+  await sources.getByRole('button', { name: 'Volver al viaje' }).click();
+  await expect(poncho).toBeVisible();
 });
 
 test('on a phone a point sheet closes when dragged down, like the other sheets', async ({ page, isMobile }) => {

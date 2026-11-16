@@ -53,7 +53,7 @@ export function CloudPicker({
         </defs>
 
         {/* Outer parchment wash */}
-        <rect x="6" y="6" width="368" height="196" rx="10" fill="#FBF4E6" fillOpacity="0.6" />
+        <rect x="6" y="6" width="368" height="196" rx="10" fill="var(--chart-paper)" fillOpacity="0.6" />
 
         {/* Sky dome base */}
         <circle
@@ -61,7 +61,7 @@ export function CloudPicker({
           cy={cy}
           r={r + 5}
           fill="#C0862F"
-          stroke="#1F2A36"
+          stroke="var(--chart-ink)"
           strokeWidth="1.6"
         />
         <circle
@@ -69,7 +69,7 @@ export function CloudPicker({
           cy={cy}
           r={r}
           fill={`url(#${skyGradId})`}
-          stroke="#1F2A36"
+          stroke="var(--chart-ink)"
           strokeWidth="1.5"
         />
 
@@ -103,7 +103,7 @@ export function CloudPicker({
                 <path
                   d={d}
                   fill={isUserSelected ? 'rgba(192, 134, 47, 0.22)' : 'transparent'}
-                  stroke="#1F2A36"
+                  stroke="var(--chart-ink)"
                   strokeWidth="1"
                   strokeDasharray="3 2"
                 />
@@ -116,7 +116,7 @@ export function CloudPicker({
                       cy={outerCloud.y}
                       r="17"
                       fill="#E2E9EE"
-                      stroke="#1F2A36"
+                      stroke="var(--chart-ink)"
                       strokeWidth="1.1"
                     />
                     <circle
@@ -124,15 +124,15 @@ export function CloudPicker({
                       cy={cloudCenter.y}
                       r="20"
                       fill="#F7FAFB"
-                      stroke="#1F2A36"
+                      stroke="var(--chart-ink)"
                       strokeWidth="1.2"
                     />
                     <circle
                       cx={innerCloud.x}
                       cy={innerCloud.y}
                       r="14"
-                      fill="#FBF4E6"
-                      stroke="#1F2A36"
+                      fill="var(--chart-paper)"
+                      stroke="var(--chart-ink)"
                       strokeWidth="1.1"
                     />
                     {/* Ink shading lines inside cloud mass */}
@@ -141,7 +141,7 @@ export function CloudPicker({
                       y1={cloudCenter.y + 5}
                       x2={cloudCenter.x + 9}
                       y2={cloudCenter.y + 5}
-                      stroke="#5E656C"
+                      stroke="var(--chart-muted)"
                       strokeWidth="1"
                       strokeLinecap="round"
                     />
@@ -150,7 +150,7 @@ export function CloudPicker({
                       y1={outerCloud.y + 4}
                       x2={outerCloud.x + 7}
                       y2={outerCloud.y + 4}
-                      stroke="#5E656C"
+                      stroke="var(--chart-muted)"
                       strokeWidth="0.9"
                       strokeLinecap="round"
                     />
@@ -165,13 +165,13 @@ export function CloudPicker({
                       cy={checkPos.y}
                       r="6"
                       fill="#C0862F"
-                      stroke="#1F2A36"
+                      stroke="var(--chart-ink)"
                       strokeWidth="1.3"
                     />
                     <path
                       d={`M ${checkPos.x - 2.5} ${checkPos.y} L ${checkPos.x - 0.5} ${checkPos.y + 2.2} L ${checkPos.x + 3} ${checkPos.y - 2.2}`}
                       fill="none"
-                      stroke="#1F2A36"
+                      stroke="var(--chart-ink)"
                       strokeWidth="1.5"
                       strokeLinecap="round"
                     />
@@ -192,7 +192,7 @@ export function CloudPicker({
                 y1={p1.y}
                 x2={p2.x}
                 y2={p2.y}
-                stroke="#1F2A36"
+                stroke="var(--chart-ink)"
                 strokeWidth="1.2"
                 strokeDasharray="3 2"
                 pointerEvents="none"
@@ -226,8 +226,8 @@ export function CloudPicker({
             width="150"
             height="168"
             rx="10"
-            fill="#FBF4E6"
-            stroke="#1F2A36"
+            fill="var(--chart-paper)"
+            stroke="var(--chart-ink)"
             strokeWidth="1.5"
           />
           <text x="75" y="22" textAnchor="middle" className="orc-obs-svg-tag">
@@ -236,23 +236,23 @@ export function CloudPicker({
 
           {/* Legend items */}
           <g transform="translate(14, 36)">
-            <circle cx="10" cy="8" r="8" fill="#F7FAFB" stroke="#1F2A36" strokeWidth="1.2" />
+            <circle cx="10" cy="8" r="8" fill="#F7FAFB" stroke="var(--chart-ink)" strokeWidth="1.2" />
             <text x="26" y="12" className="orc-obs-svg-legend">
               Octava con nubes
             </text>
 
-            <circle cx="10" cy="30" r="8" fill="#B8D2E3" stroke="#1F2A36" strokeWidth="1.2" />
+            <circle cx="10" cy="30" r="8" fill="#B8D2E3" stroke="var(--chart-ink)" strokeWidth="1.2" />
             <text x="26" y="34" className="orc-obs-svg-legend">
               Cielo despejado
             </text>
 
-            <circle cx="10" cy="52" r="6" fill="#C0862F" stroke="#1F2A36" strokeWidth="1.2" />
+            <circle cx="10" cy="52" r="6" fill="#C0862F" stroke="var(--chart-ink)" strokeWidth="1.2" />
             <text x="26" y="56" className="orc-obs-svg-legend">
               Octava marcada
             </text>
           </g>
 
-          <line x1="12" y1="104" x2="138" y2="104" stroke="#1F2A36" strokeWidth="0.8" strokeDasharray="3 2" />
+          <line x1="12" y1="104" x2="138" y2="104" stroke="var(--chart-ink)" strokeWidth="0.8" strokeDasharray="3 2" />
 
           <text x="75" y="120" textAnchor="middle" className="orc-obs-svg-hand">
             Tocá las partes del cielo
@@ -273,7 +273,7 @@ export function CloudPicker({
               height="18"
               rx="9"
               fill={draftOktas === 0 ? '#1E3E5C' : '#E7F0F5'}
-              stroke="#1F2A36"
+              stroke="var(--chart-ink)"
               strokeWidth="1"
             />
             <text
@@ -281,7 +281,7 @@ export function CloudPicker({
               y="157"
               textAnchor="middle"
               className="orc-obs-svg-scale-sub"
-              fill={draftOktas === 0 ? '#F7FAFB' : '#1F2A36'}
+              fill={draftOktas === 0 ? '#F7FAFB' : 'var(--chart-ink)'}
             >
               Marcar cielo despejado
             </text>

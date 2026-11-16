@@ -111,6 +111,8 @@ export function AntarcticaApp() {
   // First visit: the map comes close to «Desde Ushuaia» (#115). True until MapView has shown it.
   const [welcome, setWelcome] = useState(false);
   const [map3dLoaderDismissed, setMap3dLoaderDismissed] = useState(false);
+  const [initialized, setInitialized] = useState(false);
+  const [map2dReady, setMap2dReady] = useState(false);
 
   const reduced = useReducedMotion();
   const later = useTimers();
@@ -142,8 +144,10 @@ export function AntarcticaApp() {
       } else {
         setMode('3d');
       }
+      setInitialized(true);
     } else {
       setMode('2d');
+      setInitialized(true);
     }
   }, [reduced]);
 
@@ -157,6 +161,9 @@ export function AntarcticaApp() {
     setWelcome(false);
   };
 
+  const map2DReady = useCallback(() => setMap2dReady(true), []);
+  const loadingDone = useCallback(() => setMap3dLoaderDismissed(true), []);
+
   const toggleMode = (next: ViewMode) => {
     // A transition into an expedition is tied to the view it started on.
     if (phase !== 'idle') return;
@@ -164,7 +171,9 @@ export function AntarcticaApp() {
     if (next === '3d' && !webglSupported) return;
     setMode(next);
     saveViewMode(next);
+    if (next === '3d' && !map3dLoadingStore.getSnapshot().ready) setMap3dLoaderDismissed(false);
   };
+  const fallback2D = useCallback(() => toggleMode('2d'), [phase, webglSupported]);
 
   const enterApproach = (id: ExpeditionId) => {
     setPhase('approach');
@@ -275,7 +284,10 @@ export function AntarcticaApp() {
       setLastExpedition(fresh);
       saveLastExpedition(fresh);
     }
-    if (webglSupported) setMode('3d');
+    if (webglSupported) {
+      setMode('3d');
+      if (!map3dLoadingStore.getSnapshot().ready) setMap3dLoaderDismissed(false);
+    }
     setVoyaging(true);
   };
 
@@ -324,8 +336,8 @@ export function AntarcticaApp() {
             toast={toast}
             legend={legend}
             focusExpedition={returned}
-            // The 3D loading screen covers the map: the welcome waits for it to close (#190).
-            welcome={welcome && (mode !== '3d' || map3dLoaderDismissed)}
+            // The loading screen covers the map while the shared loader settles; the welcome waits for it to close (#190).
+            welcome={welcome && map3dLoaderDismissed}
             onWelcomeShown={welcomeShown}
             mode={mode}
             showToggle={webglSupported !== null}
@@ -338,11 +350,15 @@ export function AntarcticaApp() {
             onStartVoyage={startVoyage}
             onEndVoyage={endVoyage}
             onVoyageProgress={(step, sub) => recordProgress(voyagePoint.id, step, sub)}
+            onMap2DReady={map2DReady}
           />
-          {mode === '3d' && !map3dLoaderDismissed && (
+          {!map3dLoaderDismissed && (
             <LoadingScreen
-              onDone={() => setMap3dLoaderDismissed(true)}
-              onFallback2D={() => toggleMode('2d')}
+              mode={mode}
+              initialized={initialized}
+              map2dReady={map2dReady}
+              onDone={loadingDone}
+              onFallback2D={fallback2D}
             />
           )}
         </>

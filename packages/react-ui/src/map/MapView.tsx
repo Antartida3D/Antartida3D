@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import {
-  DOUBLE_TAP_ZOOM, DRAG_THRESHOLD, EXPEDITION_POINT, HOME, KEY_PAN, MIN_K, ONE_FINGER_IDLE, PONCHO_POINT, PONCHO_TRANSPORT, PTS, TRANSPORTS, VOYAGE_POINT, VOYAGE_POINTS, ZOOM_MS,
+  DOUBLE_TAP_ZOOM, DRAG_THRESHOLD, EXPEDITION_POINT, HOME, KEY_PAN, MAP_2D_ENABLED, MIN_K, ONE_FINGER_IDLE, PONCHO_POINT, PONCHO_TRANSPORT, PTS, TRANSPORTS, VOYAGE_POINT, VOYAGE_POINTS, ZOOM_MS,
   afterExpedition, buildMarkers, diveView, focusWorld, freeArea, needsFraming, markerPress, geometry, isWheelNotch, keyView, nextExpedition, oneFingerDown, oneFingerMove, oneFingerUp, panBy, resumeDetail, welcomeView, wheelFactor, zoomAround, zoomCenter,
   type ArrivalId, type MapPoint, type Marker, type OneFingerZoomState, type ResumePoint, type SeaPoint, type Size, type TransportId, type View, type ClaimsCoverage,
 } from '@antartida/core';
@@ -309,29 +309,48 @@ export function MapView({
     if (!showCard) return;
     let id = 0;
     let tries = 0;
+    // The 3D map places its markers once the camera settles: decide only when the marker has stayed
+    // still for a few frames (or after about 5 s).
+    let last: { left: number; top: number } | null = null;
+    let still = 0;
+    let moves = 0;
     const frame = () => {
       const vp = vpRef.current;
       const card = vp?.parentElement?.querySelector<HTMLElement>('.next-sheet');
-      const mk = vp?.querySelector<HTMLElement>('.mk.next, .mk.has-next');
-      if (!vp || !card || !mk) {
-        if (++tries < 60) id = requestAnimationFrame(frame);
+      const m = vp?.querySelector<HTMLElement>('.mk.next, .mk.has-next')?.getBoundingClientRect();
+      if (!vp || !card || !m) {
+        if (++tries < 300) id = requestAnimationFrame(frame);
+        return;
+      }
+      still = last && Math.abs(m.left - last.left) + Math.abs(m.top - last.top) < 0.5 ? still + 1 : 0;
+      last = { left: m.left, top: m.top };
+      if (still < 10 && ++tries < 300) {
+        id = requestAnimationFrame(frame);
         return;
       }
       const v = vp.getBoundingClientRect();
       const c = card.getBoundingClientRect();
-      const m = mk.getBoundingClientRect();
       const free = freeArea(live.current.size, { left: c.left - v.left, top: c.top - v.top, right: c.right - v.left, bottom: c.bottom - v.top });
       // On wide screens the legend and buttons sit at the left edge: the free area starts after them.
       const lc = vp.parentElement?.querySelector<HTMLElement>('.leftcol')?.getBoundingClientRect();
       if (lc && free.bottom === live.current.size.vh && free.right < live.current.size.vw) free.left = Math.min(Math.max(free.left, lc.right - v.left), free.right - 96);
       const at = { left: m.left + m.width / 2 - v.left, top: m.top + m.height / 2 - v.top };
       if (!needsFraming(at, free)) return;
+      if (live.current.is3D) {
+        // The 2D view math does not hold under the 3D perspective: pan the marker on screen to the
+        // middle of the free area, and check again once the camera settles (the tilt bends the pan).
+        if (moves++ >= 3) return;
+        queue3D({ type: 'pan', dx: (free.left + free.right) / 2 - at.left, dy: (free.top + free.bottom) / 2 - at.top });
+        tries = 0;
+        still = 0;
+        id = requestAnimationFrame(frame);
+        return;
+      }
       const marker = markersRef.current.find((k) => (k.kind === 'point' && k.next) || (k.kind === 'cluster' && k.hasNext));
       if (!marker) return;
       const sz = live.current.size;
       const next = focusWorld(sz, marker.x, marker.y, live.current.view.k, ((free.top + free.bottom) / 2) / sz.vh, ((free.left + free.right) / 2) / sz.vw);
-      if (live.current.is3D) queue3D({ type: 'focus', view: next });
-      else if (reduced) { setView(next); setAnim(''); }
+      if (reduced) { setView(next); setAnim(''); }
       else glide(next);
     };
     id = requestAnimationFrame(frame);
@@ -746,7 +765,8 @@ export function MapView({
               {Icon.list}
               Ver como lista
             </button>
-            {showToggle && onToggleMode && (
+            {/* With the 2D map off (#227) there is no toggle: only the note on why the 3D map is not showing. */}
+            {showToggle && onToggleMode && (MAP_2D_ENABLED || !available3D) && (
               <ViewToggle mode={mode} available3D={available3D} onChange={onToggleMode} />
             )}
           </div>

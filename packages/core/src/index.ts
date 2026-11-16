@@ -38,6 +38,7 @@ export * from './orcadas-arrival.ts';
 export * from './orcadas-weather.ts';
 export * from './orcadas-wind.ts';
 export * from './storage.ts';
+export * from './view-mode.ts';
 export * from './resume.ts';
 export * from './welcome.ts';
 export * from './motion.ts';

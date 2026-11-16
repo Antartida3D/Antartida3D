@@ -5,6 +5,7 @@ import { MARINE_STOPS } from '../../core/src/content/marine.ts';
 import { PONCHO_MILESTONES } from '../../core/src/content/poncho.ts';
 import { MILESTONES } from '../../core/src/content/ushuaia.ts';
 import { CHAPTERS } from '../../core/src/orcadas.ts';
+import { show3D } from './map-helpers.ts';
 
 const PLANE_MILESTONES = MILESTONES.filter((m) => m.kinds.includes('plane'));
 
@@ -29,7 +30,7 @@ test.describe('3D header at 844x390', () => {
     page,
   }) => {
     await page.goto('/');
-    await page.getByRole('group', { name: 'Modo de vista' }).getByRole('button', { name: 'Relieve 3D' }).click();
+    await show3D(page);
     await page.waitForFunction(() => (window as unknown as { __cameraControls?: unknown }).__cameraControls);
 
     const clusterOrMarker = page.locator('.ov [data-key*="orcadas"] button');

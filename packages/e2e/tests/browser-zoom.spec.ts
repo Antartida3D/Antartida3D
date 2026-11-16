@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { openOrcadasFromMap } from './orcadas-helpers.ts';
+import { MAP_2D_ENABLED, NO_2D, show3D } from './map-helpers.ts';
 
 type ZoomKey = { key: string; code: string; shiftKey?: boolean };
 
@@ -158,6 +159,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('2D map: Ctrl zoom keys match a centred normal wheel in both directions', async ({ page }) => {
+  test.skip(!MAP_2D_ENABLED, NO_2D);
   const map = page.locator('.vp');
   const cases: Array<{ key: ZoomKey; deltaY: number }> = [
     { key: { key: '=', code: 'Equal' }, deltaY: -100 },
@@ -198,7 +200,7 @@ test('3D relief: Ctrl zoom keys match a centred normal wheel and preserve camera
     { press: 'Control+Equal', deltaY: -100 },
     { press: 'Control+Minus', deltaY: 100 },
   ];
-  await page.getByRole('button', { name: 'Relieve 3D', exact: true }).click();
+  await show3D(page);
   await page.waitForFunction(() => Boolean((window as any).__cameraControls));
   const map = page.locator('.vp');
   for (const { press, deltaY } of cases) {
@@ -221,7 +223,7 @@ test('3D relief: Ctrl zoom keys match a centred normal wheel and preserve camera
 });
 
 test('3D relief: Ctrl wheel keeps optical zoom and follows the normal off-centre wheel', async ({ page }) => {
-  await page.getByRole('button', { name: 'Relieve 3D', exact: true }).click();
+  await show3D(page);
   await page.waitForFunction(() => Boolean((window as any).__cameraControls));
   const map = page.locator('.vp');
   for (const deltaY of [-37, 53]) {
@@ -326,7 +328,7 @@ test('compact view fits the viewport and keeps the expanded 3D legend scrollable
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   }
 
-  await page.getByRole('button', { name: 'Relieve 3D', exact: true }).click();
+  await show3D(page);
   await page.waitForFunction(() => Boolean((window as any).__cameraControls));
   const legendButton = page.getByRole('button', { name: 'Leyenda', exact: true });
   if (await legendButton.getAttribute('aria-expanded') === 'false') await legendButton.click();
@@ -355,6 +357,6 @@ test('compact view fits the viewport and keeps the expanded 3D legend scrollable
   expect(compactLayout.bottomTop).toBeLessThanOrEqual(compactLayout.viewportBottom);
   await expect(page.locator('.brand')).toBeInViewport({ ratio: 1 });
   await expect(page.getByRole('button', { name: 'Ver como lista', exact: true })).toBeInViewport({ ratio: 1 });
-  await expect(page.getByRole('button', { name: 'Relieve 3D', exact: true })).toBeInViewport({ ratio: 1 });
+  if (MAP_2D_ENABLED) await expect(page.getByRole('button', { name: 'Relieve 3D', exact: true })).toBeInViewport({ ratio: 1 });
   await expect(page.getByRole('button', { name: 'Acercar', exact: true })).toBeInViewport({ ratio: 1 });
 });

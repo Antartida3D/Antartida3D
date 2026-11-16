@@ -2,6 +2,7 @@ import { expect, test, type CDPSession, type Locator, type Page } from '@playwri
 import { AVAILABLE_COUNT } from '../../core/src/content/points.ts';
 import { clearStorage } from '../storage.ts';
 import { mockOpenMeteo } from './weather-helpers.ts';
+import { show3D } from './map-helpers.ts';
 
 const log = (page: Page) => page.locator('.reg');
 
@@ -257,7 +258,7 @@ test('on a short phone screen the 3D legend notes scroll under the finger, and a
   test.skip(!isMobile, 'a phone gesture');
   // Short enough that the open notes outgrow the height the 3D legend gives its lists (painted.css).
   await page.setViewportSize({ width: 390, height: 560 });
-  await page.getByRole('button', { name: 'Relieve 3D', exact: true }).click();
+  await show3D(page);
   const button = page.getByRole('button', { name: 'Leyenda', exact: true });
   await button.tap();
   await page.locator('.legend summary').tap();

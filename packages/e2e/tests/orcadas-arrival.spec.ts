@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { ORCADAS_GUIDING_QUESTION } from '../../core/src/content/orcadas.ts';
 import { clickOrcadasMarker } from './orcadas-helpers.ts';
+import { show3D } from './map-helpers.ts';
 
 type ArrivalState = { arrival: 'ship' | 'helicopter'; done: boolean };
 
@@ -23,7 +24,7 @@ const intro = (page: Page) => page.getByRole('dialog', { name: 'Estación Orcada
 /** Opens the Orcadas intro on the 3D relief map. */
 async function openIntro3D(page: Page) {
   await page.goto('/');
-  await page.getByRole('group', { name: 'Modo de vista' }).getByRole('button', { name: 'Relieve 3D' }).click();
+  await show3D(page);
   await page.waitForFunction(() => (window as any).__cameraControls);
   const marker = page.locator('.ov [data-key*="orcadas"] button');
   await expect(marker).toBeVisible();

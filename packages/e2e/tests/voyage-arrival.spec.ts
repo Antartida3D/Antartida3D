@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { clearStorage } from '../storage.ts';
 import { mockOpenMeteo } from './weather-helpers.ts';
+import { show3D } from './map-helpers.ts';
 
 let consoleErrors: string[] = [];
 
@@ -119,8 +120,7 @@ test.describe('arrival at Base Marambio on the trip from Ushuaia', () => {
     test.setTimeout(240_000);
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     await page.reload();
-    const relief = page.getByRole('group', { name: 'Modo de vista' }).getByRole('button', { name: 'Relieve 3D' });
-    if ((await relief.getAttribute('aria-pressed')) !== 'true') await relief.click();
+    await show3D(page);
     await expect(page.locator('canvas').first()).toBeVisible();
 
     const card = await arriveAtMarambio(page, /Irízar/);

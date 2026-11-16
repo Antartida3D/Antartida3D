@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { mockOpenMeteo } from './weather-helpers.ts';
+import { show3D } from './map-helpers.ts';
 
 let consoleErrors: string[] = [];
 
@@ -50,7 +51,7 @@ for (const [name, kind, start] of [['Hércules C-130', 'plane', 'Despegar'], ['A
   test(`with reduced motion, each milestone jump of the ${kind} takes the camera there`, async ({ page }) => {
     test.setTimeout(60_000);
     await page.goto('/');
-    await page.getByRole('group', { name: 'Modo de vista' }).getByRole('button', { name: 'Relieve 3D' }).click();
+    await show3D(page);
     await page.waitForFunction(() => (window as any).__cameraControls);
     await page.getByRole('button', { name: 'Ver como lista' }).click();
     await page.getByRole('button', { name: /Desde Ushuaia.*(Empezar expedición|Siguiente sugerida · empezar)/ }).click();
@@ -95,7 +96,7 @@ for (const [name, kind, start] of [['Hércules C-130', 'plane', 'Despegar'], ['A
 // close around whatever it was looking at (#190).
 test('opening «Desde Ushuaia» on the 3D map brings the camera down to Ushuaia, beside the panel', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('group', { name: 'Modo de vista' }).getByRole('button', { name: 'Relieve 3D' }).click();
+  await show3D(page);
   await page.waitForFunction(() => (window as any).__cameraControls);
   await page.getByRole('button', { name: 'Ver como lista' }).click();
   await page.getByRole('button', { name: /Desde Ushuaia.*(Empezar expedición|Siguiente sugerida · empezar)/ }).click();
@@ -129,7 +130,7 @@ test('opening «Desde Ushuaia» on the 3D map brings the camera down to Ushuaia,
 test('a milestone near the vehicle shows its name over its pin, and a pin ahead opens its card', async ({ page }) => {
   test.setTimeout(60_000);
   await page.goto('/');
-  await page.getByRole('group', { name: 'Modo de vista' }).getByRole('button', { name: 'Relieve 3D' }).click();
+  await show3D(page);
   await page.waitForFunction(() => (window as any).__cameraControls);
   await page.getByRole('button', { name: 'Ver como lista' }).click();
   await page.getByRole('button', { name: /Desde Ushuaia.*(Empezar expedición|Siguiente sugerida · empezar)/ }).click();
@@ -174,7 +175,7 @@ test('a milestone near the vehicle shows its name over its pin, and a pin ahead 
 test('on a trip the title and the exploration log give way, «Salir» is at the top right and «avanzar» fills the bar', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.goto('/');
-  await page.getByRole('group', { name: 'Modo de vista' }).getByRole('button', { name: 'Relieve 3D' }).click();
+  await show3D(page);
   await page.waitForFunction(() => (window as any).__cameraControls);
   const title = page.getByRole('heading', { level: 1, name: 'Antártida por descubrir' });
   const log = page.getByRole('status', { name: /Registro de exploración/ });

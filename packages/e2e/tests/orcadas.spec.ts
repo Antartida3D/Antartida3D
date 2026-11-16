@@ -5,6 +5,7 @@ import { ORCADAS_GUIDING_QUESTION, ORCADAS_INTRO_DESC } from '../../core/src/con
 import { answerFor } from '../../core/src/orcadas.ts';
 import { clickOrcadasMarker, openOrcadasFromMap } from './orcadas-helpers.ts';
 import { mockOpenMeteo } from './weather-helpers.ts';
+import { MAP_2D_ENABLED, show3D } from './map-helpers.ts';
 
 const log = (page: Page) => page.locator('.reg');
 const primary = (page: Page) => page.locator('.ebar .btn.primary');
@@ -267,9 +268,7 @@ test('from the 3D map with motion allowed, the camera zooms down to the island b
   // The app reads the motion preference once, when it loads.
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.reload();
-  const toggle = page.getByRole('group', { name: 'Modo de vista' });
-  await toggle.getByRole('button', { name: 'Relieve 3D' }).click();
-  await expect(toggle.getByRole('button', { name: 'Relieve 3D' })).toHaveAttribute('aria-pressed', 'true');
+  await show3D(page);
   const cluster = page.getByRole('button', { name: /Grupo de .*Estación Orcadas/ });
   const marker = page.getByRole('button', { name: /^Estación Orcadas, Islas Orcadas del Sur/ });
   await cluster.or(marker).first().waitFor();
@@ -835,8 +834,8 @@ test('Orcadas intro modal opens from marker and list, traps focus, returns focus
   await expect(startBtn).toBeFocused();
   await expect(intro.locator('.place')).toHaveText(ORCADAS_GUIDING_QUESTION);
   await expect(intro.getByText(ORCADAS_INTRO_DESC)).toBeVisible();
-  // On the 2D map there is no WebGL: the turning model of the station is left out (map3d.spec covers it in 3D).
-  await expect(intro.locator('.vpreview')).toHaveCount(0);
+  // On the 2D map there is no WebGL: the turning model of the station is left out. On the 3D map it is there.
+  await expect(intro.locator('.vpreview')).toHaveCount(MAP_2D_ENABLED ? 0 : 1);
 
   await expect(intro.getByText('El registro mensual de temperatura empieza en abril de 1903 y sigue hasta hoy.')).toBeVisible();
   const readerBtn = intro.getByRole('button', { name: 'SCAR READER' });

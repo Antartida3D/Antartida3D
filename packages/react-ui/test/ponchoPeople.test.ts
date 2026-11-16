@@ -20,6 +20,8 @@ import {
   ponchoWaistAt,
   tendPose,
   probePose,
+  IDLE_SWAY,
+  idlePose,
   standPose,
   walkPose,
   type PersonPose,
@@ -187,5 +189,23 @@ describe('people of Poncho: the harness belt (book p. 9) and tending a dog', () 
     const hand = ponchoHandAt(a, 'L');
     expect(hand[0]).toBeGreaterThan(0.2);
     expect(hand[1]).toBeLessThan(0.7);
+  });
+});
+
+describe('someone who waits is not frozen', () => {
+  it('sways a little, never moves the feet and never leans or swings past IDLE_SWAY', () => {
+    const swings = new Set<number>();
+    for (let k = 0; k < 24; k++) {
+      const pose = idlePose((k / 24) * Math.PI * 2);
+      swings.add(Math.round(pose.armL * 1000));
+      expect(pose.legL).toBe(0);
+      expect(pose.legR).toBe(0);
+      expect(Math.abs(pose.armL)).toBeLessThanOrEqual(IDLE_SWAY);
+      expect(Math.abs(pose.torsoPitch)).toBeLessThanOrEqual(IDLE_SWAY);
+    }
+    expect(swings.size).toBeGreaterThan(4);
+  });
+  it('stands on the ground like the still pose', () => {
+    expect(ponchoPoseLift(idlePose(1.3))).toBeCloseTo(0, 6);
   });
 });

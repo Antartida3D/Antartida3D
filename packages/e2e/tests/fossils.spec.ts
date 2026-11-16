@@ -146,7 +146,8 @@ test('on the 2D map Fósiles and Base Marambio stay in one group, and tapping it
     await group.click();
     await expect(group).not.toHaveAttribute('aria-label', label);
   }
-  await expect(group).toHaveAttribute('aria-label', 'Grupo de 2 puntos: Base Marambio, Fósiles. Tocá para elegir uno.');
+  // Two points on a wide screen; on a phone Poncho (Base Esperanza) stays with them too.
+  await expect(group).toHaveAttribute('aria-label', /^Grupo de [23] puntos: Base Marambio, Fósiles(, Poncho)?\. Tocá para elegir uno\.$/);
   await group.click();
   const picker = page.getByRole('dialog', { name: 'Puntos en este lugar' });
   await expect(picker.getByRole('button', { name: /Base Marambio/ })).toBeVisible();

@@ -49,7 +49,8 @@ pnpm build           # compila todas las aplicaciones
 pnpm preview         # vista previa de apps/dibujado
 
 # Verificación
-pnpm test            # tests unitarios de core
+pnpm test            # control documental y tests unitarios del workspace
+pnpm docs:test       # pruebas del control de documentación
 pnpm typecheck       # validación de tipos TypeScript
 pnpm e2e             # tests de flujo e2e en apps/dibujado (Playwright)
 pnpm bench           # benchmark de rendimiento
@@ -68,6 +69,10 @@ E2E_GPU=1 E2E_WORKERS=4 pnpm e2e
 ```
 
 Tiempos medidos en [`docs/rendimiento/e2e.md`](docs/rendimiento/e2e.md).
+
+## Documentación de los cambios
+
+Cada PR declara su impacto documental y registra las decisiones nuevas o reemplazadas. Ver [control de documentación](docs/control-documentacion.md) para el formato, la comprobación local y la activación del requisito en GitHub.
 
 ## Fuentes y licencias
 
@@ -141,6 +146,8 @@ Tiempos medidos en [`docs/rendimiento/e2e.md`](docs/rendimiento/e2e.md).
 
 En cumplimiento con las bases de la hackatón, se declara el uso de herramientas de inteligencia artificial en el desarrollo de los prototipos:
 
+- **Control de documentación por PR (#109):**
+  > Diseño del control, implementación, pruebas y documentación con asistencia de Codex, a partir de la aprobación del usuario. La revisión del PR y la activación del requisito obligatorio en GitHub quedan pendientes de su entrega.
 - **Reclamos territoriales antárticos (#108):**
   > Investigación, implementación y pruebas con Codex. Seis banderas nacionales modeladas e inspeccionadas en Blender mediante MCP; se reutiliza la bandera argentina existente. Los modelos son ilustraciones de bloques, no reproducciones normativas de símbolos oficiales. Banderas editables en [`claim-flags.blend`](docs/diseno/modelos/claim-flags.blend) y generador [`build-claim-flags.py`](packages/react-ui/scripts/build-claim-flags.py). Las superficies siguen el relieve Bedmap3 existente (CC BY 4.0) y se extienden sobre el mar según meridianos documentados, conservando las superposiciones. Los bordes punteados distinguen los reclamos sin añadir altura ni paredes. No se incorporaron imágenes ni modelos de terceros.
   > Acceso desde la ficha del Polo Sur (#128): implementación y pruebas con Claude Code (modelo Claude Opus 5.5).

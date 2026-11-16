@@ -2,6 +2,8 @@
 
 Diferencias respecto del prototipo (`docs/diseno/design/Main.dc.html`) y decisiones del proyecto, y por qué.
 
+Desde el issue #109, las decisiones nuevas usan registros individuales con estado y reemplazos explícitos. Este documento conserva los antecedentes; no implica que todas sus notas sigan vigentes. Ver [control de documentación](control-documentacion.md) y [DEC-109: control por PR](decisiones/DEC-109-control-documentacion.md).
+
 > La app es **dibujado**. El repositorio tuvo antes un segundo prototipo (`apps/atlas`), que se descartó y se quitó (#1). Se recupera en el commit `2ab6f80`.
 
 ## Arquitectura del repo

@@ -110,3 +110,11 @@ Las fotos de campamento (`03 Campamento`) y la diapositiva de carpas de la prese
 - Nuevos testimonios, grabaciones y equipo que debe acreditarse.
 
 Los colores, movimientos, posiciones, distribución del campamento y de los animales son decisiones ilustrativas, no observaciones científicas.
+
+## Línea de tiempo geológico (15/11/2026)
+
+Comisión Internacional de Estratigrafía (ICS). *International Chronostratigraphic Chart*, v2026/06. https://stratigraphy.org/ICSchart/ChronostratChart2026-06.pdf . Consultada el **15/11/2026** (se descargó el PDF y se leyó la columna del Cretácico superior y el Paleógeno).
+
+Sostiene las edades de los límites que usa la línea (`FOSSIL_TIMELINE` en `packages/core/src/content/fossils.ts`): base del Cretácico superior 100,5 ± 0,1 Ma; límite Cretácico–Paleógeno 66,00 Ma; base del Eoceno 56,00 Ma; fin del Eoceno 33,9 Ma; Eoceno medio entre 48,07 (base del Luteciano) y 37,71 Ma (base del Priaboniano).
+
+Cada hallazgo se ubica solo en el período que dan sus fuentes, nunca en un año: el dinosaurio en el Cretácico superior (título de la publicación de 1991; la copia es un escaneo sin texto buscable); los amonites y el plesiosaurio en el mar del Cretácico tardío de unos 80 Ma que termina con su extinción (La Lupa n.º 13, 2018); las estrellas de mar en el Eoceno medio tardío (Ameghiniana 2024, sin edad numérica). Dentro de su período, los hallazgos se dibujan en el orden de los capítulos, que no es un orden en el tiempo; la interfaz lo aclara («cada hallazgo, en su período»). Pendiente con Eduardo: la edad precisa de cada ejemplar, si se quiere ubicarlos con más detalle.

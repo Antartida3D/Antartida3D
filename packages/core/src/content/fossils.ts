@@ -57,6 +57,11 @@ export const FOSSIL_SOURCES = {
     url: null,
     detail: 'La Lupa, n.º 1, 2011, pp. 9–13. Quitón de 9,4 mm de largo con sus ocho valvas articuladas, adherido a un braquiópodo, en capas del Eoceno de la Formación La Meseta, isla Marambio. Copia aportada por la familia.',
   },
+  ics: {
+    title: 'Tabla Cronoestratigráfica Internacional v2026/06', org: 'Comisión Internacional de Estratigrafía (ICS)', date: '2026-11-15',
+    url: 'https://stratigraphy.org/ICSchart/ChronostratChart2026-06.pdf',
+    detail: 'International Chronostratigraphic Chart, versión 2026/06. Edades de los límites de la línea de tiempo: base del Cretácico superior 100,5 ± 0,1 Ma; límite Cretácico–Paleógeno 66,00 Ma; base del Eoceno 56,00 Ma; fin del Eoceno 33,9 Ma; Eoceno medio entre 48,07 y 37,71 Ma.',
+  },
   archive: {
     title: 'Archivo fotográfico de E. B. Olivero', org: 'Familia Olivero', date: '2026-11-14',
     url: null,
@@ -232,3 +237,33 @@ export const FOSSIL_STORY = {
   credit: 'Relato de Eduardo Olivero en una entrevista de Florencia Illbele (Infobae, 22/04/2021). Las frases entre comillas son textuales de la nota; el resto es un resumen.',
   source: 'interview',
 } as const satisfies { stop: string; title: string; paragraphs: readonly string[]; credit: string; source: FossilSourceId };
+
+/**
+ * Geological time line of the expedition, from the Late Cretaceous to the end of the Eocene, to scale.
+ * Boundaries from the ICS chart v2026/06 (source `ics`), in millions of years ago (Ma). Each find
+ * is placed only in the span its sources give, never at an exact year: the dinosaur in the Upper
+ * Cretaceous (paper of 1991), the ammonites and the plesiosaur in the Late Cretaceous sea of about 80 Ma
+ * that ends with their extinction (La Lupa 2018), and the sea stars in the late middle Eocene (Ameghiniana 2024).
+ */
+export const FOSSIL_TIMELINE = {
+  from: 100.5,
+  to: 33.9,
+  periods: [
+    { id: 'late-cretaceous', label: 'Cretácico tardío', from: 100.5, to: 66 },
+    { id: 'paleocene', label: 'Paleoceno', from: 66, to: 56 },
+    { id: 'eocene', label: 'Eoceno', from: 56, to: 33.9 },
+  ],
+  /** The end-Cretaceous extinction, told on the plesiosaur stop (La Lupa). */
+  extinction: { at: 66, label: 'Fin del Cretácico · 66 Ma' },
+  finds: [
+    { chapter: 'ammonites', label: 'Amonites', when: 'Cretácico tardío', from: 100.5, to: 66, sources: ['lupa', 'lupa2018', 'ics'] },
+    { chapter: 'plesiosaur', label: 'Plesiosaurio', when: 'Cretácico tardío', from: 100.5, to: 66, sources: ['lupa2018', 'ics'] },
+    { chapter: 'dinosaur', label: 'Dinosaurio', when: 'Cretácico tardío', from: 100.5, to: 66, sources: ['paper', 'ics'] },
+    { chapter: 'stars', label: 'Estrellas de mar', when: 'Eoceno medio tardío', from: 48.07, to: 37.71, sources: ['asteroids', 'ics'] },
+  ],
+} as const satisfies {
+  from: number; to: number;
+  periods: readonly { id: string; label: string; from: number; to: number }[];
+  extinction: { at: number; label: string };
+  finds: readonly { chapter: FossilChapter; label: string; when: string; from: number; to: number; sources: readonly FossilSourceId[] }[];
+};

@@ -141,3 +141,25 @@
   .fossil-panel-footer { padding: 10px 15px; }
 }
 @media (prefers-reduced-motion: reduce) { .fossil-expedition *, .fossil-dialog * { scroll-behavior: auto; transition: none !important; animation: none !important; } }
+
+/* Geological time line (FossilTimeline): periods to scale, finds in their period. */
+.fossil-timeline { margin: 0 0 26px; }
+.fossil-timeline figcaption { display: flex; justify-content: space-between; gap: 12px; font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--pencil); margin-bottom: 8px; }
+.fossil-timeline-bar { position: relative; height: 26px; }
+.fossil-period { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; padding: 0 6px; box-sizing: border-box; overflow: hidden; border-right: 1px solid var(--paper); }
+.fossil-period span { font-size: 10px; white-space: nowrap; color: var(--ink); }
+.fossil-period.late-cretaceous { background: color-mix(in srgb, var(--glacier) 35%, var(--paper)); }
+.fossil-period.paleocene { background: color-mix(in srgb, var(--pencil) 14%, var(--paper)); }
+.fossil-period.paleocene span { visibility: hidden; }
+.fossil-period.eocene { background: color-mix(in srgb, var(--ocre) 25%, var(--paper)); }
+.fossil-timeline-range { position: absolute; bottom: 0; height: 4px; background: color-mix(in srgb, var(--ocre) 70%, var(--paper)); }
+.fossil-timeline-extinction { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: var(--oxide); }
+.fossil-timeline-find { position: absolute; bottom: -6px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; box-sizing: border-box; border: 2px solid var(--pencil); background: var(--paper); }
+.fossil-timeline-find.found { border-color: var(--deep); background: var(--deep); }
+.fossil-timeline-find.current { box-shadow: 0 0 0 3px color-mix(in srgb, var(--ocre) 60%, transparent); }
+.fossil-timeline-ages { position: relative; height: 16px; margin-top: 10px; font-size: 10px; color: var(--pencil); }
+.fossil-timeline-ages span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.fossil-timeline-ages span:first-child { transform: none; }
+.fossil-timeline-ages span:nth-child(4) { transform: translateX(-100%); }
+.fossil-timeline-unit { margin: 4px 0 0; font-size: 10px; color: var(--pencil); }
+.fossil-timeline .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { FOSSIL_CHAPTERS, FOSSIL_HABITATS, FOSSIL_PHOTOS, FOSSIL_SOURCES, FOSSIL_STOPS, FOSSIL_STORY } from '../src/content/fossils.ts';
-import { FOSSIL_CLEAN_STEPS, INITIAL_FOSSILS, fossilsReducer } from '../src/fossils.ts';
+import { FOSSIL_CHAPTERS, FOSSIL_HABITATS, FOSSIL_PHOTOS, FOSSIL_SOURCES, FOSSIL_STOPS, FOSSIL_STORY, FOSSIL_TIMELINE } from '../src/content/fossils.ts';
+import { FOSSIL_CLEAN_STEPS, INITIAL_FOSSILS, fossilsReducer, timelineAt, timelineFinds } from '../src/fossils.ts';
 
 describe('fossil expedition', () => {
   it('can complete the tour without requiring optional interactions', () => {
@@ -79,6 +79,32 @@ describe('fossil expedition', () => {
     expect(FOSSIL_STORY.credit).toMatch(/textuales/);
     // Every quote opens and closes.
     for (const p of FOSSIL_STORY.paragraphs) expect((p.match(/«/g) ?? []).length).toBe((p.match(/»/g) ?? []).length);
+  });
+
+  it('the time line goes from the Late Cretaceous to the end of the Eocene, to scale, with the ICS boundaries', () => {
+    const { periods } = FOSSIL_TIMELINE;
+    expect(periods.map((p) => [p.from, p.to])).toEqual([[100.5, 66], [66, 56], [56, 33.9]]);
+    expect(timelineAt(100.5)).toBe(0);
+    expect(timelineAt(33.9)).toBe(1);
+    // The Late Cretaceous takes about half of the line: 34.5 of 66.6 million years.
+    expect(timelineAt(66)).toBeCloseTo(34.5 / 66.6, 6);
+    expect(FOSSIL_SOURCES.ics.url).toMatch(/^https:\/\/stratigraphy\.org\//);
+  });
+
+  it('places every find inside one period, with sources, and lights it once its chapter is visited', () => {
+    for (const f of FOSSIL_TIMELINE.finds) {
+      expect(FOSSIL_TIMELINE.periods.some((p) => f.from <= p.from && f.to >= p.to), f.chapter).toBe(true);
+      expect(f.sources).toContain('ics');
+      for (const id of f.sources) expect(FOSSIL_SOURCES[id]).toBeDefined();
+      expect(FOSSIL_STOPS.some((s) => s.chapter === f.chapter)).toBe(true);
+    }
+    expect(timelineFinds(INITIAL_FOSSILS).filter((f) => f.found)).toEqual([]);
+    let state = fossilsReducer(INITIAL_FOSSILS, { type: 'chapter', chapter: 'plesiosaur' });
+    expect(timelineFinds(state).filter((f) => f.found).map((f) => f.chapter)).toEqual(['plesiosaur']);
+    expect(timelineFinds(state).find((f) => f.current)?.chapter).toBe('plesiosaur');
+    // On to the end from there: every find lights up but the ammonites, whose chapter was skipped.
+    for (let i = 0; i < FOSSIL_STOPS.length; i++) state = fossilsReducer(state, { type: 'next' });
+    expect(timelineFinds(state).filter((f) => !f.found).map((f) => f.chapter)).toEqual(['ammonites']);
   });
 
   it('shows each archive photo in one stop only', () => {

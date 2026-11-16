@@ -18,6 +18,7 @@ import forestPhoto from '@antartida/core/assets/fossils/bosque-tdf.webp';
 import starsPhoto from '@antartida/core/assets/fossils/estrellas-bill-hill.webp';
 import chitonPhoto from '@antartida/core/assets/fossils/quiton.webp';
 import { BottomSheet, type OpenSheetSize } from '../BottomSheet.tsx';
+import { FossilTimeline } from './FossilTimeline.tsx';
 import { useIsDesktop } from '../hooks.ts';
 import { Icon } from '../ui.tsx';
 
@@ -95,6 +96,7 @@ export function FossilExpedition({ reduced, webgl, onLeave }: {
   const content = <>
     <div className="fossil-panel-content" ref={scroll}>
       <div className="fossil-section-line"><span>Cuaderno de campo</span><span>{String(state.stop + 1).padStart(2, '0')} / {FOSSIL_STOPS.length}</span></div>
+      <FossilTimeline state={state} />
       <p className="fossil-eyebrow">{stop.eyebrow}</p>
       <h2 id="fossil-title" ref={title} tabIndex={-1}>{stop.title}</h2>
       <p className="fossil-line" aria-live="polite">{stop.line}</p>

@@ -17,6 +17,10 @@ async function open(page: Page) {
 test('explores the four fossils and three habitats, opens sources and records completion', async ({ page }) => {
   await open(page);
   const chapters = page.getByRole('navigation', { name: 'Capítulos de Fósiles' });
+  // The geological time line lights each find as its chapter is reached.
+  const timeline = page.locator('.fossil-timeline');
+  await expect(timeline).toContainText('0 de 4 hallazgos');
+  await expect(timeline).toContainText('Amonites: Cretácico tardío, por descubrir.');
   await expect(page.locator('.fossil-stage canvas')).toBeVisible();
   await expect(page.locator('.fossil-stage canvas')).toHaveAttribute('data-ready', 'true');
   await chapters.getByRole('button', { name: /Amonites/ }).click();
@@ -31,6 +35,8 @@ test('explores the four fossils and three habitats, opens sources and records co
   await page.keyboard.press('Escape');
   await expect(dialog).not.toBeVisible();
 
+  await expect(timeline).toContainText('1 de 4 hallazgos');
+  await expect(timeline).toContainText('Amonites: Cretácico tardío, encontrado, en este capítulo.');
   await chapters.getByRole('button', { name: /Plesiosaurio/ }).click();
   await page.getByRole('button', { name: 'Seguir la columna' }).click();
   await expect(page.getByRole('button', { name: 'Siguiendo la columna' })).toHaveAttribute('aria-pressed', 'true');
@@ -59,6 +65,8 @@ test('explores the four fossils and three habitats, opens sources and records co
   await expect(page.getByRole('button', { name: 'Ver el animal completo' })).toHaveAttribute('aria-pressed', 'false');
 
   await page.getByRole('button', { name: /Seguir a Estrellas/ }).click();
+  await expect(timeline).toContainText('4 de 4 hallazgos');
+  await expect(timeline).toContainText('Estrellas de mar: Eoceno medio tardío, encontrado');
   await page.getByRole('button', { name: 'Medir una estrella' }).click();
   await expect(page.getByRole('button', { name: 'Estrella medida' })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByRole('status').filter({ hasText: '17 mm' })).toBeVisible();

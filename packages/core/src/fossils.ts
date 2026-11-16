@@ -1,4 +1,4 @@
-import { FOSSIL_STOPS, type FossilChapter, type FossilHabitat } from './content/fossils.ts';
+import { FOSSIL_STOPS, FOSSIL_TIMELINE, type FossilChapter, type FossilHabitat } from './content/fossils.ts';
 
 export interface FossilState {
   stop: number;
@@ -49,4 +49,20 @@ export function fossilsReducer(state: FossilState, action: FossilAction): Fossil
     case 'measure': return { ...state, measured: true };
     case 'habitat': return { ...state, habitat: action.habitat };
   }
+}
+
+/** Where an age (Ma) falls on the time line, from 0 (its oldest end) to 1 (its youngest end). */
+export function timelineAt(ma: number): number {
+  const { from, to } = FOSSIL_TIMELINE;
+  return Math.min(1, Math.max(0, (from - ma) / (from - to)));
+}
+
+/** The finds of the time line: found once any stop of their chapter was visited; current while on it. */
+export function timelineFinds(state: Pick<FossilState, 'stop' | 'visited'>) {
+  const current = FOSSIL_STOPS[state.stop].chapter;
+  return FOSSIL_TIMELINE.finds.map((f) => ({
+    ...f,
+    found: FOSSIL_STOPS.some((s) => s.chapter === f.chapter && state.visited.includes(s.id)),
+    current: f.chapter === current,
+  }));
 }

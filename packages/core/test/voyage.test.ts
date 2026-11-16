@@ -48,6 +48,10 @@ import {
   minCameraDistance,
   expeditionAt,
   nextHeld,
+  voyagePace,
+  VOYAGE_PACE_DISTANCE,
+  VOYAGE_PACE_TOP,
+  vehicleSize,
   rampSpeed,
   orcadasTravelAt,
   orcadasTravelLength,
@@ -670,6 +674,21 @@ describe('advance speed (#166)', () => {
     // A quick new press keeps most of the speed.
     expect(rampSpeed(nextHeld(held, 0.3, false))).toBeGreaterThan(VOYAGE_TOP_SPEED * 0.8);
     expect(nextHeld(held, VOYAGE_RAMP_SECONDS, false)).toBe(0);
+  });
+});
+
+describe('pace by camera distance (#168)', () => {
+  it('goes at its own pace up close and faster from farther, up to a top', () => {
+    expect(voyagePace(10)).toBe(1);
+    expect(voyagePace(VOYAGE_PACE_DISTANCE)).toBe(1);
+    expect(voyagePace(VOYAGE_PACE_DISTANCE * 2)).toBe(2);
+    expect(voyagePace(VOYAGE_PACE_DISTANCE * 100)).toBe(VOYAGE_PACE_TOP);
+  });
+
+  it('moves the same ship lengths per second from farther, where the ship is drawn bigger', () => {
+    const near = VOYAGE_PACE_DISTANCE;
+    const far = VOYAGE_PACE_DISTANCE * 3;
+    expect(voyagePace(far) / vehicleSize(far)).toBeCloseTo(voyagePace(near) / vehicleSize(near), 9);
   });
 });
 

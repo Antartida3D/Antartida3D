@@ -78,14 +78,19 @@ test('from farther the trip goes faster, so it does not crawl on the screen (#16
     return (await km()) - before;
   };
 
-  // Up close, at departure, once the camera got there.
+  // Up close: zoomed all the way in on the ship.
   await page.waitForFunction(() => (window as any).__cameraControls && (window as any).__invalidate);
+  const map = page.getByRole('application', { name: /Mapa en relieve 3D/ });
+  await map.focus();
+  for (let i = 0; i < 10; i++) {
+    await page.keyboard.press('+');
+    await settled();
+  }
   const close = await settled();
   const near = await leg();
   expect(near).toBeGreaterThan(0);
 
   // Far away: the same press goes several times as far.
-  const map = page.getByRole('application', { name: /Mapa en relieve 3D/ });
   await map.focus();
   for (let i = 0; i < 8; i++) {
     await page.keyboard.press('-');

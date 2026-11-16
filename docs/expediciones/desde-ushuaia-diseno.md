@@ -45,6 +45,9 @@ El turismo se menciona como una línea de contexto: no es un transporte jugable 
 - Sobre el botón, un globito muestra la velocidad mientras se mantiene, de a medio punto (×1,5, ×2… ×4).
 - Reemplaza a las marchas por toques seguidos (×2 y ×3,5) y al cartel «¿Sabías?» que las explicaba: ya no hace falta saber nada para ir más rápido.
 - «Próximo hito» no cambia: va rápido hasta el siguiente hito y se detiene.
+- **Según la distancia de la cámara (#168):** el vehículo se dibuja más grande cuanto más lejos está la cámara, para que siempre se vea igual. Por eso, a la misma velocidad sobre el mapa, desde lejos parecía arrastrarse. Ahora el viaje va más rápido cuanto más lejos está la cámara: a ×1 hasta 25 unidades de distancia y proporcional a la distancia desde ahí, hasta ×4 (`voyagePace`, `VOYAGE_PACE_DISTANCE` y `VOYAGE_PACE_TOP` en `core/src/voyage.ts`). Recorre los mismos largos de barco por segundo y en pantalla se mueve parecido de cerca y de lejos.
+- Se multiplica con la aceleración al mantener y vale también para «Próximo hito», «retroceder» y el avión. El globito ×N muestra solo la aceleración por mantener, no este factor.
+- La cámara la mide la escena 3D (`Voyage3D.tsx`, en `bus.pace`). En el mapa 2D el viaje va a su ritmo de siempre.
 
 ## Tope de alejamiento durante el viaje (#167)
 
@@ -52,6 +55,7 @@ El turismo se menciona como una línea de contexto: no es un transporte jugable 
 - El tope mide lo mismo en terreno en una pantalla ancha y en un celular: unas 110 unidades de distancia en escritorio y unas 240 en un celular vertical. Desde el tope se ven Tierra del Fuego, el Cabo de Hornos y las Malvinas a la vez.
 - Vale para la rueda, el pellizco, las teclas y los botones de zoom. «Ver todo el continente» durante el viaje aleja hasta el tope, sin soltar el vehículo.
 - Al salir del viaje vuelve el tope de siempre (`homeDistance3D`).
+- Los topes se comparan con la distancia a la que va la cámara, no con la del cuadro actual (`Map3DLayer.tsx`). Si no, al zarpar la cámara, que baja desde la vista general hasta el barco, se quedaba en el tope del viaje (#181).
 - El mapa 2D no cambia.
 
 ## Avistajes (mapa vivo)

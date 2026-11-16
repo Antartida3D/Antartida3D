@@ -1,12 +1,45 @@
 import { lazy, Suspense, useId, useRef, useState } from 'react';
-import { TIER, type MapPoint, type SeaPoint, type Source } from '@antartida/core';
+import {
+  TIER,
+  formatTemperature,
+  formatTemperatureAge,
+  type MapPoint,
+  type SeaPoint,
+  type Source,
+} from '@antartida/core';
 import { BottomSheet } from '../BottomSheet.tsx';
 import { useFocusReturn } from '../hooks.ts';
 import { POINT_MODEL_IDS } from '../voyage/pointModelIds.ts';
+import { useCurrentTemperatures } from './useCurrentTemperatures.ts';
 
 // Its own chunk: it needs WebGL, which the 2D map does not.
 const SeaPreview = lazy(() => import('../voyage/SeaPreview.tsx').then((m) => ({ default: m.SeaPreview })));
 const PointPreview = lazy(() => import('../voyage/PointPreview.tsx').then((m) => ({ default: m.PointPreview })));
+
+function TemperatureLine({ pointId }: { pointId: string }) {
+  const { status, temperature } = useCurrentTemperatures(pointId);
+  if (status === 'idle') return null;
+
+  let text = 'Consultando temperatura…';
+  if (status === 'ready' && temperature) {
+    const formatted = formatTemperature(temperature.celsius, 'es');
+    const age = formatTemperatureAge(temperature.time);
+    text = `Temperatura actual estimada en esta zona: ${formatted} · Estimación de modelo (Open-Meteo) · ${age}`;
+  } else if (status === 'error') {
+    text = 'Temperatura no disponible ahora';
+  }
+
+  return (
+    <>
+      <p className="sheet-temp" aria-live="polite">
+        {text}
+      </p>
+      <p className="anno sheet-temp-attr">
+        Datos meteorológicos: Open-Meteo.com (CC BY 4.0)
+      </p>
+    </>
+  );
+}
 
 /** Folded by default: the sources would otherwise push the sheet's content and actions out of view. */
 function SourceList({ sources }: { sources?: readonly Source[] }) {
@@ -79,6 +112,7 @@ export function PointSheet({ point, onClose, fallbackFocus, preview = false, onM
         <span className={tagClass}>{tagLabel}</span>
         <h2 id="sheet-title" tabIndex={-1}>{point.title}</h2>
         <p className="place">{point.place}</p>
+        {!isSea && <TemperatureLine pointId={point.id} />}
         {isSea ? (
           <>
             {preview && point.targetSpecies && (

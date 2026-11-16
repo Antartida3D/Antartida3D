@@ -1,8 +1,8 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import {
-  DRAG_THRESHOLD, EXPEDITION_POINT, HOME, KEY_PAN, MIN_K, PTS, VOYAGE_POINT, ZOOM_MS,
-  buildMarkers, diveView, markerPress, geometry, isWheelNotch, keyView, panBy, welcomeView, wheelFactor, zoomAround, zoomCenter,
-  type ArrivalId, type MapPoint, type Marker, type SeaPoint, type Size, type View, type ClaimsCoverage,
+  DOUBLE_TAP_ZOOM, DRAG_THRESHOLD, EXPEDITION_POINT, HOME, KEY_PAN, MIN_K, ONE_FINGER_IDLE, PTS, VOYAGE_POINT, ZOOM_MS,
+  buildMarkers, diveView, markerPress, geometry, isWheelNotch, keyView, oneFingerDown, oneFingerMove, oneFingerUp, panBy, welcomeView, wheelFactor, zoomAround, zoomCenter,
+  type ArrivalId, type MapPoint, type Marker, type OneFingerZoomState, type SeaPoint, type Size, type View, type ClaimsCoverage,
 } from '@antartida/core';
 import { usePageSettled, useReducedMotion, useTimers } from '../hooks.ts';
 import { useVoyage, type VoyageBus } from '../voyage/useVoyage.ts';
@@ -200,9 +200,14 @@ export function MapView({
     setView((v) => (v.k < MIN_K ? HOME : v));
   }, [is3D]);
   const ptrs = useRef(new Map<number, { x: number; y: number }>());
-  const gesture = useRef<{ dragged: boolean; pan: null | { x: number; y: number; px: number; py: number }; pinch: null | (View & { d: number }) }>(
-    { dragged: false, pan: null, pinch: null },
-  );
+  const gesture = useRef<{
+    dragged: boolean;
+    pan: null | { x: number; y: number; px: number; py: number };
+    pinch: null | (View & { d: number });
+    /** One finger (#165): the taps so far, and on the 2D map the view when the second touch of a double tap landed. */
+    taps: OneFingerZoomState;
+    second: View | null;
+  }>({ dragged: false, pan: null, pinch: null, taps: ONE_FINGER_IDLE, second: null });
 
   useLayoutEffect(() => {
     const el = vpRef.current;
@@ -290,8 +295,9 @@ export function MapView({
   };
 
   const onDown = (e: PointerEvent) => {
+    const onMarker = !!(e.target as Element).closest?.('.mk');
     // A press anywhere else puts the label away.
-    if (!(e.target as Element).closest?.('.mk')) setShown(null);
+    if (!onMarker) setShown(null);
     if (phase !== 'idle') return;
     const p = rel(e);
     const g = gesture.current;
@@ -299,10 +305,26 @@ export function MapView({
     if (ptrs.current.size === 1) {
       g.dragged = false;
       g.pan = { ...p, px: view.px, py: view.py };
+      // One finger also zooms (#165), off the markers: their own first and second touch show and
+      // open them (#54). In 3D the camera zooms itself (useMapGestures); the taps are followed
+      // here too, with the same rule, only to keep the second one off the markers.
+      g.taps = !onMarker && e.pointerType === 'touch' ? oneFingerDown(g.taps, { ...p, t: e.timeStamp }) : ONE_FINGER_IDLE;
+      if (g.taps.down?.second) {
+        // The browser can send the tap to a marker close by (touch adjustment): it is a zoom, the
+        // marker must not take it (onPick skips a drag).
+        g.dragged = true;
+        // On the 2D map the second touch of a double tap zooms instead of panning.
+        if (!is3D) {
+          g.second = view;
+          g.pan = null;
+        }
+      }
     } else if (ptrs.current.size === 2) {
       const [a, b] = [...ptrs.current.values()];
       g.pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), ...view };
       g.dragged = true;
+      g.taps = ONE_FINGER_IDLE;
+      g.second = null;
     }
   };
 
@@ -320,6 +342,20 @@ export function MapView({
         setTouched(true);
       }
       return;
+    }
+    if (ptrs.current.size === 1 && g.taps.down) {
+      const step = oneFingerMove(g.taps, p);
+      g.taps = step.state;
+      if (g.second) {
+        // Up zooms in and down zooms out, around where the second touch landed.
+        if (step.zoom !== 1) {
+          setView(zoomAround(sz, g.second, step.state.down!.x, step.state.down!.y, g.second.k * step.zoom));
+          setAnim('');
+          setTouched(true);
+          g.dragged = true;
+        }
+        return;
+      }
     }
     if (ptrs.current.size >= 2 && g.pinch) {
       const [a, b] = [...ptrs.current.values()];
@@ -341,13 +377,34 @@ export function MapView({
 
   const onUp = (e: PointerEvent) => {
     const g = gesture.current;
-    ptrs.current.delete(e.pointerId);
+    const lone = ptrs.current.size === 1;
+    if (!ptrs.current.delete(e.pointerId)) return;
     if (ptrs.current.size < 2) g.pinch = null;
     if (ptrs.current.size === 1) {
       const [p] = [...ptrs.current.values()];
       g.pan = { ...p, px: live.current.view.px, py: live.current.view.py };
     }
     if (ptrs.current.size === 0) g.pan = null;
+    if (!lone) return;
+    const at = g.taps.down;
+    const second = g.second;
+    g.second = null;
+    if (e.type !== 'pointerup') {
+      g.taps = ONE_FINGER_IDLE;
+      return;
+    }
+    const up = oneFingerUp(g.taps, { ...rel(e), t: e.timeStamp });
+    g.taps = up.state;
+    // A double tap: one step closer around the tapped point, at once with reduced motion.
+    if (up.doubleTap && at && second && phase === 'idle' && !is3D) {
+      const { size: sz, view: v } = live.current;
+      const next = zoomAround(sz, v, at.x, at.y, v.k * DOUBLE_TAP_ZOOM);
+      if (reduced) {
+        setView(next);
+        setAnim('');
+        setTouched(true);
+      } else animateTo(next);
+    }
   };
 
   // Native non-passive listener: preventDefault keeps trackpad pinch (ctrl+wheel) from zooming the whole page.

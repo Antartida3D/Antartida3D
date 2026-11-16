@@ -413,6 +413,177 @@ test.describe('3D relief view', () => {
     expect(end.d).toBeCloseTo(start.d, 1);
   });
 
+  /** A spot of the 3D map with no marker over it, near the middle and a little below the top bar. */
+  const canvasSpot = (page: Page) => {
+    const vp = page.viewportSize()!;
+    return page.evaluate(([cx, cy]) => {
+      for (let ring = 0; ring < 12; ring++)
+        for (let i = 0; i < 16; i++) {
+          const x = cx + ring * 12 * Math.cos((i * Math.PI) / 8);
+          const y = cy + ring * 12 * Math.sin((i * Math.PI) / 8);
+          if (document.elementFromPoint(x, y)?.tagName === 'CANVAS') return { x, y };
+        }
+      return null;
+    }, [vp.width / 2 + 50, vp.height * 0.4]);
+  };
+
+  test('on a touch screen a double tap zooms in one step around the tapped point, and the second touch dragged up or down zooms (#165)', async ({ page, isMobile }) => {
+    test.skip(!isMobile, 'touch gestures belong to the phone layout');
+    await page.goto('/');
+    await page.getByRole('group', { name: 'Modo de vista' }).getByRole('button', { name: 'Relieve 3D' }).click();
+    await page.waitForFunction(() => (window as any).__cameraControls);
+    const reset = async (d: number, x = 0) => {
+      await page.evaluate(([d, x]) => {
+        const cc = (window as any).__cameraControls;
+        cc.moveTo(x, 0, 0, false);
+        cc.dollyTo(d, false);
+        cc.rotateTo(0, 0.5, false);
+        (window as any).__invalidate();
+      }, [d, x]);
+      await cameraSettled(page);
+    };
+    const cam = () =>
+      page.evaluate(() => {
+        const cc = (window as any).__cameraControls;
+        return { az: cc.azimuthAngle as number, polar: cc.polarAngle as number, d: cc.distance as number, min: cc.minDistance as number };
+      });
+    // The ground under a screen point, and where a ground point is on screen now.
+    const ground = (x: number, y: number) =>
+      page.evaluate(([x, y]) => {
+        const cc = (window as any).__cameraControls;
+        const cam = cc.camera;
+        cam.updateMatrixWorld();
+        const r = document.querySelector('.vp canvas')!.getBoundingClientRect();
+        const far = cc.getTarget().clone().set(((x - r.left) / r.width) * 2 - 1, 1 - ((y - r.top) / r.height) * 2, 0.5).unproject(cam);
+        const dir = far.sub(cam.position).normalize();
+        const p = cam.position.clone().add(dir.multiplyScalar((cc.getTarget().y - cam.position.y) / dir.y));
+        return [p.x, p.y, p.z] as [number, number, number];
+      }, [x, y]);
+    const onScreen = (p: [number, number, number]) =>
+      page.evaluate((p) => {
+        const cc = (window as any).__cameraControls;
+        cc.camera.updateMatrixWorld();
+        const r = document.querySelector('.vp canvas')!.getBoundingClientRect();
+        const v = cc.getTarget().clone().set(...p).project(cc.camera);
+        return { x: r.left + ((v.x + 1) / 2) * r.width, y: r.top + ((1 - v.y) / 2) * r.height };
+      }, p);
+
+    // Off the markers: on them, a first touch shows the label and a second opens the point (#54).
+    await reset(600);
+    // The canvas shows once the relief has loaded.
+    await expect.poll(() => canvasSpot(page), { message: 'a spot of the map with no marker' }).not.toBeNull();
+    const spot = await canvasSpot(page);
+    const { x, y } = spot!;
+    const cdp = await page.context().newCDPSession(page);
+    const touch = (type: 'touchStart' | 'touchMove' | 'touchEnd', p?: { x: number; y: number }) =>
+      cdp.send('Input.dispatchTouchEvent', { type, touchPoints: p ? [p] : [] });
+    const tap = async () => {
+      await touch('touchStart', { x, y });
+      await touch('touchEnd');
+    };
+    /** A double tap whose second touch moves `dy` px down in ten steps before it lifts. */
+    const tapDrag = async (dy: number) => {
+      await tap();
+      await touch('touchStart', { x, y });
+      for (let i = 1; i <= 10; i++) await touch('touchMove', { x, y: y + (dy * i) / 10 });
+      await touch('touchEnd');
+      await page.waitForTimeout(400); // past the double tap time, so the next gesture starts over
+      await cameraSettled(page);
+    };
+
+    // A double tap: half the distance, the ground under the finger stays under it, nothing turns.
+    // Under reduced motion (the test default) it is there at once, with no glide.
+    let start = await cam();
+    const under = await ground(x, y);
+    await tap();
+    await tap();
+    const atOnce = await page.evaluate(() => {
+      const cc = (window as any).__cameraControls;
+      return Math.abs(cc.getSpherical(undefined, false).radius - cc.getSpherical().radius);
+    });
+    expect(atOnce).toBeLessThan(0.01);
+    await page.waitForTimeout(400);
+    await cameraSettled(page);
+    let end = await cam();
+    expect(end.d).toBeCloseTo(start.d / 2, 0);
+    expect(end.az).toBeCloseTo(start.az, 3);
+    expect(end.polar).toBeCloseTo(start.polar, 3);
+    let moved = await onScreen(under);
+    expect(Math.abs(moved.x - x)).toBeLessThan(2);
+    expect(Math.abs(moved.y - y)).toBeLessThan(2);
+
+    // Second touch dragged up 150 px: twice as close, and it does not pan.
+    await reset(600);
+    start = await cam();
+    await tapDrag(-150);
+    end = await cam();
+    expect(end.d).toBeCloseTo(start.d / 2, 0);
+    expect(end.az).toBeCloseTo(start.az, 3);
+    expect(end.polar).toBeCloseTo(start.polar, 3);
+    moved = await onScreen(under);
+    expect(Math.abs(moved.x - x)).toBeLessThan(2);
+    expect(Math.abs(moved.y - y)).toBeLessThan(2);
+
+    // Dragged down 150 px: twice as far.
+    await reset(300);
+    start = await cam();
+    await tapDrag(150);
+    end = await cam();
+    expect(end.d).toBeCloseTo(start.d * 2, 0);
+
+    // Over the open plateau it stops at the closest distance over the ice, like the wheel and the
+    // pinch (#127). Near the pole its model lets the camera come closer (#58).
+    await reset(60, -50);
+    await tapDrag(-300);
+    end = await cam();
+    expect(end.min).toBeCloseTo(ICE_MIN_DISTANCE, 0);
+    expect(end.d).toBeCloseTo(end.min, 1);
+
+    // A one-finger drag that is not a double tap still pans and does not zoom.
+    await reset(600);
+    start = await cam();
+    await touch('touchStart', { x, y });
+    for (let i = 1; i <= 10; i++) await touch('touchMove', { x, y: y - 15 * i });
+    await touch('touchEnd');
+    await page.waitForTimeout(150);
+    await cameraSettled(page);
+    end = await cam();
+    expect(end.d).toBeCloseTo(start.d, 1);
+    moved = await onScreen(under);
+    expect(moved.y).toBeLessThan(y - 100);
+  });
+
+  test('without reduced motion a double tap glides one step closer (#165)', async ({ page, isMobile }) => {
+    test.skip(!isMobile, 'touch gestures belong to the phone layout');
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.goto('/');
+    await page.getByRole('group', { name: 'Modo de vista' }).getByRole('button', { name: 'Relieve 3D' }).click();
+    await page.waitForFunction(() => (window as any).__cameraControls);
+    await page.evaluate(() => {
+      const cc = (window as any).__cameraControls;
+      cc.moveTo(0, 0, 0, false);
+      cc.dollyTo(600, false);
+      cc.rotateTo(0, 0.5, false);
+      (window as any).__invalidate();
+    });
+    await cameraSettled(page);
+    // The canvas shows once the relief has loaded.
+    await expect.poll(() => canvasSpot(page), { message: 'a spot of the map with no marker' }).not.toBeNull();
+    const spot = await canvasSpot(page);
+    const cdp = await page.context().newCDPSession(page);
+    for (let i = 0; i < 2; i++) {
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [spot!] });
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    }
+    const gap = await page.evaluate(() => {
+      const cc = (window as any).__cameraControls;
+      return { now: cc.getSpherical(undefined, false).radius as number, end: cc.getSpherical().radius as number };
+    });
+    expect(gap.end).toBeCloseTo(300, 0);
+    expect(gap.now).toBeGreaterThan(gap.end + 1);
+    await cameraSettled(page);
+  });
+
   test('terrain is rendered and South Pole pixel is not ocean color', async ({ page }) => {
     await page.goto('/');
     const toggle = page.getByRole('group', { name: 'Modo de vista' });

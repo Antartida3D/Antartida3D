@@ -161,6 +161,8 @@ Cada PR declara su impacto documental y registra las decisiones nuevas o reempla
 
 En cumplimiento con las bases de la hackatón, se declara el uso de herramientas de inteligencia artificial en el desarrollo de los prototipos:
 
+- **Pulido general: bienvenida y «Desde Ushuaia» (#190):**
+  > Diagnóstico, arreglo y pruebas (unitarias y e2e) con Claude Code (modelo Claude Fable 5.2), con revisión de quien lleva el issue. No se agregaron datos ni fuentes.
 - **Expedición Poncho (#9, #146):**
   > Planificación, implementación de los dioramas por etapas, integración de las fotos, pruebas y revisión con capturas, con Claude Code (modelos Claude Sonnet 5.5 y Opus 5.5), bajo revisión de quien lleva el issue. Las escenas y los modelos de personas, perros, barco y helicóptero son ilustraciones, no registros; no se presenta ninguna imagen generada como dato. Las dos fotos vienen de las páginas de la Fundación Marambio; sus derechos están pendientes (ver `docs/expediciones/poncho-fuentes.md`).
 - **Botón «atrás» del navegador (#185):**

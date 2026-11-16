@@ -52,6 +52,8 @@ export type Layer3DProps = LayerProps & {
   onCameraRest: (view: View) => void;
   /** The trip from Ushuaia while it is under way: the scene draws the vehicle and follows it. */
   voyage: VoyageBus | null;
+  /** The trip opens on the vehicle picker (Ushuaia): the camera goes to the departure before one is picked (#190). */
+  voyagePicker: boolean;
   claims: { selection: ClaimsSelection; coverage: ClaimsCoverage } | null;
   onClaimsStatus: (status: ClaimsStatus) => void;
 };
@@ -560,6 +562,7 @@ export function MapView({
               command={command}
               onCameraRest={setView}
               voyage={voyaging ? voyage.bus : null}
+              voyagePicker={!voyageTransport}
               claims={claimsEnabled && !voyaging ? { selection: claimsSelection, coverage: claimsCoverage } : null}
               onClaimsStatus={setClaimsStatus}
             />

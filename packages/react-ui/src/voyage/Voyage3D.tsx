@@ -12,6 +12,7 @@ import {
   sledTrot,
   trotRate,
   findTransport,
+  TRANSPORTS,
   HELICOPTER_SHIP_RATIO,
   VEHICLE_MIN_SIZE,
   VEHICLE_SIZE_PER_DISTANCE,
@@ -21,6 +22,7 @@ import {
   heightAt,
   planeTurbulence,
   sceneOf,
+  shiftAcross,
   shipDeckPose,
   shipWaterY,
   sightingsInView,
@@ -74,6 +76,12 @@ const SIGHT_AIM = 0.3;
 const SLED_SETTLE_RATE = 10;
 /** Longest frame the trot advances, in seconds. */
 const MAX_FRAME = 0.1;
+
+/**
+ * Half of what the transport picker takes of a wide screen, in px: 480 wide and 88 from the right
+ * edge (voyage.css). Ushuaia is seen that far left of the middle, in the free part beside it.
+ */
+const PICKER_HALF_PX = (480 + 88) / 2;
 
 /** In the storm the camera comes down to this world height: under the clouds, so they do not cover the vehicle. */
 const STORM_CAMERA_HEIGHT = DRAKE_STORM.cloudBase - 2;
@@ -176,8 +184,10 @@ export function shipSway(time: number, rough = 0) {
 const routeMaterial = new LineDashedMaterial({ color: 0x1f2a36, dashSize: 0.8, gapSize: 0.6, transparent: true, opacity: 0.75 });
 
 /** The vehicle travelling on the live map, its path and the camera, which stays centered on it. */
-export function Voyage3D({ bus, reduced, overlay }: {
+export function Voyage3D({ bus, picker, reduced, overlay }: {
   bus: VoyageBus;
+  /** The trip opens on the vehicle picker (Ushuaia), not on a trip of one team (Poncho). */
+  picker: boolean;
   reduced: boolean;
   /** Element over the canvas where the animals go: they are real buttons, reachable by keyboard. */
   overlay: RefObject<HTMLElement | null>;
@@ -238,6 +248,19 @@ export function Voyage3D({ bus, reduced, overlay }: {
       invalidate();
     };
   }, [camera, viewport, invalidate]);
+
+  // Opening the trip, before a vehicle is picked: down to where the first one leaves from, at the
+  // departure pose, so the picker opens over Ushuaia (#190). Without it the camera only came closer
+  // around whatever it was looking at (the trip's farthest zoom, ControlsBridge).
+  useEffect(() => {
+    if (!controls || !picker || bus.state) return;
+    const p = voyageAt(TRANSPORTS[0].kind, 0);
+    const target = { x: p.x - 500, y: 0, z: p.y - 500 };
+    const pos = { x: target.x + DEPARTURE_OFFSET.x, y: DEPARTURE_OFFSET.y, z: target.z + DEPARTURE_OFFSET.z };
+    const pose = shiftAcross({ pos, target }, viewport.width > NARROW_PX ? PICKER_HALF_PX : 0, viewport.height);
+    void controls.setLookAt(pose.pos.x, pose.pos.y, pose.pos.z, pose.target.x, pose.target.y, pose.target.z, !reduced);
+    invalidate();
+  }, [controls]);
 
   const kind = transport ? findTransport(transport).kind : null;
   const geometry = useMemo(() => (transport && vehicle ? buildVehicleGeometry(vehicleModel(transport, vehicle)) : null), [transport, vehicle]);

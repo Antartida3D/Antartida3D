@@ -38,6 +38,25 @@ export function liftToward(distance: number, polar: number, ndcY: number, fovDeg
   return height / Math.tan(below) - across;
 }
 
+/**
+ * The same pose moved to the camera's right, over the ground, so that its target is seen `px` to
+ * the left of the middle of a screen `viewportHeight` px tall. A panel on the right of a wide screen
+ * covers the middle: with half its width, the target sits in the middle of the free part beside it.
+ */
+export function shiftAcross(pose: CameraPose, px: number, viewportHeight: number, fovDeg = FOV): CameraPose {
+  const f = { x: pose.target.x - pose.pos.x, y: pose.target.y - pose.pos.y, z: pose.target.z - pose.pos.z };
+  const flat = Math.hypot(f.x, f.z);
+  // Straight above its target the camera has no side to move to.
+  if (px === 0 || flat === 0) return pose;
+  const perPx = (2 * Math.hypot(f.x, f.y, f.z) * Math.tan((fovDeg * Math.PI) / 360)) / viewportHeight;
+  const dx = (-f.z / flat) * px * perPx;
+  const dz = (f.x / flat) * px * perPx;
+  return {
+    pos: { x: pose.pos.x + dx, y: pose.pos.y, z: pose.pos.z + dz },
+    target: { x: pose.target.x + dx, y: pose.target.y, z: pose.target.z + dz },
+  };
+}
+
 /** Viewport height the sizes in px of the sea models are given for. */
 const SEA_MODEL_VIEWPORT = 900;
 /** Smallest world size of a sea model: closer than the camera ever gets it would be a speck. */

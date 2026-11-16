@@ -5,6 +5,7 @@ import {
   CAMERA_RETURN_SECONDS,
   FOV,
   liftToward,
+  shiftAcross,
   MAX_POLAR_DEG,
   cameraReturn,
   OCEAN_SIZE,
@@ -326,5 +327,45 @@ describe('liftToward (#148)', () => {
     const lift = liftToward(3, polar, 0.5);
     expect(lift).toBeGreaterThan(0);
     expect(ndcOf(3, lift)).toBeGreaterThan(0);
+  });
+});
+
+describe('shiftAcross (#190)', () => {
+  const pose = { pos: { x: -464, y: 9, z: -175 }, target: { x: -467, y: 0, z: -187 } };
+  const distance = Math.hypot(3, 9, 12);
+  // Px to the right of the middle of the screen at which a camera in `from` sees `point`.
+  const screenX = (from: typeof pose, point: { x: number; y: number; z: number }, viewportHeight: number) => {
+    const f = { x: from.target.x - from.pos.x, y: from.target.y - from.pos.y, z: from.target.z - from.pos.z };
+    const len = Math.hypot(f.x, f.y, f.z);
+    const flat = Math.hypot(f.x, f.z);
+    const right = { x: -f.z / flat, z: f.x / flat };
+    const v = { x: point.x - from.pos.x, y: point.y - from.pos.y, z: point.z - from.pos.z };
+    const depth = (v.x * f.x + v.y * f.y + v.z * f.z) / len;
+    const across = v.x * right.x + v.z * right.z;
+    return (across / depth / Math.tan((FOV * Math.PI) / 360)) * (viewportHeight / 2);
+  };
+
+  it('does not move the pose for no shift', () => {
+    expect(shiftAcross(pose, 0, 900)).toEqual(pose);
+  });
+
+  it('shows the old target that many px to the left of the middle, on any screen height', () => {
+    for (const viewportHeight of [390, 900, 1064]) {
+      for (const px of [120, 284]) expect(screenX(shiftAcross(pose, px, viewportHeight), pose.target, viewportHeight)).toBeCloseTo(-px, 6);
+    }
+  });
+
+  it('keeps the height, the distance and the direction of the camera', () => {
+    const moved = shiftAcross(pose, 284, 900);
+    expect(moved.pos.y).toBe(pose.pos.y);
+    expect(moved.target.y).toBe(pose.target.y);
+    expect(moved.pos.x - moved.target.x).toBeCloseTo(3, 9);
+    expect(moved.pos.z - moved.target.z).toBeCloseTo(12, 9);
+    expect(Math.hypot(moved.pos.x - moved.target.x, moved.pos.y - moved.target.y, moved.pos.z - moved.target.z)).toBeCloseTo(distance, 9);
+  });
+
+  it('leaves a camera straight above its target where it is: it has no side', () => {
+    const above = { pos: { x: 5, y: 40, z: 7 }, target: { x: 5, y: 0, z: 7 } };
+    expect(shiftAcross(above, 284, 900)).toEqual(above);
   });
 });

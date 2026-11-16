@@ -90,3 +90,36 @@ for (const [name, kind, start] of [['Hércules C-130', 'plane', 'Despegar'], ['A
       .toBe(0);
   });
 }
+
+// Opening the trip brings the camera down to Ushuaia before a vehicle is picked: it used to come
+// close around whatever it was looking at (#190).
+test('opening «Desde Ushuaia» on the 3D map brings the camera down to Ushuaia, beside the panel', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('group', { name: 'Modo de vista' }).getByRole('button', { name: 'Relieve 3D' }).click();
+  await page.waitForFunction(() => (window as any).__cameraControls);
+  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('button', { name: /Desde Ushuaia.*Empezar expedición/ }).click();
+  await expect(page.getByRole('group', { name: 'Medio de transporte' })).toBeVisible();
+
+  // Where the Irízar leaves from (voyageAt('ship', 0)), in world units.
+  const departure = { x: 32.54 - 500, z: 312.78 - 500 };
+  const pose = () => page.evaluate(() => {
+    const cc = (window as any).__cameraControls;
+    const cam = cc.camera;
+    // Where the departure point is drawn, as a fraction of the screen width.
+    const p = cam.position.clone().set(32.54 - 500, 0, 312.78 - 500).project(cam);
+    return { distance: cc.distance as number, screenX: (p.x + 1) / 2 };
+  });
+  await expect.poll(async () => (await pose()).distance, { message: 'camera close to the ground' }).toBeLessThan(20);
+  const got = await drawnTarget(page);
+  // Within a few units of the port: the target is beside it on a wide screen, to clear the panel.
+  expect(Math.hypot(got.x - departure.x, got.z - departure.z)).toBeLessThan(12);
+  const { screenX } = await pose();
+  const { width } = page.viewportSize()!;
+  if (width > 820) {
+    // In the middle of the part the panel leaves free (480 px wide, 88 px from the right edge).
+    expect(Math.abs(screenX * width - (width - 568) / 2)).toBeLessThan(30);
+  } else {
+    expect(Math.abs(screenX - 0.5)).toBeLessThan(0.05);
+  }
+});

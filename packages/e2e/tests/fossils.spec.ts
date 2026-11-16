@@ -153,6 +153,12 @@ test('on the 2D map Fósiles and Base Marambio stay in one group, and tapping it
   // A small window over the map, not a whole screen: the map stays in view around it.
   const box = (await picker.boundingBox())!;
   expect(box.height).toBeLessThan(page.viewportSize()!.height * 0.8);
+  // The browser «back» closes the window and stays on the map (#185); the group opens it again.
+  await page.goBack();
+  await expect(picker).toBeHidden();
+  await expect(page.getByRole('button', { name: 'Ver como lista' })).toBeVisible();
+  await group.click();
+  await expect(picker).toBeVisible();
   await picker.getByRole('button', { name: /Fósiles/ }).click();
   await expect(page.getByRole('region', { name: 'Expedición Fósiles' })).toBeVisible();
 });

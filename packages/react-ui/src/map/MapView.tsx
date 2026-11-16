@@ -193,6 +193,7 @@ export function MapView({
 
   // Browser «back» closes the top layer instead of leaving the app (#185).
   useBackLayer(list, () => setList(false));
+  useBackLayer(!!picking, () => setPicking(null));
   useBackLayer(!!sheet, () => setSheet(null));
   useBackLayer(!!pendingOrcadas && phase === 'idle', () => setPendingOrcadas(null));
   useBackLayer(voyaging, () => onEndVoyage?.(false));

@@ -527,6 +527,10 @@ function TravelBar({ voyage, animated, onExit, onSource }: { voyage: VoyageContr
     };
   };
   return (
+    <>
+    {/* Out of the bar, at the top right corner: on a trip the title and the exploration log give way (#190),
+        and the bar keeps only what moves the trip. */}
+    <button type="button" className="btn vleave" onClick={onExit} aria-label="Salir del viaje">Salir</button>
     <div className="vbar" role="group" aria-label="Controles del viaje">
       {/* The route log: a line of the book while the team travels between stops. Where the path is not animated, one per step. */}
       {state.kind === 'dogs' && (
@@ -568,13 +572,12 @@ function TravelBar({ voyage, animated, onExit, onSource }: { voyage: VoyageContr
           )}
         </div>
       )}
-      {/* One row, with the main button at the same corner as "Seguir viaje" in the milestone card: the pointer stays put.
-          It is the last one, on the right, where the thumb reaches on a phone (#177). */}
+      {/* One row: going back on the left, and the main button takes the rest, up to the right, where the
+          thumb reaches on a phone (#177) and "Seguir viaje" is in the milestone card: the pointer stays put. */}
       <div className="row">
-        <button type="button" className="btn ghost vexit" onClick={onExit} aria-label="Salir del viaje" title="Salir del viaje">✕</button>
         {/* Where the trip is not animated (2D map, reduced motion) it goes step by step. Animated, holding
             «avanzar» picks up speed (#166): a button to jump ahead was one too many (#190). */}
-        {!animated && <button type="button" className="btn primary" onClick={voyage.skip}>Próximo hito</button>}
+        {!animated && <button type="button" className="btn primary vgo" onClick={voyage.skip}>Próximo hito</button>}
         {animated && (
           <button
             type="button"
@@ -602,6 +605,7 @@ function TravelBar({ voyage, animated, onExit, onSource }: { voyage: VoyageContr
         )}
       </div>
     </div>
+    </>
   );
 }
 

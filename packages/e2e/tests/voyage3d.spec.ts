@@ -168,3 +168,52 @@ test('a milestone near the vehicle shows its name over its pin, and a pin ahead 
   // Read, it is a name no more: its grey pin stays.
   await expect(label).toHaveCount(0);
 });
+
+// On a trip the map is the trip: the title and the exploration log give way, «Salir» takes their
+// corner, and the bar keeps going back on the left and the main button over the rest (#190).
+test('on a trip the title and the exploration log give way, «Salir» is at the top right and «avanzar» fills the bar', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.goto('/');
+  await page.getByRole('group', { name: 'Modo de vista' }).getByRole('button', { name: 'Relieve 3D' }).click();
+  await page.waitForFunction(() => (window as any).__cameraControls);
+  const title = page.getByRole('heading', { level: 1, name: 'Antártida por descubrir' });
+  const log = page.getByRole('status', { name: /Registro de exploración/ });
+  await expect(title).toBeInViewport();
+  await expect(log).toBeInViewport();
+
+  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('button', { name: /Desde Ushuaia.*Empezar expedición/ }).click();
+  await page.getByRole('group', { name: 'Medio de transporte' }).getByRole('button', { name: /ARA Almirante Irízar/ }).click();
+  await page.getByRole('button', { name: 'Zarpar' }).click();
+
+  // Off the screen, but still there for a screen reader.
+  const header = page.locator('.top');
+  await expect.poll(async () => (await header.boundingBox())!.width).toBeLessThanOrEqual(1);
+  await expect(title).toBeAttached();
+  await expect(log).toBeAttached();
+
+  const { width } = page.viewportSize()!;
+  const leave = page.getByRole('button', { name: 'Salir del viaje' });
+  await expect(leave).toHaveText('Salir');
+  const corner = (await leave.boundingBox())!;
+  expect(corner.x + corner.width).toBeGreaterThan(width - 30);
+  expect(corner.y).toBeLessThan(40);
+
+  // The bar: going back on the left, and holding to advance over the rest of the row.
+  const row = page.locator('.vbar .row');
+  await expect(row.getByRole('button')).toHaveCount(2);
+  const [whole, back, hold] = await Promise.all([
+    row.boundingBox(),
+    page.getByRole('button', { name: 'Mantené para retroceder' }).boundingBox(),
+    page.getByRole('button', { name: 'Mantené para avanzar' }).boundingBox(),
+  ]);
+  expect(back!.x).toBeCloseTo(whole!.x, 0);
+  expect(hold!.x).toBeGreaterThan(back!.x + back!.width);
+  expect(hold!.x + hold!.width).toBeCloseTo(whole!.x + whole!.width, 0);
+
+  // Leaving brings the title and the log back.
+  await leave.click();
+  await expect(page.locator('.vbar')).toHaveCount(0);
+  await expect(title).toBeInViewport();
+  await expect(log).toBeInViewport();
+});

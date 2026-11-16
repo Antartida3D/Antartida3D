@@ -16,7 +16,7 @@ La dirección vigente es la propuesta «Pergamino claro» de la ficha real «Oc�
 
 [Referencia ocre histórica](docs/diseno/referencias/ficha-cartografica-v2.png) · [CSS del prototipo aprobado](docs/diseno/referencias/ficha-oceano-pergamino-claro.css) · [Componente](packages/react-ui/src/map/PointSheet.tsx) · [CSS estructural](packages/core/src/styles/point-sheet.css).
 
-**Estado:** dirección visual aprobada y aplicada localmente a la migración de la UI. La ficha prototipo está verificada en 456 × 645 px; la E2E focalizada actual cubre 32 casos de carga, bienvenida, lista, ficha, overflow y viaje, mientras la cobertura visual global y la suite E2E completa quedan pendientes. El material común vive en `tokens.css` y `cartography.css`; los layouts conservan sus hojas específicas. El [plan de migración](docs/diseno/plan-migracion-ui.md) separa implementación, evidencia y límites de validación.
+**Estado:** dirección visual aprobada y aplicada en la rama `202-ui-pergamino-claro` para el issue #202. La ficha prototipo está verificada en 456 × 645 px. La validación automatizada registrada para esta entrega reúne 1.356 pruebas (`19` documentales, `650` de `core` y `687` de `react-ui`), además de `pnpm typecheck` y `pnpm build` sin errores. La E2E global de 82 casos sigue en curso y presenta fallos; no se declara como una suite verde ni como cobertura visual global completa. El material común vive en `tokens.css` y `cartography.css`; los layouts conservan sus hojas específicas. El [plan de migración](docs/diseno/plan-migracion-ui.md) separa implementación, evidencia y límites de validación.
 
 ### Formato y procedencia
 

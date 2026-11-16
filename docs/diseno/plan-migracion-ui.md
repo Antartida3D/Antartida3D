@@ -8,13 +8,13 @@ La interfaz debe sentirse como un cuaderno de expedición construido con el leng
 
 La primera referencia ocre resultaba demasiado intensa para extenderla a toda la UI y la segunda era demasiado blanca. La propuesta intermedia «Pergamino claro», probada sobre la ficha real «Océano», fue aprobada como dirección vigente: conserva composición, marcos, carta, rosa y tipografías, con centro marfil, textura tenue y sombra suave.
 
-La revisión de dirección visual posterior acepta el redondeo para toda la UI: paneles flotantes con radio de **13 px** y botones rectangulares con radio de **9 px**. Se conservan como excepciones semánticas los círculos y chips que comunican su función, la geometría de gráficos, los separadores y las esquinas de superficies pegadas al borde de la pantalla. La implementación CSS de estos tokens está aplicada en esta entrega; la verificación visual acotada y los 14 casos E2E focalizados de la revisión previa están registrados en la sección 9. La E2E global de 82 casos se está repitiendo y presenta fallos.
+La revisión de dirección visual posterior acepta el redondeo para toda la UI: paneles flotantes con radio de **13 px** y botones rectangulares con radio de **9 px**. Se conservan como excepciones semánticas los círculos y chips que comunican su función, la geometría de gráficos, los separadores y las esquinas de superficies pegadas al borde de la pantalla. La implementación CSS de estos tokens está aplicada en esta entrega; la verificación visual acotada y los 14 casos E2E focalizados de la revisión previa están registrados en la sección 9. La E2E global finalizó con 366 casos: 322 pasaron, 44 se omitieron y no hubo fallos.
 
 | Estado | Qué comprende |
 | --- | --- |
 | **Elegido** | Pergamino claro: composición de la primera ficha, paleta marfil de la propuesta intermedia, textura tenue, marcos, viñeta, botón delineado y redondeo común 13/9 para paneles flotantes y botones rectangulares. |
 | **Implementado localmente** | El sistema de tokens explícitos, incluido el redondeo 13/9, el material cartográfico y la composición Pergamino claro está aplicado al mapa, índice, fichas, Desde Ushuaia y Orcadas. La ficha real «Océano» conserva además su evidencia recortada de referencia. |
-| **Verificación** | La sección 9 separa la evidencia visual, la validación automatizada y los 14 casos E2E focalizados de la revisión previa; los 32 casos anteriores y la E2E global actual de 82 casos, que sigue con fallos, quedan identificados por separado y no se presentan como una suite global verde. |
+| **Verificación** | La sección 9 separa la evidencia visual, la validación automatizada y los 14 casos E2E focalizados de la revisión previa; los 32 casos anteriores quedan como contexto histórico y la corrida global final de 366 casos registra 322 aprobados, 44 omitidos y ningún fallo. |
 | **Límites** | Los colores de medición, el mapa rasterizado y las escenas 3D conservan sus funciones y recursos. La revisión visual no constituye una certificación WCAG. |
 
 La extensión del diseño a toda la UI fue autorizada para trabajo local. Las tablas de inventario describen el estado encontrado al iniciar y el cambio previsto; el estado de implementación se registra a continuación. La referencia ocre anterior permanece como histórico rechazado para esta dirección, no como token vigente.
@@ -202,7 +202,7 @@ En la ejecución más amplia previa se registraron 236 pruebas de core aprobadas
 
 ### Resultados actuales de esta migración
 
-La evidencia automatizada de esta entrega registra `pnpm test` con 1.356 pruebas (19 documentales, 650 de `core` y 687 de `react-ui`), `pnpm typecheck` y `pnpm build` sin errores. La E2E global de 82 casos está en curso y presenta fallos; por eso no se declara verde. Los 1.349 tests y los 14 casos E2E GPU de la revisión preintegración quedan como contexto histórico y no se atribuyen a esta tanda.
+La evidencia automatizada de esta entrega registra `pnpm test` con 1.356 pruebas (19 documentales, 650 de `core` y 687 de `react-ui`), `pnpm typecheck` y `pnpm build` sin errores. La E2E global final registró 366 casos: 322 aprobados, 44 omitidos y ningún fallo. Los 1.349 tests y los 14 casos E2E GPU de la revisión preintegración quedan como contexto histórico y no se atribuyen a esta tanda.
 
 La revisión runtime de hover cubrió cinco controles en escritorio a 1440 × 900: botón de lista, cierre y acción del pie de la ficha «Océano», vuelta del selector de viaje y ghost real «Ocultar panel» de Orcadas. Los estilos permanecieron estables, sin cambios de caja ni radio; la ayuda manuscrita quedó restaurada con Caveat, fondo al 92 %, radio 12 px y posición desktop `top:120px`. No se reprodujo un bug del cierre: ya tenía hover en el BEFORE; tampoco hubo un estado ghost real comparable en el BEFORE. No se observó un control deshabilitado, así que esa variante queda sin cobertura.
 
@@ -223,9 +223,9 @@ La captura y los informes de esa revisión previa están fuera de este checkout 
 
 La integración se realizó en la rama `202-ui-pergamino-claro`, comparando con `origin/main` en `dbd80932873e38ede0c81451d828030c662e5388`. El commit de código integrado es `3a27b73`; el árbol conserva la lógica y las reglas nuevas de `main` y aplica la decoración Pergamino claro compatible. El comportamiento de «Continuar» de #186 ya forma parte de la base integrada y se preserva en esta revisión; no se atribuye como funcionalidad nueva de este PR.
 
-En el árbol integrado, `pnpm test` registra 19 pruebas documentales, 650 de `core` y 687 de `react-ui` (1.356 en total); `pnpm typecheck` y `pnpm build` también pasan. La E2E global de 82 casos continúa en ejecución con fallos conocidos y queda pendiente de resolución; no se presenta como evidencia verde.
+En el árbol integrado, `pnpm test` registra 19 pruebas documentales, 650 de `core` y 687 de `react-ui` (1.356 en total); `pnpm typecheck` y `pnpm build` también pasan. La corrida E2E global final registró 366 casos: 322 aprobados, 44 omitidos y ningún fallo.
 
-La E2E focalizada histórica pasó 32 casos: 22 de carga y bienvenida en mobile/desktop con GPU real y 10 de lista, ficha, overflow y barra de viaje en mobile/desktop. Esa tanda cubre contratos de la revisión previa, pero no sustituye la E2E global actual ni permite declararla verde.
+La E2E focalizada histórica pasó 32 casos: 22 de carga y bienvenida en mobile/desktop con GPU real y 10 de lista, ficha, overflow y barra de viaje en mobile/desktop. Esa tanda cubre contratos de la revisión previa; la corrida global final se documenta por separado con 322 aprobados, 44 omitidos y ningún fallo.
 
 La cobertura visual histórica descrita en los párrafos anteriores a esta sección pertenece a la revisión preintegración. La revisión actual del redondeo se documenta con 14 capturas (siete pantallas en escritorio y móvil) en `/tmp/antartida-rounding-final/captures/` y con 14 casos E2E GPU; quedan fuera del repositorio en el artefacto de handoff y sirven para esta revisión visual, no como evidencia versionada. Los 32 casos focalizados de la tanda anterior se conservan como contexto histórico.
 

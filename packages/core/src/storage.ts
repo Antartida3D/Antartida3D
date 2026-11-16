@@ -4,6 +4,14 @@ export const EXPLORED_KEY = 'antartida:explored';
 export const VIEW_MODE_KEY = 'antartida:view';
 /** The first-visit welcome (#115) was already shown. */
 export const WELCOME_KEY = 'antartida:welcome';
+/** Last opened expedition and step (#186), cleared once completed. */
+export const LAST_EXPEDITION_KEY = 'antartida:last';
+
+export interface ResumePoint {
+  id: string;
+  step: number;
+  sub?: number;
+}
 
 /** Ids of the completed expeditions. The old format ('1') meant only Fósiles. */
 export function loadExplored(): string[] {
@@ -56,5 +64,35 @@ export function saveWelcomeSeen(): void {
     localStorage.setItem(WELCOME_KEY, '1');
   } catch {
     // Storage unavailable: the welcome shows again on the next visit.
+  }
+}
+
+const isNonNegativeInt = (v: unknown): v is number =>
+  typeof v === 'number' && Number.isInteger(v) && v >= 0;
+
+export function loadLastExpedition(): ResumePoint | null {
+  try {
+    const raw = localStorage.getItem(LAST_EXPEDITION_KEY);
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return null;
+    const record = parsed as Record<string, unknown>;
+    if (typeof record.id !== 'string' || record.id.length === 0) return null;
+    if (!isNonNegativeInt(record.step)) return null;
+    if (record.sub !== undefined && !isNonNegativeInt(record.sub)) return null;
+    return record.sub !== undefined
+      ? { id: record.id, step: record.step, sub: record.sub }
+      : { id: record.id, step: record.step };
+  } catch {
+    return null;
+  }
+}
+
+export function saveLastExpedition(point: ResumePoint | null): void {
+  try {
+    if (point === null) localStorage.removeItem(LAST_EXPEDITION_KEY);
+    else localStorage.setItem(LAST_EXPEDITION_KEY, JSON.stringify(point));
+  } catch {
+    // Storage unavailable
   }
 }

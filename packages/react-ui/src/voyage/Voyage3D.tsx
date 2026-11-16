@@ -453,14 +453,14 @@ export function Voyage3D({ bus, picker, reduced, overlay }: {
         }
         storm.current.inside = inside;
       }
-      const departing = s.t === 0 && (drawn.current.t !== 0 || drawn.current.transport !== s.transport);
-      if (departing) {
+      const starting = drawn.current.transport !== s.transport || (s.t === 0 && drawn.current.t !== 0);
+      if (starting) {
         moved = true;
         sight.current = 0; // the camera is placed anew, at its base height
         // At the vehicle, so the camera does not jump to it when the trip starts moving.
         // The sled starts over its ground, which the relief may place well above the sea.
         const offset = veh === 'sled' ? SLED_DEPARTURE_OFFSET : DEPARTURE_OFFSET;
-        const base = veh === 'sled' ? sledGround(s.kind, 0) : 0;
+        const base = s.t === 0 ? (veh === 'sled' ? sledGround(s.kind, 0) : 0) : Math.max(0, height);
         void controls.setLookAt(p.x - 500 + offset.x, base + offset.y, p.y - 500 + offset.z, p.x - 500, base, p.y - 500, !reduced);
       } else {
         const open = bus.open ? voyageSightings(s.kind).find((v) => v.sighting.id === bus.open) : undefined;

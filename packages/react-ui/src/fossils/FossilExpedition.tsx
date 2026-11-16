@@ -40,10 +40,20 @@ function SourceLink({ id }: { id: FossilSourceId }) {
 
 type Modal = { kind: 'sources' } | { kind: 'story' } | { kind: 'photo'; id: FossilPhotoId } | null;
 
-export function FossilExpedition({ reduced, webgl, onLeave }: {
-  reduced: boolean; webgl: boolean; onLeave: (done: boolean) => void;
+export function FossilExpedition({ reduced, webgl, resume, onProgress, onLeave }: {
+  reduced: boolean; webgl: boolean; resume?: { step: number; sub?: number }; onProgress?: (step: number, sub?: number) => void; onLeave: (done: boolean) => void;
 }) {
-  const [state, dispatch] = useReducer(fossilsReducer, INITIAL_FOSSILS);
+  const [state, dispatch] = useReducer(fossilsReducer, resume?.step ?? 0, (step) => {
+    const target = Math.max(0, Math.min(FOSSIL_STOPS.length - 1, Math.trunc(step)));
+    let s = INITIAL_FOSSILS;
+    for (let i = 0; i < target; i++) s = fossilsReducer(s, { type: 'next' });
+    return s;
+  });
+  const onProgressRef = useRef(onProgress);
+  onProgressRef.current = onProgress;
+  useEffect(() => {
+    onProgressRef.current?.(state.stop);
+  }, [state.stop]);
   const [sheetSize, setSheetSize] = useState<OpenSheetSize>('small');
   const [reset, setReset] = useState(0);
   const [modal, setModal] = useState<Modal>(null);

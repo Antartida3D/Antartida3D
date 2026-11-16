@@ -20,8 +20,20 @@ const list = (items: readonly string[]) => items.length < 2 ? items.join('') : `
 const eatersOf = (o: 'krill') => linksOf(o).filter((l) => l.from === o).map((l) => MARINE_ORGANISMS[l.to].label.toLowerCase());
 const foodOf = (o: 'leopard') => linksOf(o).filter((l) => l.to === o).map((l) => MARINE_ORGANISMS[l.from].label);
 
-export function MarineExpedition({ reduced, webgl, onLeave }: { reduced: boolean; webgl: boolean; onLeave: (done: boolean) => void }) {
-  const [state, dispatch] = useReducer(marineReducer, INITIAL_MARINE);
+export function MarineExpedition({ reduced, webgl, resume, onProgress, onLeave }: {
+  reduced: boolean; webgl: boolean; resume?: { step: number; sub?: number }; onProgress?: (step: number, sub?: number) => void; onLeave: (done: boolean) => void;
+}) {
+  const [state, dispatch] = useReducer(marineReducer, resume?.step ?? 0, (step) => {
+    const target = Math.max(0, Math.min(MARINE_STOPS.length - 1, Math.trunc(step)));
+    let s = INITIAL_MARINE;
+    for (let i = 0; i < target; i++) s = marineReducer(s, { type: 'next' });
+    return s;
+  });
+  const onProgressRef = useRef(onProgress);
+  onProgressRef.current = onProgress;
+  useEffect(() => {
+    onProgressRef.current?.(state.stop);
+  }, [state.stop]);
   const [sheetSize, setSheetSize] = useState<OpenSheetSize>('small');
   const [reset, setReset] = useState(0);
   const [sourcesOpen, setSourcesOpen] = useState(false);

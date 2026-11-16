@@ -2,6 +2,7 @@ import { project } from '../projection.ts';
 import type { Source } from './sea.ts';
 import { MARAMBIO_GUIDING_QUESTION } from './marambio.ts';
 import { POINT_DETAILS } from './point-details.ts';
+import { FOSSIL_QUESTION } from './fossils.ts';
 
 export type Tier = 'A' | 'B' | 'C';
 
@@ -30,6 +31,7 @@ const ESPERANZA = project(-57.0, -63.4);
 
 const POINTS: readonly MapPoint[] = [
   { id: 'marambio', tier: 'A', title: 'Base Marambio', place: 'Isla Marambio', x: 196, y: 300, q: MARAMBIO_GUIDING_QUESTION },
+  { id: 'fosiles', tier: 'A', title: 'Fósiles', place: 'Isla James Ross', x: 188, y: 306, q: FOSSIL_QUESTION },
   { id: 'oceano', tier: 'B', title: 'Océano', place: 'Mar de Weddell', x: 322, y: 322, q: '¿Qué pasa debajo del hielo marino del Mar de Weddell?' },
   { id: 'poncho', tier: 'A', title: 'Poncho', place: 'Península Antártica · Base Esperanza', x: ESPERANZA.x, y: ESPERANZA.y, q: '¿Qué historia puede contar un perro polar argentino de trineo?' },
   { id: 'campana', tier: 'A', title: 'Desde Ushuaia', place: 'Ushuaia', x: 31.4, y: 313.5, q: '¿Cómo se llega desde Ushuaia hasta la Antártida?' },

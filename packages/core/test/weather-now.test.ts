@@ -11,15 +11,15 @@ import {
 } from '../src/weather-now.ts';
 
 describe('buildCurrentTemperatureUrl', () => {
-  it('builds a batch Open-Meteo URL with 12 lat/lon pairs in PTS order', () => {
+  it('builds a batch Open-Meteo URL with one lat/lon pair per point, in PTS order', () => {
     const url = new URL(buildCurrentTemperatureUrl(PTS));
     expect(`${url.origin}${url.pathname}`).toBe(OPEN_METEO_FORECAST_URL);
     expect(url.searchParams.get('current')).toBe('temperature_2m');
 
     const lats = url.searchParams.get('latitude')!.split(',').map(Number);
     const lons = url.searchParams.get('longitude')!.split(',').map(Number);
-    expect(lats).toHaveLength(12);
-    expect(lons).toHaveLength(12);
+    expect(lats).toHaveLength(PTS.length);
+    expect(lons).toHaveLength(PTS.length);
 
     PTS.forEach((point, index) => {
       const expected = unproject(point.x, point.y);

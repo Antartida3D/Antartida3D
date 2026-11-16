@@ -65,16 +65,41 @@ describe('clustering', () => {
     expect(clusterPoints([a, b], 46 / 40)).toHaveLength(2);
   });
 
-  it('separates the Peninsula points as zoom increases', () => {
-    const size = { vw: 390, vh: 844 };
-    const { S } = geometry(size);
-    const count = (k: number) => clusterPoints(PTS, (S * k) / 1000).length;
-    expect(count(1)).toBeLessThan(PTS.length);
-    // Base Esperanza (Poncho) and Isla Marambio (Base Marambio) are about 90 km apart, 12 map units: the 2D map
-    // cannot tell them apart even at MAX_K. They are the only pair left together; the 3D camera and the list separate them.
-    const atMax = clusterPoints(PTS, (S * MAX_K) / 1000).filter((g) => g.length > 1);
-    expect(atMax.map((g) => g.map((p) => p.id).sort())).toEqual([['marambio', 'poncho']]);
-    for (let k = 1; k < MAX_K; k += 0.5) expect(count(k + 0.5)).toBeGreaterThanOrEqual(count(k));
+  // Base Marambio, Fósiles (#7) and Poncho (#9, Base Esperanza) are close together at the tip of the
+  // Peninsula: some of them stay together even at the closest zoom. Base Esperanza and Isla Marambio
+  // are about 90 km apart, 12 map units; James Ross Island is closer still to Marambio.
+  const PHONE = { vw: 390, vh: 844 };
+  const DESKTOP = { vw: 1440, vh: 900 };
+  const atMax = (size: { vw: number; vh: number }) =>
+    clusterPoints(PTS, (geometry(size).S * MAX_K) / 1000).filter((g) => g.length > 1).map((g) => g.map((p) => p.id).sort());
+
+  it('separates the Peninsula points as zoom increases, but for the ones closest to Marambio', () => {
+    for (const size of [PHONE, DESKTOP]) {
+      const { S } = geometry(size);
+      const count = (k: number) => clusterPoints(PTS, (S * k) / 1000).length;
+      expect(count(1)).toBeLessThan(PTS.length);
+      for (let k = 1; k < MAX_K; k += 0.5) expect(count(k + 0.5)).toBeGreaterThanOrEqual(count(k));
+    }
+    // A phone cannot tell the three apart; a wide screen separates Poncho, not Fósiles from Marambio.
+    expect(atMax(PHONE)).toEqual([['fosiles', 'marambio', 'poncho']]);
+    expect(atMax(DESKTOP)).toEqual([['fosiles', 'marambio']]);
+  });
+
+  it('a group that zooming cannot separate lets the visitor pick one of its points; the others zoom in', () => {
+    for (const size of [PHONE, DESKTOP]) {
+      const together = atMax(size).map((g) => g.join());
+      const clusters = (k: number) =>
+        buildMarkers(size, { k, px: 0, py: 0 }, [], PTS).flatMap((m) => (m.kind === 'cluster' ? [m] : []));
+      for (let k = 1; k < MAX_K; k += 0.25) {
+        for (const m of clusters(k)) {
+          const stays = together.includes(m.points.map((p) => p.id).sort().join());
+          expect(m.pick, `${size.vw} ${k} ${m.key}`).toBe(stays);
+          expect(m.aria).toContain(stays ? 'Tocá para elegir uno.' : 'Tocá para acercar.');
+        }
+      }
+      // At the closest zoom, every group left is one to pick from.
+      for (const m of clusters(MAX_K)) expect(m.pick).toBe(true);
+    }
   });
 
   it('buildMarkers with identity projector matches standard 2D markers', () => {

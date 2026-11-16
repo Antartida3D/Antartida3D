@@ -27,3 +27,7 @@ packages/core/.cache/
 # Config local de agentes
 CLAUDE.local.md
 .claude/settings.local.json
+
+# Material de consulta de la familia Olivero (publicaciones, presentaciones y fotos): queda en cada
+# compu, no se redistribuye (docs/expediciones/fosiles-fuentes.md).
+Documentation/

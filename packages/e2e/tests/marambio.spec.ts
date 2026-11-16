@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { AVAILABLE_COUNT } from '../../core/src/content/points.ts';
 import { clearStorage } from '../storage.ts';
 import { MARAMBIO_SPOTS, marambioFacts } from '../../core/src/content/marambio.ts';
 import { ORCADAS_GUIDING_QUESTION } from '../../core/src/content/orcadas.ts';
@@ -36,7 +37,7 @@ test.describe('with WebGL', () => {
     await page.goto('/');
     await clearStorage(page);
     await page.reload();
-    await expect(log(page)).toContainText('0/3');
+    await expect(log(page)).toContainText(`0/${AVAILABLE_COUNT}`);
   });
 
   test('walks every point of the base, shows its sources, and updates the log', async ({ page }) => {
@@ -71,8 +72,8 @@ test.describe('with WebGL', () => {
 
     await expect(primary(page)).toHaveText('Terminar la visita');
     await primary(page).click();
-    await expect(log(page)).toContainText('1/3');
-    await expect(page.locator('.toast')).toHaveText('Base Marambio quedó explorado. Registro de exploración: 1/3');
+    await expect(log(page)).toContainText(`1/${AVAILABLE_COUNT}`);
+    await expect(page.locator('.toast')).toHaveText(`Base Marambio quedó explorado. Registro de exploración: 1/${AVAILABLE_COUNT}`);
   });
 
   test('a dot on the scene opens its point, and «Mapa» leaves without marking the base as explored', async ({ page }) => {
@@ -90,7 +91,7 @@ test.describe('with WebGL', () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 
     await section.getByRole('button', { name: 'Volver al mapa' }).click();
-    await expect(log(page)).toContainText('0/3');
+    await expect(log(page)).toContainText(`0/${AVAILABLE_COUNT}`);
     await expect(page.locator('.toast')).toHaveCount(0);
   });
 

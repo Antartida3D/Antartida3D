@@ -164,6 +164,8 @@ export function MapView({
   // Key of the marker whose label a first touch brought into view.
   const [shown, setShown] = useState<string | null>(null);
   const [list, setList] = useState(false);
+  // Points of a group that zooming no longer separates, while the visitor picks one of them.
+  const [picking, setPicking] = useState<readonly MapPoint[] | null>(null);
   const [claimsEnabled, setClaimsEnabled] = useState(false);
   const [claimsSelection, setClaimsSelection] = useState<ClaimsSelection>('all');
   const [claimsCoverage, setClaimsCoverage] = useState<ClaimsCoverage>('sectors');
@@ -191,6 +193,7 @@ export function MapView({
 
   // Browser «back» closes the top layer instead of leaving the app (#185).
   useBackLayer(list, () => setList(false));
+  useBackLayer(!!picking, () => setPicking(null));
   useBackLayer(!!sheet, () => setSheet(null));
   useBackLayer(!!pendingOrcadas && phase === 'idle', () => setPendingOrcadas(null));
   useBackLayer(voyaging, () => onEndVoyage?.(false));
@@ -508,7 +511,8 @@ export function MapView({
     setWelcoming(false);
     if (m.kind === 'cluster') {
       setShown(null);
-      if (is3D) send3D({ type: 'focus', view: m.target });
+      if (m.pick) setPicking(m.points);
+      else if (is3D) send3D({ type: 'focus', view: m.target });
       else animateTo(m.target);
     } else if (markerPress(shown, m.key, touch) === 'show') setShown(m.key);
     else {
@@ -617,6 +621,14 @@ export function MapView({
             explored={explored}
             onClose={() => setList(false)}
             onPick={(p) => { setList(false); openPoint(p); }}
+          />
+        )}
+        {picking && (
+          <ListView
+            explored={explored}
+            points={picking}
+            onClose={() => setPicking(null)}
+            onPick={(p) => { setPicking(null); openPoint(p); }}
           />
         )}
         {voyaging && onEndVoyage && (

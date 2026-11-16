@@ -39,6 +39,8 @@ test('without WebGL the app falls back cleanly to 2D and «Relieve 3D» says how
   await off.click();
   await expect(note).toBeVisible();
   await expect(note).toContainText('aceleración por hardware');
+  // What the browser's settings say is a quotation: “ ” and italics (#190).
+  await expect(note.locator('em').first()).toHaveText('“aceleración por hardware”');
   await expect(off).toHaveAttribute('aria-expanded', 'true');
   // Escape closes it and focus goes back to the button.
   await page.keyboard.press('Escape');

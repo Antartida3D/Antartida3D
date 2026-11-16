@@ -351,7 +351,7 @@ export const ORCADAS_FACTS: readonly OrcadasFact[] = [
     chapter: 'journey',
     kind: 'real',
     title: 'José Manuel Moneta',
-    text: 'José Manuel Moneta, técnico del Servicio Meteorológico, invernó cuatro años, escribió «Cuatro años en las Orcadas del Sur» y filmó en 1927 «Entre los hielos de las Islas Orcadas».',
+    text: 'José Manuel Moneta, técnico del Servicio Meteorológico, invernó cuatro años, escribió “Cuatro años en las Orcadas del Sur” y filmó en 1927 “Entre los hielos de las Islas Orcadas”.',
     sourceIds: ['cancilleria'],
   },
   {

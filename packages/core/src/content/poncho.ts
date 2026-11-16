@@ -67,12 +67,12 @@ export const PONCHO_MILESTONES: readonly Milestone[] = [
     essential: book(5, 'Entre los hombres de gruesos abrigos naranjas que van y vienen por la Base Esperanza, nace Poncho el 10 de abril de 1961. Es el cachorro más juguetón de la camada, y sus hermanos lo siguen en cada paseo. Ahí mismo, los hombres instruyen a los perros: les enseñan los arneses, los trineos y las voces de mando.'),
     hook: 'Faltaba poco para su primera gran travesía.',
     more: [
-      book(5, 'Tenía el pelaje blanco cremoso con manchas grises y una «máscara» inconfundible en la cara.'),
+      book(5, 'Tenía el pelaje blanco cremoso con manchas grises y una máscara inconfundible en la cara.'),
       book(4, 'Sus padres se llamaban Coca y Flecha.'),
       book(6, 'Era un perro polar argentino: una raza que el Ejército creó cruzando perros Malamute de Alaska, Groenlandeses y Husky.'),
       book(7, 'La raza empezó a formarse hacia 1951, cuando unos treinta suboficiales veterinarios del Ejército eligieron y cruzaron perros de forma sistemática.', 'P2'),
       book(8, 'A los seis meses de edad Poncho ocupó un lugar entre las yuntas (las parejas de perros) que tiraban de los trineos.'),
-      book(9, 'Con «Auk» el perro gira a la derecha y con «Quierr», a la izquierda. Su instructor lo practicó con Poncho atado a una cincha en su propia cintura, y después hicieron slalom entre postes durante una semana.'),
+      book(9, 'Con “Auk” el perro gira a la derecha y con “Quierr”, a la izquierda. Su instructor lo practicó con Poncho atado a una cincha en su propia cintura, y después hicieron slalom entre postes durante una semana.'),
       book(5, 'Los hombres de la base vestían gruesos abrigos color naranja, botas blancas de lona encerada y mitones, y pasaban el día con los perros: los instruían y los acostumbraban a los arneses, a los trineos y a las voces de mando.'),
       real('Esperanza es una base permanente argentina, fundada el 17 de diciembre de 1952.', 'O2'),
     ],
@@ -88,7 +88,7 @@ export const PONCHO_MILESTONES: readonly Milestone[] = [
     hook: 'La expedición todavía le tenía reservado un puesto nuevo.',
     more: [
       book(9, 'La Expedición Terrestre Invernal Antártica salió de la Base Esperanza el 14 de junio de 1962, con trineos de perros y tractores. Iba hasta la Base San Martín.'),
-      book(9, 'La primera escala fue la Base Matienzo, sobre uno de los nunataks Foca. «Nunatak» viene del inuktitut y significa «pico solitario»: una roca rodeada de hielo.'),
+      book(9, 'La primera escala fue la Base Matienzo, sobre uno de los nunataks Foca. “Nunatak” viene del inuktitut y significa “pico solitario”: una roca rodeada de hielo.'),
       book(9, 'Las dos bases están a unos 800 km en línea recta: ida y vuelta, el viaje pasó los 2.000 km.'),
       book(6, 'Las grietas ocultas bajo la nieve eran el peligro más traicionero: algunas eran tan anchas y hondas que podían tragarse un trineo entero. Según se dice, ciertos perros las detectaban con el olfato.'),
       book(12, 'Poncho caminaba en zigzag para rodear lo que había descubierto. Los hombres clavaban sus bastones y piquetas en la nieve, y casi siempre encontraban una grieta ancha y honda.'),
@@ -122,7 +122,7 @@ export const PONCHO_MILESTONES: readonly Milestone[] = [
     more: [
       book(14, 'Muchos de los perros elegidos habían trabajado bien en la Expedición Invernal de 1962.'),
       book(14, 'La Base Belgrano estaba sobre la barrera de hielos Filchner.'),
-      book(14, 'La marcha al Polo se llamó «Operación 90» por los 90 grados de latitud sur, que es donde está el Polo.'),
+      book(14, 'La marcha al Polo se llamó Operación 90 por los 90 grados de latitud sur, que es donde está el Polo.'),
     ],
   },
   {
@@ -135,7 +135,7 @@ export const PONCHO_MILESTONES: readonly Milestone[] = [
     essential: book(18, 'Un avión ha caído en el hielo y el mal tiempo impide buscarlo desde el aire: hace falta un perro como Poncho. Sale una patrulla de dos hombres y siete perros, con Poncho al frente, y viaja tres jornadas entre ventiscas y grietas. Al cuarto día, apenas olfatea el avión, acelera el paso.'),
     hook: 'Pero la gran marcha seguía su camino.',
     more: [
-      book(17, 'El avión era un Cessna 185B llamado «AE-205». A fines de septiembre de 1965 aterrizó de emergencia por un «blanqueo»: un momento en que todo se pone blanco y el horizonte desaparece. Los cuatro tripulantes sobrevivieron.'),
+      book(17, 'El avión era un Cessna 185B llamado AE-205. A fines de septiembre de 1965 aterrizó de emergencia por un blanqueo: un momento en que todo se pone blanco y el horizonte desaparece. Los cuatro tripulantes sobrevivieron.'),
       book(18, 'La patrulla viajó tres jornadas entre grietas y ventiscas, con temperaturas por debajo de los 30 grados bajo cero.'),
       book(18, 'Los sobrevivientes estaban en una zona llena de grietas: una de ellas se había tragado los víveres que un avión DC-3 les había lanzado el día anterior.'),
       book(18, 'En 1968 Poncho volvió al lugar para ayudar a recuperar las partes del avión.'),
@@ -145,10 +145,10 @@ export const PONCHO_MILESTONES: readonly Milestone[] = [
     id: 'patrulla-paralelo-82',
     year: 1965,
     segment: 2,
-    title: 'La patrulla «Paralelo 82»',
+    title: 'La patrulla Paralelo 82',
     anchor: SANTA_FE_PEAK,
     kinds: ['dogs'],
-    essential: book(15, 'La gran marcha sigue su camino, y Poncho guía a la patrulla «Paralelo 82», formada por trineos de perros. Va por delante, para detectar los peligros que puedan frenar a los tractores que buscan el Polo Sur. Cuando los tractores se separan, sin el ruido ni el humo de los motores, Poncho conduce a la patrulla por portezuelos y valles helados de las montañas Santa Fe.'),
+    essential: book(15, 'La gran marcha sigue su camino, y Poncho guía a la patrulla Paralelo 82, formada por trineos de perros. Va por delante, para detectar los peligros que puedan frenar a los tractores que buscan el Polo Sur. Cuando los tractores se separan, sin el ruido ni el humo de los motores, Poncho conduce a la patrulla por portezuelos y valles helados de las montañas Santa Fe.'),
     hook: 'Y todavía le esperaba una aventura por el aire.',
     more: [
       real('La expedición al Polo salió de la Base Belgrano el 26 de octubre de 1965.', 'O12'),
@@ -170,7 +170,7 @@ export const PONCHO_MILESTONES: readonly Milestone[] = [
     more: [
       book(18, 'Poncho iba con otros dos perros polares, Pato y Bucky, envuelto en un arnés distinto al del trineo. Gimió bajito, y el suboficial a cargo del lanzamiento, que sentía un afecto especial por él, le apoyó la mano en el lomo.'),
       book(18, 'Junto con los perros se lanzaron un trineo desarmable, víveres y elementos de supervivencia. Dos oficiales saltaron antes desde otro helicóptero.'),
-      book(18, 'El helicóptero era uno de los dos S-55 del rompehielos «General San Martín». Nunca antes se había hecho algo así en la Antártida argentina.'),
+      book(18, 'El helicóptero era uno de los dos S-55 del rompehielos General San Martín. Nunca antes se había hecho algo así en la Antártida argentina.'),
       book(19, 'Los perros aterrizaron sobre el hielo, a unos 30 km al sur de la Base Belgrano. En minutos armaron el trineo y salieron con Poncho al frente a rescatar a una patrulla perdida. Volvieron a la base esa misma noche.'),
     ],
   },
@@ -185,7 +185,7 @@ export const PONCHO_MILESTONES: readonly Milestone[] = [
     hook: 'Esa noche su legajo sumó una proeza más.',
     more: [
       book(19, 'Ocurrió un día de agosto de 1967, cuando la patrulla volvía a Esperanza cruzando la bahía Duse sobre mar congelado.'),
-      book(20, 'Los vehículos a motor se frenaron en una cuesta de nieve blanda llamada «Cuesta de los Afligidos». El trineo de Poncho volvió a buscar a los hombres que habían quedado a pie.'),
+      book(20, 'Los vehículos a motor se frenaron en una cuesta de nieve blanda llamada Cuesta de los Afligidos. El trineo de Poncho volvió a buscar a los hombres que habían quedado a pie.'),
       book(20, 'El oficial a cargo clavó tres cañas con banderolas donde habían volcado, para volver a buscar la brújula.'),
       book(20, 'Después de dos horas de andar a ciegas, ya de noche, los hombres vieron las luces de la base: Poncho los había llevado hasta Esperanza. Tres días después, cuando pasó el temporal, recuperaron la brújula y los vehículos.'),
     ],
@@ -197,12 +197,12 @@ export const PONCHO_MILESTONES: readonly Milestone[] = [
     title: 'Poncho deja la Antártida',
     anchor: DRAKE_PASSAGE,
     kinds: ['dogs'],
-    essential: book(21, 'Pasan los años y, en su legajo, aparece cada vez más una frase corta: «No trabajó». Poncho ya no corre a la par de los perros jóvenes y en las patrullas largas se cansa. Un verano llega el rompehielos y lo llevan a bordo rumbo a Ushuaia: una excepción, en mérito a su prestigio.'),
+    essential: book(21, 'Pasan los años y, en su legajo, aparece cada vez más una frase corta: “No trabajó”. Poncho ya no corre a la par de los perros jóvenes y en las patrullas largas se cansa. Un verano llega el rompehielos y lo llevan a bordo rumbo a Ushuaia: una excepción, en mérito a su prestigio.'),
     hook: 'Lejos de la nieve lo esperaba un mundo nuevo.',
     more: [
-      book(21, 'En el legajo de Poncho se anotaba cada vez más seguido «No trabajó»: ya no corría a la par de los perros jóvenes y se cansaba en las patrullas largas.'),
+      book(21, 'En el legajo de Poncho se anotaba cada vez más seguido “No trabajó”: ya no corría a la par de los perros jóvenes y se cansaba en las patrullas largas.'),
       book(21, 'Que dejara la Antártida fue una excepción, en mérito a su prestigio.'),
-      book(5, 'En 1973 lo trasladaron en el rompehielos hasta Ushuaia, donde lo recibió una familia que lo alojó en su hotel «Antártida».'),
+      book(5, 'En 1973 lo trasladaron en el rompehielos hasta Ushuaia, donde lo recibió una familia que lo alojó en su hotel Antártida.'),
     ],
   },
   {
@@ -215,7 +215,7 @@ export const PONCHO_MILESTONES: readonly Milestone[] = [
     essential: book(22, 'En ese mundo nuevo, Poncho vive plácidamente en el hotel de un viejo compañero de patrulla, como un perro retirado. Llega a vivir casi 18 años, mucho más que otros perros grandes. Una mañana de primavera de 1978, en el jardín, ya no despierta.'),
     hook: 'Así termina el camino de Poncho.',
     more: [
-      book(21, 'En Ushuaia lo recibió un viejo compañero de patrulla, que había dejado el Ejército y tenía un hotel llamado «Antártida». Poncho llevaba a los niños a pasear en un trineo improvisado, por las calles.'),
+      book(21, 'En Ushuaia lo recibió un viejo compañero de patrulla, que había dejado el Ejército y tenía un hotel llamado Antártida. Poncho llevaba a los niños a pasear en un trineo improvisado, por las calles.'),
       book(21, 'En Ushuaia descubrió un mundo nuevo: conoció a los niños, los árboles, los caballos y las moscas, y allí hacía calor.'),
       book(22, 'En 1976 sufrió un accidente y un veterinario aconsejó sacrificarlo, pero la familia se negó.'),
       book(5, 'En 1977 y 1978 tiró de un trineo con niños fueguinos en desfiles y exhibiciones.'),

@@ -386,6 +386,14 @@ describe('essentialSentences', () => {
     expect(essentialSentences('Dice «No trabajó.» Después parte.')).toEqual(['Dice «No trabajó.»', 'Después parte.']);
   });
 
+  it('does not split inside “quotes” either (#190)', () => {
+    expect(essentialSentences('Aparece una frase: “No trabajó. Nunca más”. Poncho se cansa.')).toEqual([
+      'Aparece una frase: “No trabajó. Nunca más”.',
+      'Poncho se cansa.',
+    ]);
+    expect(essentialSentences('Dice “No trabajó.” Después parte.')).toEqual(['Dice “No trabajó.”', 'Después parte.']);
+  });
+
   it('keeps abbreviations and numbers whole', () => {
     expect(essentialSentences('Llega a la Base Gral. Belgrano en 1964. Pesa 1.500 kg y mide 1,5 m. Sale mañana.')).toEqual([
       'Llega a la Base Gral. Belgrano en 1964.',

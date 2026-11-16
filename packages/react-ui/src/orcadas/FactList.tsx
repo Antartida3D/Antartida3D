@@ -1,5 +1,6 @@
 import { createContext, useContext } from 'react';
 import { panelFacts, sourcesOf, type OrcadasFact } from '@antartida/core';
+import { Quoted } from '../ui.tsx';
 import { KindChip } from './KindChip.tsx';
 
 export const SourceContext = createContext<((sourceId: string) => void) | null>(null);
@@ -32,7 +33,7 @@ export function FactCard({ fact }: { fact: OrcadasFact }) {
         <KindChip kind={fact.kind} />
         {fact.title && <strong className="orc-fact-title">{fact.title}</strong>}
       </div>
-      <p className="orc-fact-text">{fact.text}</p>
+      <p className="orc-fact-text"><Quoted text={fact.text} /></p>
       <FactSources fact={fact} />
     </article>
   );

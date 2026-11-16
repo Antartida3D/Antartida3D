@@ -28,6 +28,24 @@ const startTrip = async (page: Page, transport: RegExp) => {
   await page.getByRole('button', { name: /^(Zarpar|Despegar)$/ }).click();
 };
 
+test('a quotation in a fact and the title of a source go between “ ” and in italics (#190)', async ({ page }) => {
+  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Desde Ushuaia/ }).click();
+  await page.getByRole('group', { name: 'Medio de transporte' }).getByRole('button', { name: /Irízar/ }).click();
+
+  const quote = page.locator('.vfact em', { hasText: 'el buque insignia' });
+  await expect(quote).toHaveText('“el buque insignia del Comando Conjunto Antártico”');
+  await expect(quote).toHaveCSS('font-style', 'italic');
+  await expect(page.locator('.vfacts')).not.toContainText(/[«»]/);
+
+  await page.locator('.vfact', { hasText: 'el buque insignia' }).getByRole('button', { name: /^Fuente / }).click();
+  const sources = page.getByRole('dialog', { name: 'Fuentes' });
+  const title = sources.locator('[data-source="U4"] em');
+  await expect(title).toHaveText('“La evolución del turismo antártico y su relación con las políticas públicas nacionales y provinciales”');
+  await expect(title).toHaveCSS('font-style', 'italic');
+  await expect(sources).not.toContainText(/[«»]/);
+});
+
 /**
  * Starts the trip from Ushuaia on a transport and goes to the card of Base Marambio, jumping from
  * milestone to milestone without opening any: they are optional (#157). Only the arrival opens.

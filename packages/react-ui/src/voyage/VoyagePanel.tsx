@@ -35,6 +35,7 @@ import ponchoPageUrl from '@antartida/core/assets/poncho/poncho-pagina.jpg';
 import sledTeamUrl from '@antartida/core/assets/poncho/perros-trineo.jpg';
 import { BottomSheet } from '../BottomSheet.tsx';
 import { useFocusReturn, useMediaQuery } from '../hooks.ts';
+import { Quoted } from '../ui.tsx';
 import { Fact, TripContext, type OpenSources } from './Fact.tsx';
 import { PonchoDiorama, type DioramaTour } from './PonchoDiorama.tsx';
 import { PonchoIntro } from './PonchoIntro.tsx';
@@ -77,7 +78,7 @@ function SourcesPage({ focus, transport, notice, onClose }: { focus: VoyageSourc
           {codes.map((code) => (
             <li key={code} data-source={code} className={code === focus ? 'on' : undefined}>
               <strong>{VOYAGE_SOURCES[code].org}</strong>
-              <span>{VOYAGE_SOURCES[code].title}</span>
+              <span><Quoted text={VOYAGE_SOURCES[code].title} /></span>
               {sourceConsulted(code) && <span>Consultada el {formatIsoDate(sourceConsulted(code)!)}.</span>}
               <a href={VOYAGE_SOURCES[code].url} target="_blank" rel="noopener noreferrer">Abrir la fuente</a>
             </li>
@@ -283,7 +284,7 @@ function MilestoneCard({ voyage, animated, onExit, onSource, tour }: {
         <figure className="vphoto">
           <img src={PONCHO_PHOTO_URL[photo.file]} alt={photo.alt} loading="lazy" />
           <figcaption>
-            {photo.caption} Fuente: <a href={photo.source.url} target="_blank" rel="noreferrer">{photo.source.publisher}</a>, consultada el {photo.source.accessed}.
+            <Quoted text={photo.caption} /> Fuente: <a href={photo.source.url} target="_blank" rel="noreferrer">{photo.source.publisher}</a>, consultada el {photo.source.accessed}.
           </figcaption>
         </figure>
       )}

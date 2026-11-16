@@ -14,9 +14,6 @@
 .listview {
   border-radius: 0;
 }
-.listview.pick {
-  border-radius: var(--chart-radius);
-}
 .brand {
   display: grid;
   grid-template-columns: 42px minmax(0, 1fr);

@@ -149,10 +149,13 @@ test('completes all chapters and stops of Orcadas with the keyboard only (deskto
   await page.keyboard.press('Enter');
 
   await expect(log(page)).toContainText(`1/${AVAILABLE_COUNT}`);
-  await expect(page.locator('.toast')).toHaveText(
+  await expect(page.locator('.next-card .next-done')).toHaveText(
     `Estación Orcadas quedó explorado. Registro de exploración: 1/${AVAILABLE_COUNT}`
   );
-  await expect.poll(() => focusedName(page)).toContain('Estación Orcadas');
+  // The next-expedition card takes the focus (#75); closing it leaves the focus on the map.
+  await expect.poll(() => focusedName(page)).toContain('Desde Ushuaia');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.next-sheet')).toHaveCount(0);
 });
 
 test('completes the full mobile tour without typing any numbers (390x844 and 360x740)', async ({ page }) => {
@@ -242,11 +245,13 @@ test('opens Orcadas from the 2D map, completes it, and updates the log', async (
   await page.getByRole('button', { name: 'Terminar expedición' }).click();
 
   await expect(log(page)).toContainText(`1/${AVAILABLE_COUNT}`);
-  await expect(page.locator('.toast')).toHaveText(
+  await expect(page.locator('.next-card .next-done')).toHaveText(
     `Estación Orcadas quedó explorado. Registro de exploración: 1/${AVAILABLE_COUNT}`
   );
   await expect(page.locator('.stage.ret')).toHaveCount(0);
 
+  // The next-expedition card covers the bottom buttons on a phone until it is closed (#75).
+  await page.getByRole('button', { name: 'Quedarme en el mapa' }).click();
   // A point of interest opens a sheet rather than an expedition (Océano, #8, is now an expedition).
   await page.getByRole('button', { name: 'Ver como lista' }).click();
   const erebusBtn = page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Volcán en el hielo/ });

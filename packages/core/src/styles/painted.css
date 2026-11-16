@@ -433,7 +433,14 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
   .sheet.claims-sheet{right:88px}
 }
 @media (max-height:500px){
+  .m3d .legend{max-height:min(420px,max(48px,calc(100dvh - 262px)));}
   .m3d .legend ul{max-height:none;overflow:visible}
+}
+/* A resumed map adds one action to the compact bottom rail. Keep the open legend
+   below the short-screen header while leaving its contents scrollable. */
+@media (min-width:820px) and (max-height:500px){
+  .stage:has(.btn.resume) .legend{max-height:min(100px,max(48px,calc(100dvh - 294px)));overflow-y:auto;}
+  .stage:has(.btn.resume) .legend ul{max-height:none;overflow:visible;}
 }
 @media (prefers-reduced-motion:reduce){
   .legend,.legend summary::before{transition:none}

@@ -63,7 +63,6 @@ import { Storm3D } from '../voyage/Storm3D.tsx';
 import { OrcadasSite } from './OrcadasSite.tsx';
 import { MarambioSite } from './MarambioSite.tsx';
 import { PointModels, pointFocus } from './PointModels.tsx';
-import { StationBeacons } from './StationBeacons.tsx';
 import { OrcadasTravel3D } from '../voyage/OrcadasTravel3D.tsx';
 import { Voyage3D } from '../voyage/Voyage3D.tsx';
 
@@ -82,6 +81,7 @@ function SceneContent({
   overlayRef,
   enablePost,
   voyage,
+  voyagePicker,
   seaMarkers,
   claims,
   onClaimsStatus,
@@ -100,6 +100,7 @@ function SceneContent({
   overlayRef: RefObject<HTMLDivElement | null>;
   enablePost: boolean;
   voyage: Layer3DProps['voyage'];
+  voyagePicker: Layer3DProps['voyagePicker'];
   seaMarkers: SeaMarker[];
   claims: Layer3DProps['claims'];
   onClaimsStatus: Layer3DProps['onClaimsStatus'];
@@ -154,10 +155,9 @@ function SceneContent({
       <OrcadasSite reduced={reduced} />
       <MarambioSite reduced={reduced} hidden={Boolean(voyage)} />
       <PointModels reduced={reduced} />
-      <StationBeacons reduced={Boolean(reduced)} />
       <Storm3D />
       {phase === 'travel' && <OrcadasTravel3D arrival={arrival ?? 'ship'} reduced={reduced} />}
-      {voyage && <Voyage3D bus={voyage} reduced={reduced} overlay={overlayRef} />}
+      {voyage && <Voyage3D bus={voyage} picker={voyagePicker} reduced={reduced} overlay={overlayRef} />}
       {enablePost && (
         <EffectComposer multisampling={0}>
           <InkEffect />
@@ -570,6 +570,7 @@ export function Map3DLayer({
   command,
   onCameraRest,
   voyage,
+  voyagePicker,
   claims,
   onClaimsStatus,
 }: Map3DLayerProps) {
@@ -667,6 +668,7 @@ export function Map3DLayer({
           overlayRef={overlayRef}
           enablePost={enablePost}
           voyage={voyage}
+          voyagePicker={voyagePicker}
           seaMarkers={seaMarkers}
           claims={claims}
           onClaimsStatus={onClaimsStatus}

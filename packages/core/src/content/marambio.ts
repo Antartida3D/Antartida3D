@@ -139,7 +139,7 @@ export const MARAMBIO_FACTS: readonly MarambioFact[] = [
     id: 'runway-permafrost',
     spot: 'runway',
     kind: 'real',
-    text: 'Fue «la primera pista de aterrizaje de tierra, precisamente permafrost, en el Continente Antártico». Los aviones aterrizan sobre una mezcla congelada de tierra, hielo y piedra.',
+    text: 'Fue “la primera pista de aterrizaje de tierra, precisamente permafrost, en el Continente Antártico”. Los aviones aterrizan sobre una mezcla congelada de tierra, hielo y piedra.',
     sourceIds: ['dna-historia', 'faa-escuadron'],
   },
   {
@@ -219,7 +219,7 @@ export const MARAMBIO_FACTS: readonly MarambioFact[] = [
     id: 'tower-foto',
     spot: 'tower',
     kind: 'recon',
-    text: 'La torre de control es una reconstrucción a partir de una foto. No figura en los datos de OpenStreetMap que usamos: la dibujamos en la punta del edificio que ese mapa llama «Terminal Pasajeros».',
+    text: 'La torre de control es una reconstrucción a partir de una foto. No figura en los datos de OpenStreetMap que usamos: la dibujamos en la punta del edificio que ese mapa llama “Terminal Pasajeros”.',
     sourceIds: [MARAMBIO_OSM_SOURCE_ID],
   },
   {

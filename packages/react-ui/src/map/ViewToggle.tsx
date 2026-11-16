@@ -31,8 +31,8 @@ export function ViewToggle({
           <p className="wn-title" id={titleId}>El relieve 3D está apagado en este navegador</p>
           <p>Para dibujar el 3D, la página usa la placa de video (WebGL), y este navegador la tiene desactivada. Para activarla:</p>
           <ol>
-            <li>Abrí la configuración del navegador y buscá «aceleración por hardware».</li>
-            <li>Activá «Usar aceleración por hardware cuando esté disponible».</li>
+            <li>Abrí la configuración del navegador y buscá <em>“aceleración por hardware”</em>.</li>
+            <li>Activá <em>“Usar aceleración por hardware cuando esté disponible”</em>.</li>
             <li>Cerrá el navegador, volvé a abrirlo y recargá esta página.</li>
           </ol>
           <p>Mientras tanto, podés seguir en el mapa 2D.</p>

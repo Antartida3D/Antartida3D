@@ -18,7 +18,7 @@ import { BottomSheet, type OpenSheetSize } from '../BottomSheet.tsx';
 import { useFocusReturn, useIsDesktop } from '../hooks.ts';
 import { KindChip } from '../orcadas/KindChip.tsx';
 import { MonthStrip, type MonthStripSeason } from '../orcadas/MonthStrip.tsx';
-import { Icon } from '../ui.tsx';
+import { Icon, Quoted } from '../ui.tsx';
 import { MarambioScene } from './MarambioScene.tsx';
 import { IRIZAR_DOT, SPOT_VIEWS } from './spots.ts';
 
@@ -31,7 +31,7 @@ function FactCard({ fact, onOpenSource }: { fact: MarambioFact; onOpenSource: (i
       <div className="orc-fact-top">
         <KindChip kind={fact.kind} />
       </div>
-      <p className="orc-fact-text">{fact.text}</p>
+      <p className="orc-fact-text"><Quoted text={fact.text} /></p>
       {sources.length > 0 && (
         <div className="orc-fact-srcs">
           <span className="orc-src-prefix">Fuente:</span>
@@ -101,7 +101,7 @@ function SceneBadge({ onOpenSource }: { onOpenSource: (id: string) => void }) {
       {open && (
         <div className="orc-scene-help-popover" role="note">
           {facts.map((f) => (
-            <p key={f.id}>{f.text}</p>
+            <p key={f.id}><Quoted text={f.text} /></p>
           ))}
           <p>
             <button

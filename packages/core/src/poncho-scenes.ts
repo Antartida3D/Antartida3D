@@ -687,11 +687,14 @@ const ABBREVIATIONS = new Set(['gral', 'sr', 'sra', 'dr', 'dra', 'cnel', 'tte', 
 const SENTENCE_END = '.!?…';
 const CLOSERS = '»”"\')';
 const OPENERS = '«“"¿¡(';
+/** Quotes that open and close with different marks: a stop inside them does not end the sentence. */
+const QUOTE_OPEN = '«“';
+const QUOTE_CLOSE = '»”';
 
 /**
  * The sentences of a text, in order: the diorama tells one per shot. It splits after `.`, `!`, `?` or
  * `…` followed by a space and the start of another sentence (a capital letter, a digit or an opening
- * mark), but not inside «quotes», after an abbreviation (`Gral.`, `Nº`, `p.`) nor in a number (`1.500`,
+ * mark), but not inside «quotes» or “quotes”, after an abbreviation (`Gral.`, `Nº`, `p.`) nor in a number (`1.500`,
  * `1,5`). The sentences joined with one space give back the text.
  */
 export function essentialSentences(text: string): string[] {
@@ -701,14 +704,14 @@ export function essentialSentences(text: string): string[] {
   let start = 0;
   for (let i = 0; i < source.length; i++) {
     const ch = source[i];
-    if (ch === '«') depth++;
-    else if (ch === '»') depth = Math.max(0, depth - 1);
+    if (QUOTE_OPEN.includes(ch)) depth++;
+    else if (QUOTE_CLOSE.includes(ch)) depth = Math.max(0, depth - 1);
     if (!SENTENCE_END.includes(ch)) continue;
     // Closing marks stuck to the stop belong to the sentence it ends: «No trabajó.»
     let j = i + 1;
     let open = depth;
     while (j < source.length && CLOSERS.includes(source[j])) {
-      if (source[j] === '»') open = Math.max(0, open - 1);
+      if (QUOTE_CLOSE.includes(source[j])) open = Math.max(0, open - 1);
       j++;
     }
     if (open > 0 || j >= source.length || !/\s/.test(source[j])) continue;

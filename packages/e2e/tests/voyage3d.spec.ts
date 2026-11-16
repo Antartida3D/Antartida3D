@@ -90,3 +90,132 @@ for (const [name, kind, start] of [['Hércules C-130', 'plane', 'Despegar'], ['A
       .toBe(0);
   });
 }
+
+// Opening the trip brings the camera down to Ushuaia before a vehicle is picked: it used to come
+// close around whatever it was looking at (#190).
+test('opening «Desde Ushuaia» on the 3D map brings the camera down to Ushuaia, beside the panel', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('group', { name: 'Modo de vista' }).getByRole('button', { name: 'Relieve 3D' }).click();
+  await page.waitForFunction(() => (window as any).__cameraControls);
+  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('button', { name: /Desde Ushuaia.*Empezar expedición/ }).click();
+  await expect(page.getByRole('group', { name: 'Medio de transporte' })).toBeVisible();
+
+  // Where the Irízar leaves from (voyageAt('ship', 0)), in world units.
+  const departure = { x: 32.54 - 500, z: 312.78 - 500 };
+  const pose = () => page.evaluate(() => {
+    const cc = (window as any).__cameraControls;
+    const cam = cc.camera;
+    // Where the departure point is drawn, as a fraction of the screen width.
+    const p = cam.position.clone().set(32.54 - 500, 0, 312.78 - 500).project(cam);
+    return { distance: cc.distance as number, screenX: (p.x + 1) / 2 };
+  });
+  await expect.poll(async () => (await pose()).distance, { message: 'camera close to the ground' }).toBeLessThan(20);
+  const got = await drawnTarget(page);
+  // Within a few units of the port: the target is beside it on a wide screen, to clear the panel.
+  expect(Math.hypot(got.x - departure.x, got.z - departure.z)).toBeLessThan(12);
+  const { screenX } = await pose();
+  const { width } = page.viewportSize()!;
+  if (width > 820) {
+    // In the middle of the part the panel leaves free (480 px wide, 88 px from the right edge).
+    expect(Math.abs(screenX * width - (width - 568) / 2)).toBeLessThan(30);
+  } else {
+    expect(Math.abs(screenX - 0.5)).toBeLessThan(0.05);
+  }
+});
+
+// The trip does not stop at the milestones (#157), so they are easy to go by: the name of an unread
+// one shows over its pin while the vehicle is near, and any pin opens its card, passed or not (#190).
+test('a milestone near the vehicle shows its name over its pin, and a pin ahead opens its card', async ({ page }) => {
+  test.setTimeout(60_000);
+  await page.goto('/');
+  await page.getByRole('group', { name: 'Modo de vista' }).getByRole('button', { name: 'Relieve 3D' }).click();
+  await page.waitForFunction(() => (window as any).__cameraControls);
+  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('button', { name: /Desde Ushuaia.*Empezar expedición/ }).click();
+  await page.getByRole('group', { name: 'Medio de transporte' }).getByRole('button', { name: /ARA Almirante Irízar/ }).click();
+  await page.getByRole('button', { name: 'Zarpar' }).click();
+
+  // Every milestone between the departure and the arrival has a pin that is a button, from the start.
+  const pins = page.locator('.vpin');
+  await expect(pins.first()).toBeAttached();
+  const titles = await pins.evaluateAll((els) => els.map((el) => el.getAttribute('title')!));
+  expect(titles.length).toBeGreaterThan(3);
+  const labels = page.locator('.vpinlabel');
+  const far = titles[titles.length - 1];
+  // Far from the vehicle a milestone shows no name.
+  await expect(labels.filter({ hasText: far })).toHaveCount(0);
+
+  // A pin still ahead opens its card, though it may be off the screen: the trip stays where it is.
+  await pins.last().evaluate((el: HTMLElement) => el.click());
+  const ahead = page.getByRole('dialog', { name: far });
+  await expect(ahead).toBeVisible();
+  // The card tells all it has at once.
+  await expect(ahead.locator('.vactions').getByRole('button')).toHaveText(['Seguir viaje']);
+  await ahead.getByRole('button', { name: 'Seguir viaje' }).click();
+  await expect(ahead).toHaveCount(0);
+
+  // At the next milestone, unread: its name is over its pin, and opens its card.
+  const next = (await page.locator('.vnext strong').textContent())!;
+  await page.getByRole('button', { name: 'Próximo hito' }).click();
+  const label = labels.filter({ hasText: next });
+  await expect(label).toBeVisible();
+  await expect(label).toBeInViewport();
+  await label.click();
+  const card = page.getByRole('dialog', { name: next });
+  await expect(card).toBeVisible();
+  await card.getByRole('button', { name: 'Seguir viaje' }).click();
+  // Read, it is a name no more: its grey pin stays.
+  await expect(label).toHaveCount(0);
+});
+
+// On a trip the map is the trip: the title and the exploration log give way, «Salir» takes their
+// corner, and the bar keeps going back on the left and the main button over the rest (#190).
+test('on a trip the title and the exploration log give way, «Salir» is at the top right and «avanzar» fills the bar', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.goto('/');
+  await page.getByRole('group', { name: 'Modo de vista' }).getByRole('button', { name: 'Relieve 3D' }).click();
+  await page.waitForFunction(() => (window as any).__cameraControls);
+  const title = page.getByRole('heading', { level: 1, name: 'Antártida por descubrir' });
+  const log = page.getByRole('status', { name: /Registro de exploración/ });
+  await expect(title).toBeInViewport();
+  await expect(log).toBeInViewport();
+
+  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('button', { name: /Desde Ushuaia.*Empezar expedición/ }).click();
+  await page.getByRole('group', { name: 'Medio de transporte' }).getByRole('button', { name: /ARA Almirante Irízar/ }).click();
+  await page.getByRole('button', { name: 'Zarpar' }).click();
+
+  // Off the screen, but still there for a screen reader.
+  const header = page.locator('.top');
+  await expect.poll(async () => (await header.boundingBox())!.width).toBeLessThanOrEqual(1);
+  await expect(title).toBeAttached();
+  await expect(log).toBeAttached();
+
+  const { width } = page.viewportSize()!;
+  const leave = page.getByRole('button', { name: 'Salir del viaje' });
+  await expect(leave).toHaveText('Salir');
+  const corner = (await leave.boundingBox())!;
+  expect(corner.x + corner.width).toBeGreaterThan(width - 30);
+  expect(corner.y).toBeLessThan(40);
+
+  // The bar: going back on the left, and holding to advance over the rest of the row.
+  const row = page.locator('.vbar .row');
+  await expect(row.getByRole('button')).toHaveCount(2);
+  const [whole, back, hold] = await Promise.all([
+    row.boundingBox(),
+    page.getByRole('button', { name: 'Mantené para retroceder' }).boundingBox(),
+    page.getByRole('button', { name: 'Mantené para avanzar' }).boundingBox(),
+  ]);
+  expect(back!.x).toBeCloseTo(whole!.x, 0);
+  expect(hold!.x).toBeGreaterThan(back!.x + back!.width);
+  expect(hold!.x + hold!.width).toBeCloseTo(whole!.x + whole!.width, 0);
+  // With the room it has, it says what to do with it, on a phone too.
+  await expect(page.getByRole('button', { name: 'Mantené para avanzar' })).toHaveText('Mantené para avanzar');
+
+  // Leaving brings the title and the log back.
+  await leave.click();
+  await expect(page.locator('.vbar')).toHaveCount(0);
+  await expect(title).toBeInViewport();
+  await expect(log).toBeInViewport();
+});

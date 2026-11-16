@@ -735,10 +735,9 @@ export const voyageArrived = (s: VoyageState) => s.reached >= voyageStops(s.kind
 /**
  * Advances the trip by `seconds` of the user holding "advance". The milestones on the way are
  * passed without stopping: their cards are offered, not opened (#157), for whoever does not want
- * to read them all. Only the arrival stops the trip and opens its card. With `toNext` it stops at
- * the next milestone, without opening it: the "next milestone" button.
+ * to read them all. Only the arrival stops the trip and opens its card.
  */
-export function advanceVoyage(s: VoyageState, seconds: number, toNext = false): VoyageState {
+export function advanceVoyage(s: VoyageState, seconds: number): VoyageState {
   if (s.card >= 0 || voyageArrived(s) || seconds <= 0) return s;
   const stops = voyageStops(s.kind);
   const last = lastStop(s.kind);
@@ -751,7 +750,6 @@ export function advanceVoyage(s: VoyageState, seconds: number, toNext = false): 
   let reached = s.reached;
   while (reached < stops.length && t >= stops[reached].t) {
     if (reached === last) return { ...s, t: stops[last].t, reached: last + 1, card: last };
-    if (toNext) return { ...s, t: stops[reached].t, reached: reached + 1 };
     reached++;
   }
   return { ...s, t, reached };
@@ -785,10 +783,31 @@ export function voyageStopAt(s: VoyageState): number {
   return at;
 }
 
-/** Opens the card of a milestone already passed, when the user asks for it. */
+/**
+ * Opens the card of a milestone when the user asks for it: one already passed, or one still ahead,
+ * by its pin (#190): whoever wants to read about a place need not get there first. Not the arrival
+ * before arriving, whose card ends the trip. A story told in order (Poncho) opens only what was passed.
+ */
 export function openVoyageCard(s: VoyageState, index: number): VoyageState {
-  if (index < 0 || index >= s.reached || index === s.card) return s;
+  if (index < 0 || index === s.card) return s;
+  if (index >= s.reached && (storyInOrder(s.kind) || index >= lastStop(s.kind))) return s;
   return { ...s, card: index };
+}
+
+/** A milestone is near while the vehicle is within this many map units of it along the path (about 75 km). */
+export const MILESTONE_NEAR = 10;
+
+/**
+ * Milestones near the vehicle at fraction `t`, ahead or behind: the map shows their name over
+ * their pin, so they are not gone by unnoticed now that the trip does not stop at them (#190).
+ * Never the departure, which has no pin, nor the arrival, whose card opens by itself.
+ */
+export function voyageStopsNear(kind: TransportKind, t: number): number[] {
+  const stops = voyageStops(kind);
+  const reach = MILESTONE_NEAR / voyageLength(kind);
+  const near: number[] = [];
+  for (let i = 1; i < stops.length - 1; i++) if (Math.abs(stops[i].t - t) <= reach) near.push(i);
+  return near;
 }
 
 /** Closes the open card. Once arrived, closing another card goes back to the one of the arrival. */

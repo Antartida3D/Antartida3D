@@ -1,4 +1,5 @@
 import { createContext, useContext } from 'react';
+import { Quoted } from '../ui.tsx';
 import { VOYAGE_SOURCES, citationLabel, tripSourceNumber, voyageSourceNumber, type TransportId, type VoyageFact, type VoyageSourceCode } from '@antartida/core';
 
 /** The trip whose sources list numbers the citations (Poncho lists only what it cites); without it, the global numbering. */
@@ -13,7 +14,7 @@ export function Fact({ fact, onSource }: { fact: VoyageFact; onSource: OpenSourc
   return (
     <li className="vfact">
       <span>
-        {fact.text}
+        <Quoted text={fact.text} />
         {fact.sources.map((code) => {
           const number = trip ? tripSourceNumber(trip, code) : voyageSourceNumber(code);
           const page = fact.pages?.[code];

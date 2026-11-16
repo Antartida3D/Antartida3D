@@ -35,6 +35,7 @@ import ponchoPageUrl from '@antartida/core/assets/poncho/poncho-pagina.jpg';
 import sledTeamUrl from '@antartida/core/assets/poncho/perros-trineo.jpg';
 import { BottomSheet } from '../BottomSheet.tsx';
 import { useFocusReturn, useMediaQuery } from '../hooks.ts';
+import { Quoted } from '../ui.tsx';
 import { Fact, TripContext, type OpenSources } from './Fact.tsx';
 import { PonchoDiorama, type DioramaTour } from './PonchoDiorama.tsx';
 import { PonchoIntro } from './PonchoIntro.tsx';
@@ -77,7 +78,7 @@ function SourcesPage({ focus, transport, notice, onClose }: { focus: VoyageSourc
           {codes.map((code) => (
             <li key={code} data-source={code} className={code === focus ? 'on' : undefined}>
               <strong>{VOYAGE_SOURCES[code].org}</strong>
-              <span>{VOYAGE_SOURCES[code].title}</span>
+              <span><Quoted text={VOYAGE_SOURCES[code].title} /></span>
               {sourceConsulted(code) && <span>Consultada el {formatIsoDate(sourceConsulted(code)!)}.</span>}
               <a href={VOYAGE_SOURCES[code].url} target="_blank" rel="noopener noreferrer">Abrir la fuente</a>
             </li>
@@ -283,7 +284,7 @@ function MilestoneCard({ voyage, animated, onExit, onSource, tour }: {
         <figure className="vphoto">
           <img src={PONCHO_PHOTO_URL[photo.file]} alt={photo.alt} loading="lazy" />
           <figcaption>
-            {photo.caption} Fuente: <a href={photo.source.url} target="_blank" rel="noreferrer">{photo.source.publisher}</a>, consultada el {photo.source.accessed}.
+            <Quoted text={photo.caption} /> Fuente: <a href={photo.source.url} target="_blank" rel="noreferrer">{photo.source.publisher}</a>, consultada el {photo.source.accessed}.
           </figcaption>
         </figure>
       )}
@@ -301,7 +302,9 @@ function MilestoneCard({ voyage, animated, onExit, onSource, tour }: {
         ) : (
           <Fact fact={milestone.essential} onSource={onSource} />
         )}
-        {more && (!tour || tour.view.showsMore) && milestone.more.map((f) => <Fact key={f.text} fact={f} onSource={onSource} />)}
+        {/* Whoever opened the card asked to know about the place: all of it at once, with no «Saber más» (#190).
+            Told a sentence at a time (the diorama), the rest still waits for the last one and for its button. */}
+        {(tour ? more && tour.view.showsMore : !beforeHop) && milestone.more.map((f) => <Fact key={f.text} fact={f} onSource={onSource} />)}
       </ul>
       {notes.length > 0 && (
         <div className="vexp" role="group" aria-label="Cómo funciona la expedición">
@@ -363,6 +366,12 @@ function MilestoneCard({ voyage, animated, onExit, onSource, tour }: {
       {milestone.hook && (!tour || tour.view.showsHook) && <p className="vhook">{milestone.hook}</p>}
       <div className="row vactions">
         {tour && <button type="button" className="btn" disabled={tour.view.first} onClick={tour.onBack}>Atrás</button>}
+        {tour?.view.showsMore && (
+          <button type="button" className="btn ghost" aria-expanded={more} onClick={() => setMore((m) => !m)}>
+            {more ? 'Ver menos' : 'Saber más'}
+          </button>
+        )}
+        {/* The one main button, last on the right, where the thumb reaches on a phone (#177). */}
         {tour && !tour.view.last ? (
           <button type="button" className="btn primary" onClick={tour.onNext}>Siguiente</button>
         ) : (
@@ -372,14 +381,6 @@ function MilestoneCard({ voyage, animated, onExit, onSource, tour }: {
               : beforeHop ? 'Continuar' : last ? 'Terminar el viaje' : arrived ? 'Volver a la llegada' : 'Seguir viaje'}
           </button>
         )}
-        {!beforeHop && (!tour || tour.view.showsMore) && (
-          <button type="button" className="btn ghost" aria-expanded={more} onClick={() => setMore((m) => !m)}>
-            {more ? 'Ver menos' : 'Saber más'}
-          </button>
-        )}
-        <button type="button" className="btn primary" onClick={next}>
-          {beforeHop ? 'Continuar' : last ? 'Terminar el viaje' : arrived ? 'Volver a la llegada' : 'Seguir viaje'}
-        </button>
       </div>
     </>
   );
@@ -527,6 +528,10 @@ function TravelBar({ voyage, animated, onExit, onSource }: { voyage: VoyageContr
     };
   };
   return (
+    <>
+    {/* Out of the bar, at the top right corner: on a trip the title and the exploration log give way (#190),
+        and the bar keeps only what moves the trip. */}
+    <button type="button" className="btn vleave" onClick={onExit} aria-label="Salir del viaje">Salir</button>
     <div className="vbar" role="group" aria-label="Controles del viaje">
       {/* The route log: a line of the book while the team travels between stops. Where the path is not animated, one per step. */}
       {state.kind === 'dogs' && (
@@ -568,11 +573,12 @@ function TravelBar({ voyage, animated, onExit, onSource }: { voyage: VoyageContr
           )}
         </div>
       )}
-      {/* One row, with the main button at the same corner as "Seguir viaje" in the milestone card: the pointer stays put.
-          It is the last one, on the right, where the thumb reaches on a phone (#177). */}
+      {/* One row: going back on the left, and the main button takes the rest, up to the right, where the
+          thumb reaches on a phone (#177) and "Seguir viaje" is in the milestone card: the pointer stays put. */}
       <div className="row">
-        <button type="button" className="btn ghost vexit" onClick={onExit} aria-label="Salir del viaje" title="Salir del viaje">✕</button>
-        <button type="button" className={'btn' + (animated ? '' : ' primary')} onClick={() => voyage.skip(animated)}>Próximo hito</button>
+        {/* Where the trip is not animated (2D map, reduced motion) it goes step by step. Animated, holding
+            «avanzar» picks up speed (#166): a button to jump ahead was one too many (#190). */}
+        {!animated && <button type="button" className="btn primary vgo" onClick={voyage.skip}>Próximo hito</button>}
         {animated && (
           <button
             type="button"
@@ -593,13 +599,13 @@ function TravelBar({ voyage, animated, onExit, onSource }: { voyage: VoyageContr
             aria-label="Mantené para avanzar"
             title="Mantené apretado: va tomando velocidad"
           >
-            <span className="vwide">Mantené para avanzar</span>
-            <span className="vnarrow">Avanzar ▶</span>
+            Mantené para avanzar
             <span className="vgear" ref={gear} aria-hidden="true" hidden />
           </button>
         )}
       </div>
     </div>
+    </>
   );
 }
 

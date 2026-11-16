@@ -28,6 +28,24 @@ const startTrip = async (page: Page, transport: RegExp) => {
   await page.getByRole('button', { name: /^(Zarpar|Despegar)$/ }).click();
 };
 
+test('a quotation in a fact and the title of a source go between “ ” and in italics (#190)', async ({ page }) => {
+  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Desde Ushuaia/ }).click();
+  await page.getByRole('group', { name: 'Medio de transporte' }).getByRole('button', { name: /Irízar/ }).click();
+
+  const quote = page.locator('.vfact em', { hasText: 'el buque insignia' });
+  await expect(quote).toHaveText('“el buque insignia del Comando Conjunto Antártico”');
+  await expect(quote).toHaveCSS('font-style', 'italic');
+  await expect(page.locator('.vfacts')).not.toContainText(/[«»]/);
+
+  await page.locator('.vfact', { hasText: 'el buque insignia' }).getByRole('button', { name: /^Fuente / }).click();
+  const sources = page.getByRole('dialog', { name: 'Fuentes' });
+  const title = sources.locator('[data-source="U4"] em');
+  await expect(title).toHaveText('“La evolución del turismo antártico y su relación con las políticas públicas nacionales y provinciales”');
+  await expect(title).toHaveCSS('font-style', 'italic');
+  await expect(sources).not.toContainText(/[«»]/);
+});
+
 /**
  * Starts the trip from Ushuaia on a transport and goes to the card of Base Marambio, jumping from
  * milestone to milestone without opening any: they are optional (#157). Only the arrival opens.
@@ -37,11 +55,25 @@ async function arriveAtMarambio(page: Page, transport: RegExp) {
   return travelToMarambio(page);
 }
 
-/** From wherever the trip is, jumps milestone by milestone to the card of Base Marambio. */
+/**
+ * From wherever the trip is, goes to the card of Base Marambio. Step by step it jumps milestone by
+ * milestone. With motion there is no jumping ahead (#190): holding «avanzar» goes all the way, and
+ * only the arrival stops the trip.
+ */
 async function travelToMarambio(page: Page) {
   const arrival = page.getByRole('dialog', { name: 'Base Marambio' });
   const skip = page.getByRole('button', { name: 'Próximo hito', exact: true });
   const next = page.locator('.vnext strong');
+  await expect(next).toBeVisible();
+  const hold = page.getByRole('button', { name: 'Mantené para avanzar' });
+  if (await hold.isVisible()) {
+    await expect(skip).toHaveCount(0);
+    await hold.hover();
+    await page.mouse.down();
+    await expect(arrival).toBeVisible({ timeout: 180_000 });
+    await page.mouse.up();
+    return arrival;
+  }
   for (let i = 0; i < 12; i++) {
     if (await arrival.isVisible()) break;
     // A milestone passed by does not open its card.
@@ -145,6 +177,8 @@ test.describe('optional milestones on the trip from Ushuaia (#157)', () => {
     await offer.getByRole('button', { name: 'Leer el hito: Ushuaia y el Canal Beagle' }).click();
     const card = page.getByRole('dialog', { name: 'Ushuaia y el Canal Beagle' });
     await expect(card.getByRole('button', { name: 'Responder una pregunta' })).toBeVisible();
+    // One way on: the card had two «Seguir viaje», and it tells all it has at once, with no «Saber más» (#190).
+    await expect(card.locator('.vactions').getByRole('button')).toHaveText(['Seguir viaje']);
     await card.getByRole('button', { name: 'Seguir viaje' }).click();
     await expect(card).toHaveCount(0);
     // Read once, it says so, and it can be read again.

@@ -87,8 +87,3 @@ export const BUOY_POLY: readonly Tri[] = (() => {
     ...prism(oct(0.055), 0.35, 0.42, BEACON_WARM, BEACON_WARM),
   ];
 })();
-
-/** Small low-poly warm lantern / radio beacon diamond for Antarctic stations. */
-export const BEACON_DIAMOND_POLY: readonly Tri[] = [
-  ...prism([[0.08, 0], [0, 0.08], [-0.08, 0], [0, -0.08]], 0, 0.14, BEACON_WARM, BEACON_WARM),
-];

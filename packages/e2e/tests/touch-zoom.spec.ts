@@ -208,3 +208,17 @@ for (const mode of ['Mapa 2D', 'Relieve 3D'] as const) {
     await expect(dialogs.first()).toBeVisible();
   });
 }
+
+// A phone answers a double tap or a held touch by selecting the text nearby, and an iPhone by
+// opening its magnifier too: over the map those touches zoom, so nothing there may be selected (#190).
+test('the map and what lies over it cannot be selected, and what is there to read still can (#190)', async ({ page }) => {
+  await page.goto('/');
+  const selectable = (selector: string) =>
+    page.evaluate((s) => {
+      const style = getComputedStyle(document.querySelector(s)!);
+      return style.userSelect || style.getPropertyValue('-webkit-user-select');
+    }, selector);
+  for (const selector of ['.vp', '.brand h1', '.hint', '.mk']) expect(await selectable(selector), selector).toBe('none');
+  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  expect(await selectable('.listview .inner')).toBe('text');
+});

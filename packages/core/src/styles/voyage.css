@@ -54,13 +54,19 @@
 /* Touch target over the head of a pin passed: the pin is drawn under it, the ring shows on focus. */
 .vpin{width:44px;height:44px;padding:0;border:0;border-radius:50%;background:transparent;pointer-events:auto;cursor:pointer}
 .vpin:hover,.vpin:focus-visible{outline:3px solid var(--ocre);outline-offset:-6px}
+/* Name of an unread milestone near the vehicle, over its pin: light, only the title. Touching it opens the card (#190). */
+.vpinlabel{position:absolute;left:50%;bottom:calc(100% - 2px);transform:translateX(-50%);padding:3px 10px;border:1.5px solid var(--ink);border-radius:10px 14px 11px 13px;background:color-mix(in srgb,var(--paper) 92%,transparent);box-shadow:1px 2px 0 rgba(31,42,54,.2);font-family:'Fraunces',Georgia,serif;font-size:15px;line-height:1.2;color:var(--ink);white-space:nowrap;pointer-events:auto;cursor:pointer;animation:fadein .2s ease both}
+.vpinlabel:hover{border-color:var(--ocre)}
 /* A compact single row: on a phone the panel must leave the map and the vehicle in view. */
-/* «Salir» on the left and the main button on the right, where the thumb reaches (#177). */
+/* Going back on the left; the main button takes the rest of the row, up to the right, where the thumb reaches (#177, #190). */
 .vbar .row{margin-top:8px;flex-wrap:nowrap;gap:8px;justify-content:space-between}
 .vbar .btn{padding:0 12px;white-space:nowrap}
-.vbar .vhold{flex:1;white-space:nowrap}
-.vbar .vback,.vbar .vexit{flex:none;width:48px;padding:0;touch-action:none;user-select:none;-webkit-user-select:none}
-.vwide{display:none}
+.vbar .vhold,.vbar .vgo{flex:1;white-space:nowrap}
+.vbar .vback{flex:none;width:48px;padding:0;touch-action:none;user-select:none;-webkit-user-select:none}
+/* On a trip the map is the trip: the title and the exploration log give way to it (#190). They stay for a screen reader. */
+.stage.voyaging .top{right:auto;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;background:none}
+/* «Salir» of the trip, in the corner the exploration log leaves free. */
+.vleave{position:absolute;top:14px;right:16px;z-index:5}
 .vhold{position:relative;touch-action:none;user-select:none;-webkit-user-select:none}
 /* Speed badge on the corner, while "advance" is held: it must not change the button size, or the row reflows under the pointer. */
 .vgear{position:absolute;top:-12px;right:-8px;padding:2px 8px;border-radius:12px;border:2px solid var(--ink);background:var(--ocre);color:var(--ink);font-size:13px;line-height:1.2;pointer-events:none}
@@ -106,8 +112,6 @@
 /* Wide screens: every panel of the trip sits on the same corner, beside the zoom buttons, so the pointer does not cross the map. */
 @media (min-width:821px){
   .vbar,.sheet.voyage{left:auto;right:88px;bottom:24px;width:480px}
-  .vwide{display:inline}
-  .vnarrow{display:none}
   .vbar{padding:12px 20px 24px}
 }
 /* Phones: the zoom buttons give way to the trip panel; pinching still zooms. */

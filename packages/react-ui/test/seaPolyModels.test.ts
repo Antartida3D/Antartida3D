@@ -12,7 +12,6 @@ import {
 import { boxShade, buildPolyGeometry, POLY_MIN_COLORS, POLY_MIN_TRIS } from '../src/voyage/lowPoly.ts';
 import {
   ALBATROSS_PARTS,
-  BEACON_DIAMOND_POLY,
   BUOY_POLY,
   ICE_CHUNK_POLY,
   KRILL_POLY,
@@ -129,7 +128,6 @@ describe('seaLifeAnimations', () => {
       SHIP_WAKE_POLY,
       KRILL_POLY,
       BUOY_POLY,
-      BEACON_DIAMOND_POLY,
       ...PACK_ICE_POLYS,
     ]) {
       const geometry = buildPolyGeometry(tris, boxShade);

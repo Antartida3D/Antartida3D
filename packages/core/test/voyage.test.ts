@@ -70,6 +70,8 @@ import {
   skipToNextStop,
   startVoyage,
   voyageStopAt,
+  voyageStopsNear,
+  MILESTONE_NEAR,
   stormAt,
   stormCeiling,
   toWorld,
@@ -722,26 +724,47 @@ describe('voyage state', () => {
     expect(advanceVoyage(end, 10)).toBe(end);
   });
 
-  it('stops at the next milestone, without opening it, when asked to', () => {
-    let s = startVoyage('irizar');
-    for (let i = 1; i < last; i++) {
-      s = advanceVoyage(s, 1000, true);
-      expect(s.t).toBe(ship[i].t);
-      expect(s.card).toBe(-1);
-      expect(voyageStopAt(s)).toBe(i);
-    }
-    s = advanceVoyage(s, 1000, true);
-    expect(s.card).toBe(last);
-  });
-
-  it('opens the card of a milestone passed only when asked, and holds the trip while it is open', () => {
-    const s = advanceVoyage(startVoyage('irizar'), 1000, true);
-    expect(openVoyageCard(s, 2)).toBe(s); // not passed yet
+  it('opens the card of a milestone only when asked, and holds the trip while it is open', () => {
+    const s = skipToNextStop(startVoyage('irizar'));
     const open = openVoyageCard(s, 1);
     expect(open.card).toBe(1);
     expect(advanceVoyage(open, 5)).toBe(open);
     expect(retreatVoyage(open, 5)).toBe(open);
     expect(closeVoyageCard(open)).toEqual(s);
+  });
+
+  it('opens a milestone still ahead, but not the arrival, whose card ends the trip (#190)', () => {
+    const s = startVoyage('irizar');
+    const ahead = openVoyageCard(s, 3);
+    expect(ahead.card).toBe(3);
+    // Reading ahead does not move the trip: closed, it is where it was.
+    expect(ahead.t).toBe(s.t);
+    expect(ahead.reached).toBe(s.reached);
+    expect(closeVoyageCard(ahead)).toEqual(s);
+    expect(openVoyageCard(s, last)).toBe(s);
+    expect(openVoyageCard(s, last + 1)).toBe(s);
+    expect(openVoyageCard(s, -1)).toBe(s);
+  });
+
+  it('a story told in order opens only what was passed (#190)', () => {
+    const s = startVoyage('poncho');
+    expect(openVoyageCard(closeVoyageCard(s), s.reached)).toEqual(closeVoyageCard(s));
+  });
+
+  it('a milestone is near within MILESTONE_NEAR of the path, ahead or behind, never the departure nor the arrival (#190)', () => {
+    const reach = MILESTONE_NEAR / voyageLength('ship');
+    expect(voyageStopsNear('ship', ship[2].t)).toContain(2);
+    expect(voyageStopsNear('ship', ship[2].t - reach * 0.9)).toContain(2);
+    expect(voyageStopsNear('ship', ship[2].t + reach * 0.9)).toContain(2);
+    expect(voyageStopsNear('ship', ship[2].t - reach * 1.1)).not.toContain(2);
+    expect(voyageStopsNear('ship', ship[2].t + reach * 1.1)).not.toContain(2);
+    for (const kind of ['ship', 'plane'] as const) {
+      for (const t of [0, 0.25, 0.5, 0.75, 1]) {
+        const near = voyageStopsNear(kind, t);
+        expect(near).not.toContain(0);
+        expect(near).not.toContain(voyageStops(kind).length - 1);
+      }
+    }
   });
 
   it('after the arrival, closing the card of another milestone goes back to the one of the arrival', () => {
@@ -752,8 +775,8 @@ describe('voyage state', () => {
   });
 
   it('goes back keeping the milestones passed, and offers the one behind the vehicle', () => {
-    let s = advanceVoyage(startVoyage('irizar'), 1000, true);
-    s = advanceVoyage(s, 1000, true);
+    let s = skipToNextStop(startVoyage('irizar'));
+    s = skipToNextStop(s);
     const at = s.t;
     s = retreatVoyage(s, 1);
     expect(s.t).toBeCloseTo(at - 1 / VOYAGE_SECONDS.ship);

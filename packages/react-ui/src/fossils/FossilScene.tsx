@@ -526,10 +526,11 @@ function Reconstruction({ reduced, children }: { reduced: boolean; children: Rea
 
 // --- Worlds ---------------------------------------------------------------------------------
 
+/** An outcrop of stacked strata with a flat front face, where the ammonite shows. */
 const ROCK: readonly Box[] = [
   [0, 0.2, 0, 1.7, 0.4, 1.1, C.strataBrown],
-  [0.05, 0.5, -0.05, 1.5, 0.22, 0.95, C.strataTan],
-  [-0.1, 0.7, -0.1, 1.2, 0.18, 0.8, C.strataGrey],
+  [0.05, 0.5, 0, 1.6, 0.2, 1.1, C.strataTan],
+  [-0.05, 0.69, -0.02, 1.4, 0.18, 1.06, C.strataGrey],
   [0.1, 0.86, -0.15, 0.9, 0.14, 0.6, C.strataTan],
   [-0.5, 0.06, 0.62, 0.3, 0.12, 0.2, C.gravelMid],
   [0.62, 0.05, 0.55, 0.22, 0.1, 0.18, C.gravelLight],
@@ -591,7 +592,8 @@ function FieldWorld({ view, state, reduced }: { view: FossilView; state: FossilS
       {/* Ammonite in its outcrop, under the sediment */}
       <group position={at(ax, az)}>
         <Model boxes={ROCK} />
-        <group position={[0, 0.06, 0.58]} rotation={[-0.3, 0, 0]} scale={0.9}>
+        {/* Set into the face of the rock, only its front half showing, as a fossil the weather has uncovered. */}
+        <group position={[0, 0.04, 0.52]} scale={0.6}>
           <PolyProp id="ammonite-fossil" tris={AMMONITE_FOSSIL_TRIS} position={[0, 0, 0]} />
           <Sediment cleaned={view === 'ammonite-rock' || closing ? state.cleaned : 3} reduced={reduced} />
         </group>

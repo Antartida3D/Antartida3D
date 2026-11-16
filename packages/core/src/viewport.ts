@@ -11,6 +11,13 @@ export interface Size {
   vh: number;
 }
 
+export interface Rect {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
 export interface Geometry {
   /** Side of the map layer in px at k = 1. */
   S: number;
@@ -54,11 +61,31 @@ export function zoomCenter(size: Size, view: View, factor: number): View {
   return zoomAround(size, view, size.vw / 2, size.vh / 2, view.k * factor);
 }
 
-/** Centers map point (wx, wy) at `anchorY` (fraction of viewport height). */
-export function focusWorld(size: Size, wx: number, wy: number, nk: number, anchorY = 0.52): View {
+/** Centers map point (wx, wy) at `(anchorX, anchorY)` (fractions of viewport size). */
+export function focusWorld(size: Size, wx: number, wy: number, nk: number, anchorY = 0.52, anchorX = 0.5): View {
   const { S, ox, oy } = geometry(size);
   const k2 = clampK(nk);
-  return clampView(size, k2, size.vw / 2 - ox - (wx / MAP_SIZE) * S * k2, size.vh * anchorY - oy - (wy / MAP_SIZE) * S * k2);
+  return clampView(size, k2, size.vw * anchorX - ox - (wx / MAP_SIZE) * S * k2, size.vh * anchorY - oy - (wy / MAP_SIZE) * S * k2);
+}
+
+/** Unobstructed viewport area alongside the card (left on wide screens, top for portrait sheets). */
+export function freeArea(size: Size, card: Rect): Rect {
+  const left = Math.max(0, Math.min(size.vw, card.left));
+  const top = Math.max(0, Math.min(size.vh, card.top));
+  if (card.right - card.left < size.vw * 0.75 && left > 0) {
+    return { left: 0, top: 0, right: left, bottom: size.vh };
+  }
+  return { left: 0, top: 0, right: size.vw, bottom: top };
+}
+
+/** True when `marker` sits outside `free` (or closer than `margin` px to its edges). */
+export function needsFraming(marker: { left: number; top: number }, free: Rect, margin = 48): boolean {
+  return (
+    marker.left < free.left + margin ||
+    marker.left > free.right - margin ||
+    marker.top < free.top + margin ||
+    marker.top > free.bottom - margin
+  );
 }
 
 /** Unclamped target for the dive into the expedition point. */

@@ -1,4 +1,5 @@
 import { expect, test, type Locator } from '@playwright/test';
+import { MAP_2D_ENABLED, NO_2D } from './map-helpers.ts';
 
 let consoleErrors: string[] = [];
 
@@ -190,6 +191,7 @@ test.describe('Loading screen', () => {
   });
 
   test('saved 2D mode finishes with the base and ink milestones without waiting for 3D', async ({ page }) => {
+    test.skip(!MAP_2D_ENABLED, NO_2D);
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     const terrain = deferred();
     await page.route(terrainAsset, async (route) => {
@@ -217,6 +219,7 @@ test.describe('Loading screen', () => {
   });
 
   test('a slow 3D request is controlled by a route gate, and the user can leave for 2D', async ({ page }) => {
+    test.skip(!MAP_2D_ENABLED, NO_2D);
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     const terrain = deferred();
     await page.route(terrainAsset, async (route) => {
@@ -239,6 +242,38 @@ test.describe('Loading screen', () => {
     }
   });
 
+  test('with the 2D map off a slow 3D load offers no way out to 2D, and a failed one switches to it alone (#227)', async ({ page }) => {
+    test.skip(MAP_2D_ENABLED, 'Solo con el mapa 2D deshabilitado');
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    const terrain = deferred();
+    await page.route(terrainAsset, async (route) => {
+      await terrain.promise;
+      // An empty mesh cannot be read: the 3D map reports a load error.
+      await route.fulfill({ status: 200, contentType: 'application/octet-stream', body: '' });
+    });
+    try {
+      await page.goto('/', { waitUntil: 'domcontentloaded' });
+
+      const loader = page.locator('[data-loading-variant="map3d"]');
+      await expect(loader).toBeVisible();
+      await expect(loader.locator('.ld-step')).toHaveCount(5);
+      await expect(page.getByRole('button', { name: 'Ver mapa 2D' })).toHaveCount(0);
+    } finally {
+      terrain.release();
+    }
+
+    await expect(page.locator('.ld')).toHaveCount(0, { timeout: 10_000 });
+    await expect(page.locator('.stage:not(.m3d)')).toBeVisible();
+    const off = page.getByRole('button', { name: 'Relieve 3D apagado: ver cómo activarlo' });
+    await expect(off).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Mapa 2D' })).toHaveCount(0);
+    await off.click();
+    const note = page.getByRole('dialog', { name: 'No pudimos cargar el relieve 3D' });
+    await expect(note).toContainText('No pudimos cargar la malla del relieve.');
+    await note.getByRole('button', { name: 'Entendido' }).click();
+    await expect(note).toHaveCount(0);
+  });
+
   test('reduced motion removes the loader animation while keeping the 3D contract', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     const terrain = deferred();
@@ -250,8 +285,11 @@ test.describe('Loading screen', () => {
     try {
       await page.goto('/', { waitUntil: 'domcontentloaded' });
 
-      await expect(page.locator('.ld')).toHaveCount(0, { timeout: 10_000 });
-      await page.getByRole('group', { name: 'Modo de vista' }).getByRole('button', { name: 'Relieve 3D' }).click();
+      if (MAP_2D_ENABLED) {
+        // With the 2D map on, reduced motion starts in 2D.
+        await expect(page.locator('.ld')).toHaveCount(0, { timeout: 10_000 });
+        await page.getByRole('group', { name: 'Modo de vista' }).getByRole('button', { name: 'Relieve 3D' }).click();
+      }
 
       const map3dLoader = page.locator('[data-loading-variant="map3d"]');
       await expect(map3dLoader).toBeVisible();

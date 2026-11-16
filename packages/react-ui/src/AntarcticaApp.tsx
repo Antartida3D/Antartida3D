@@ -12,7 +12,6 @@ import {
   RETURN_MS,
   VOYAGE_POINT,
   returnToast,
-  TOAST_MS,
   loadExplored,
   saveExplored,
   loadViewMode,
@@ -24,12 +23,14 @@ import {
   isValidResume,
   showsWelcome,
   map3dLoadingStore,
+  initialViewMode,
+  MAP_2D_ENABLED,
   PTS,
   type ArrivalId,
   type MapPoint,
   type ResumePoint,
 } from '@antartida/core';
-import { useBackLayer, useReducedMotion, useTimers } from './hooks.ts';
+import { useBackLayer, useLoadingStore, useReducedMotion, useTimers } from './hooks.ts';
 import { LoadingScreen } from './loading/LoadingScreen.tsx';
 import { MapView, type Layer3DProps, type Phase, type ViewMode } from './map/MapView.tsx';
 import { Filters } from './ui.tsx';
@@ -101,13 +102,20 @@ export function AntarcticaApp() {
   // The point whose trip is on the map: Ushuaia (the traveller picks a vehicle) or Poncho (one team, no picking).
   const [voyagePoint, setVoyagePoint] = useState<MapPoint>(VOYAGE_POINT);
   const [activePoint, setActivePoint] = useState<MapPoint>(() => PTS.find((p) => p.id === directScreen()) ?? EXPEDITION_POINT);
-  const [toast, setToast] = useState('');
+  // Expedition just finished: the map offers the next one in a card (#75).
+  const [finished, setFinished] = useState<{ id: string; line: string } | null>(null);
   // On a phone the legend starts closed: open, it covers much of the map (#114).
   const [legend, setLegend] = useState(() => typeof window === 'undefined' || window.innerWidth >= NARROW_PX);
   const [returned, setReturned] = useState(false);
-  const [mode, setMode] = useState<ViewMode>('2d');
   // null until checked: the view toggle waits for it, so it does not flash as «not available».
-  const [webglSupported, setWebglSupported] = useState<boolean | null>(null);
+  const [webglSupported, setWebglSupported] = useState<boolean | null>(() =>
+    MAP_2D_ENABLED || typeof window === 'undefined' ? null : hasWebGL()
+  );
+  // With the 2D map off (#227) the first render already picks 3D, so the 2D map never mounts behind the loader.
+  const [mode, setMode] = useState<ViewMode>(() => (webglSupported ? '3d' : '2d'));
+  // With the 2D map off, a 3D load error (or a lost WebGL context) switches to the 2D map on its own.
+  const failed3D = useLoadingStore(map3dLoadingStore).error !== null && !MAP_2D_ENABLED;
+  const can3D = webglSupported === true && !failed3D;
   // First visit: the map comes close to «Desde Ushuaia» (#115). True until MapView has shown it.
   const [welcome, setWelcome] = useState(false);
   const [map3dLoaderDismissed, setMap3dLoaderDismissed] = useState(false);
@@ -120,7 +128,7 @@ export function AntarcticaApp() {
   useEffect(() => {
     setExplored(loadExplored());
     setLastExpedition(loadLastExpedition());
-    const webgl = hasWebGL();
+    const webgl = webglSupported ?? hasWebGL();
     setWebglSupported(webgl);
 
     if (webgl) {
@@ -130,26 +138,17 @@ export function AntarcticaApp() {
       } else {
         setTimeout(() => void loadMap3D(), 1000);
       }
-
-      // Check S7: initial view
-      // If prefers-reduced-motion, Save-Data or previous choice of 2D -> starts in 2D
-      const saved = loadViewMode();
-      const saveData =
-        (navigator as unknown as { connection?: { saveData?: boolean } }).connection?.saveData;
-
-      if (saved) {
-        setMode(saved);
-      } else if (reduced || saveData) {
-        setMode('2d');
-      } else {
-        setMode('3d');
-      }
-      setInitialized(true);
-    } else {
-      setMode('2d');
-      setInitialized(true);
     }
+    // Check S7: initial view (prefers-reduced-motion, Save-Data or a saved 2D only count while the 2D map is on).
+    const saveData =
+      (navigator as unknown as { connection?: { saveData?: boolean } }).connection?.saveData === true;
+    setMode(initialViewMode({ webgl, saved: loadViewMode(), reduced, saveData }));
+    setInitialized(true);
   }, [reduced]);
+
+  useEffect(() => {
+    if (failed3D) setMode('2d');
+  }, [failed3D]);
 
   // Decided once, in the same render as the starting view above, so MapView zooms in the right mode.
   useEffect(() => {
@@ -168,12 +167,12 @@ export function AntarcticaApp() {
     // A transition into an expedition is tied to the view it started on.
     if (phase !== 'idle') return;
     // Without WebGL the toggle explains how to turn it on instead (ViewToggle, #123).
-    if (next === '3d' && !webglSupported) return;
+    if (next === '3d' && !can3D) return;
     setMode(next);
     saveViewMode(next);
     if (next === '3d' && !map3dLoadingStore.getSnapshot().ready) setMap3dLoaderDismissed(false);
   };
-  const fallback2D = useCallback(() => toggleMode('2d'), [phase, webglSupported]);
+  const fallback2D = useCallback(() => toggleMode('2d'), [phase, can3D]);
 
   const enterApproach = (id: ExpeditionId) => {
     setPhase('approach');
@@ -196,7 +195,7 @@ export function AntarcticaApp() {
 
   /** Opens an expedition: on the 3D map (`can3D`) with its trip or camera approach, else with the dive. */
   const begin = (point: MapPoint, id: ExpeditionId, chosenArrival: ArrivalId, can3D: boolean, isResuming = false) => {
-    setToast('');
+    setFinished(null);
     setActivePoint(point);
     setResuming(isResuming);
     if (!isResuming || lastExpedition?.id !== id) {
@@ -249,7 +248,7 @@ export function AntarcticaApp() {
     setScreen('map');
     setPhase('idle');
     // The 3D map comes back with the screen, so the trip can be shown on it whenever it is the view in use.
-    begin(ORCADAS_POINT, 'orcadas', 'ship', !reduced && mode === '3d' && webglSupported === true);
+    begin(ORCADAS_POINT, 'orcadas', 'ship', !reduced && mode === '3d' && can3D);
   };
 
   const recordProgress = useCallback((id: string, step: number, sub?: number, card?: number) => {
@@ -269,13 +268,12 @@ export function AntarcticaApp() {
     setLastExpedition(null);
     saveLastExpedition(null);
     setResuming(false);
-    setToast(returnToast(point.title, ids.length, AVAILABLE_COUNT));
-    later('toast', () => setToast(''), TOAST_MS);
+    setFinished({ id: point.id, line: returnToast(point.title, ids.length, AVAILABLE_COUNT) });
   };
 
   // The trips happen on the 3D map; without WebGL they advance step by step on the 2D one.
   const startVoyage = (point: MapPoint, resumePoint?: ResumePoint) => {
-    setToast('');
+    setFinished(null);
     setVoyagePoint(point);
     const isResuming = !!resumePoint && resumePoint.id === point.id;
     setResuming(isResuming);
@@ -284,7 +282,7 @@ export function AntarcticaApp() {
       setLastExpedition(fresh);
       saveLastExpedition(fresh);
     }
-    if (webglSupported) {
+    if (can3D) {
       setMode('3d');
       if (!map3dLoadingStore.getSnapshot().ready) setMap3dLoaderDismissed(false);
     }
@@ -303,7 +301,7 @@ export function AntarcticaApp() {
     setReturned(true);
     setResuming(false);
     if (done) complete(activePoint);
-    else setToast('');
+    else setFinished(null);
     later('ret', () => setPhase('idle'), RETURN_MS);
   };
 
@@ -333,7 +331,9 @@ export function AntarcticaApp() {
             voyageTransport={voyagePoint.id === PONCHO_POINT.id ? 'poncho' : undefined}
             voyageResume={activeVoyageResume}
             diveTarget={activePoint}
-            toast={toast}
+            finished={finished}
+            onDismissFinished={() => setFinished(null)}
+            onTravelIrizar={() => travelFromMarambio(false)}
             legend={legend}
             focusExpedition={returned}
             // The loading screen covers the map while the shared loader settles; the welcome waits for it to close (#190).
@@ -341,7 +341,7 @@ export function AntarcticaApp() {
             onWelcomeShown={welcomeShown}
             mode={mode}
             showToggle={webglSupported !== null}
-            available3D={webglSupported === true}
+            available3D={can3D}
             Layer3D={Layer3D}
             onToggleLegend={() => setLegend((l) => !l)}
             onToggleMode={toggleMode}

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ANTARCTICA_PATH,
   ICE_SHELVES_PATH,
+  MAP_2D_ENABLED,
   MAP3D_STEPS,
   map3dLoadingStore,
   splitAntarcticaCoastline,
@@ -235,11 +236,14 @@ export function LoadingScreen({ mode, initialized, map2dReady, onDone, onFallbac
           </p>
         )}
 
-        <div className="ld-actions">
-          <button type="button" className="btn ghost" onClick={onFallback2D}>
-            Ver mapa 2D
-          </button>
-        </div>
+        {/* With the 2D map off (#227) nobody picks it: the app switches to it alone if the 3D map fails. */}
+        {MAP_2D_ENABLED && (
+          <div className="ld-actions">
+            <button type="button" className="btn ghost" onClick={onFallback2D}>
+              Ver mapa 2D
+            </button>
+          </div>
+        )}
       </div>
     </section>
   );

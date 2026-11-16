@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { mockOpenMeteo } from './weather-helpers.ts';
+import { show3D } from './map-helpers.ts';
 
 const frames = (page: Page) => page.evaluate(() => (window as unknown as { __frames?: number }).__frames ?? 0);
 
@@ -38,8 +39,7 @@ test.describe('Ocean 3D animation efficiency', () => {
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     await page.goto('/');
 
-    const toggle = page.getByRole('group', { name: 'Modo de vista' });
-    await toggle.getByRole('button', { name: 'Relieve 3D' }).click();
+    await show3D(page);
     await expect(page.locator('canvas')).toBeVisible();
 
     // Wait for initial render and setup
@@ -71,8 +71,7 @@ test.describe('Ocean 3D animation efficiency', () => {
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     await page.goto('/');
 
-    const toggle = page.getByRole('group', { name: 'Modo de vista' });
-    await toggle.getByRole('button', { name: 'Relieve 3D' }).click();
+    await show3D(page);
     await expect(page.locator('canvas')).toBeVisible();
 
     // Wait until frames counter starts ticking
@@ -100,8 +99,7 @@ test.describe('Ocean 3D animation efficiency', () => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/');
 
-    const toggle = page.getByRole('group', { name: 'Modo de vista' });
-    await toggle.getByRole('button', { name: 'Relieve 3D' }).click();
+    await show3D(page);
     const canvas = page.locator('canvas');
     await expect(canvas).toBeVisible();
 
@@ -128,8 +126,7 @@ test.describe('Ocean 3D animation efficiency', () => {
   test('open sea in the tilted 3D view is water color, and the far corner fades to paper, never black (1440 and 390 px)', async ({ page }) => {
     await page.goto('/');
 
-    const toggle = page.getByRole('group', { name: 'Modo de vista' });
-    await toggle.getByRole('button', { name: 'Relieve 3D' }).click();
+    await show3D(page);
     const canvas = page.locator('canvas');
     await expect(canvas).toBeVisible();
 
@@ -176,8 +173,7 @@ test.describe('Ocean 3D animation efficiency', () => {
   test('ARA Almirante Irizar marker exists, can be focused with Tab, and opens a card with verified source (1440 and 390 px)', async ({ page }) => {
     await page.goto('/');
 
-    const toggle = page.getByRole('group', { name: 'Modo de vista' });
-    await toggle.getByRole('button', { name: 'Relieve 3D' }).click();
+    await show3D(page);
     await expect(page.locator('canvas')).toBeVisible();
     await page.waitForTimeout(800);
 
@@ -232,8 +228,7 @@ test.describe('Ocean 3D animation efficiency', () => {
     await checkNoIntersections('2D');
 
     // 2. Check in 3D
-    const toggle = page.getByRole('group', { name: 'Modo de vista' });
-    await toggle.getByRole('button', { name: 'Relieve 3D' }).click();
+    await show3D(page);
     await expect(page.locator('canvas')).toBeVisible();
     await page.waitForTimeout(500);
     await checkNoIntersections('3D');

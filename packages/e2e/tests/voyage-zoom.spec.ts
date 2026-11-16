@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { clearStorage } from '../storage.ts';
 import { mockOpenMeteo } from './weather-helpers.ts';
+import { show3D } from './map-helpers.ts';
 
 let consoleErrors: string[] = [];
 
@@ -35,8 +36,7 @@ async function settledDistance(page: Page) {
 
 test('while travelling the camera cannot back off as far as the overview, and can again after the trip (#167)', async ({ page, isMobile }) => {
   test.setTimeout(90_000);
-  const relief = page.getByRole('group', { name: 'Modo de vista' }).getByRole('button', { name: 'Relieve 3D' });
-  if ((await relief.getAttribute('aria-pressed')) !== 'true') await relief.click();
+  await show3D(page);
   await page.waitForFunction(() => (window as any).__cameraControls && (window as any).__invalidate);
   const overview = await settledDistance(page);
 
@@ -76,8 +76,7 @@ test('with motion, setting off the camera comes all the way down to the ship, pa
   test.setTimeout(90_000);
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.reload();
-  const relief = page.getByRole('group', { name: 'Modo de vista' }).getByRole('button', { name: 'Relieve 3D' });
-  if ((await relief.getAttribute('aria-pressed')) !== 'true') await relief.click();
+  await show3D(page);
   await page.waitForFunction(() => (window as any).__cameraControls && (window as any).__invalidate);
   await settledDistance(page);
 

@@ -73,7 +73,7 @@ test.describe('with WebGL', () => {
     await expect(primary(page)).toHaveText('Terminar la visita');
     await primary(page).click();
     await expect(log(page)).toContainText(`1/${AVAILABLE_COUNT}`);
-    await expect(page.locator('.toast')).toHaveText(`Base Marambio quedó explorado. Registro de exploración: 1/${AVAILABLE_COUNT}`);
+    await expect(page.locator('.next-card .next-done')).toHaveText(`Base Marambio quedó explorado. Registro de exploración: 1/${AVAILABLE_COUNT}`);
   });
 
   test('a dot on the scene opens its point, and «Mapa» leaves without marking the base as explored', async ({ page }) => {
@@ -92,7 +92,7 @@ test.describe('with WebGL', () => {
 
     await section.getByRole('button', { name: 'Volver al mapa' }).click();
     await expect(log(page)).toContainText(`0/${AVAILABLE_COUNT}`);
-    await expect(page.locator('.toast')).toHaveCount(0);
+    await expect(page.locator('.next-card')).toHaveCount(0);
   });
 
   test('a point shows its archive photographs, and each opens full size with its credit (#207)', async ({ page }) => {

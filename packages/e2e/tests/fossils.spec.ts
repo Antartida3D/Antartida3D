@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { AVAILABLE_COUNT } from '../../core/src/content/points.ts';
+import { MAP_2D_ENABLED, NO_2D } from './map-helpers.ts';
 
 let errors: string[] = [];
 test.beforeEach(async ({ page }) => {
@@ -138,6 +139,7 @@ test('fits the screen and the phone panel can expand and return to peek', async 
 });
 
 test('on the 2D map Fósiles and Base Marambio stay in one group, and tapping it lets you pick Fósiles', async ({ page }) => {
+  test.skip(!MAP_2D_ENABLED, NO_2D);
   await page.goto('/');
   const toggle = page.getByRole('group', { name: 'Modo de vista' });
   await toggle.getByRole('button', { name: 'Mapa 2D' }).click();

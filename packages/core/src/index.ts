@@ -42,3 +42,4 @@ export * from './gestures.ts';
 export * from './ocean.ts';
 export * from './sea.ts';
 export * from './loading.ts';
+export * from './weather-now.ts';

@@ -442,3 +442,31 @@ describe('shotPose', () => {
     expect(eye[2]).toBeGreaterThan(-2);
   });
 });
+
+describe('«El olfato de Poncho» (#217)', () => {
+  const scene = PONCHO_SCENES['expedicion-invernal-1962'];
+  const at = (step: number) => scene.elements.filter((e) => sceneElementShown(e, step));
+  const pace = (id: string) => {
+    const path = scene.paths.find((p) => p.id === id)!;
+    return scenePathLength(path) / path.duration;
+  };
+
+  it('tells one thing per sentence: the column, Poncho sniffing, the men probing a crevasse', () => {
+    expect(sceneStepCount(scene)).toBe(3);
+    expect(at(0).some((e) => e.kind === 'sled')).toBe(true);
+    expect(at(1).some((e) => e.id === 'poncho' && e.sniff)).toBe(true);
+    expect(at(2).some((e) => e.id === 'crevasseBridge')).toBe(true);
+    expect(at(2).filter((e) => e.kind === 'person' && (e.action === 'probe' || e.action === 'hammer')).length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('has only Poncho sniff, and slowly: slower than the column marching', () => {
+    for (const e of scene.elements.filter((x) => x.sniff)) expect(e.id).toBe('poncho');
+    expect(pace('sniff')).toBeLessThan(pace('march') / 2);
+  });
+
+  it('gives the team a few dogs (an illustration: the book gives no number) and a zigzag with turns', () => {
+    expect(scene.elements.filter((e) => e.kind === 'dog' && e.id === 'pack').length).toBeLessThanOrEqual(4);
+    const zig = scene.paths.find((p) => p.id === 'zigzag')!;
+    expect((zig.via ?? []).length).toBeGreaterThanOrEqual(3);
+  });
+});

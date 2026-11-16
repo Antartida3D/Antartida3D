@@ -43,6 +43,7 @@ La página es la del PDF del libro `[P1]` donde está el hecho principal de la f
 ### 2. `expedicion-invernal-1962` — El olfato de Poncho (1962, tramo 0)
 
 - **Escena** (p. 12): la expedición invernal en marcha; Poncho olfatea la nieve, se detiene, mira al conductor, camina en zigzag y los hombres hunden bastones y piquetas hasta dar con una grieta.
+- **Diorama** (una etapa por frase): 0 llega la columna (un trineo con cuatro perros, un conductor y un hombre al lado); 1 Poncho avanza olfateando muy despacio, con la cabeza que baja a la nieve y sube; 2 se detiene y mira al conductor, camina en zigzag y los hombres sondean hasta la grieta ancha. La cantidad de perros y de hombres es una ilustración: el libro no da números (fuente a definir).
 - **Gancho:** «La expedición todavía le tenía reservado un puesto nuevo.»
 - **Saber más:** salida el 14 de junio, nunataks Foca, distancia, el peligro de las grietas y que ciertos perros las detectaban con el olfato (p. 6, 9, 12).
 

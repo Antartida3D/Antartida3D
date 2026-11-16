@@ -71,6 +71,8 @@ export interface SceneElement {
   /** With a path: units ahead of the point of the path (along it) and to its left. */
   readonly lead?: number;
   readonly side?: number;
+  /** dog: sniffs the snow, its head bobbing down and up while it goes (issue #217). */
+  readonly sniff?: boolean;
   /** dog: lying curled in the snow. */
   readonly curled?: boolean;
   /** With a path: seconds behind the one at the point of the path (a litter in single file follows the same trail). */
@@ -220,8 +222,10 @@ export const PONCHO_SCENES: Readonly<Record<string, SceneDef>> = {
       shot(2, [-0.5, 0.5, 0], 11, 24, -100),
     ],
   },
-  // Probing for crevasses (book p. 12), in three stages: 0 the team of the great winter expedition arrives; 1 Poncho goes ahead
-  // sniffing, slowly; 2 he stops and looks at the driver, and the men sink poles and stakes until they find the crevasse.
+  // Probing for crevasses (book p. 12), in three stages (one per sentence): 0 the column of the great winter expedition arrives (a
+  // sled with a team of four dogs, a driver and a man beside it: an illustration, the book gives no number); 1 Poncho goes
+  // ahead of the halted column sniffing the snow, slowly, head bobbing; 2 he stops and looks at the driver, then zigzags,
+  // and the men sink poles and stakes until they find the crevasse, wide and deep.
   'expedicion-invernal-1962': {
     setting: 'plain',
     radius: 4,
@@ -229,23 +233,29 @@ export const PONCHO_SCENES: Readonly<Record<string, SceneDef>> = {
       sled(-3.4, -1.5, 0, { path: 'march', radius: 0.8 }),
       dog('pack', -3.4, -1.5, 0, { path: 'march', lead: 1.1, side: 0.28 }),
       dog('pack', -3.4, -1.5, 0, { path: 'march', lead: 1.1, side: -0.28 }),
+      dog('pack', -3.4, -1.5, 0, { path: 'march', lead: 2, side: 0.28 }),
+      dog('pack', -3.4, -1.5, 0, { path: 'march', lead: 2, side: -0.28 }),
       person(ORANGE, -3.4, -1.5, 0, 'walk', 0, { path: 'march', lead: -1.6 }),
-      dog('poncho', -1, 0.6, 0, { appearAt: 1, until: 2, path: 'sniff' }),
-      dog('poncho', 1.2, 0.9, yawToward(1.2, 0.9, -1.2, -1.5), { appearAt: 2 }),
-      prop('crevasseBridge', 2.9, 0.4, 0.2, 1, { appearAt: 2, radius: 0.9 }),
-      person(ORANGE, 2.3, -0.3, yawToward(2.3, -0.3, 2.9, 0.4), 'probe', 0, { appearAt: 2 }),
-      person(RED, 3.2, -0.7, yawToward(3.2, -0.7, 2.9, 0.4), 'hammer', 1.9, { appearAt: 2 }),
-      person(NAVY, 2.5, 1.5, yawToward(2.5, 1.5, 2.9, 0.4), 'probe', 3.7, { appearAt: 2 }),
+      person(NAVY, -3.4, -1.5, 0, 'walk', 2.1, { path: 'march', lead: 0.4, side: 0.85 }),
+      dog('poncho', -0.8, 0.6, 0, { appearAt: 1, until: 2, path: 'sniff', sniff: true }),
+      // 2: he stops at the end of his sniffing trail and looks back at the driver; then he zigzags round what he found.
+      dog('poncho', 1.0, 1.1, yawToward(1.0, 1.1, -2.8, -1.5), { appearAt: 2, path: 'zigzag' }),
+      prop('crevasseBridge', 3.0, 0.3, 0.2, 1.5, { appearAt: 2, radius: 1.1 }),
+      person(ORANGE, 2.2, -0.5, yawToward(2.2, -0.5, 3.0, 0.3), 'probe', 0, { appearAt: 2 }),
+      person(RED, 3.4, -1.0, yawToward(3.4, -1.0, 3.0, 0.3), 'hammer', 1.9, { appearAt: 2 }),
+      person(NAVY, 2.7, 1.8, yawToward(2.7, 1.8, 3.0, 0.3), 'probe', 3.7, { appearAt: 2 }),
     ],
     paths: [
-      { id: 'march', from: [-3.4, -1.5], to: [-1, -1.5], delay: 0.2, duration: 6 },
-      { id: 'sniff', from: [-1, 0.6], via: [[0.3, 1.2], [1.1, 0.5]], to: [1.8, 1.4], delay: 0.3, duration: 16 },
+      { id: 'march', from: [-3.4, -1.5], to: [-1.2, -1.5], delay: 0.2, duration: 6 },
+      // Slow motion: a long trail walked in 26 s, with the head going down to the snow and up again (`sniff`).
+      { id: 'sniff', from: [-0.8, 0.6], via: [[-0.3, 1.3], [0.4, 0.5]], to: [1.0, 1.1], delay: 0.3, duration: 26 },
+      { id: 'zigzag', from: [1.0, 1.1], via: [[1.4, 0.6], [0.8, 0.2], [1.4, -0.1]], to: [1.0, -0.3], delay: 4, duration: 10 },
     ],
     camera: { distanceFactor: 1.05, elevationDeg: 44, azimuthDeg: -100 },
     shots: [
-      shot(0, [-1.6, 0.4, -1.5], 6.5, 26, -95),
-      shot(1, [-0.6, 0.3, -0.2], 7.5, 24, -85),
-      shot(2, [2.2, 0.4, 0.5], 5.8, 30, -100),
+      shot(0, [-2, 0.4, -1.5], 6.5, 26, -95),
+      shot(1, [0.3, 0.3, 0.8], 5.2, 22, -85),
+      shot(2, [2.0, 0.4, 0.2], 6.8, 30, -100),
     ],
   },
   // The post of number one (book p. 10 and 11): 0 the instructor gives Poncho the lead of the team; 1 he follows the trail of the

@@ -19,7 +19,7 @@ import { OBSERVER_HIP_Y, OBSERVER_HIP_Z, OBSERVER_SHOULDER_Y, OBSERVER_SHOULDER_
 import { VOXEL_PALETTE } from '../orcadas/stationModels.ts';
 import { boxShade, buildPolyGeometry, resolveRelief, type Vec3 } from './lowPoly.ts';
 import { buildBeltTris, ponchoPersonParts, ponchoPoseLift, ponchoWaistAt, type PersonPose, type PersonVariant } from './ponchoPeople.ts';
-import { DOG_LEGS, DOG_LEG_PIVOT, dogLegSwing, ponchoDogParts, type DogLeg } from './ponchoDog.ts';
+import { DOG_HEAD_PIVOT, DOG_LEGS, DOG_LEG_PIVOT, dogHeadPitch, dogLegSwing, ponchoDogParts, type DogLeg } from './ponchoDog.ts';
 import { PONCHO_PALETTE, type DogPalette } from './ponchoModels.ts';
 import { PONCHO_PROPS } from './ponchoProps.ts';
 import { DOG_SCALE, elementStaticTris, pathFootprints, type Ground } from './ponchoSceneBuild.ts';
@@ -80,16 +80,17 @@ const darkened = (p: DogPalette, k: number): DogPalette => ({
   tail: darken(p.tail, k),
 });
 
-/** A dog's body and each of its legs (around its pivot, which the leg mesh sits at). */
+/** A dog's body, its head (around the neck pivot) and each of its legs (around its pivot, which the leg mesh sits at). */
 interface DogGeometry {
   body: BufferGeometry;
+  head: BufferGeometry;
   legs: Record<DogLeg, BufferGeometry>;
 }
 function dogGeometry(p: DogPalette): DogGeometry {
   const parts = ponchoDogParts(p);
   const legs = {} as Record<DogLeg, BufferGeometry>;
   for (const leg of DOG_LEGS) legs[leg] = buildPolyGeometry(parts.legs[leg], boxShade);
-  return { body: buildPolyGeometry(parts.body, boxShade), legs };
+  return { body: buildPolyGeometry(parts.body, boxShade), head: buildPolyGeometry(parts.head, boxShade), legs };
 }
 
 /** Geometries shared by every scene, built on first use. */
@@ -298,6 +299,7 @@ export function DioramaActors({ scene, step, ground, reduced }: { scene: SceneDe
   const rigs = useRef<(PersonRig | null)[]>([]);
   const nodes = useRef<(Group | null)[]>([]);
   const dogLegs = useRef<Record<number, Partial<Record<DogLeg, Group | null>>>>({});
+  const dogHeads = useRef<Record<number, Group | null>>({});
   const ropeMeshes = useRef<(Mesh | null)[]>([]);
   const stills = useRef<(Group | null)[]>([]);
   const stepRef = useRef(step);
@@ -386,6 +388,8 @@ export function DioramaActors({ scene, step, ground, reduced }: { scene: SceneDe
       const swing = dogLegSwing((spot.travel * Math.PI * 2) / DOG_STRIDE + i, moving);
       const legs = dogLegs.current[i];
       if (legs) for (const leg of DOG_LEGS) legs[leg]?.rotation.set(0, 0, swing[leg]);
+      // The head tips about the neck: it bobs to the snow while the dog sniffs (not with reduced motion: level).
+      dogHeads.current[i]?.rotation.set(0, 0, dogHeadPitch(t, !!e.sniff && !reduced));
       node.position.set(spot.x, gy + (e.lift ?? 0) - (e.curled ? CURLED_SINK : 0), spot.z);
       node.rotation.set(sway, spot.yaw, 0, 'YZX');
       node.scale.set(DOG_SCALE * k, DOG_SCALE * k * (e.curled ? CURLED_HEIGHT : 1), DOG_SCALE * k);
@@ -459,6 +463,9 @@ export function DioramaActors({ scene, step, ground, reduced }: { scene: SceneDe
             {stillNode}
             <group ref={(n) => void (nodes.current[i] = n)}>
               <mesh geometry={dog.body} material={vehicleMaterial} />
+              <group position={DOG_HEAD_PIVOT as [number, number, number]} ref={(n) => void (dogHeads.current[i] = n)}>
+                <mesh geometry={dog.head} material={vehicleMaterial} />
+              </group>
               {DOG_LEGS.map((leg) => (
                 <group key={leg} position={DOG_LEG_PIVOT[leg] as [number, number, number]} ref={(n) => void ((dogLegs.current[i] ??= {})[leg] = n)}>
                   <mesh geometry={dog.legs[leg]} material={vehicleMaterial} />

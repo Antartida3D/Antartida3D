@@ -7,7 +7,6 @@ import {
   PLACES_COUNT,
   sightingNote,
   TRANSPORTS,
-  VOYAGE_GEARS,
   VOYAGE_SOURCES,
   VOYAGE_SOURCES_CONSULTED,
   VOYAGE_SOURCE_CODES,
@@ -349,12 +348,6 @@ function TransferBar({ onSource }: { onSource: OpenSources }) {
   );
 }
 
-/** Holding "advance" this long without a faster gear shows the tip about the gears, and how long it stays. */
-const SPEED_HINT_HOLD_MS = 4000;
-const SPEED_HINT_SHOWN_MS = 9000;
-/** Shown once per visit: a tip repeated on every leg is noise. */
-let speedHintShown = false;
-
 const WHOLE = new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 });
 
 /** Hours for the trip line: with minutes while they still matter (the flight), whole hours after that (the ships). */
@@ -374,6 +367,7 @@ function TravelBar({ voyage, animated, onExit }: { voyage: VoyageController; ani
   const state = voyage.state!;
   const bar = useRef<HTMLElement>(null);
   const trip = useRef<HTMLParagraphElement>(null);
+  const gear = useRef<HTMLSpanElement>(null);
   const { bus } = voyage;
   const [atStart, setAtStart] = useState(state.t <= 0);
   // The milestone the vehicle is at or just went by: going back can take it behind the last one passed.
@@ -388,6 +382,15 @@ function TravelBar({ voyage, animated, onExit }: { voyage: VoyageController; ani
         const text = tripLine(bus.state.transport, bus.state.kind, bus.state.t);
         if (trip.current.textContent !== text) trip.current.textContent = text;
       }
+      if (gear.current) {
+        // How fast "advance" is going while held, by half steps: it picks up little by little (#166).
+        const speed = Math.round(bus.speed * 2) / 2;
+        const text = speed >= 1.5 ? `×${String(speed).replace('.', ',')}` : '';
+        if (gear.current.textContent !== text) {
+          gear.current.textContent = text;
+          gear.current.hidden = !text;
+        }
+      }
       if (bus.state) {
         // Re-render only when they change.
         setAtStart(bus.state.t <= 0);
@@ -399,41 +402,14 @@ function TravelBar({ voyage, animated, onExit }: { voyage: VoyageController; ani
     return () => void bus.listeners.delete(paint);
   }, [bus]);
 
-  const [hint, setHint] = useState(false);
-  const hintTimer = useRef(0);
-  const gear = useRef(voyage.gear);
-  gear.current = voyage.gear;
-  useEffect(() => () => window.clearTimeout(hintTimer.current), []);
-  // The tip goes away once it is followed, or after a while.
-  useEffect(() => {
-    if (!hint) return;
-    if (voyage.gear > 0) return setHint(false);
-    const timer = window.setTimeout(() => setHint(false), SPEED_HINT_SHOWN_MS);
-    return () => window.clearTimeout(timer);
-  }, [hint, voyage.gear]);
-
   const next = voyageStops(state.kind)[state.reached].milestone;
   const stop = here >= 0 ? voyageStops(state.kind)[here].milestone : null;
   const question = stop ? expeditionAt(stop.id, state.transport).question : null;
   const read = stop ? voyage.opened.includes(stop.id) : false;
   /** Handlers of a press-and-hold button that moves the trip forward or back. */
   const holdProps = (back: boolean) => {
-    const press = () => {
-      voyage.hold(true, back);
-      // Someone who keeps "advance" held for a while does not know the faster gears: tell them once.
-      window.clearTimeout(hintTimer.current);
-      if (!back && !speedHintShown) {
-        hintTimer.current = window.setTimeout(() => {
-          if (gear.current > 0) return;
-          speedHintShown = true;
-          setHint(true);
-        }, SPEED_HINT_HOLD_MS);
-      }
-    };
-    const release = () => {
-      window.clearTimeout(hintTimer.current);
-      voyage.hold(false, back);
-    };
+    const press = () => voyage.hold(true, back);
+    const release = () => voyage.hold(false, back);
     const key = (on: boolean) => (e: KeyboardEvent) => {
       if (e.key !== ' ' && e.key !== 'Enter') return;
       e.preventDefault();
@@ -454,9 +430,6 @@ function TravelBar({ voyage, animated, onExit }: { voyage: VoyageController; ani
   };
   return (
     <div className="vbar" role="group" aria-label="Controles del viaje">
-      <p className="vhint" role="status">
-        {hint && <><strong>¿Sabías?</strong> Tocá el botón dos veces seguidas y mantenelo apretado para ir más rápido.</>}
-      </p>
       <div className="vprog" aria-hidden="true"><i ref={bar} /></div>
       {/* Filled frame by frame, like the bar. Not a live region: it would be announced without pause. */}
       <p className="vtrip" ref={trip} />
@@ -514,11 +487,11 @@ function TravelBar({ voyage, animated, onExit }: { voyage: VoyageController; ani
             className="btn primary vhold"
             {...holdProps(false)}
             aria-label="Mantené para avanzar"
-            title="Tocá dos o tres veces seguidas y mantené para ir más rápido"
+            title="Mantené apretado: va tomando velocidad"
           >
             <span className="vwide">Mantené para avanzar</span>
             <span className="vnarrow">Avanzar ▶</span>
-            {voyage.gear > 0 && <span className="vgear">×{String(VOYAGE_GEARS[voyage.gear]).replace('.', ',')}</span>}
+            <span className="vgear" ref={gear} aria-hidden="true" hidden />
           </button>
         )}
       </div>

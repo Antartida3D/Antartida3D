@@ -58,8 +58,9 @@ describe('ground of the diorama', () => {
       });
 
       it('goes on to the horizon: ground far past the stage in every direction, and ridges rising beyond it', () => {
-        const { land } = buildDioramaWorld(scene);
-        const pts = faces(land);
+        // (The ground of a station ends at its shore; past it the water goes on to the horizon.)
+        const { land, sea } = buildDioramaWorld(scene);
+        const pts = faces(scene.setting === 'station' ? [...land, ...sea] : land);
         const reach = (a: number) => Math.max(...pts.filter((p) => Math.cos(a) * p[0] + Math.sin(a) * p[2] > Math.hypot(p[0], p[2]) * 0.9).map((p) => Math.hypot(p[0], p[2])));
         for (let k = 0; k < 8; k++) expect(reach((k / 8) * Math.PI * 2)).toBeGreaterThan(DIORAMA_FOG_FAR * 0.9);
         // Ridges: faces much higher than the swells at the stage, all of them far from it.
@@ -169,6 +170,8 @@ describe('the ground of a station (#216)', () => {
     const { sea } = buildDioramaWorld(station);
     expect(sea.length).toBeGreaterThan(500);
     expect(sea.length).toBeLessThanOrEqual(MAX_SEA_TRIS);
+    // Only water and its foam: nothing white afloat in front of the base.
+    expect(sea.every((t) => t[3] >= PRESHADED)).toBe(true);
     const pts = faces(sea);
     // Water at its level, as far as the haze, and none of it behind the base.
     for (const p of faces(sea.filter((t) => t[3] >= PRESHADED))) expect(Math.abs(p[1] - DIORAMA_WATER_Y)).toBeLessThan(0.05);

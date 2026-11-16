@@ -416,11 +416,12 @@ export interface DioramaWorld {
 export function buildDioramaWorld(scene: SceneDef, seed = 146000): DioramaWorld {
   const s = seed + Math.round(scene.radius * 10);
   const radius = dioramaRadius(scene);
-  // A station has its own mountain behind it (stationMountain): of the ring of far ridges it keeps only the ones across the sea, on -z.
-  const ridges = ridgeFaces(s + 2);
-  const far = scene.setting === 'station' ? ridges.filter((t) => t[0][2] + t[1][2] + t[2][2] < 0) : ridges;
+  // A station has its own mountain behind it (stationMountain) and nothing but water and sky in front: no ring of far ridges.
+  const far = scene.setting === 'station' ? [] : ridgeFaces(s + 2);
   const land = resolveRelief([...groundFaces(scene, s), ...far, ...dioramaDetails(scene, radius, s + 1)], () => 0);
   // The sea is built for a coast on +z and, on a station, turned to -z (every face mirrored, its winding kept outwards).
-  const sea = hasSea(scene) ? turnedTo(seaSide(scene), scene.setting === 'station' ? STATION_SHORE_SHIFT : 0, [...waterFaces(s + 3), ...foamFaces(), ...floatingIce(s + 4)]) : [];
+  // The sea of a station is only water, with the foam at its shore, to the horizon: no icebergs or floes.
+  const station = scene.setting === 'station';
+  const sea = hasSea(scene) ? turnedTo(seaSide(scene), station ? STATION_SHORE_SHIFT : 0, [...waterFaces(s + 3), ...foamFaces(), ...(station ? [] : floatingIce(s + 4))]) : [];
   return { land, sea, ground: dioramaGround };
 }

@@ -19,10 +19,11 @@ export const SCENE_ACTIONS: readonly SceneAction[] = ['stand', 'walk', 'hammer',
 
 /**
  * What lies round the stage (issue #146): `plain` is snow to the horizon; `coast` has the sea along
- * one side (the +z side of the scene, see `sceneCoastZ`) and plain on the rest.
+ * one side (the +z side of the scene, see `sceneCoastZ`) and plain on the rest; `station` (issue #216) is the bare
+ * rock of a polar station, gravel with patches of snow, with a snowy mountain rising behind it (on the +z side).
  */
-export type SceneSetting = 'plain' | 'coast';
-export const SCENE_SETTINGS: readonly SceneSetting[] = ['plain', 'coast'];
+export type SceneSetting = 'plain' | 'coast' | 'station';
+export const SCENE_SETTINGS: readonly SceneSetting[] = ['plain', 'coast', 'station'];
 
 /** Where the sea begins on a `coast` scene: local z of the edge of the ice at the middle, and how it wanders along x. */
 export const SCENE_COAST_Z = 4.7;
@@ -128,7 +129,7 @@ export interface SceneDef {
 }
 
 /** Limits of a shot: the diorama's camera never comes closer than a dog's size, nor leaves the stage far behind. */
-export const SHOT_DISTANCE: readonly [number, number] = [2.2, 14];
+export const SHOT_DISTANCE: readonly [number, number] = [2.2, 22];
 export const SHOT_ELEVATION_DEG: readonly [number, number] = [10, 70];
 export const SHOT_TARGET_HEIGHT: readonly [number, number] = [0, 1.6];
 
@@ -179,12 +180,15 @@ export const PONCHO_SCENES: Readonly<Record<string, SceneDef>> = {
   // 0 the base on the coast, the men going to and fro and the pup next to its mother; 1 the litter running behind
   // the playful one; 2 the training: a man tied by the waist to Poncho (a slalom), the sled, a harness being fitted.
   nacimiento: {
-    setting: 'coast',
+    setting: 'station',
     radius: 4,
     elements: [
-      // The base: low huts on the side of the sea.
-      prop('baseHut', -1.9, 2.75, Math.PI, 1, { radius: 1.2 }),
-      prop('baseHut', 1.3, 2.85, Math.PI, 1, { radius: 1.2 }),
+      // The base: its huts spread over the bare ground with room between them, with masts, dish and flag, under the mountain (one prop; it stands behind where people walk, so it takes no room on the ground).
+      prop('baseEsperanza', 0, 3.2, 0, 1, { radius: 0.01 }),
+      // The dogs of the base rest by the huts all the time, and a man looks after them while the first sentence is told.
+      dog('pack', 3.3, 0.2, 0.4, { curled: true }),
+      dog('pack', 3.9, -0.4, 2.6, { curled: true }),
+      person(NAVY, 3.65, 0.95, yawToward(3.65, 0.95, 3.3, 0.2), 'tend', 0.7, { until: 1 }),
       // 0: two men go to and fro (the first leaves prints), and the pup stays by its mother.
       person(ORANGE, -2.5, -1.1, 0, 'walk', 0, { path: 'to-and-fro', until: 1 }),
       person(RED, 2.5, 0.5, Math.PI, 'walk', 1.3, { path: 'fro-and-to', until: 1 }),
@@ -196,7 +200,7 @@ export const PONCHO_SCENES: Readonly<Record<string, SceneDef>> = {
       dog('pack', -2, -0.6, 0, { scale: 0.5, appearAt: 1, until: 2, path: 'litter', lag: 1.6 }),
       dog('pack', -2, -0.6, 0, { scale: 0.5, appearAt: 1, until: 2, path: 'litter', lag: 2.4 }),
       // 2: training. The instructor wears the belt, the line goes to the harness of Poncho, a little ahead.
-      person(ORANGE, -2, 0.45, 0, 'walk', 0, { appearAt: 2, path: 'slalom', rope: { to: 11, length: 2.2 } }),
+      person(ORANGE, -2, 0.45, 0, 'walk', 0, { appearAt: 2, path: 'slalom', rope: { to: 13, length: 2.2 } }),
       dog('poncho', -2, 0.45, 0, { scale: 0.85, appearAt: 2, path: 'slalom', lag: -3.2 }),
       prop('slalomPoles', 0, -0.3, 0, 1.3, { appearAt: 2, radius: 0.02 }), // thin poles: the weave goes between them
       sled(-2.6, -1.8, 0.3, { appearAt: 2, radius: 0.8 }),
@@ -205,15 +209,15 @@ export const PONCHO_SCENES: Readonly<Record<string, SceneDef>> = {
     ],
     paths: [
       { id: 'to-and-fro', from: [-2.5, -1.1], via: [[2.5, -1.1], [2.8, -0.9], [2.5, -0.7], [-2.5, -0.7], [-2.8, -0.9]], to: [-2.5, -1.1], loop: true, delay: 0.4, duration: 20, prints: true },
-      { id: 'fro-and-to', from: [2.5, 0.5], via: [[-2.5, 0.5], [-2.8, 0.75], [-2.5, 1], [2.5, 1], [2.8, 0.75]], to: [2.5, 0.5], loop: true, delay: 0.4, duration: 20 },
+      { id: 'fro-and-to', from: [2.5, 0.5], via: [[-2.5, 0.5], [-2.8, 0.65], [-2.5, 0.8], [2.5, 0.8], [2.8, 0.65]], to: [2.5, 0.5], loop: true, delay: 0.4, duration: 20 },
       { id: 'litter', from: [-2, -0.6], via: [[-1, 0.8], [0, -0.8], [1, 0.8], [2, -0.6], [1, -1.5], [-0.6, -1.6]], to: [-2, -0.6], loop: true, delay: 0.3, duration: 11 },
-      { id: 'slalom', from: [-2, 0.45], via: [[-1.43, 0.45], [-0.715, -0.95], [0, 0.45], [0.715, -0.95], [1.43, 0.45], [2, 0.45], [2.4, 0.8], [1.6, 1.15], [-1.6, 1.15], [-2.4, 0.8]], to: [-2, 0.45], loop: true, delay: 0.4, duration: 28 },
+      { id: 'slalom', from: [-2, 0.45], via: [[-1.43, 0.45], [-0.715, -0.95], [0, 0.45], [0.715, -0.95], [1.43, 0.45], [2, 0.45], [2.4, 0.7], [1.6, 0.85], [-1.6, 0.85], [-2.4, 0.7]], to: [-2, 0.45], loop: true, delay: 0.4, duration: 28 },
     ],
     camera: { distanceFactor: 1.05, elevationDeg: 42, azimuthDeg: -112 },
     shots: [
-      shot(0, [-1.4, 1.1, 1.6], 12.5, 12, -92),
-      shot(1, [-0.3, 0.3, -0.4], 10.5, 28, -96),
-      shot(2, [-0.7, 0.5, 0], 10.5, 24, -100),
+      shot(0, [0, 1.5, 2.4], 22, 10, -92),
+      shot(1, [-0.3, 0.3, -0.5], 9, 26, -96),
+      shot(2, [-0.5, 0.5, 0], 11, 24, -100),
     ],
   },
   // Probing for crevasses (book p. 12), in three stages: 0 the team of the great winter expedition arrives; 1 Poncho goes ahead
@@ -291,18 +295,22 @@ export const PONCHO_SCENES: Readonly<Record<string, SceneDef>> = {
       prop('icebreakerHull', 0, 3.4, Math.PI, 1, { radius: 0.01 }),
       prop('loadingRamp', -0.8, 1.0, Math.PI, 1, { radius: 0.5 }),
       prop('cargoCrates', 1.3, 1.1, Math.PI, 1, { radius: 0.9 }),
-      person(NAVY, -2.4, -0.4, yawToward(-2.4, -0.4, 0, 3), 'stand', 0, { until: 2 }),
+      person(NAVY, -2.9, 0.5, yawToward(-2.9, 0.5, 0, 3), 'stand', 0, { until: 2 }),
       dog('poncho', -1.5, 0.3, yawToward(-1.5, 0.3, 0, 3), { until: 2 }),
-      dog('pack', -3.4, -1.7, 0, { appearAt: 1, path: 'file' }),
-      dog('pack', -3.4, -1.7, 0, { appearAt: 1, path: 'file', lag: 0.9 }),
-      dog('pack', -3.4, -1.7, 0, { appearAt: 1, path: 'file', lag: 1.8 }),
-      dog('pack', -3.4, -1.7, 0, { appearAt: 1, path: 'file', lag: 2.7 }),
+      // 1: a man leads a file of dogs to the ramp. Each holds its place in the file (a dog's length and a half apart, a little
+      // off the line), so they walk and stop one behind the other and not piled up.
+      person(ORANGE, -3.6, -1.4, 0, 'walk', 0, { appearAt: 1, path: 'file' }),
+      dog('pack', -3.6, -1.4, 0, { appearAt: 1, path: 'file', lag: 1.5 }),
+      dog('pack', -3.6, -1.4, 0, { appearAt: 1, path: 'file', lag: 3 }),
+      dog('pack', -3.6, -1.4, 0, { appearAt: 1, path: 'file', lag: 4.5 }),
+      dog('pack', -3.6, -1.4, 0, { appearAt: 1, path: 'file', lag: 6 }),
       sled(2.2, -1.2, 0.2, { appearAt: 2, radius: 0.8 }),
       sled(1.2, -2.4, -0.1, { appearAt: 2, radius: 0.8 }),
       person(ORANGE, 2.9, -0.2, -Math.PI / 2, 'tend', 0, { appearAt: 2 }),
       person(RED, 0.4, -1.8, yawToward(0.4, -1.8, 1.2, -2.4), 'haul', 2.2, { appearAt: 2 }),
     ],
-    paths: [{ id: 'file', from: [-3.4, -1.7], via: [[-2.6, -1.1]], to: [-1.0, -1.4], delay: 0.3, duration: 6 }],
+    // A winding trail (S bends), so the file follows a curve and not a ruler.
+    paths: [{ id: 'file', from: [-3.6, -1.4], via: [[-2.7, -2.0], [-1.8, -1.3], [-1.0, -1.8]], to: [-0.4, -0.9], delay: 0.3, duration: 9 }],
     camera: { distanceFactor: 1.1, elevationDeg: 42, azimuthDeg: -112 },
     shots: [
       shot(0, [-1.4, 0.7, 0.4], 8, 20, -90),
@@ -569,10 +577,23 @@ export function walkPosition(path: ScenePath, u: number): { x: number; z: number
  * of the legs goes on). A walk that is not a loop ends and stays at its end.
  */
 export function sceneWalk(path: ScenePath, t: number, lag = 0): { x: number; z: number; yaw: number; moving: boolean; travel: number } {
-  const laps = Math.max(0, (t - path.delay - lag) / path.duration);
-  const u = path.loop ? laps % 1 : Math.min(1, laps);
   const length = scenePathLength(path);
-  return { ...walkPosition(path, u), moving: laps > 0 && (!!path.loop || laps < 1), travel: (path.loop ? laps : Math.min(1, laps)) * length };
+  if (lag > 0) {
+    // Someone behind the head of a file is not piled on the start waiting for their turn: they stand (or walk in)
+    // behind it, along the line of the first segment, so a file shows as many from the very first frame.
+    const u = (Math.max(0, t - path.delay) - lag) / path.duration;
+    if (u < 0) {
+      const head = walkPosition(path, 0);
+      const back = -u * length;
+      return { x: head.x - Math.cos(head.yaw) * back, z: head.z + Math.sin(head.yaw) * back, yaw: head.yaw, moving: t > path.delay, travel: u * length };
+    }
+  }
+  const laps = Math.max(0, (t - path.delay - lag) / path.duration);
+  // On a walk that ends, someone behind the head of the file stops where the head was `lag` s before it stopped,
+  // along the path: the file stays a file (spaced, on the same curve) and does not pile up on the end.
+  const last = path.loop || lag <= 0 ? 1 : Math.max(0, 1 - lag / path.duration);
+  const u = path.loop ? laps % 1 : Math.min(last, laps);
+  return { ...walkPosition(path, u), moving: laps > 0 && (!!path.loop || laps < last), travel: (path.loop ? laps : u) * length };
 }
 
 /** Phase of the walk at fraction `u` of the path: one pose cycle every two prints, so the feet do not slide. */

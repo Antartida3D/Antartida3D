@@ -179,3 +179,18 @@ Dos imágenes tomadas de las páginas de `[P1]` se muestran en dos paradas (`pac
 | `perros-trineo.jpg` | `https://www.marambio.aq/galeria/fauna/perros/PERROS04.jpg` (página «El perro polar»); es ilustrativa, no de esa patrulla | «La patrulla Paralelo 82» |
 
 Consultadas el 2026-11-15. No se usó el retrato del autor que también está en la página.
+
+### 4.4. Foto de la Base Esperanza (16 nov 2026)
+
+Una foto con licencia libre, que se muestra en el modal de la parada «Nace Poncho» (`packages/core/src/content/poncho-photos.ts`, `esperanza.jpg`). Se muestra sin modificar (la licencia exige compartir igual si se adapta), con autor, licencia y enlace.
+
+| Dato | Valor |
+|---|---|
+| Archivo | «Hope Bay-2016-Trinity Peninsula–Esperanza Station 02.jpg», Wikimedia Commons: <https://commons.wikimedia.org/wiki/File:Hope_Bay-2016-Trinity_Peninsula%E2%80%93Esperanza_Station_02.jpg> |
+| Autor | Godot13 (la página indica atribución a Andrew Shiva) |
+| Fecha de la foto | 15 de enero de 2016 |
+| Licencia | CC BY-SA 4.0 (<https://creativecommons.org/licenses/by-sa/4.0/>) |
+| Consultada | 2026-11-16 |
+| Uso | Reducida a 1280 px de ancho; es una foto actual, no de 1961, y el modal lo dice |
+
+La foto que se había mirado al principio del trabajo no tiene origen conocido y **no se usa**. El color de las casas en la escena sigue el naranja de los abrigos y las casas del diorama de Orcadas; la foto muestra casas más rojizas y no se presenta como dato de color de 1961.

@@ -3,6 +3,7 @@ import { BackSide, BufferAttribute, Color, MeshBasicMaterial, SphereGeometry } f
 import { Canvas, useThree } from '@react-three/fiber';
 import { CameraControls, CameraControlsImpl, PerformanceMonitor } from '@react-three/drei';
 import { SHOT_DISTANCE, shotPose, type SceneDef } from '@antartida/core';
+import { ViewShift, type ViewShiftPx } from '../sceneFrame.tsx';
 import { buildPolyGeometry } from './lowPoly.ts';
 import { DioramaActors } from './PonchoDioramaActors.tsx';
 import { DIORAMA_FOG_FAR, buildDioramaWorld } from './ponchoDioramaGround.ts';
@@ -125,10 +126,12 @@ function Stage({ scene, step, reduced }: { scene: SceneDef; step: number; reduce
   );
 }
 
-export function PonchoDioramaCanvas({ scene, step, reduced, onLost }: {
+export function PonchoDioramaCanvas({ scene, step, reduced, shift, onLost }: {
   scene: SceneDef;
   step: number;
   reduced: boolean;
+  /** Pixels the centre of the view moves, so the stage stays in what the panel leaves free. */
+  shift: ViewShiftPx;
   /** The WebGL context was lost and did not come back: the screen gives way to the common card. */
   onLost: () => void;
 }) {
@@ -161,6 +164,7 @@ export function PonchoDioramaCanvas({ scene, step, reduced, onLost }: {
     >
       {/* Reduced motion draws on demand: sparse frames would read as a slow GPU. */}
       {!reduced && <PerformanceMonitor bounds={() => (lowQuality ? [24, 27] : [36, 42])} flipflops={4} onIncline={() => setLowQuality(false)} onDecline={() => setLowQuality(true)} />}
+      <ViewShift shift={shift} />
       <Stage scene={scene} step={step} reduced={reduced} />
     </Canvas>
   );

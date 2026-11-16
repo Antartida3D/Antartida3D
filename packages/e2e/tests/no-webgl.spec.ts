@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { ORCADAS_GUIDING_QUESTION } from '../../core/src/content/orcadas.ts';
 import { mockOpenMeteo } from './weather-helpers.ts';
+import { MAP_2D_ENABLED } from './map-helpers.ts';
 
 let consoleErrors: string[] = [];
 
@@ -30,7 +31,9 @@ test('without WebGL the app falls back cleanly to 2D and «Relieve 3D» says how
   // The toggle stays: «Relieve 3D» is marked as off and explains how to turn it on (#123).
   const toggle = page.getByRole('group', { name: 'Modo de vista' });
   await expect(toggle).toBeVisible();
-  await expect(toggle.getByRole('button', { name: 'Mapa 2D' })).toHaveAttribute('aria-pressed', 'true');
+  // With the 2D map off (#227) only «Relieve 3D · apagado» remains.
+  if (MAP_2D_ENABLED) await expect(toggle.getByRole('button', { name: 'Mapa 2D' })).toHaveAttribute('aria-pressed', 'true');
+  else await expect(toggle.getByRole('button', { name: 'Mapa 2D' })).toHaveCount(0);
   const off = toggle.getByRole('button', { name: 'Relieve 3D apagado: ver cómo activarlo' });
   await expect(off).toHaveText('Relieve 3D · apagado');
   await expect(off).toHaveAttribute('aria-expanded', 'false');
@@ -50,7 +53,9 @@ test('without WebGL the app falls back cleanly to 2D and «Relieve 3D» says how
   await off.click();
   await note.getByRole('button', { name: 'Entendido' }).click();
   await expect(note).toHaveCount(0);
-  await expect(toggle.getByRole('button', { name: 'Mapa 2D' })).toHaveAttribute('aria-pressed', 'true');
+  // With the 2D map off (#227) only «Relieve 3D · apagado» remains.
+  if (MAP_2D_ENABLED) await expect(toggle.getByRole('button', { name: 'Mapa 2D' })).toHaveAttribute('aria-pressed', 'true');
+  else await expect(toggle.getByRole('button', { name: 'Mapa 2D' })).toHaveCount(0);
 
   // 2D layer should be present, and NO canvas
   await expect(page.locator('.layer')).toBeVisible();

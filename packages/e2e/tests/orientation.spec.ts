@@ -5,6 +5,7 @@ import { MARINE_STOPS } from '../../core/src/content/marine.ts';
 import { PONCHO_MILESTONES } from '../../core/src/content/poncho.ts';
 import { MILESTONES } from '../../core/src/content/ushuaia.ts';
 import { CHAPTERS } from '../../core/src/orcadas.ts';
+import { show3D } from './map-helpers.ts';
 
 const PLANE_MILESTONES = MILESTONES.filter((m) => m.kinds.includes('plane'));
 
@@ -29,7 +30,7 @@ test.describe('3D header at 844x390', () => {
     page,
   }) => {
     await page.goto('/');
-    await page.getByRole('group', { name: 'Modo de vista' }).getByRole('button', { name: 'Relieve 3D' }).click();
+    await show3D(page);
     await page.waitForFunction(() => (window as unknown as { __cameraControls?: unknown }).__cameraControls);
 
     const clusterOrMarker = page.locator('.ov [data-key*="orcadas"] button');
@@ -112,7 +113,7 @@ test.describe('resume last expedition', () => {
     const nextBtn = section.locator('.fossil-next');
     await nextBtn.click();
     await nextBtn.click();
-    await expect(section).toContainText(`03 / ${FOSSIL_STOPS.length}`);
+    await expect(section).toContainText(`parada 3 de ${FOSSIL_STOPS.length}`);
 
     await section.getByRole('button', { name: 'Volver al mapa' }).click();
     const resumeBtn = page.getByRole('button', {
@@ -125,7 +126,7 @@ test.describe('resume last expedition', () => {
     await resumeBtn.click();
 
     await expect(section).toBeVisible();
-    await expect(section).toContainText(`03 / ${FOSSIL_STOPS.length}`);
+    await expect(section).toContainText(`parada 3 de ${FOSSIL_STOPS.length}`);
   });
 
   test('resumes Orcadas at exact chapter after reload', async ({ page }) => {
@@ -166,7 +167,7 @@ test.describe('resume last expedition', () => {
     const nextBtn = section.locator('.marine-next');
     await nextBtn.click();
     await nextBtn.click();
-    await expect(section).toContainText(`03 / ${MARINE_STOPS.length}`);
+    await expect(section).toContainText(`parada 3 de ${MARINE_STOPS.length}`);
 
     await section.getByRole('button', { name: 'Volver al mapa' }).click();
     const resumeBtn = page.getByRole('button', {
@@ -179,7 +180,7 @@ test.describe('resume last expedition', () => {
     await resumeBtn.click();
 
     await expect(section).toBeVisible();
-    await expect(section).toContainText(`03 / ${MARINE_STOPS.length}`);
+    await expect(section).toContainText(`parada 3 de ${MARINE_STOPS.length}`);
     await expect(section.getByRole('heading', { level: 2, name: MARINE_STOPS[2].title })).toBeVisible();
   });
 
@@ -216,13 +217,15 @@ test.describe('resume last expedition', () => {
   });
 
   test('resumes Poncho at exact milestone after reload', async ({ page }) => {
+    // It reloads the page and reads two stops on a software renderer: it takes more than the default 30 s.
+    test.setTimeout(90_000);
     await page.goto('/');
     await page.getByRole('button', { name: 'Ver como lista' }).click();
     await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Poncho/ }).click();
     await page.getByRole('button', { name: 'Comenzar' }).click();
 
     const closeCard = async () => {
-      const dialog = page.locator('section.sheet.voyage');
+      const dialog = page.locator('.poncho-panel, section.sheet.voyage');
       await expect(dialog).toBeVisible();
       const nextSentence = dialog.getByRole('button', { name: 'Siguiente' });
       while (await nextSentence.isVisible()) {

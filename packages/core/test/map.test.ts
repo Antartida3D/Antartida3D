@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   PTS, buildMarkers, markerPress, clusterPoints, geometry, keyView, labelSide, project, unproject, separationZoom,
-  zoomAround, wheelFactor, HOME, MAX_K, MIN_K, toScreen,
+  zoomAround, wheelFactor, focusWorld, freeArea, needsFraming, clampView, HOME, MAX_K, MIN_K, toScreen,
 } from '../src/index.ts';
 
 describe('projection', () => {
@@ -168,6 +168,46 @@ describe('markers and labels', () => {
     expect(a?.kind === 'point' && a.check && !a.pulse).toBe(true);
   });
 
+  it('highlights and pulses only the suggested next expedition', () => {
+    const size = { vw: 1440, vh: 900 };
+    const markers = buildMarkers(size, HOME, [], PTS, undefined, 'campana');
+    const next = markers.find((m) => m.key === 'campana');
+    const otherA = markers.find((m) => m.kind === 'point' && m.point.tier === 'A' && m.key !== 'campana');
+    expect(next?.kind === 'point').toBe(true);
+    if (next?.kind === 'point') {
+      expect(next.next).toBe(true);
+      expect(next.pulse).toBe(true);
+      expect(next.cls.split(' ')).toContain('next');
+      expect(next.aria).toBe('Desde Ushuaia, Ushuaia. Expedición sugerida para seguir. Empezar.');
+      expect(next.label?.sub).toBe('Siguiente · Ushuaia');
+    }
+    expect(otherA?.kind === 'point').toBe(true);
+    if (otherA?.kind === 'point') {
+      expect(otherA.next).toBe(false);
+      expect(otherA.pulse).toBe(false);
+      expect(otherA.cls.split(' ')).not.toContain('next');
+    }
+  });
+
+  it('marks the cluster containing the suggested expedition', () => {
+    const size = { vw: 1440, vh: 900 };
+    const markers = buildMarkers(size, HOME, ['campana', 'marambio'], PTS, undefined, 'fosiles');
+    const clusterWithNext = markers.find((m) => m.kind === 'cluster' && m.points.some((p) => p.id === 'fosiles'));
+    const otherCluster = markers.find((m) => m.kind === 'cluster' && !m.points.some((p) => p.id === 'fosiles'));
+    expect(clusterWithNext?.kind === 'cluster').toBe(true);
+    if (clusterWithNext?.kind === 'cluster') {
+      expect(clusterWithNext.hasNext).toBe(true);
+      expect(clusterWithNext.nextPoint?.id).toBe('fosiles');
+      expect(clusterWithNext.cls.split(' ')).toContain('has-next');
+      expect(clusterWithNext.aria).toContain('Incluye la siguiente sugerida: Fósiles');
+    }
+    if (otherCluster?.kind === 'cluster') {
+      expect(otherCluster.hasNext).toBe(false);
+      expect(otherCluster.nextPoint).toBeNull();
+      expect(otherCluster.cls.split(' ')).not.toContain('has-next');
+    }
+  });
+
   it('opens a label to the right, or to the left when it would run off the screen', () => {
     expect(labelSide(100, 'Estación', 'Ampliación prevista', 1440)).toBe('right');
     expect(labelSide(1400, 'Estación', 'Ampliación prevista', 1440)).toBe('left');
@@ -206,5 +246,37 @@ describe('viewport', () => {
     expect(keyView(size, HOME, '+')!.k).toBeCloseTo(1.5);
     expect(keyView(size, { k: 2, px: -200, py: -200 }, 'ArrowLeft')!.px).toBe(-140);
     expect(keyView(size, HOME, 'a')).toBeNull();
+  });
+
+  it('frames a marker hidden behind the card into the free area and respects clampView', () => {
+    const desktop = { vw: 1440, vh: 900 };
+    const card = { left: 952, top: 600, right: 1352, bottom: 880 };
+    const free = freeArea(desktop, card);
+    expect(free).toEqual({ left: 0, top: 0, right: 952, bottom: 900 });
+
+    const visibleMarker = { left: 400, top: 450 };
+    expect(needsFraming(visibleMarker, free, 48)).toBe(false);
+
+    const coveredMarker = { left: 1100, top: 700 };
+    expect(needsFraming(coveredMarker, free, 48)).toBe(true);
+
+    const anchorX = (free.left + free.right) / 2 / desktop.vw;
+    const anchorY = (free.top + free.bottom) / 2 / desktop.vh;
+    const framed = focusWorld(desktop, 500, 500, 2.5, anchorY, anchorX);
+    const pos = toScreen(geometry(desktop), framed, 500, 500);
+    expect(needsFraming(pos, free, 48)).toBe(false);
+
+    // Extreme point still respects clampView bounds.
+    const clamped = focusWorld(desktop, 0, 0, MAX_K, anchorY, anchorX);
+    expect(clamped).toEqual(clampView(desktop, clamped.k, clamped.px, clamped.py));
+  });
+
+  it('returns top free area for a portrait bottom sheet', () => {
+    const portrait = { vw: 390, vh: 844 };
+    const sheet = { left: 0, top: 520, right: 390, bottom: 844 };
+    const free = freeArea(portrait, sheet);
+    expect(free).toEqual({ left: 0, top: 0, right: 390, bottom: 520 });
+    expect(needsFraming({ left: 195, top: 650 }, free, 48)).toBe(true);
+    expect(needsFraming({ left: 195, top: 260 }, free, 48)).toBe(false);
   });
 });

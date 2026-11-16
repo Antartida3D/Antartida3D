@@ -41,7 +41,7 @@ Solo «Terminar expedición» completa el recorrido. Salir con «Mapa» no lo co
 
 - Sigue la segunda iteración de Fósiles y el recorrido de Orcadas:
   - escena de bloques, cámara que acompaña cada parada, una frase y «Saber más»;
-  - panel lateral en escritorio y BottomSheet con peek en el celular;
+  - la interfaz de Orcadas y Marambio (#209): cabecera flotante, capítulos numerados, panel flotante en escritorio y BottomSheet con peek en el celular, pie con «Atrás» y «Siguiente»; la vista se corre a la parte libre de la escena (`sceneFrame.tsx`);
   - cielo de Orcadas sobre el hielo y efecto de tinta cuando el equipo lo soporta.
 - Bajo el hielo hay una cúpula de color de agua, niebla y franjas de luz que bajan por las aberturas reales del hielo: la grieta, el agujero de los emperadores y el borde del hielo. La cara de abajo de los témpanos tiene manchas de algas (D03).
 - Modelos nuevos, registrados en `SCENE_MODELS`:

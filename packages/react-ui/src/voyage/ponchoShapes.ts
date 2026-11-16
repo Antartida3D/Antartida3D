@@ -82,11 +82,15 @@ export function thinTriangle(a: Vec3, b: Vec3, c: Vec3, t: number, color: number
   return out;
 }
 
+/** Colors of a heap of bare rock (named, rule 30.5). */
+const ROCK_HEAP = 0x5a5650;
+const ROCK_HEAP_LIGHT = 0x77716a;
+
 /**
- * A drift of snow: a ragged ring on the ground (y = 0, the color of the relief, so it melts into
+ * A drift of snow (or, with `rock`, a heap of bare rock): a ragged ring on the ground (y = 0, the color of the relief, so it melts into
  * it once resolveRelief paints it) rising to a lumpy white top `h` high. Same winding as `prism`.
  */
-export function snowMound(cx: number, cz: number, rx: number, rz: number, h: number, seed: number, n = 10): Tri[] {
+export function snowMound(cx: number, cz: number, rx: number, rz: number, h: number, seed: number, n = 10, rock = false): Tri[] {
   const rng = createSeededRng(seed);
   const at = (i: number, k: number, y: number): Vec3 => {
     const a = -(i / n) * Math.PI * 2;
@@ -99,8 +103,9 @@ export function snowMound(cx: number, cz: number, rx: number, rz: number, h: num
   const top: Vec3 = [cx, h, cz];
   const out: Tri[] = [];
   for (let i = 0; i < n; i++) {
-    out.push(...quad(outer(i), outer(i + 1), inner(i + 1), inner(i), i % 3 === 0 ? ICE : RELIEF_ICE));
-    out.push([top, inner(i), inner(i + 1), i % 2 ? WHITE : ICE]);
+    // A heap of rock: dark flanks (the relief paints rock light at sea level), with a cap of snow on some faces.
+    out.push(...quad(outer(i), outer(i + 1), inner(i + 1), inner(i), rock ? (i % 2 ? ROCK_HEAP : ROCK_HEAP_LIGHT) : i % 3 === 0 ? ICE : RELIEF_ICE));
+    out.push([top, inner(i), inner(i + 1), rock ? (i % 4 === 0 ? WHITE : ROCK_HEAP) : i % 2 ? WHITE : ICE]);
   }
   return out;
 }

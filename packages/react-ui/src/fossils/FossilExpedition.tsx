@@ -20,6 +20,8 @@ import chitonPhoto from '@antartida/core/assets/fossils/quiton.webp';
 import { BottomSheet, type OpenSheetSize } from '../BottomSheet.tsx';
 import { FossilTimeline } from './FossilTimeline.tsx';
 import { useIsDesktop } from '../hooks.ts';
+import { KindChip } from '../orcadas/KindChip.tsx';
+import { useSceneFrame } from '../sceneFrame.tsx';
 import { Icon, Quoted } from '../ui.tsx';
 
 const Scene = lazy(() => import('./FossilScene.tsx').then((m) => ({ default: m.FossilScene })));
@@ -60,6 +62,7 @@ export function FossilExpedition({ reduced, webgl, resume, onProgress, onLeave }
   const [graphicsLost, setGraphicsLost] = useState(false);
   const root = useRef<HTMLElement>(null);
   const panel = useRef<HTMLElement>(null);
+  const top = useRef<HTMLElement>(null);
   const title = useRef<HTMLHeadingElement>(null);
   const scroll = useRef<HTMLDivElement>(null);
   const dialog = useRef<HTMLDialogElement>(null);
@@ -80,15 +83,8 @@ export function FossilExpedition({ reduced, webgl, resume, onProgress, onLeave }
     setSheetSize('small');
   }, [state.stop]);
 
-  useEffect(() => {
-    const el = panel.current;
-    if (!el) return;
-    const measure = () => root.current?.style.setProperty('--fossil-panel-h', `${el.getBoundingClientRect().height}px`);
-    const observer = new ResizeObserver(measure);
-    observer.observe(el);
-    measure();
-    return () => observer.disconnect();
-  }, [desktop]);
+  const shift = useSceneFrame(root, top, panel, desktop);
+  const visitedChapters = new Set(state.visited.map((id) => FOSSIL_STOPS.find((s) => s.id === id)?.chapter));
 
   useEffect(() => {
     const el = root.current;
@@ -104,11 +100,13 @@ export function FossilExpedition({ reduced, webgl, resume, onProgress, onLeave }
   }, [modal]);
 
   const content = <>
-    <div className="fossil-panel-content" ref={scroll}>
-      <div className="fossil-section-line"><span>Cuaderno de campo</span><span>{String(state.stop + 1).padStart(2, '0')} / {FOSSIL_STOPS.length}</span></div>
+    <div className="orc-panel-scroll fossil-panel-content" ref={scroll}>
+      <div className="orc-panel-head"><div className="orc-panel-head-title">
+        <span className="orc-kicker">{FOSSIL_CHAPTERS[chapter].label} · parada {state.stop + 1} de {FOSSIL_STOPS.length}</span>
+        <h2 id="fossil-title" className="orc-chapter-h2" ref={title} tabIndex={-1}>{stop.title}</h2>
+      </div></div>
       <FossilTimeline state={state} />
       <p className="fossil-eyebrow">{stop.eyebrow}</p>
-      <h2 id="fossil-title" ref={title} tabIndex={-1}>{stop.title}</h2>
       <p className="fossil-line" aria-live="polite">{stop.line}</p>
 
       {stop.id === 'spiral' && <div className="fossil-interaction">
@@ -171,37 +169,49 @@ export function FossilExpedition({ reduced, webgl, resume, onProgress, onLeave }
         })}
       </div>}
     </div>
-    <div className="fossil-panel-footer">
-      <button className="btn fossil-prev" aria-label="Parada anterior" disabled={state.stop === 0} onClick={() => dispatch({ type: 'prev' })}>{Icon.back}</button>
-      <button className="btn primary fossil-next" onClick={() => last ? onLeave(true) : dispatch({ type: 'next' })}>{last ? 'Terminar expedición' : chapter !== FOSSIL_CHAPTERS.findIndex((c) => c.id === FOSSIL_STOPS[state.stop + 1].chapter) ? `Seguir a ${FOSSIL_CHAPTERS[chapter + 1].label}` : 'Seguir explorando'}<span aria-hidden="true">{last ? '✓' : '→'}</span></button>
+    <div className="orc-bar ebar">
+      {state.stop > 0 && <button type="button" className="btn ghost fossil-prev" onClick={() => dispatch({ type: 'prev' })}>Atrás</button>}
+      <button type="button" className="btn primary fossil-next" onClick={() => last ? onLeave(true) : dispatch({ type: 'next' })}>{last ? 'Terminar expedición' : 'Siguiente'}</button>
     </div>
   </>;
 
   const photo = FOSSIL_PHOTOS[shown];
-  return <section className="fossil-expedition" ref={root} aria-label="Expedición Fósiles">
-    <header className="fossil-header">
-      <button className="fossil-map" aria-label="Volver al mapa" onClick={() => onLeave(false)}>{Icon.back}<span>Mapa</span></button>
-      <div className="fossil-brand"><b>Fósiles</b><span>La Antártida antes del hielo</span></div>
-      <button className="fossil-sources-button" onClick={() => setModal({ kind: 'sources' })}>Fuentes</button>
-    </header>
-    <nav className="fossil-chapters" aria-label="Capítulos de Fósiles">
-      {FOSSIL_CHAPTERS.map((c, i) => <button key={c.id} aria-current={c.id === stop.chapter ? 'step' : undefined} onClick={() => dispatch({ type: 'chapter', chapter: c.id })}><span>{String(i + 1).padStart(2, '0')}</span>{c.label}</button>)}
-    </nav>
-    <div className="fossil-workspace">
-      <div className="fossil-stage">
-        {use3D ? <Suspense fallback={<div className="fossil-loading" role="status">Abriendo el cuaderno de campo…</div>}><Scene view={stop.view} state={state} reduced={reduced} reset={reset} /></Suspense> : <figure className="fossil-fallback"><img src={PHOTO_URL[fallbackId]} alt={fallback.alt} /><figcaption>{fallback.caption}<br />{fallback.credit}{fallback.note && <span>{fallback.note}</span>}<span>Recorrido en fotografías · todas las paradas e interacciones siguen disponibles.</span>{stop.id === 'animal' && state.reconstructed && <span>Reconstrucción ilustrativa: un dinosaurio herbívoro, de cuerpo bajo y protegido por placas óseas.</span>}</figcaption></figure>}
-        <div className="fossil-location"><span className="fossil-location-dot" /><span>{place}<small>{stop.chapter === 'past' ? 'Ambientes reconstruidos' : 'Antártida · cuaderno de expedición'}</small></span></div>
-        {use3D && <button className="fossil-reset" aria-label="Restablecer vista de la escena" onClick={() => setReset((v) => v + 1)}>{Icon.reset}</button>}
-        <div className="fossil-scene-note"><span>{use3D ? 'Reconstrucción ilustrativa' : 'Fotografía de archivo'}</span><small>{use3D ? 'Arrastrá para mirar alrededor · tamaños exagerados' : 'Archivo fotográfico con créditos al abrir la foto'}</small></div>
-        {stop.id === 'spiral' && state.cleaned === FOSSIL_CLEAN_STEPS && <div className="fossil-found" role="status">01 · La espiral apareció</div>}
-        {stop.id === 'giants' && <div className="fossil-found">01 · Amonite gigante<small>Forma y movimiento ilustrativos</small></div>}
-        {stop.id === 'vega' && state.column && <div className="fossil-found">02 · Una columna, de la cabeza a la cola</div>}
-        {stop.id === 'swimmer' && <div className="fossil-found">02 · Un reptil marino<small>Forma, color y nado ilustrativos</small></div>}
-        {stop.id === 'tooth' && state.tooth && <div className="fossil-found">03 · Una mandíbula. Un diente.</div>}
-        {stop.id === 'slab' && state.measured && <div className="fossil-found">04 · 17 mm, del centro a la punta</div>}
-      </div>
-      {desktop ? <section className="fossil-panel" ref={panel} aria-labelledby="fossil-title">{content}</section> : <BottomSheet className="fossil-panel" labelledBy="fossil-title" sheetRef={panel} floor="peek" size={sheetSize} onSize={setSheetSize}>{content}</BottomSheet>}
+  return <section className={`orc fossil-expedition${!desktop && sheetSize === 'tall' ? ' is-panel-expanded' : ''}${!desktop && sheetSize === 'peek' ? ' is-panel-peek' : ''}`} ref={root} aria-label="Expedición Fósiles">
+    <div className="fossil-stage">
+      {use3D ? <Suspense fallback={<div className="fossil-loading" role="status">Abriendo el cuaderno de campo…</div>}><Scene view={stop.view} state={state} reduced={reduced} reset={reset} shift={shift} /></Suspense> : <figure className="fossil-fallback"><img src={PHOTO_URL[fallbackId]} alt={fallback.alt} /><figcaption>{fallback.caption}<br />{fallback.credit}{fallback.note && <span>{fallback.note}</span>}<span>Recorrido en fotografías · todas las paradas e interacciones siguen disponibles.</span>{stop.id === 'animal' && state.reconstructed && <span>Reconstrucción ilustrativa: un dinosaurio herbívoro, de cuerpo bajo y protegido por placas óseas.</span>}</figcaption></figure>}
     </div>
+    <div className="fossil-location"><span className="fossil-location-dot" /><span>{place}<small>{stop.chapter === 'past' ? 'Ambientes reconstruidos' : 'Antártida · cuaderno de expedición'}</small></span></div>
+    {use3D && <button type="button" className="fossil-reset" aria-label="Restablecer vista de la escena" onClick={() => setReset((v) => v + 1)}>{Icon.reset}</button>}
+    <div className="orc-scene-badge fossil-scene-note">
+      <div className="orc-scene-badge-row"><KindChip kind={use3D ? 'recon' : 'real'} label={use3D ? 'Reconstrucción ilustrativa' : 'Fotografía de archivo'} /></div>
+      <small>{use3D ? 'Arrastrá para mirar alrededor · tamaños exagerados' : 'Archivo fotográfico con créditos al abrir la foto'}</small>
+    </div>
+    {stop.id === 'spiral' && state.cleaned === FOSSIL_CLEAN_STEPS && <div className="fossil-found" role="status">01 · La espiral apareció</div>}
+    {stop.id === 'giants' && <div className="fossil-found">01 · Amonite gigante<small>Forma y movimiento ilustrativos</small></div>}
+    {stop.id === 'vega' && state.column && <div className="fossil-found">02 · Una columna, de la cabeza a la cola</div>}
+    {stop.id === 'swimmer' && <div className="fossil-found">02 · Un reptil marino<small>Forma, color y nado ilustrativos</small></div>}
+    {stop.id === 'tooth' && state.tooth && <div className="fossil-found">03 · Una mandíbula. Un diente.</div>}
+    {stop.id === 'slab' && state.measured && <div className="fossil-found">04 · 17 mm, del centro a la punta</div>}
+    <header className="orc-top" ref={top}>
+      <div className="orc-top-r1">
+        <button type="button" className="pill orc-top-btn" aria-label="Volver al mapa" onClick={() => onLeave(false)}>{Icon.back}<span>Mapa</span></button>
+        <div className="orc-top-title"><strong>Fósiles</strong><span>{FOSSIL_QUESTION}</span></div>
+        <button type="button" className="pill orc-top-btn" aria-haspopup="dialog" onClick={() => setModal({ kind: 'sources' })}>Fuentes</button>
+      </div>
+      <nav className="orc-steps-nav" aria-label="Capítulos de Fósiles">
+        <ol className="orc-steps">
+          {FOSSIL_CHAPTERS.map((c, i) => {
+            const current = c.id === stop.chapter;
+            return <li key={c.id} className="orc-step-item">
+              <button type="button" className={`orc-step-btn${current ? ' is-current' : visitedChapters.has(c.id) ? ' is-visited' : ''}`} aria-current={current ? 'step' : undefined} aria-label={`${i + 1} ${c.label}`} onClick={() => dispatch({ type: 'chapter', chapter: c.id })}>
+                <span className="orc-step-num" aria-hidden="true">{i + 1}</span><span className="orc-step-name">{c.label}</span>
+              </button>
+            </li>;
+          })}
+        </ol>
+      </nav>
+    </header>
+    {desktop ? <section className="orc-panel fossil-panel" ref={panel} aria-labelledby="fossil-title">{content}</section> : <BottomSheet className="orc-panel fossil-panel" labelledBy="fossil-title" sheetRef={panel} floor="peek" size={sheetSize} onSize={setSheetSize}>{content}</BottomSheet>}
     <dialog className="fossil-dialog" ref={dialog} aria-labelledby="fossil-dialog-title" onClose={() => setModal(null)} onClick={(e) => { if (e.target === e.currentTarget) setModal(null); }}>
       <div className="fossil-dialog-heading"><h2 id="fossil-dialog-title">{modal?.kind === 'sources' ? 'Fuentes del recorrido' : modal?.kind === 'story' ? FOSSIL_STORY.title : 'Archivo de campo'}</h2><button className="iconbtn" aria-label="Cerrar" onClick={() => setModal(null)}>{Icon.close}</button></div>
       {modal?.kind === 'sources' ? <>

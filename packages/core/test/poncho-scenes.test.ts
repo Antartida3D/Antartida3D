@@ -189,7 +189,7 @@ describe('scenes of Poncho: data', () => {
 
   it('tells «Nace Poncho» in three stages: each sentence shows something that was not there', () => {
     const scene = PONCHO_SCENES.nacimiento;
-    expect(scene.setting).toBe('coast');
+    expect(scene.setting).toBe('station');
     const shown = (step: number) => scene.elements.filter((e) => sceneElementShown(e, step));
     const dogs = (step: number) => shown(step).filter((e) => e.kind === 'dog');
     // 1: men, a pup and its mother. 2: a litter. 3: training with a belt, a sled and a slalom.
@@ -256,6 +256,15 @@ describe('scenes of Poncho: rules', () => {
     expect(sceneWalk(walk, 9)).toMatchObject({ x: 4, moving: false, travel: 4 });
     // Someone 1 s behind is half way along when the head of the file is at the end... (1 s of 2 s)
     expect(sceneWalk(walk, 3, 1).x).toBeCloseTo(2, 9);
+    // Someone behind the head of a file stands behind the start (not piled on it) and walks in when the head sets out.
+    const back = sceneWalk(walk, 0, 1.5);
+    expect(back).toMatchObject({ moving: false });
+    expect(back.x).toBeCloseTo(-3, 9); // 1.5 s of a 2 s walk of 4 units
+    expect(sceneWalk(walk, 2, 1.5).x).toBeCloseTo(-1, 9);
+    expect(sceneWalk(walk, 2, 1.5).moving).toBe(true);
+    // At the end of a walk a follower stops where the head was `lag` s before it stopped, not on the head.
+    expect(sceneWalk(walk, 99, 1).x).toBeCloseTo(2, 9);
+    expect(sceneWalk(walk, 99, 1).moving).toBe(false);
     // One ahead (negative lag) is farther along.
     expect(sceneWalk(walk, 1.5, -0.5).x).toBeCloseTo(2, 9);
     const loop = { id: 'l', from: [0, 0], via: [[2, 0], [2, 2]], to: [0, 0], loop: true, delay: 0, duration: 4 } as const;

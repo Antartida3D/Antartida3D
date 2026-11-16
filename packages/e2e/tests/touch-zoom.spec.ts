@@ -1,4 +1,5 @@
 import { expect, test, type CDPSession, type Page } from '@playwright/test';
+import { MAP_2D_ENABLED, NO_2D, show3D } from './map-helpers.ts';
 
 /**
  * One-finger zoom on a phone (#165): a double tap zooms in one step around the tapped point, and
@@ -72,6 +73,7 @@ const open2D = async (page: Page) => {
 };
 
 test('on the 2D map a double tap zooms in one step around the tapped point, and the second touch dragged zooms (#165)', async ({ page }) => {
+  test.skip(!MAP_2D_ENABLED, NO_2D);
   await open2D(page);
   await expect.poll(() => mapSpot(page), { message: 'a spot of the map with no marker' }).not.toBeNull();
   const spot = await mapSpot(page);
@@ -131,6 +133,7 @@ test('on the 2D map a double tap zooms in one step around the tapped point, and 
 });
 
 test('on the 2D map without reduced motion a double tap glides (#165)', async ({ page }) => {
+  test.skip(!MAP_2D_ENABLED, NO_2D);
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await open2D(page);
   await expect.poll(() => mapSpot(page), { message: 'a spot of the map with no marker' }).not.toBeNull();
@@ -145,10 +148,15 @@ test('on the 2D map without reduced motion a double tap glides (#165)', async ({
 
 for (const mode of ['Mapa 2D', 'Relieve 3D'] as const) {
   test(`a quick second tap on a marker still opens it, and a double tap beside it opens nothing (${mode}, #54, #165)`, async ({ page }) => {
+    test.skip(mode === 'Mapa 2D' && !MAP_2D_ENABLED, NO_2D);
     await page.goto('/');
-    const toggle = page.getByRole('group', { name: 'Modo de vista' });
-    await toggle.getByRole('button', { name: mode }).click();
-    await expect(toggle.getByRole('button', { name: mode })).toHaveAttribute('aria-pressed', 'true');
+    if (MAP_2D_ENABLED) {
+      const toggle = page.getByRole('group', { name: 'Modo de vista' });
+      await toggle.getByRole('button', { name: mode }).click();
+      await expect(toggle.getByRole('button', { name: mode })).toHaveAttribute('aria-pressed', 'true');
+    } else {
+      await show3D(page);
+    }
     // A point marker free to tap, other than the trip from Ushuaia (it opens its own panel, not a sheet).
     const freeMarker = () =>
       page.evaluate(() => {
@@ -213,6 +221,7 @@ for (const mode of ['Mapa 2D', 'Relieve 3D'] as const) {
 // opening its magnifier too: over the map those touches zoom, so nothing there may be selected (#190).
 test('the map and what lies over it cannot be selected, and what is there to read still can (#190)', async ({ page }) => {
   await page.goto('/');
+  if (!MAP_2D_ENABLED) await show3D(page);
   const selectable = (selector: string) =>
     page.evaluate((s) => {
       const style = getComputedStyle(document.querySelector(s)!);

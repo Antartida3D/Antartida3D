@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { clearStorage } from '../storage.ts';
 import { mockOpenMeteo } from './weather-helpers.ts';
+import { MAP_2D_ENABLED, NO_2D, show3D } from './map-helpers.ts';
 
 let consoleErrors: string[] = [];
 
@@ -43,9 +44,14 @@ const coveringList = (page: Page) =>
 
 for (const mode of ['Mapa 2D', 'Relieve 3D'] as const) {
   test(`list view covers every map marker and bar (${mode})`, async ({ page }) => {
-    const toggle = page.getByRole('group', { name: 'Modo de vista' });
-    await toggle.getByRole('button', { name: mode }).click();
-    await expect(toggle.getByRole('button', { name: mode })).toHaveAttribute('aria-pressed', 'true');
+    test.skip(mode === 'Mapa 2D' && !MAP_2D_ENABLED, NO_2D);
+    if (MAP_2D_ENABLED) {
+      const toggle = page.getByRole('group', { name: 'Modo de vista' });
+      await toggle.getByRole('button', { name: mode }).click();
+      await expect(toggle.getByRole('button', { name: mode })).toHaveAttribute('aria-pressed', 'true');
+    } else {
+      await show3D(page);
+    }
     const markers = page.locator('.vp .mk');
     await expect(markers.first()).toBeVisible();
     const before = await markers.count();

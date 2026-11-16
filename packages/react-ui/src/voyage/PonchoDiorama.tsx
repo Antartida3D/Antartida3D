@@ -1,67 +1,97 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
 import {
-  backStep,
   dioramaOpacity,
   dioramaRemaining,
   dioramaView,
+  entryStep,
   essentialSentences,
   leaveDiorama,
-  nextStep,
   openDiorama,
   timerFiredDiorama,
+  type DioramaEntry,
   type DioramaView,
   type SceneDef,
 } from '@antartida/core';
+import type { OpenSheetSize } from '../BottomSheet.tsx';
+import { useIsDesktop } from '../hooks.ts';
 import { KindChip } from '../orcadas/KindChip.tsx';
+import { useSceneFrame } from '../sceneFrame.tsx';
+import { Icon } from '../ui.tsx';
 
 // Its own chunk: it needs three.js and WebGL, which the common card does not.
 const PonchoDioramaCanvas = lazy(() => import('./PonchoDioramaCanvas.tsx').then((m) => ({ default: m.PonchoDioramaCanvas })));
 
-/** What the panel of the stop needs to tell the tour: the step, the sentences told so far and the three buttons. */
+/** What the panel of the stop needs to tell it: the step, its sentence, the way to move and the size of the sheet on a phone. */
 export interface DioramaTour {
   readonly view: DioramaView;
-  /** Every sentence of the stop; the panel shows the first `view.shown`. */
+  /** Every sentence of the stop; the panel tells the one of the current step. */
   readonly sentences: readonly string[];
+  /** «›»: the next sentence, or past the last one the next stop (or the trip going on). */
   readonly onNext: () => void;
-  readonly onBack: () => void;
-  /** Leave the diorama: it fades out and then `onDone` runs. */
-  readonly onLeave: () => void;
+  /** «‹»: the sentence before, or before the first one the stop before. Absent at the very first sentence of the story. */
+  readonly onBack: (() => void) | null;
+  /** The sheet of a phone: peek, small or tall (the scene is framed over it). */
+  readonly size: OpenSheetSize;
+  readonly onSize: (size: OpenSheetSize) => void;
+  /** The panel (side panel or sheet): the scene is framed in what it leaves free. */
+  readonly panelRef: RefObject<HTMLElement | null>;
 }
 
 /**
- * The screen of the diorama of a stop of Poncho (issue #146), laid over the map: the scene at human
- * scale on its canvas, and beside it (the side panel on a wide screen, the bottom sheet on a phone) the
- * panel of the stop, which `children` draws with the tour. «Siguiente» and «Atrás» (and the arrow keys)
- * move the camera to the shot of each sentence; Escape or the last button leave. It fades in and out;
- * with reduced motion it cuts. The clock of the fade is the browser's, the rules are in
- * @antartida/core (poncho-diorama.ts).
+ * The screen of the diorama of a stop of Poncho (issues #146 and #211), laid over the map: the scene at human
+ * scale on its canvas and the panel of the stop with the layout of the stops of Fósiles (a side panel on a wide
+ * screen, a sheet that opens upwards on a phone), which `children` draws. The panel tells one sentence at a time;
+ * «›» and «‹» (and the arrow keys) move to the next and the one before, and the scene shows something new at each
+ * (the camera goes to its shot). «Volver al mapa» is always there. It fades in and out; with reduced motion it cuts.
+ * The clock of the fade is the browser's, the rules are in @antartida/core (poncho-diorama.ts).
  */
-export function PonchoDiorama({ scene, essential, reduced, onDone, onLost, children }: {
+export function PonchoDiorama({ scene, essential, reduced, entry, hasBefore, onNextStop, onBeforeStop, onDone, onMap, onLost, children }: {
   scene: SceneDef;
-  /** Text of the stop, whose sentences the tour tells. */
+  /** Text of the stop, whose sentences the panel tells. */
   essential: string;
   reduced: boolean;
+  /** At which sentence the stop is entered: the first, or the last when coming back from the next stop. */
+  entry: DioramaEntry;
+  /** There is a stop before this one: «‹» at the first sentence goes there. */
+  hasBefore: boolean;
+  /** Past the last sentence, the next stop already read (the user went back); without it the trip goes on, fading out. */
+  onNextStop: (() => void) | null;
+  /** Before the first sentence, the stop before. */
+  onBeforeStop: () => void;
   /** The screen faded out: close the card. */
   onDone: () => void;
+  /** «Volver al mapa»: leave the trip for the map, keeping where it was (it can be resumed from the map). */
+  onMap: () => void;
   /** The WebGL context was lost for good: the common card takes over. */
   onLost: () => void;
   children: (tour: DioramaTour) => ReactNode;
 }) {
   const sentences = useMemo(() => essentialSentences(essential), [essential]);
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(() => entryStep(entry, sentences.length));
+  const [size, setSize] = useState<OpenSheetSize>('small');
+  const desktop = useIsDesktop();
+  // The scene fills the screen behind the panel, as in Fósiles; its centre moves to the part the panel leaves free.
+  const panelRef = useRef<HTMLElement>(null);
+  const top = useRef<HTMLDivElement>(null);
   const [flow, setFlow] = useState(() => openDiorama(performance.now()));
   const root = useRef<HTMLDivElement>(null);
   const done = useRef(onDone);
   done.current = onDone;
 
   const view = dioramaView(step, sentences.length);
-  const tour: DioramaTour = {
-    view,
-    sentences,
-    onNext: () => setStep((s) => nextStep(s, sentences.length)),
-    onBack: () => setStep((s) => backStep(s, sentences.length)),
-    onLeave: () => setFlow((f) => leaveDiorama(f, performance.now())),
+  const leave = () => setFlow((f) => leaveDiorama(f, performance.now()));
+  const onNext = () => {
+    if (!view.last) setStep(view.step + 1);
+    else if (onNextStop) onNextStop();
+    else leave();
   };
+  const onBack = view.first ? (hasBefore ? onBeforeStop : null) : () => setStep(view.step - 1);
+  const tour: DioramaTour = { view, sentences, onNext, onBack, size, onSize: setSize, panelRef };
+
+  const shift = useSceneFrame(root, top, panelRef, desktop);
+
+  // A new sentence opens the sheet at its small size, as the stops of Fósiles do.
+  useEffect(() => setSize('small'), [view.step]);
 
   // The phase changes by itself when its time is up.
   useEffect(() => {
@@ -92,9 +122,9 @@ export function PonchoDiorama({ scene, essential, reduced, onDone, onLost, child
 
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
-    if (e.key === 'Escape') tour.onLeave();
-    else if (e.key === 'ArrowRight') tour.onNext();
-    else if (e.key === 'ArrowLeft') tour.onBack();
+    if (e.key === 'Escape') leave();
+    else if (e.key === 'ArrowRight') onNext();
+    else if (e.key === 'ArrowLeft') onBack?.();
     else return;
     e.preventDefault();
   };
@@ -102,16 +132,22 @@ export function PonchoDiorama({ scene, essential, reduced, onDone, onLost, child
   return (
     <div
       ref={root}
-      className={`pdio pdio-${flow.phase}`}
+      className={`pdio orc pdio-${flow.phase}${size === 'tall' ? ' is-panel-expanded' : ''}${size === 'peek' ? ' is-panel-peek' : ''}`}
       // Focus goes here when the canvas is clicked, so the arrow keys keep working.
       tabIndex={-1}
       onKeyDown={onKeyDown}
     >
+      {/* No bar on top of this screen: a bar without height is what the frame measures from. */}
+      <div ref={top} className="pdio-top" aria-hidden="true" />
       <div className="pdio-stage" aria-hidden="true">
         <Suspense fallback={null}>
-          <PonchoDioramaCanvas scene={scene} step={view.step} reduced={reduced} onLost={onLost} />
+          <PonchoDioramaCanvas scene={scene} step={view.step} reduced={reduced} shift={shift} onLost={onLost} />
         </Suspense>
       </div>
+      <button type="button" className="btn pdio-map" onClick={onMap}>
+        {Icon.back}
+        <span>Volver al mapa</span>
+      </button>
       {/* One single notice that this is an illustration. */}
       <div className="pdio-badge">
         <KindChip kind="recon" label="Reconstrucción ilustrada" />

@@ -28,3 +28,7 @@ Los hitos de Poncho se apoyan unos en otros (cada gancho anticipa el siguiente) 
 ## Estado de implementación y verificación
 
 Implementado en la rama `9-expedición-poncho`. Pruebas de `@antartida/core` (regla de orden) y e2e del viaje desde Ushuaia (`pnpm exec playwright test voyage`, 8 de 8) pasadas el 15 de noviembre de 2026 antes de la última integración con `main`.
+
+## Actualización de vigencia (16 de noviembre de 2026)
+
+La regla de orden de esta decisión sigue vigente. Lo que cuenta sobre el diorama «en etapas» (una frase por toma, con «Siguiente») quedó reemplazado por [DEC-211](DEC-211-panel-de-poncho-como-fosiles.md): el panel de cada parada sigue el diseño de Fósiles, con una frase por vez y flechas. Además, las paradas ya recorridas se pueden releer y volver a abrir (#214); lo que sigue sin permitirse es saltear una parada que todavía no se recorrió.

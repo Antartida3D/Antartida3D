@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import {
-  DOUBLE_TAP_ZOOM, DRAG_THRESHOLD, EXPEDITION_POINT, HOME, KEY_PAN, MIN_K, ONE_FINGER_IDLE, PONCHO_POINT, PONCHO_TRANSPORT, PTS, TRANSPORTS, VOYAGE_POINT, VOYAGE_POINTS, ZOOM_MS,
-  buildMarkers, diveView, markerPress, geometry, isWheelNotch, keyView, oneFingerDown, oneFingerMove, oneFingerUp, panBy, resumeDetail, welcomeView, wheelFactor, zoomAround, zoomCenter,
+  DOUBLE_TAP_ZOOM, DRAG_THRESHOLD, EXPEDITION_POINT, HOME, KEY_PAN, MAP_2D_ENABLED, MIN_K, ONE_FINGER_IDLE, PONCHO_POINT, PONCHO_TRANSPORT, PTS, TRANSPORTS, VOYAGE_POINT, VOYAGE_POINTS, ZOOM_MS,
+  afterExpedition, buildMarkers, diveView, focusWorld, freeArea, needsFraming, markerPress, geometry, isWheelNotch, keyView, nextExpedition, oneFingerDown, oneFingerMove, oneFingerUp, panBy, resumeDetail, welcomeView, wheelFactor, zoomAround, zoomCenter,
   type ArrivalId, type MapPoint, type Marker, type OneFingerZoomState, type ResumePoint, type SeaPoint, type Size, type TransportId, type View, type ClaimsCoverage,
 } from '@antartida/core';
 import { useBackLayer, usePageSettled, useReducedMotion, useTimers } from '../hooks.ts';
@@ -12,6 +12,7 @@ import { ExplorationLog } from './ExplorationLog.tsx';
 import { Legend } from './Legend.tsx';
 import { ClaimsControl, ClaimsDetails, type ClaimsSelection, type ClaimsStatus } from './ClaimsControl.tsx';
 import { ListView } from './ListView.tsx';
+import { NextCard } from './NextCard.tsx';
 import { PointSheet } from './PointSheet.tsx';
 import { KindChip } from '../orcadas/KindChip.tsx';
 import { OrcadasIntro } from '../orcadas/OrcadasIntro.tsx';
@@ -69,7 +70,11 @@ export interface MapViewProps {
   /** The trip from Ushuaia is open: its panel replaces the map's own controls. */
   voyaging?: boolean;
   diveTarget?: MapPoint;
-  toast: string;
+  /** Expedition just finished: the card offers the next one (#75). Null: no card. */
+  finished?: { id: string; line: string } | null;
+  onDismissFinished?: () => void;
+  /** The card's «Viajar a Orcadas en el Irízar»: the trip from Marambio on the ship. */
+  onTravelIrizar?: () => void;
   legend: boolean;
   /** Move focus to the expedition marker on mount (coming back from the expedition). */
   focusExpedition: boolean;
@@ -92,7 +97,8 @@ export interface MapViewProps {
   voyageResume?: ResumePoint | null;
   onStartVoyage?: (point: MapPoint, resume?: ResumePoint) => void;
   onEndVoyage?: (done: boolean) => void;
-  onVoyageProgress?: (step: number, sub: number) => void;
+  /** The stops reached and, if a card is open, its index: leaving and resuming goes back into it. */
+  onVoyageProgress?: (step: number, sub: number, card?: number) => void;
   /** The 2D base image and optional ink layer reached a usable state. */
   onMap2DReady?: () => void;
 }
@@ -147,7 +153,9 @@ export function MapView({
   arrival = 'ship',
   voyaging = false,
   diveTarget = EXPEDITION_POINT,
-  toast,
+  finished = null,
+  onDismissFinished,
+  onTravelIrizar,
   legend,
   focusExpedition,
   welcome = false,
@@ -169,6 +177,7 @@ export function MapView({
   onMap2DReady,
 }: MapViewProps) {
   const vpRef = useRef<HTMLDivElement>(null);
+  const markersRef = useRef<Marker[]>([]);
   const [size, setSize] = useState<Size>({ vw: 390, vh: 844 });
   const [view, setView] = useState<View>(HOME);
   const [anim, setAnim] = useState<Anim>('');
@@ -198,27 +207,39 @@ export function MapView({
   const resumeTransport = (r: ResumePoint): TransportId | undefined =>
     r.id === PONCHO_POINT.id ? PONCHO_TRANSPORT.id : TRANSPORTS[r.sub ?? -1]?.id;
 
+  /** Starts a trip where it was left: at the stop reached and, if the user left from inside a stop of Poncho, back into it. */
+  const resumeVoyage = (r: ResumePoint) => {
+    const transport = resumeTransport(r);
+    if (!transport) return;
+    voyage.start(transport, r.step);
+    if (r.card !== undefined && r.card < r.step) voyage.openMilestone(r.card);
+  };
+
   useEffect(() => {
     if (!voyaging) {
       voyage.reset();
       return;
     }
-    if (!voyage.bus.state && voyageResume && voyageResume.step >= 1) {
-      const transport = resumeTransport(voyageResume);
-      if (transport) voyage.start(transport, voyageResume.step);
-    }
+    if (!voyage.bus.state && voyageResume && voyageResume.step >= 1) resumeVoyage(voyageResume);
   }, [voyaging, voyageResume]);
 
   const onVoyageProgressRef = useRef(onVoyageProgress);
   onVoyageProgressRef.current = onVoyageProgress;
   useEffect(() => {
     if (!voyaging || !voyage.state) return;
-    const { transport, reached } = voyage.state;
+    const { transport, reached, card } = voyage.state;
     const sub = transport === PONCHO_TRANSPORT.id ? 0 : TRANSPORTS.findIndex((t) => t.id === transport);
-    if (sub >= 0) onVoyageProgressRef.current?.(reached, sub);
+    // Only the story of Poncho goes back into its card: the other trips offer theirs.
+    if (sub >= 0) onVoyageProgressRef.current?.(reached, sub, transport === PONCHO_TRANSPORT.id && card >= 0 ? card : undefined);
   }, [voyaging, voyage.state]);
 
   const is3D = mode === '3d' && !!Layer3D;
+  // The card shows once the map is back and still (S9), one layer at a time.
+  const showCard = !!finished && phase === 'idle' && !voyaging;
+  const dismissCard = () => {
+    onDismissFinished?.();
+    vpRef.current?.focus();
+  };
   const [command, setCommand] = useState<Layer3DProps['command']>(null);
   const live = useRef({ size, view, phase, is3D });
   live.current = { size, view, phase, is3D };
@@ -229,6 +250,7 @@ export function MapView({
   useBackLayer(!!sheet, () => setSheet(null));
   useBackLayer(!!pendingOrcadas && phase === 'idle', () => setPendingOrcadas(null));
   useBackLayer(voyaging, () => onEndVoyage?.(false));
+  useBackLayer(showCard, dismissCard);
   useBackLayer(is3D && claimsEnabled && claimsDetails && !sheet, closeClaimsDetails);
 
   /** Moves the 3D camera; `send3D` when the user asked for it. */
@@ -271,7 +293,8 @@ export function MapView({
   // Title of the expedition the user came back from: only read when the map mounts again.
   const returnTitle = useRef(diveTarget.title);
   useEffect(() => {
-    if (!focusExpedition) return;
+    // The card takes focus itself: two automatic focuses would fight.
+    if (!focusExpedition || finished) return;
     // Back from an expedition: focus its own marker, or the group that holds it.
     // The 3D markers appear once the layer has loaded, so look for them over a few frames.
     let id = 0;
@@ -286,6 +309,65 @@ export function MapView({
     focus();
     return () => cancelAnimationFrame(id);
   }, [focusExpedition]);
+
+  // The card must not cover the suggested marker: if it ends up under the card or off screen, the
+  // map moves it into the free area beside the card. Only pans (same zoom), at once with reduced motion.
+  useEffect(() => {
+    if (!showCard) return;
+    let id = 0;
+    let tries = 0;
+    // The 3D map places its markers once the camera settles: decide only when the marker has stayed
+    // still for a few frames (or after about 5 s).
+    let last: { left: number; top: number } | null = null;
+    let still = 0;
+    let moves = 0;
+    const frame = () => {
+      const vp = vpRef.current;
+      const card = vp?.parentElement?.querySelector<HTMLElement>('.next-sheet');
+      const m = vp?.querySelector<HTMLElement>('.mk.next, .mk.has-next')?.getBoundingClientRect();
+      if (!vp || !card || !m) {
+        if (++tries < 300) id = requestAnimationFrame(frame);
+        return;
+      }
+      still = last && Math.abs(m.left - last.left) + Math.abs(m.top - last.top) < 0.5 ? still + 1 : 0;
+      last = { left: m.left, top: m.top };
+      if (still < 10 && ++tries < 300) {
+        id = requestAnimationFrame(frame);
+        return;
+      }
+      const v = vp.getBoundingClientRect();
+      const c = card.getBoundingClientRect();
+      const free = freeArea(live.current.size, { left: c.left - v.left, top: c.top - v.top, right: c.right - v.left, bottom: c.bottom - v.top });
+      // On wide screens the legend and buttons sit at the left edge: the free area starts after them.
+      const lc = vp.parentElement?.querySelector<HTMLElement>('.leftcol')?.getBoundingClientRect();
+      if (lc && free.bottom === live.current.size.vh && free.right < live.current.size.vw) free.left = Math.min(Math.max(free.left, lc.right - v.left), free.right - 96);
+      const at = { left: m.left + m.width / 2 - v.left, top: m.top + m.height / 2 - v.top };
+      if (!needsFraming(at, free)) return;
+      if (live.current.is3D) {
+        // The 2D view math does not hold under the 3D perspective: pan the marker on screen to the
+        // middle of the free area, and check again once the camera settles (the tilt bends the pan).
+        if (moves++ >= 3) return;
+        queue3D({ type: 'pan', dx: (free.left + free.right) / 2 - at.left, dy: (free.top + free.bottom) / 2 - at.top });
+        tries = 0;
+        still = 0;
+        id = requestAnimationFrame(frame);
+        return;
+      }
+      const marker = markersRef.current.find((k) => (k.kind === 'point' && k.next) || (k.kind === 'cluster' && k.hasNext));
+      if (!marker) return;
+      const sz = live.current.size;
+      const next = focusWorld(sz, marker.x, marker.y, live.current.view.k, ((free.top + free.bottom) / 2) / sz.vh, ((free.left + free.right) / 2) / sz.vw);
+      if (reduced) { setView(next); setAnim(''); }
+      else glide(next);
+    };
+    id = requestAnimationFrame(frame);
+    return () => cancelAnimationFrame(id);
+  }, [showCard]);
+
+  // A sheet, the list or the Orcadas intro replaces the card.
+  useEffect(() => {
+    if (finished && (sheet || list || picking || pendingOrcadas)) onDismissFinished?.();
+  }, [finished, sheet, list, picking, pendingOrcadas]);
 
   useEffect(() => {
     if (phase !== 'dive' && phase !== 'fade') return;
@@ -553,7 +635,12 @@ export function MapView({
     }
   };
 
-  const markers = useMemo(() => buildMarkers(size, view, explored, PTS), [size, view, explored]);
+  const next = useMemo(() => nextExpedition(explored), [explored]);
+  // The welcome, «Continuar» and a trip already point somewhere: no suggestion then (S6).
+  const suggest = !welcome && !welcoming && !resume && !voyaging;
+  const markers = useMemo(() => buildMarkers(size, view, explored, PTS, undefined, suggest ? next?.id : undefined), [size, view, explored, next, suggest]);
+  markersRef.current = markers;
+  const after = finished ? afterExpedition(finished.id, explored) : null;
   const geo = geometry(size);
   const stageCls = 'stage' + (is3D ? ' m3d' : '') + (voyaging ? ' voyaging' : '') + (phase === 'travel' ? ' travel' : phase === 'dive' ? ' dive' : phase === 'approach' ? ' approach' : phase === 'fade' ? ' fade' : phase === 'ret' ? ' ret' : '');
 
@@ -626,7 +713,10 @@ export function MapView({
         ) : (
           !touched && !voyaging && phase === 'idle' && <div className="hint">arrastrá para mover · pellizcá para acercar</div>
         )}
-        {toast && <div className="toast" role="status">{toast}</div>}
+        {/* Always mounted, so a screen reader reads the card's text when it changes. */}
+        <div className="next-live" role="status">
+          {showCard && finished ? `${finished.line}. ${after?.next ? `Siguiente sugerida: ${after.next.title}.` : 'Exploraste las seis expediciones.'}` : ''}
+        </div>
 
         {phase !== 'travel' && (
         <div className="bottom">
@@ -646,25 +736,32 @@ export function MapView({
                 ? PTS.find((p) => p.id === resume.id)
                 : null;
               const detail = resumePoint && resume ? resumeDetail(resumePoint.id, resume.step, resume.sub) : null;
+              // The welcome already points at Ushuaia; «Continuar» wins over the suggestion (S6).
+              const nextPoint = !resumePoint && next && phase === 'idle' && !voyaging && !welcome && !welcoming && !showCard ? next : null;
+              if (nextPoint) {
+                return (
+                  <button type="button" className="btn resume next-btn" aria-label={`Siguiente: ${nextPoint.title}`} onClick={() => { setSheet(null); setPendingOrcadas(null); openPoint(nextPoint); }}>
+                    <span className="lbl">Siguiente: </span>{nextPoint.title}
+                  </button>
+                );
+              }
               return resumePoint ? (
                 <button
                   type="button"
                   className="btn resume"
+                  aria-label={`Continuar: ${resumePoint.title}${detail ? ` · ${detail}` : ''}`}
                   onClick={() => {
                     setSheet(null);
                     setPendingOrcadas(null);
                     if (VOYAGE_POINTS.some((v) => v.id === resumePoint.id)) {
-                      if (resume && resume.step >= 1) {
-                        const transport = resumeTransport(resume);
-                        if (transport) voyage.start(transport, resume.step);
-                      }
+                      if (resume && resume.step >= 1) resumeVoyage(resume);
                       onStartVoyage?.(resumePoint, resume ?? undefined);
                     } else {
                       onStart(resumePoint, undefined, true);
                     }
                   }}
                 >
-                  Continuar: {resumePoint.title}{detail ? ` · ${detail}` : ''}
+                  Continuar: {resumePoint.title}{detail && <span className="rdetail">{` · ${detail}`}</span>}
                 </button>
               ) : null;
             })()}
@@ -672,7 +769,8 @@ export function MapView({
               {Icon.list}
               Ver como lista
             </button>
-            {showToggle && onToggleMode && (
+            {/* With the 2D map off (#227) there is no toggle: only the note on why the 3D map is not showing. */}
+            {showToggle && onToggleMode && (MAP_2D_ENABLED || !available3D) && (
               <ViewToggle mode={mode} available3D={available3D} onChange={onToggleMode} />
             )}
           </div>
@@ -699,6 +797,18 @@ export function MapView({
             points={picking}
             onClose={() => setPicking(null)}
             onPick={(p) => { setPicking(null); openPoint(p); }}
+          />
+        )}
+        {showCard && finished && after && (
+          <NextCard
+            key={finished.id}
+            doneLine={finished.line}
+            doneId={finished.id}
+            next={after.next}
+            offerIrizar={after.offerIrizar}
+            onStart={(p) => { onDismissFinished?.(); openPoint(p); }}
+            onIrizar={() => { onDismissFinished?.(); onTravelIrizar?.(); }}
+            onClose={dismissCard}
           />
         )}
         {voyaging && onEndVoyage && (

@@ -10,7 +10,7 @@ Equipo **DOT ENV**, hackatón SoberaníaTech (Ushuaia, 2026), Eje 2: Antártida,
 
 ## Aplicación
 
-**`apps/dibujado`** (puerto 5103): mapa dibujado estilo acuarela con relieve (2D y 3D), viaje Desde Ushuaia y expedición Estación Orcadas («¿Cuánto cambió el clima de la isla Laurie en 120 años?»). Las demás expediciones se presentan como ampliaciones previstas o próximas. La interfaz ofrece navegación por teclado y alternativas al mapa 3D.
+**`apps/dibujado`** (puerto 5103): mapa dibujado estilo acuarela con relieve 3D (el mapa 2D está deshabilitado y solo aparece sin WebGL o si falla el 3D, [DEC-227](docs/decisiones/DEC-227-mapa-2d-deshabilitado.md)), viaje Desde Ushuaia y expedición Estación Orcadas («¿Cuánto cambió el clima de la isla Laurie en 120 años?»). Las demás expediciones se presentan como ampliaciones previstas o próximas. La interfaz ofrece navegación por teclado y alternativas al mapa 3D.
 
 El sistema visual de la UI está en [DESIGN.md](DESIGN.md), siguiendo el formato abierto de Google Labs (alpha), con tokens YAML y reglas de uso: pergamino claro, tinta marrón neutra y lenguaje cartográfico. La ficha «Océano» aprobó esta dirección; la revisión posterior acepta paneles flotantes con radio de 13 px y botones rectangulares con radio de 9 px, conservando círculos, chips, gráficos, separadores y esquinas pegadas al borde según su semántica. La aplicación global queda en migración y verificación. El [plan de migración](docs/diseno/plan-migracion-ui.md) conserva el inventario, la referencia aprobada, las capturas y los límites de verificación.
 
@@ -242,7 +242,11 @@ En cumplimiento con las bases de la hackatón, se declara el uso de herramientas
   > Relevamiento, implementación, pruebas y capturas en celular y escritorio con Claude Code (modelo Claude Opus 5.5), con revisión del equipo. No se agregaron datos ni fuentes.
 - **Expedición Fósiles: pulido, línea de tiempo, nota del hallazgo y migración a low-poly (#7):**
   > Planificación, implementación, pruebas y verificación con capturas con Claude Code (modelo Claude Opus 5.5), a partir de los pedidos de quien lleva el issue. La línea de tiempo usa las edades de la Tabla Cronoestratigráfica Internacional v2026/06 (ICS) y ubica cada hallazgo solo en el período que dan sus fuentes. La nota «El desvío de 1986» resume la entrevista de Infobae y cita textualmente a Eduardo Olivero; cada cita se cotejó con la nota. Los modelos low-poly son ilustraciones: formas y colores interpretados.
+- **Fósiles y Océano con la interfaz de las demás expediciones (#209):**
+  > Comparación con Orcadas y Marambio, implementación, pruebas y capturas con Claude Code (modelo Claude Opus 5.5), a pedido de quien lleva el issue. Solo cambia la interfaz; no se agregaron datos ni fuentes.
 - **Base Marambio: archivo fotográfico (#207):**
   > Selección de fotos, transcripción de carteles, textos alternativos, implementación y pruebas con Claude Code (modelo Claude Opus 5.5), a partir del archivo y las confirmaciones de la familia. Los epígrafes describen solo lo que se ve; el lugar de las fotos sin dato queda pendiente.
 - **Expedición Océano (#8):**
   > Lectura y verificación de fuentes, plan, implementación, pruebas y revisión con capturas con Claude Code (modelo Claude Opus 5.5), a partir de la investigación y el encargo preparados por quien lleva el issue. Cada frase y cada flecha de la red cita su fuente con el lugar del estudio; la escena, los tamaños, las profundidades y los tiempos son ilustrativos y la interfaz lo dice. No se agregaron porcentajes de dieta ni simulaciones de población.
+- **Mapa 2D deshabilitado (#227):**
+  > Relevamiento de los archivos afectados, redacción del issue, implementación, pruebas y documentación con Claude Code (modelo Claude Opus 5.5), a pedido de quien lleva el issue. No se agregaron datos ni fuentes.

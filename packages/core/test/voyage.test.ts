@@ -43,6 +43,8 @@ import {
   advanceVoyage,
   closeVoyageCard,
   openVoyageCard,
+  previousVoyageCard,
+  nextVoyageCard,
   flightClearance,
   fuegiaWorldHeight,
   heightAt,
@@ -749,6 +751,26 @@ describe('voyage state', () => {
   it('a story told in order opens only what was passed (#190)', () => {
     const s = startVoyage('poncho');
     expect(openVoyageCard(closeVoyageCard(s), s.reached)).toEqual(closeVoyageCard(s));
+  });
+
+  it('a story told in order goes back and forward between the cards already passed', () => {
+    // Two stops passed: the card of the second is open.
+    const second = skipToNextStop(closeVoyageCard(startVoyage('poncho')));
+    expect(second.card).toBe(1);
+    expect(previousVoyageCard(second)).toBe(0);
+    // At the last passed card there is no next one: from there the trip goes on.
+    expect(nextVoyageCard(second)).toBeNull();
+    // Back at the first, the next one is the second; there is no previous one.
+    const back = openVoyageCard(second, 0);
+    expect(back.card).toBe(0);
+    expect(previousVoyageCard(back)).toBeNull();
+    expect(nextVoyageCard(back)).toBe(1);
+    // Closing the card leaves them both, and the other trips do not walk through their cards in a row.
+    expect(previousVoyageCard(closeVoyageCard(second))).toBeNull();
+    expect(nextVoyageCard(closeVoyageCard(second))).toBeNull();
+    const ship = openVoyageCard(advanceVoyage(startVoyage('irizar'), 1000), 2);
+    expect(previousVoyageCard(ship)).toBeNull();
+    expect(nextVoyageCard(ship)).toBeNull();
   });
 
   it('a milestone is near within MILESTONE_NEAR of the path, ahead or behind, never the departure nor the arrival (#190)', () => {

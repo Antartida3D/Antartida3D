@@ -148,51 +148,6 @@ export const MAST_BOXES: readonly Box[] = [
   [0.17, 0.9, 0, 0.05, 0.03, 0.01, C.tentDark],
   [0, 1.0, 0, 0.015, 0.06, 0.015, C.ink],
 ];
-/** Fossil trunk lying on the gravel: the evidence that forests grew here. */
-export const LOG_BOXES: readonly Box[] = Array.from({ length: 14 }, (_, i): Box => [
-  -0.45 + i * 0.07, 0.06 + Math.sin(i * 1.3) * 0.006, Math.sin(i * 0.45) * 0.03,
-  0.072, 0.11 - (i % 3) * 0.01, 0.12 - (i % 2) * 0.012, i % 3 === 0 ? C.strataGrey : i % 3 === 1 ? C.light : C.rock,
-]);
-
-// --- Cretaceous forest ----------------------------------------------------------------------
-
-export const CONIFER_BOXES: readonly Box[] = [
-  [0, 0.3, 0, 0.07, 0.6, 0.07, C.bark],
-  [0, 0.03, 0, 0.12, 0.06, 0.12, C.bark],
-  ...Array.from({ length: 8 }, (_, i): Box => [0, 0.33 + i * 0.085, 0, 0.5 - i * 0.055, 0.06, 0.5 - i * 0.055, i % 2 ? C.conifer : C.coniferLight]),
-  [0, 1.04, 0, 0.05, 0.07, 0.05, C.conifer],
-  [0.2, 0.36, 0.14, 0.12, 0.04, 0.1, C.conifer],
-  [-0.18, 0.47, -0.12, 0.1, 0.04, 0.12, C.conifer],
-  [0.14, 0.6, -0.12, 0.08, 0.04, 0.08, C.coniferLight],
-];
-export const CYCAD_BOXES: readonly Box[] = [
-  [0, 0.14, 0, 0.14, 0.28, 0.14, C.bark],
-  [0, 0.3, 0, 0.16, 0.05, 0.16, C.bark],
-  ...[[1, 0], [-1, 0], [0, 1], [0, -1], [0.7, 0.7], [-0.7, 0.7], [0.7, -0.7], [-0.7, -0.7]].flatMap(([dx, dz]): Box[] => [
-    [dx * 0.14, 0.36, dz * 0.14, 0.06 + Math.abs(dx) * 0.14, 0.03, 0.06 + Math.abs(dz) * 0.14, C.cycad],
-    [dx * 0.26, 0.32, dz * 0.26, 0.05 + Math.abs(dx) * 0.08, 0.025, 0.05 + Math.abs(dz) * 0.08, C.fern],
-  ]),
-];
-export const FERN_BOXES: readonly Box[] = [
-  [0, 0.02, 0, 0.12, 0.04, 0.12, C.forestSoil],
-  ...Array.from({ length: 6 }, (_, i): Box[] => {
-    const a = (i / 6) * Math.PI * 2;
-    return [
-      [Math.cos(a) * 0.12, 0.12, Math.sin(a) * 0.12, 0.1, 0.03, 0.1, C.fern],
-      [Math.cos(a) * 0.24, 0.1, Math.sin(a) * 0.24, 0.08, 0.025, 0.08, i % 2 ? C.leaf : C.cycad],
-    ];
-  }).flat(),
-];
-export const BROADLEAF_BOXES: readonly Box[] = [
-  [0, 0.25, 0, 0.08, 0.5, 0.08, C.bark],
-  [0.08, 0.45, 0, 0.14, 0.04, 0.04, C.bark],
-  ...Array.from({ length: 10 }, (_, i): Box => {
-    const a = i * 2.39;
-    const r = 0.1 + (i % 3) * 0.06;
-    return [Math.cos(a) * r, 0.58 + (i % 4) * 0.07, Math.sin(a) * r, 0.2, 0.12, 0.2, i % 2 ? C.leaf : C.fern];
-  }),
-];
-
 // --- Sea floor: Cretaceous and Eocene -------------------------------------------------------
 
 export const BRYOZOAN_BOXES: readonly Box[] = [
@@ -269,9 +224,7 @@ export const FOSSIL_MODELS: Readonly<Record<string, readonly Box[]>> = {
   'fossil-jaw': JAW_BOXES, 'antarctopelta-bones': DINO_BONES,
   'plesiosaur-skeleton': PLESIO_SKELETON,
   'field-tent': TENT_BOXES, 'field-crate': CRATE_BOXES, 'field-sled': SLED_BOXES, 'field-mast': MAST_BOXES,
-  'fossil-log': LOG_BOXES,
-  'cretaceous-conifer': CONIFER_BOXES, 'cretaceous-cycad': CYCAD_BOXES, 'cretaceous-fern': FERN_BOXES,
-  'cretaceous-broadleaf': BROADLEAF_BOXES, 'inoceramid-bivalve': INOCERAMUS_BOXES,
+  'inoceramid-bivalve': INOCERAMUS_BOXES,
   'eocene-bryozoan': BRYOZOAN_BOXES, 'eocene-brachiopod': BRACHIOPOD_BOXES,
   'eocene-urchin': URCHIN_BOXES, 'eocene-crinoid': [...CRINOID_STALK, ...partAtRest({ pivot: CRINOID_TOP, boxes: CRINOID_CROWN })],
   'eocene-chiton': CHITON_BOXES, 'star-slab': STAR_SLAB_BOXES,

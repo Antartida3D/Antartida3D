@@ -20,10 +20,10 @@ import {
   fieldHeight, forestHeight, scatter, seaFloorHeight,
 } from './fossilTerrain.ts';
 import {
-  BRACHIOPOD_BOXES, BROADLEAF_BOXES, BRYOZOAN_BOXES,
-  CHITON_BOXES, CONIFER_BOXES, CRATE_BOXES, CRINOID_CROWN, CRINOID_STALK, CRINOID_TOP, CYCAD_BOXES,
-  DINO_BONES, FERN_BOXES, FOSSIL_PALETTE as C,
-  INOCERAMUS_BOXES, JAW_BOXES, JAW_TOOTH_CENTER, LOG_BOXES,
+  BRACHIOPOD_BOXES, BRYOZOAN_BOXES,
+  CHITON_BOXES, CRATE_BOXES, CRINOID_CROWN, CRINOID_STALK, CRINOID_TOP,
+  DINO_BONES, FOSSIL_PALETTE as C,
+  INOCERAMUS_BOXES, JAW_BOXES, JAW_TOOTH_CENTER,
   MAST_BOXES, PLESIO_BONES, PLESIO_VERTEBRAE, SLED_BOXES, STAR_SLAB_BOXES, TENT_BOXES, URCHIN_BOXES,
   plesioVertebra, type Parka,
 } from './models.ts';
@@ -33,6 +33,7 @@ import {
   PLESIO_FLIPPERS, PLESIO_NECK, PLESIO_NECK_LENGTH, PLESIO_NECK_SEGMENTS, STAR_TRIS, ammoniteArm, dinosaurParts,
   plesiosaurParts,
 } from './lowPolyFossils.ts';
+import { BROADLEAF_TRIS, CONIFER_TRIS, CYCAD_TRIS, FERN_TRIS, LOG_TRIS } from './lowPolyScenery.ts';
 
 type Vec3 = readonly [number, number, number];
 type World = 'field' | 'forest' | 'cretaceous-sea' | 'eocene-sea';
@@ -595,7 +596,7 @@ function FieldWorld({ view, state, reduced }: { view: FossilView; state: FossilS
       <Prop id="crate" boxes={CRATE_BOXES} position={at(0.3, -1.4)} scale={0.9} rotation={[0, 0.3, 0]} />
       <Prop id="crate" boxes={CRATE_BOXES} position={at(0.95, -1.15)} scale={0.8} rotation={[0, -0.2, 0]} />
       <Prop id="crate" boxes={CRATE_BOXES} position={at(-4.4, -1.9)} scale={0.85} />
-      <Prop id="log" boxes={LOG_BOXES} position={at(8.5, -3.6)} scale={3.4} rotation={[0, 0.5, 0]} />
+      <PolyProp id="log" tris={LOG_TRIS} position={at(8.5, -3.6)} scale={3.4} rotation={[0, 0.5, 0]} />
       <Prop id="sled" boxes={SLED_BOXES} position={at(ax - 1.4, az + 1.2)} scale={1.2} rotation={[0, 0.4, 0]} />
 
       {/* Ammonite in its outcrop, under the sediment */}
@@ -721,7 +722,7 @@ function SeaWorld({ eocene, view, reduced }: { eocene: boolean; view: FossilView
 function ForestWorld({ view, reduced }: { view: FossilView; reduced: boolean }) {
   const ground = useMemo(() => buildForestTris(), []);
   const groundY = forestHeight;
-  const plantBoxes = { conifer: CONIFER_BOXES, cycad: CYCAD_BOXES, fern: FERN_BOXES, broadleaf: BROADLEAF_BOXES } as const;
+  const plantTris = { conifer: CONIFER_TRIS, cycad: CYCAD_TRIS, fern: FERN_TRIS, broadleaf: BROADLEAF_TRIS } as const;
   const walking: Loop = { cx: 0, cz: -0.5, rx: 2.8, rz: 1.6, period: 46 };
   return (
     <>
@@ -729,7 +730,7 @@ function ForestWorld({ view, reduced }: { view: FossilView; reduced: boolean }) 
       <fog attach="fog" args={['#E8E4CF', 22, 70]} />
       <PolyModel tris={ground} />
       {FOREST_PLANTS.map((p, i) => (
-        <Prop key={i} id={`plant-${p.kind}`} boxes={plantBoxes[p.kind]} position={[p.x, groundY(p.x, p.z), p.z]} scale={p.scale} rotation={[0, i, 0]} />
+        <PolyProp key={i} id={`plant-${p.kind}`} tris={plantTris[p.kind]} position={[p.x, groundY(p.x, p.z), p.z]} scale={p.scale} rotation={[0, i, 0]} />
       ))}
       {view === 'dinosaur'
         ? <Reconstruction reduced={reduced}><Dinosaur loop={null} reduced={reduced} heightAt={groundY} /></Reconstruction>

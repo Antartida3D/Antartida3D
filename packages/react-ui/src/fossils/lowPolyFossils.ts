@@ -34,7 +34,7 @@ const ellipse = (cz: number, cy: number, hz: number, hy: number, n = 8): [number
   });
 
 /** A body along x from stations of (x, center y, half height, half width), with faces out from its axis. */
-function body(stations: readonly (readonly [number, number, number, number])[], colorAt: (band: number, seg: number) => number, caps: [number?, number?] = [], n = 8): Tri[] {
+export function body(stations: readonly (readonly [number, number, number, number])[], colorAt: (band: number, seg: number) => number, caps: [number?, number?] = [], n = 8): Tri[] {
   const loft: LoftStation[] = stations.map(([x, cy, hy, hz]) => ({ x, ring: ellipse(0, cy, Math.max(hz, 1e-4), Math.max(hy, 1e-4), n) }));
   const tris = loftAlongX(loft, colorAt, caps[0], caps[1]);
   // The axis at each face: its x, and the center height of the stations around it.
@@ -352,7 +352,7 @@ export const STAR_TRIS: readonly Tri[] = (() => {
  * A stack of horizontal rings round a vertical axis at (cx, cz), each [y, half depth (x), half width
  * (z)], bottom to top, closed at both ends; faces turned out from the axis.
  */
-function column(cx: number, cz: number, rings: readonly (readonly [number, number, number])[], segments: number, color: number | ((band: number, seg: number) => number)): Tri[] {
+export function column(cx: number, cz: number, rings: readonly (readonly [number, number, number])[], segments: number, color: number | ((band: number, seg: number) => number)): Tri[] {
   const at = (k: number, i: number): Vec3 => {
     const [y, rx, rz] = rings[k];
     const a = (i / segments) * Math.PI * 2;

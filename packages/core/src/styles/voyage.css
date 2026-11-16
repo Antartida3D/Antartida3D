@@ -123,32 +123,54 @@
   .sheet.voyage{max-height:54%}
 }
 
-/* Diorama of a stop of Poncho (#146): the scene at human scale on its own screen, the panel of the stop beside it. */
-.pdio{position:absolute;inset:0;z-index:12;opacity:0;background:var(--paper);outline:none;overflow:hidden}
+/* Diorama of a stop of Poncho (#146, #211): the scene at human scale and the panel of the stop with the layout of the stops of Fósiles
+   (`.orc-panel`, shared with Orcadas, Fósiles and Océano): a side panel on a wide screen, a sheet that opens upwards on a phone. */
+.pdio{position:absolute;inset:0;z-index:12;opacity:0;background:var(--paper);outline:none;overflow:hidden;font-family:'Atkinson Hyperlegible',sans-serif}
 .pdio-leaving{pointer-events:none}
-/* The canvas fills what the panel leaves free: the side panel on a wide screen, the part over the sheet on a phone. */
-.pdio-stage{position:absolute;inset:0 min(440px,38vw) 0 0}
+/* The canvas fills what the panel leaves free. */
+.pdio-stage{position:absolute;inset:0 0 var(--orc-sheet) 0}
 .pdio-canvas{display:block;touch-action:none}
 /* The sources page opens over the diorama. */
 .pdio ~ .listview.vsources{z-index:22}
 .pdio-map{position:absolute;left:12px;top:12px;z-index:8;display:inline-flex;align-items:center;gap:6px;padding:0 12px 0 8px;min-height:40px}
 .pdio-map .ico{width:18px;height:18px}
-.pdio-badge{position:absolute;left:12px;top:60px;max-width:min(360px,calc(100% - 24px - min(440px,38vw)));display:flex;flex-direction:column;align-items:flex-start;gap:6px;z-index:7;pointer-events:none}
+.pdio-badge{position:absolute;left:12px;top:60px;max-width:min(360px,calc(100% - 24px));display:flex;flex-direction:column;align-items:flex-start;gap:6px;z-index:7;pointer-events:none}
 .pdio-badge p{margin:0;padding:6px 10px;border-radius:8px 14px 10px 12px;background:rgba(243,235,221,.9);font-size:12px;line-height:1.3;color:var(--ink)}
-.vdots{display:flex;gap:6px;margin:6px 0 2px}
-.vdots i{width:10px;height:10px;border-radius:50%;border:2px solid var(--chart-ink);background:transparent}
-.vdots i.on{background:var(--chart-ink)}
-@media (min-width:821px){
-  .sheet.voyage.vdiorama{left:auto;right:0;top:0;bottom:0;width:min(440px,38vw);max-height:none;border-radius:var(--chart-radius) 0 0 var(--chart-radius);border-top:0;border-left:2px solid var(--ink);box-shadow:-10px 0 30px rgba(31,42,54,.2);padding-top:28px;animation:none}
+@media (min-width:900px){
+  .pdio-stage{inset:0 504px 0 0}
+  .pdio .orc-panel{top:24px}
 }
-@media (max-width:820px){
-  .pdio-stage{inset:0 0 44% 0}
-  .pdio-badge{max-width:calc(100% - 24px)}
-  .sheet.voyage.vdiorama:not(.full):not(.dragging){max-height:44%}
-  /* Dragged down, the sheet shows only the title and the buttons, to see the scene. */
-  .sheet.voyage.vdiorama.peek > :not(.sheet-handle):not(h2):not(.vactions){display:none}
+@media ((orientation:landscape) and (max-height:500px)){
+  .pdio-stage{inset:0 46% 0 0}
+  .pdio .orc-panel{top:8px}
 }
-@media (prefers-reduced-motion:reduce){.pdio *{animation:none !important}}
+.poncho-panel button{cursor:pointer}
+.poncho-panel button:focus-visible,.poncho-panel summary:focus-visible,.poncho-panel a:focus-visible,.poncho-dialog button:focus-visible{outline:3px solid var(--deep);outline-offset:4px}
+.poncho-panel .orc-bar .btn{border-radius:var(--chart-button-radius)}
+.poncho-eyebrow{font-size:12px;color:var(--pencil);margin:0 0 8px;line-height:1.5}
+.poncho-line{margin:0 0 16px;font-size:16px;line-height:1.55}
+.poncho-line .vfact{list-style:none}
+.poncho-more{margin-top:17px;border-bottom:1px solid color-mix(in srgb,var(--ink) 18%,transparent);padding-bottom:18px}
+.poncho-more summary{cursor:pointer;font-size:14px}
+.poncho-more .vfacts{margin:14px 0 0;font-size:14px;line-height:1.6}
+/* The arrows of the bar: «‹» goes back, «›» goes forward (the same arrow, turned). */
+.poncho-next .ico,.poncho-prev .ico{width:22px;height:22px}
+.poncho-arrow{display:inline-flex;transform:rotate(180deg)}
+.poncho-prev{min-width:56px}
+.poncho-archive{margin:20px 0 0;display:flex;gap:15px;align-items:center;width:100%;text-align:left;padding:0;border:0;background:transparent;color:var(--ink);font:inherit}
+.poncho-archive img{width:78px;height:88px;object-fit:cover;filter:saturate(.65);border:4px solid color-mix(in srgb,var(--ice) 60%,var(--paper));box-shadow:0 1px 4px color-mix(in srgb,var(--ink) 22%,transparent);transform:rotate(-3deg);flex-shrink:0}
+.poncho-archive>span{display:flex;flex-direction:column;gap:5px}
+.poncho-archive small{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--pencil)}
+.poncho-archive b{font-size:14px;font-weight:400}
+.poncho-archive span>span{font-size:11px;text-decoration:underline;text-underline-offset:3px}
+.poncho-dialog{width:min(650px,calc(100vw - 32px));max-height:calc(100dvh - 40px);padding:25px;border:1px solid var(--ink);border-radius:var(--chart-radius);background:var(--paper);color:var(--ink);box-sizing:border-box;font-family:'Atkinson Hyperlegible',sans-serif}
+.poncho-dialog::backdrop{background:color-mix(in srgb,var(--ink) 55%,transparent)}
+.poncho-dialog-head{display:flex;align-items:center;justify-content:space-between;gap:15px}
+.poncho-dialog h2{font:28px 'Fraunces',serif;margin:0}
+.poncho-dialog a{color:var(--deep);text-underline-offset:3px}
+.poncho-photo{margin:20px 0 0}
+.poncho-photo img{display:block;width:100%;max-height:63dvh;object-fit:contain}
+.poncho-photo figcaption{display:flex;flex-direction:column;gap:7px;margin-top:15px;font-size:12px;line-height:1.5}
 .vphoto{margin:8px 0;padding:0}
 .vphoto img{display:block;width:100%;height:auto;max-height:240px;object-fit:cover;border:2px solid var(--ink);border-radius:var(--chart-radius);background:var(--glacier)}
 .vphoto figcaption{margin-top:4px;font-size:12px;line-height:1.3;color:var(--pencil)}
@@ -160,3 +182,4 @@
 .vstepgo{min-width:32px;min-height:32px;padding:0;display:inline-flex;align-items:center;justify-content:center}
 .vstepgo .ico{width:16px;height:16px}
 .vstepnext .ico{transform:rotate(180deg)}
+.vhere{flex:none}

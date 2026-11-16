@@ -15,8 +15,8 @@ test.afterEach(() => {
   expect(consoleErrors, 'console errors').toEqual([]);
 });
 
-// #214: from the diorama of a stop one can go back to the map, and resume the trip from there.
-test('«Volver al mapa» leaves the diorama for the map and the trip resumes after that stop', async ({ page }) => {
+// #214: from the diorama of a stop one can go back to the map, and resume the trip inside the same stop.
+test('«Volver al mapa» leaves the diorama for the map and the trip resumes inside that stop', async ({ page }) => {
   const first = PONCHO_MILESTONES[0];
   await page.goto('/');
   await page.getByRole('button', { name: 'Ver como lista' }).click();
@@ -38,43 +38,39 @@ test('«Volver al mapa» leaves the diorama for the map and the trip resumes aft
   const resume = page.getByRole('button', { name: /^Continuar: Poncho/ });
   await expect(resume).toBeVisible();
 
-  // The trip comes back where it was left: the first stop reached. (Reading it again is the next part of #214.)
+  // Left from inside a stop, the trip comes back into it: its scene and its panel.
   await resume.click();
-  const controls = page.getByRole('group', { name: 'Controles del viaje' });
-  await expect(controls.locator('.vtrip')).toHaveText(`1 de ${PONCHO_MILESTONES.length} hitos de su historia`);
+  await expect(page.locator('.pdio').getByRole('heading', { name: first.title })).toBeVisible();
 });
 
-// #214: in the story one can go back to read a stop that went by, and forward again.
-test('the card of a stop goes back to the one before and forward again, and the bar offers the stop to read it again', async ({ page }) => {
+// #214: in the story the arrows go back to the stop before, whole, and forward again.
+test('the arrows go back into the stop before, at its last sentence, and forward again; the bar goes back into the stop too', async ({ page }) => {
   const [first, second] = PONCHO_MILESTONES;
   await page.goto('/');
   await page.getByRole('button', { name: 'Ver como lista' }).click();
   await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Poncho/ }).click();
   await page.getByRole('button', { name: 'Comenzar' }).click();
 
-  const diorama = page.locator('.pdio');
-  const leave = async () => {
-    // The sentences go one by one (until #211 changes it), then the main button leaves.
-    const nextSentence = diorama.getByRole('button', { name: 'Siguiente' });
-    while (await nextSentence.isVisible()) await nextSentence.click();
-    await diorama.getByRole('button', { name: /^Seguir con Poncho$/ }).click();
-    await expect(diorama).toHaveCount(0);
-  };
-  await expect(diorama.getByRole('heading', { name: first.title })).toBeVisible();
-  // The first stop has nothing before it, and nothing after it yet.
-  await expect(diorama.getByRole('button', { name: /^Hito anterior/ })).toHaveCount(0);
-  await expect(diorama.getByRole('button', { name: /^Hito siguiente/ })).toHaveCount(0);
-  await leave();
-
-  // The bar offers the stop the team is at, to read it again.
+  const panel = page.locator('.poncho-panel');
   const controls = page.getByRole('group', { name: 'Controles del viaje' });
-  await expect(controls.getByRole('button', { name: `Volver a leer el hito: ${first.title}` })).toBeVisible();
+  // The stop is read to its end, and the trip goes on.
+  await expect(panel.getByRole('heading', { name: first.title })).toBeVisible();
+  while (!(await panel.getByRole('button', { name: 'Seguir con Poncho' }).isVisible())) await panel.getByRole('button', { name: 'Siguiente' }).click();
+  await panel.getByRole('button', { name: 'Seguir con Poncho' }).click();
+  await expect(page.locator('.pdio')).toHaveCount(0);
+
+  // The bar goes back into the stop the team is at (whole: scene and panel), with no text apart.
+  await expect(controls.getByRole('button', { name: `Volver al hito: ${first.title}` })).toBeVisible();
+  await expect(controls.locator('.vsuggest')).toHaveCount(0);
   await controls.getByRole('button', { name: 'Próximo hito', exact: true }).click();
 
-  await expect(diorama.getByRole('heading', { name: second.title })).toBeVisible();
-  await expect(diorama.getByRole('button', { name: /^Hito siguiente/ })).toHaveCount(0);
-  await diorama.getByRole('button', { name: `Hito anterior: ${first.title}` }).click();
-  await expect(diorama.getByRole('heading', { name: first.title })).toBeVisible();
-  await diorama.getByRole('button', { name: `Hito siguiente: ${second.title}` }).click();
-  await expect(diorama.getByRole('heading', { name: second.title })).toBeVisible();
+  // The second stop opens at its first sentence; «Atrás» goes back into the first, at its last sentence.
+  await expect(panel.getByRole('heading', { name: second.title })).toBeVisible();
+  await panel.getByRole('button', { name: 'Atrás' }).click();
+  await expect(panel.getByRole('heading', { name: first.title })).toBeVisible();
+  await expect(panel.locator('.poncho-eyebrow')).toHaveText('3 de 3');
+  // From its last sentence the arrow goes forward into the second stop, which was already read: at its first sentence.
+  await panel.getByRole('button', { name: 'Siguiente' }).click();
+  await expect(panel.getByRole('heading', { name: second.title })).toBeVisible();
+  await expect(panel.locator('.poncho-eyebrow')).toHaveText(/^1 de /);
 });

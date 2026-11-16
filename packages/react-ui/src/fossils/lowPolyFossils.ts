@@ -1,4 +1,4 @@
-import { block, lathe, loftAlongX, mirrorZ, normalOf, prism, strut, type LoftStation, type Tri, type Vec3 } from '../voyage/lowPoly.ts';
+import { block, column, lathe, loftBody, mirrorZ, outward, prism, spike, strut, type Tri, type Vec3 } from '../voyage/lowPoly.ts';
 import { FOSSIL_PALETTE as C, PARKA_COLORS, type Parka } from './models.ts';
 
 /**
@@ -13,42 +13,8 @@ export interface PolyPart { pivot: Vec3; tris: readonly Tri[] }
 
 const add = (a: Vec3, b: Vec3): Vec3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 const scale = (a: Vec3, k: number): Vec3 => [a[0] * k, a[1] * k, a[2] * k];
-const centroid = ([a, b, c]: Tri): Vec3 => [(a[0] + b[0] + c[0]) / 3, (a[1] + b[1] + c[1]) / 3, (a[2] + b[2] + c[2]) / 3];
 
-/** The faces turned so each one faces away from the point `inside(face)` gives for it. */
-export function outward(tris: readonly Tri[], inside: (mid: Vec3) => Vec3): Tri[] {
-  return tris.map((t) => {
-    const n = normalOf(t);
-    const m = centroid(t);
-    const o = inside(m);
-    const dot = n[0] * (m[0] - o[0]) + n[1] * (m[1] - o[1]) + n[2] * (m[2] - o[2]);
-    return dot < 0 ? [t[0], t[2], t[1], t[3]] : t;
-  });
-}
 
-/** An ellipse ring [z, y] of `n` points round (cz, cy). */
-const ellipse = (cz: number, cy: number, hz: number, hy: number, n = 8): [number, number][] =>
-  Array.from({ length: n }, (_, i) => {
-    const a = (i / n) * Math.PI * 2;
-    return [cz + Math.cos(a) * hz, cy + Math.sin(a) * hy];
-  });
-
-/** A body along x from stations of (x, center y, half height, half width), with faces out from its axis. */
-export function body(stations: readonly (readonly [number, number, number, number])[], colorAt: (band: number, seg: number) => number, caps: [number?, number?] = [], n = 8): Tri[] {
-  const loft: LoftStation[] = stations.map(([x, cy, hy, hz]) => ({ x, ring: ellipse(0, cy, Math.max(hz, 1e-4), Math.max(hy, 1e-4), n) }));
-  const tris = loftAlongX(loft, colorAt, caps[0], caps[1]);
-  // The axis at each face: its x, and the center height of the stations around it.
-  const cyAt = (x: number) => {
-    for (let k = 0; k < stations.length - 1; k++) {
-      const [x0, y0] = stations[k];
-      const [x1, y1] = stations[k + 1];
-      if (x >= x0 - 1e-9 && x <= x1 + 1e-9) return y0 + ((y1 - y0) * (x - x0)) / (x1 - x0 || 1);
-    }
-    return x < stations[0][0] ? stations[0][1] : stations[stations.length - 1][1];
-  };
-  const [first, last] = [stations[0][0], stations[stations.length - 1][0]];
-  return outward(tris, ([x]) => [Math.min(last - 1e-3, Math.max(first + 1e-3, x)), cyAt(x), 0]);
-}
 
 /** Upper faces in one color, lower ones in another: the dark back and pale belly of an animal. */
 const backBelly = (back: number, belly: number, n = 8) => (_: number, seg: number) => {
@@ -56,22 +22,6 @@ const backBelly = (back: number, belly: number, n = 8) => (_: number, seg: numbe
   return Math.sin(a) > -0.2 ? back : belly;
 };
 
-/** A four-sided spike from a base center, pointing along `dir`: an armor plate or a tooth. */
-export function spike(base: Vec3, dir: Vec3, r: number, color: number): Tri[] {
-  const tip = add(base, dir);
-  const up: Vec3 = Math.abs(dir[1]) > 0.9 * Math.hypot(...dir) ? [1, 0, 0] : [0, 1, 0];
-  const l = Math.hypot(...dir);
-  const d = scale(dir, 1 / l);
-  const u0: Vec3 = [up[1] * d[2] - up[2] * d[1], up[2] * d[0] - up[0] * d[2], up[0] * d[1] - up[1] * d[0]];
-  const ul = Math.hypot(...u0);
-  const u = scale(u0, r / ul);
-  const v0: Vec3 = [d[1] * u[2] - d[2] * u[1], d[2] * u[0] - d[0] * u[2], d[0] * u[1] - d[1] * u[0]];
-  const v = scale(v0, 1 / Math.hypot(...v0) * r);
-  const ring = [add(base, u), add(base, v), add(base, scale(u, -1)), add(base, scale(v, -1))];
-  const tris: Tri[] = [];
-  for (let i = 0; i < 4; i++) tris.push([ring[i], ring[(i + 1) % 4], tip, color], [ring[(i + 1) % 4], ring[i], base, color]);
-  return outward(tris, () => add(base, scale(dir, 0.25)));
-}
 
 /** Two small dark eyes on either side of a head, at (x, y), `z` out from the middle. */
 const eyes = (x: number, y: number, z: number, s: number): Tri[] => [
@@ -150,11 +100,11 @@ export const AMMONITE_FOSSIL_TRIS: readonly Tri[] = ammoniteShell(false, C.dark)
 /** The living ammonite: striped shell, and the soft body with its eyes coming out of the opening. */
 export const AMMONITE_BODY_TRIS: readonly Tri[] = (() => {
   const [ax, ay] = AMMONITE_APERTURE;
-  const soft = body([
+  const soft = loftBody([
     [ax - 0.02, ay, 0.06, 0.085], [ax + 0.06, ay, 0.065, 0.085], [ax + 0.13, ay - 0.005, 0.045, 0.06], [ax + 0.15, ay - 0.005, 0.03, 0.04],
   ], () => C.ammoniteSoft, [C.ammoniteSoft, C.ammoniteSoft]);
   // The hood over the head, in the shell's stripe color.
-  const hood = body([[ax - 0.01, ay + 0.04, 0.02, 0.08], [ax + 0.1, ay + 0.045, 0.018, 0.07]], () => C.shellStripe, [C.shellStripe, C.shellStripe]);
+  const hood = loftBody([[ax - 0.01, ay + 0.04, 0.02, 0.08], [ax + 0.1, ay + 0.045, 0.018, 0.07]], () => C.shellStripe, [C.shellStripe, C.shellStripe]);
   return [...ammoniteShell(true, C.ammoniteSoft), ...soft, ...hood, ...eyes(ax + 0.1, ay + 0.02, 0.07, 0.032)];
 })();
 
@@ -169,7 +119,7 @@ export function ammoniteArm(i: number): PolyPart[] {
     const r1 = r0 - 0.003;
     return {
       pivot: s === 0 ? [AMMONITE_APERTURE[0] + 0.14, y, z] as Vec3 : [len, 0, 0] as Vec3,
-      tris: body([[0, 0, r0, r0], [len, 0, r1, r1]], () => (s === 2 ? C.shellStripe : C.ammoniteSoft), [C.ammoniteSoft, C.ammoniteSoft], 5),
+      tris: loftBody([[0, 0, r0, r0], [len, 0, r1, r1]], () => (s === 2 ? C.shellStripe : C.ammoniteSoft), [C.ammoniteSoft, C.ammoniteSoft], 5),
     };
   });
 }
@@ -188,15 +138,15 @@ const neckRadius = (i: number) => 0.033 - i * 0.0018;
 export function plesiosaurParts() {
   const back = backBelly(C.plesioBack, C.plesioBelly);
   // Broad flat trunk, a short tail tapering to a point; spots along the back.
-  const trunk = body([
+  const trunk = loftBody([
     [-0.56, 0.07, 0.008, 0.008], [-0.48, 0.07, 0.024, 0.03], [-0.38, 0.07, 0.04, 0.055], [-0.28, 0.072, 0.052, 0.09],
     [-0.12, 0.075, 0.06, 0.105], [0.0, 0.078, 0.056, 0.095], [0.06, 0.085, 0.045, 0.07], [0.075, 0.09, neckRadius(0), neckRadius(0)],
   ], (band, seg) => (band >= 2 && band <= 5 && (seg === 1 || seg === 2) && (band + seg) % 2 === 0 ? C.plesioSpot : back(band, seg)), [C.plesioBack, C.plesioBack]);
   const neck: Tri[][] = Array.from({ length: PLESIO_NECK_SEGMENTS }, (_, i) =>
-    body([[-0.004, 0, neckRadius(i), neckRadius(i)], [PLESIO_NECK_LENGTH + 0.004, 0, neckRadius(i + 1), neckRadius(i + 1)]], back, [C.plesioBack, C.plesioBack]));
+    loftBody([[-0.004, 0, neckRadius(i), neckRadius(i)], [PLESIO_NECK_LENGTH + 0.004, 0, neckRadius(i + 1), neckRadius(i + 1)]], back, [C.plesioBack, C.plesioBack]));
   // Small head with long jaws and the cone teeth of a marine reptile.
   const head = [
-    ...body([[-0.004, 0, neckRadius(PLESIO_NECK_SEGMENTS), neckRadius(PLESIO_NECK_SEGMENTS)], [0.04, 0.004, 0.03, 0.03], [0.08, -0.006, 0.018, 0.02], [0.125, -0.012, 0.006, 0.008]], back, [C.plesioBack, C.plesioBelly]),
+    ...loftBody([[-0.004, 0, neckRadius(PLESIO_NECK_SEGMENTS), neckRadius(PLESIO_NECK_SEGMENTS)], [0.04, 0.004, 0.03, 0.03], [0.08, -0.006, 0.018, 0.02], [0.125, -0.012, 0.006, 0.008]], back, [C.plesioBack, C.plesioBelly]),
     ...eyes(0.045, 0.016, 0.027, 0.014),
     ...[0.06, 0.08, 0.1].flatMap((x) => [...spike([x, -0.018, 0.012], [0, -0.016, 0], 0.003, C.tooth), ...spike([x, -0.018, -0.012], [0, -0.016, 0], 0.003, C.tooth)]),
   ];
@@ -266,14 +216,14 @@ export function dinosaurParts() {
     return cy + hy * Math.sqrt(Math.max(0, 1 - (z / hz) ** 2));
   };
   const trunk = [
-    ...body(stations, skin, [C.dinoGreen, C.dinoGreen], 10),
+    ...loftBody(stations, skin, [C.dinoGreen, C.dinoGreen], 10),
     ...osteoderms(-0.15, 0.25, backAt, 0.1, 4),
     // Spikes along the flanks
     ...[-0.1, 0.0, 0.1, 0.2].flatMap((x) => [...spike([x, 0.33, 0.15], [0, 0.005, 0.05], 0.018, C.armor), ...spike([x, 0.33, -0.15], [0, 0.005, -0.05], 0.018, C.armor)]),
   ];
   // Small low head with a horny beak; a plate of armor over the skull.
   const head = [
-    ...body([[-0.02, 0, 0.05, 0.065], [0.08, -0.004, 0.055, 0.07], [0.17, -0.012, 0.04, 0.05], [0.22, -0.03, 0.02, 0.03]], skin, [C.dinoGreen, C.beak], 10),
+    ...loftBody([[-0.02, 0, 0.05, 0.065], [0.08, -0.004, 0.055, 0.07], [0.17, -0.012, 0.04, 0.05], [0.22, -0.03, 0.02, 0.03]], skin, [C.dinoGreen, C.beak], 10),
     ...spike([0.09, 0.045, 0], [0, 0.025, 0], 0.04, C.armor),
     ...eyes(0.15, 0.015, 0.05, 0.022),
   ];
@@ -281,7 +231,7 @@ export function dinosaurParts() {
   const tail: Tri[][] = [0, 1, 2].map((i) => {
     const h0 = 0.07 - i * 0.02, h1 = h0 - 0.02, w0 = 0.09 - i * 0.025, w1 = w0 - 0.025;
     return [
-      ...body([[-DINO_TAIL_SEGMENT - 0.008, -0.01 * (i + 1), Math.max(h1, 0.012), Math.max(w1, 0.012)], [0.008, -0.01 * i, h0, w0]], skin, [C.dinoGreen, C.dinoGreen], 8),
+      ...loftBody([[-DINO_TAIL_SEGMENT - 0.008, -0.01 * (i + 1), Math.max(h1, 0.012), Math.max(w1, 0.012)], [0.008, -0.01 * i, h0, w0]], skin, [C.dinoGreen, C.dinoGreen], 8),
       ...osteoderms(-DINO_TAIL_SEGMENT + 0.02, -0.01, (x) => -0.01 * i + h0 * 0.9 + (x / DINO_TAIL_SEGMENT) * 0.02, w0 * 0.6, i === 2 ? 1 : 2),
     ];
   });
@@ -348,29 +298,6 @@ export const STAR_TRIS: readonly Tri[] = (() => {
 
 // --- Geologists ----------------------------------------------------------------------------
 
-/**
- * A stack of horizontal rings round a vertical axis at (cx, cz), each [y, half depth (x), half width
- * (z)], bottom to top, closed at both ends; faces turned out from the axis.
- */
-export function column(cx: number, cz: number, rings: readonly (readonly [number, number, number])[], segments: number, color: number | ((band: number, seg: number) => number)): Tri[] {
-  const at = (k: number, i: number): Vec3 => {
-    const [y, rx, rz] = rings[k];
-    const a = (i / segments) * Math.PI * 2;
-    return [cx + Math.cos(a) * rx, y, cz + Math.sin(a) * rz];
-  };
-  const col = (k: number, i: number) => (typeof color === 'number' ? color : color(k, i));
-  const tris: Tri[] = [];
-  for (let k = 0; k < rings.length - 1; k++) {
-    for (let i = 0; i < segments; i++) tris.push([at(k, i), at(k, i + 1), at(k + 1, i + 1), col(k, i)], [at(k, i), at(k + 1, i + 1), at(k + 1, i), col(k, i)]);
-  }
-  const last = rings.length - 1;
-  for (let i = 0; i < segments; i++) {
-    tris.push([[cx, rings[0][0], cz], at(0, i), at(0, i + 1), col(0, i)]);
-    tris.push([[cx, rings[last][0], cz], at(last, i), at(last, i + 1), col(last - 1, i)]);
-  }
-  const mid = (rings[0][0] + rings[last][0]) / 2;
-  return outward(tris, ([, y]) => [cx, Math.min(rings[last][0] - 1e-3, Math.max(rings[0][0] + 1e-3, y === rings[0][0] || y === rings[last][0] ? mid : y)), cz]);
-}
 
 /**
  * A person in a field parka, about one unit tall, facing +x, with the pivots of the block figure:

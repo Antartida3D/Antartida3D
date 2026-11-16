@@ -441,3 +441,85 @@ export function loftAlongX(stations: readonly LoftStation[], colorAt: (bandIdx: 
 
 /** The faces mirrored across the plane z = 0 (the other wing, the other engine), still facing out. */
 export const mirrorZ = (tris: readonly Tri[]): Tri[] => tris.map(([a, b, c, col]) => [[a[0], a[1], -a[2]], [c[0], c[1], -c[2]], [b[0], b[1], -b[2]], col]);
+
+// --- Shared shape helpers (Fósiles #7, Océano #196) -------------------------------------------
+
+const addV = (a: Vec3, b: Vec3): Vec3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+const scaleV = (a: Vec3, k: number): Vec3 => [a[0] * k, a[1] * k, a[2] * k];
+const faceMid = ([a, b, c]: Tri): Vec3 => [(a[0] + b[0] + c[0]) / 3, (a[1] + b[1] + c[1]) / 3, (a[2] + b[2] + c[2]) / 3];
+
+/** An ellipse ring [z, y] of `n` points round (cz, cy). */
+const ellipse = (cz: number, cy: number, hz: number, hy: number, n = 8): [number, number][] =>
+  Array.from({ length: n }, (_, i) => {
+    const a = (i / n) * Math.PI * 2;
+    return [cz + Math.cos(a) * hz, cy + Math.sin(a) * hy];
+  });
+
+/** The faces turned so each one faces away from the point `inside(face)` gives for it. */
+export function outward(tris: readonly Tri[], inside: (mid: Vec3) => Vec3): Tri[] {
+  return tris.map((t) => {
+    const n = normalOf(t);
+    const m = faceMid(t);
+    const o = inside(m);
+    const dot = n[0] * (m[0] - o[0]) + n[1] * (m[1] - o[1]) + n[2] * (m[2] - o[2]);
+    return dot < 0 ? [t[0], t[2], t[1], t[3]] : t;
+  });
+}
+
+/** A body along x from stations of (x, center y, half height, half width), with faces out from its axis. */
+export function loftBody(stations: readonly (readonly [number, number, number, number])[], colorAt: (band: number, seg: number) => number, caps: [number?, number?] = [], n = 8): Tri[] {
+  const loft: LoftStation[] = stations.map(([x, cy, hy, hz]) => ({ x, ring: ellipse(0, cy, Math.max(hz, 1e-4), Math.max(hy, 1e-4), n) }));
+  const tris = loftAlongX(loft, colorAt, caps[0], caps[1]);
+  // The axis at each face: its x, and the center height of the stations around it.
+  const cyAt = (x: number) => {
+    for (let k = 0; k < stations.length - 1; k++) {
+      const [x0, y0] = stations[k];
+      const [x1, y1] = stations[k + 1];
+      if (x >= x0 - 1e-9 && x <= x1 + 1e-9) return y0 + ((y1 - y0) * (x - x0)) / (x1 - x0 || 1);
+    }
+    return x < stations[0][0] ? stations[0][1] : stations[stations.length - 1][1];
+  };
+  const [first, last] = [stations[0][0], stations[stations.length - 1][0]];
+  return outward(tris, ([x]) => [Math.min(last - 1e-3, Math.max(first + 1e-3, x)), cyAt(x), 0]);
+}
+
+/** A four-sided spike from a base center, pointing along `dir`: an armor plate or a tooth. */
+export function spike(base: Vec3, dir: Vec3, r: number, color: number): Tri[] {
+  const tip = addV(base, dir);
+  const up: Vec3 = Math.abs(dir[1]) > 0.9 * Math.hypot(...dir) ? [1, 0, 0] : [0, 1, 0];
+  const l = Math.hypot(...dir);
+  const d = scaleV(dir, 1 / l);
+  const u0: Vec3 = [up[1] * d[2] - up[2] * d[1], up[2] * d[0] - up[0] * d[2], up[0] * d[1] - up[1] * d[0]];
+  const ul = Math.hypot(...u0);
+  const u = scaleV(u0, r / ul);
+  const v0: Vec3 = [d[1] * u[2] - d[2] * u[1], d[2] * u[0] - d[0] * u[2], d[0] * u[1] - d[1] * u[0]];
+  const v = scaleV(v0, 1 / Math.hypot(...v0) * r);
+  const ring = [addV(base, u), addV(base, v), addV(base, scaleV(u, -1)), addV(base, scaleV(v, -1))];
+  const tris: Tri[] = [];
+  for (let i = 0; i < 4; i++) tris.push([ring[i], ring[(i + 1) % 4], tip, color], [ring[(i + 1) % 4], ring[i], base, color]);
+  return outward(tris, () => addV(base, scaleV(dir, 0.25)));
+}
+
+/**
+ * A stack of horizontal rings round a vertical axis at (cx, cz), each [y, half depth (x), half width
+ * (z)], bottom to top, closed at both ends; faces turned out from the axis.
+ */
+export function column(cx: number, cz: number, rings: readonly (readonly [number, number, number])[], segments: number, color: number | ((band: number, seg: number) => number)): Tri[] {
+  const at = (k: number, i: number): Vec3 => {
+    const [y, rx, rz] = rings[k];
+    const a = (i / segments) * Math.PI * 2;
+    return [cx + Math.cos(a) * rx, y, cz + Math.sin(a) * rz];
+  };
+  const col = (k: number, i: number) => (typeof color === 'number' ? color : color(k, i));
+  const tris: Tri[] = [];
+  for (let k = 0; k < rings.length - 1; k++) {
+    for (let i = 0; i < segments; i++) tris.push([at(k, i), at(k, i + 1), at(k + 1, i + 1), col(k, i)], [at(k, i), at(k + 1, i + 1), at(k + 1, i), col(k, i)]);
+  }
+  const last = rings.length - 1;
+  for (let i = 0; i < segments; i++) {
+    tris.push([[cx, rings[0][0], cz], at(0, i), at(0, i + 1), col(0, i)]);
+    tris.push([[cx, rings[last][0], cz], at(last, i), at(last, i + 1), col(last - 1, i)]);
+  }
+  const mid = (rings[0][0] + rings[last][0]) / 2;
+  return outward(tris, ([, y]) => [cx, Math.min(rings[last][0] - 1e-3, Math.max(rings[0][0] + 1e-3, y === rings[0][0] || y === rings[last][0] ? mid : y)), cz]);
+}

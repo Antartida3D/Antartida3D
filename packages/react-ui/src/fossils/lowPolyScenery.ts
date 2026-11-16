@@ -1,5 +1,4 @@
-import { block, chamferRect, chunk, lathe, prism, quad, strut, type Tri, type Vec3 } from '../voyage/lowPoly.ts';
-import { body, column, spike } from './lowPolyFossils.ts';
+import { block, chamferRect, chunk, column, lathe, loftBody, prism, quad, spike, strut, type Tri, type Vec3 } from '../voyage/lowPoly.ts';
 import { FOSSIL_PALETTE as C, PLESIO_VERTEBRAE, plesioVertebra } from './models.ts';
 
 /**
@@ -69,7 +68,7 @@ export const FERN_TRIS: readonly Tri[] = [
 /** Broad-leaved tree: a trunk with one branch and a crown of leafy masses. */
 export const BROADLEAF_TRIS: readonly Tri[] = [
   ...column(0, 0, [[0, 0.06, 0.06], [0.5, 0.035, 0.035], [0.62, 0.03, 0.03]], 6, C.bark),
-  ...body([[0, 0.45, 0.022, 0.022], [0.16, 0.52, 0.015, 0.015]], () => C.bark, [C.bark, C.bark], 5),
+  ...loftBody([[0, 0.45, 0.022, 0.022], [0.16, 0.52, 0.015, 0.015]], () => C.bark, [C.bark, C.bark], 5),
   ...chunk(0, 0.72, 0, 0.5, 0.34, 0.46, 401, C.leaf),
   ...chunk(0.16, 0.62, 0.08, 0.32, 0.24, 0.3, 402, C.fern),
   ...chunk(-0.14, 0.66, -0.1, 0.3, 0.24, 0.32, 403, C.fern),
@@ -77,7 +76,7 @@ export const BROADLEAF_TRIS: readonly Tri[] = [
 ];
 
 /** Fossil trunk lying on the gravel: the evidence that forests grew here, broken in stony bands. */
-export const LOG_TRIS: readonly Tri[] = body(
+export const LOG_TRIS: readonly Tri[] = loftBody(
   Array.from({ length: 9 }, (_, i): [number, number, number, number] => [-0.5 + i * 0.125, 0.06, 0.055 + Math.sin(i * 1.7) * 0.006, 0.06 + Math.cos(i * 1.3) * 0.006]),
   (band, seg) => (seg >= 6 ? C.rock : band % 3 === 0 ? C.strataGrey : band % 3 === 1 ? C.light : C.rock),
   [C.light, C.light], 8,
@@ -99,7 +98,7 @@ export const BRYOZOAN_TRIS: readonly Tri[] = [
 
 /** Brachiopod: a lens of two valves with radial ribs, the hinge and its stalk opening at the back. */
 export const BRACHIOPOD_TRIS: readonly Tri[] = [
-  ...body([[-0.13, 0.04, 0.01, 0.03], [-0.08, 0.06, 0.05, 0.09], [0.02, 0.06, 0.06, 0.11], [0.1, 0.05, 0.045, 0.09], [0.13, 0.04, 0.01, 0.03]],
+  ...loftBody([[-0.13, 0.04, 0.01, 0.03], [-0.08, 0.06, 0.05, 0.09], [0.02, 0.06, 0.06, 0.11], [0.1, 0.05, 0.045, 0.09], [0.13, 0.04, 0.01, 0.03]],
     (_, seg) => (seg % 2 ? C.brachiopod : seg < 5 ? C.light : C.shellStripe), [C.dark, C.brachiopod], 10),
   ...block(-0.15, 0.03, 0, 0.04, 0.03, 0.04, C.dark),
 ];
@@ -138,7 +137,7 @@ export const CHITON_TRIS: readonly Tri[] = [
   ...Array.from({ length: 8 }, (_, i) => {
     const x = -0.21 + i * 0.06;
     const end = i === 0 || i === 7;
-    return body([[x - 0.034, 0.04, 0.005, 0.07], [x, 0.04, end ? 0.025 : 0.035, end ? 0.07 : 0.085], [x + 0.034, 0.04, 0.005, 0.07]],
+    return loftBody([[x - 0.034, 0.04, 0.005, 0.07], [x, 0.04, end ? 0.025 : 0.035, end ? 0.07 : 0.085], [x + 0.034, 0.04, 0.005, 0.07]],
       () => (i % 2 ? C.chitonLight : C.chiton), [C.chiton, C.chiton], 8);
   }).flat(),
   ...block(0.245, 0.03, 0.035, 0.02, 0.015, 0.015, C.ink),
@@ -218,7 +217,7 @@ export const MAST_TRIS: readonly Tri[] = [
 /** The jaw fragment of 1986: a bone with its sockets and the leaf-shaped tooth, crown wider than root. */
 export const JAW_TOOTH_CENTER: Vec3 = [0.06, 0.31, 0];
 export const JAW_TRIS: readonly Tri[] = [
-  ...body([[-0.44, 0.1, 0.04, 0.06], [-0.32, 0.11, 0.06, 0.08], [0.1, 0.12, 0.07, 0.09], [0.22, 0.15, 0.1, 0.08], [0.32, 0.16, 0.07, 0.06]],
+  ...loftBody([[-0.44, 0.1, 0.04, 0.06], [-0.32, 0.11, 0.06, 0.08], [0.1, 0.12, 0.07, 0.09], [0.22, 0.15, 0.1, 0.08], [0.32, 0.16, 0.07, 0.06]],
     (_, seg) => (seg >= 6 ? C.rib : C.bone), [C.rib, C.bone], 8),
   ...Array.from({ length: 6 }, (_, i) => block(-0.32 + i * 0.075, 0.19, 0.035, 0.035, 0.012, 0.05, C.dark)).flat(),
   ...column(0.06, 0, [[0.18, 0.02, 0.014], [0.27, 0.028, 0.016], [0.32, 0.05, 0.018], [0.36, 0.035, 0.016], [0.39, 0.01, 0.01]], 6, C.bone),
@@ -226,13 +225,13 @@ export const JAW_TRIS: readonly Tri[] = [
 
 /** Recovered pieces of Antarctopelta laid on the ground: vertebrae, ribs, a limb bone and armor plates. */
 export const DINO_BONES_TRIS: readonly Tri[] = [
-  ...body([[-0.41, 0.03, 0.025, 0.03], [-0.34, 0.03, 0.02, 0.025], [-0.22, 0.03, 0.02, 0.025], [-0.19, 0.035, 0.03, 0.035]], () => C.bone, [C.boneShade, C.boneShade], 6),
+  ...loftBody([[-0.41, 0.03, 0.025, 0.03], [-0.34, 0.03, 0.02, 0.025], [-0.22, 0.03, 0.02, 0.025], [-0.19, 0.035, 0.03, 0.035]], () => C.bone, [C.boneShade, C.boneShade], 6),
   ...[-0.1, 0, 0.1].flatMap((x, i) => column(x, 0.11, [[0, 0.04, 0.04], [0.05, 0.035, 0.035], [0.065, 0.02, 0.02]], 6, i === 1 ? C.boneShade : C.bone)),
   ...strut([0.09, 0.015, -0.12], [0.33, 0.02, -0.13], 0.015, C.rib),
   ...strut([0.07, 0.015, -0.19], [0.28, 0.02, -0.22], 0.015, C.rib),
   ...chunk(-0.15, 0.015, -0.22, 0.08, 0.03, 0.07, 601, C.armor), ...chunk(-0.05, 0.015, -0.25, 0.06, 0.03, 0.06, 602, C.armor),
   ...chunk(0.32, 0.015, 0.05, 0.07, 0.03, 0.06, 603, C.armor), ...chunk(0.38, 0.015, 0.16, 0.07, 0.03, 0.05, 604, C.armorDark),
-  ...body([[-0.46, 0.04, 0.03, 0.035], [-0.38, 0.035, 0.022, 0.025], [-0.3, 0.035, 0.025, 0.03]], () => C.boneShade, [C.bone, C.bone], 6)
+  ...loftBody([[-0.46, 0.04, 0.03, 0.035], [-0.38, 0.035, 0.022, 0.025], [-0.3, 0.035, 0.025, 0.03]], () => C.boneShade, [C.bone, C.bone], 6)
     .map(([a, b, c, col]): Tri => [[a[0], a[1], a[2] + 0.15], [b[0], b[1], b[2] + 0.15], [c[0], c[1], c[2] + 0.15], col]),
 ];
 

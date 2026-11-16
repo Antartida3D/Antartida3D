@@ -18,7 +18,7 @@ function assemblePenguin(species: PenguinSpecies): Tri[] {
 }
 
 /** Assemble the Orcadas low-poly Weddell seal in its resting pose (belly on y = 0, nose to +x). */
-function assembleWeddellSeal(): Tri[] {
+export function assembleWeddellSeal(): Tri[] {
   const parts = buildWeddellSealPolyParts();
   return [
     ...parts.body,

@@ -102,7 +102,7 @@ test('Fósiles is available and opens its own expedition', async ({ page }) => {
   await fosilesBtn.click();
   await expect(page.getByRole('region', { name: 'Expedición Fósiles' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Las rocas recuerdan' })).toBeVisible();
-  await page.getByRole('button', { name: 'Mapa', exact: true }).click();
+  await page.getByRole('button', { name: 'Volver al mapa' }).click();
   await expect(page.getByRole('region', { name: 'Expedición Fósiles' })).toHaveCount(0);
 });
 

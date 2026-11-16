@@ -170,7 +170,7 @@ export function FossilExpedition({ reduced, webgl, onLeave }: {
   const photo = FOSSIL_PHOTOS[shown];
   return <section className="fossil-expedition" ref={root} aria-label="Expedición Fósiles">
     <header className="fossil-header">
-      <button className="fossil-map" onClick={() => onLeave(false)}>{Icon.back}<span>Mapa</span></button>
+      <button className="fossil-map" aria-label="Volver al mapa" onClick={() => onLeave(false)}>{Icon.back}<span>Mapa</span></button>
       <div className="fossil-brand"><b>Fósiles</b><span>La Antártida antes del hielo</span></div>
       <button className="fossil-sources-button" onClick={() => setModal({ kind: 'sources' })}>Fuentes</button>
     </header>
@@ -193,7 +193,7 @@ export function FossilExpedition({ reduced, webgl, onLeave }: {
       {desktop ? <section className="fossil-panel" ref={panel} aria-labelledby="fossil-title">{content}</section> : <BottomSheet className="fossil-panel" labelledBy="fossil-title" sheetRef={panel} floor="peek" size={sheetSize} onSize={setSheetSize}>{content}</BottomSheet>}
     </div>
     <dialog className="fossil-dialog" ref={dialog} aria-labelledby="fossil-dialog-title" onClose={() => setModal(null)} onClick={(e) => { if (e.target === e.currentTarget) setModal(null); }}>
-      <div className="fossil-dialog-heading"><h2 id="fossil-dialog-title">{modal?.kind === 'sources' ? 'Fuentes del recorrido' : modal?.kind === 'story' ? FOSSIL_STORY.title : 'Archivo de campo'}</h2><button className="iconbtn" aria-label="Cerrar archivo y fuentes" onClick={() => setModal(null)}>{Icon.close}</button></div>
+      <div className="fossil-dialog-heading"><h2 id="fossil-dialog-title">{modal?.kind === 'sources' ? 'Fuentes del recorrido' : modal?.kind === 'story' ? FOSSIL_STORY.title : 'Archivo de campo'}</h2><button className="iconbtn" aria-label="Cerrar" onClick={() => setModal(null)}>{Icon.close}</button></div>
       {modal?.kind === 'sources' ? <>
         <p>{FOSSIL_QUESTION}</p><p>Las escenas son ilustrativas. Cada parada identifica la fuente de su relato y de sus evidencias.</p>
         {Object.entries(FOSSIL_SOURCES).map(([id, source]) => <article className="fossil-source-entry" key={id}><h3><SourceLink id={id as FossilSourceId} /></h3><p>{source.org}</p><p>{source.detail}</p><small>Consultado: {source.date.split('-').reverse().join('/')}</small></article>)}

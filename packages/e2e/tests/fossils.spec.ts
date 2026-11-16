@@ -128,7 +128,7 @@ test('fits the screen and the phone panel can expand and return to peek', async 
     await page.keyboard.press('Enter');
     await expect(handle).toHaveAttribute('aria-expanded', 'false');
   }
-  await page.getByRole('button', { name: 'Mapa', exact: true }).click();
+  await page.getByRole('button', { name: 'Volver al mapa' }).click();
   await expect(page.locator('.reg')).toContainText(`0/${AVAILABLE_COUNT}`);
 });
 

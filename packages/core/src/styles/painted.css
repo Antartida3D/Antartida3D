@@ -14,6 +14,10 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid #1E3E5C;outline-
 /* ---------- MAP ---------- */
 .stagewrap{position:absolute;inset:0;perspective:900px;perspective-origin:50% 40%}
 .stage{position:absolute;inset:0;transform-origin:50% 62%}
+/* A double tap and a held touch zoom the map (#165): the phone must not answer them by selecting text or opening
+   its magnifier or its touch menu (#190). What is there to read (sheets, the list) stays selectable. */
+.stage{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.stage .sheet,.stage .listview{-webkit-user-select:text;user-select:text}
 .stage.dive{animation:dive 1.5s cubic-bezier(.55,0,.3,1) forwards}
 .stage.fade{animation:fadeout .55s ease forwards}
 .stage.ret{animation:fadein .7s ease both}

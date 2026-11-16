@@ -6,6 +6,7 @@
 - `00-convenciones-del-proyecto.md`: Flujo de issues, ramas, idioma, fuentes verificadas y arquitectura S1.
 - `20-web.md`: Estándares de frontend, accesibilidad, estados de UI, teclado y pruebas E2E.
 - `30-estilo-voxel.md`: Modelos de bloques (voxel) o low-poly, en transición a low-poly, con un mínimo de detalle común.
+- `40-componentes-ui.md`: Botones, píldoras y chips con una sola definición y tokens; primario azul, hover suave y sin líneas dobles.
 
 ## Reglas centrales (`.agents/rules/core/`)
 - `00-agent-workflow.md`: Flujo de trabajo, exploración previa y definición de terminado.

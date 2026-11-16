@@ -103,28 +103,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
 .bottom{position:absolute;left:0;right:0;bottom:0;padding:24px 16px 16px;display:flex;justify-content:space-between;align-items:flex-end;gap:10px;background:none;pointer-events:none;z-index:10}
 .bottom > *{pointer-events:auto}
 .brand{pointer-events:none}
-.btn{min-height:48px;padding:0 18px;border-radius:var(--chart-button-radius);border:3px double var(--chart-ink);background:var(--chart-wash);font-family:'Fraunces',Georgia,serif;font-weight:500;font-size:18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;box-shadow:inset 0 0 0 3px var(--chart-paper);}
-.btn:hover:not(:disabled){
-  background:var(--deep);
-  color:var(--chart-paper);
-  box-shadow:none;}
-.btn.primary{background:var(--chart-wash);border-color:var(--chart-ink);
-  color:var(--chart-ink);}
-.btn.primary:hover:not(:disabled){
-  background:var(--deep);
-  color:var(--chart-paper);}
-/* Resume an unfinished expedition (#186): keep the expedition marker color distinct. */
-.btn.resume{background:#E0A93C;color:var(--chart-ink)}
-.btn.resume:hover:not(:disabled){background:#EDBB55;color:var(--chart-ink)}
-.btn[disabled]{opacity:.55;cursor:not-allowed;box-shadow:none}
-.btn.ghost{background:transparent;box-shadow:none;border-color:color-mix(in srgb, var(--chart-ink) 50%, transparent);
-  border:1px solid var(--chart-ink);
-  color:var(--chart-ink);}
-.btn.ghost:hover:not(:disabled){background:var(--deep);border-color:var(--deep);color:var(--chart-paper);box-shadow:none}
 .zoom{display:flex;flex-direction:column;gap:8px}
-.iconbtn{width:48px;height:48px;border-radius:50%;border:3px double var(--chart-ink);background:var(--chart-paper);display:flex;align-items:center;justify-content:center;padding:0;
-  box-shadow:none;}
-.iconbtn svg{width:22px;height:22px}
 .leftcol{display:flex;flex-direction:column;gap:10px;align-items:flex-start}
 
 .legend{border:1px solid var(--chart-ink);padding:12px 14px;max-width:260px;
@@ -191,7 +170,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
 .listview .inner{max-width:860px;margin:0 auto;
   padding:24px 24px 48px;}
 .listhead{position:sticky;top:0;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 0 18px;background:var(--chart-paper);z-index:1;
-  border-bottom:3px double var(--chart-ink);}
+  border-bottom:1px solid var(--chart-ink);}
 .listhead h2{margin:0;font-family:'Fraunces',Georgia,serif;
   font-size:28px;
   font-weight:500;}
@@ -227,9 +206,6 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
 .etop .ttl{flex:1;min-width:0;text-align:center}
 .etop .ttl b{display:block;font-family:'Fraunces',Georgia,serif;font-size:17px;line-height:1.1}
 .etop .ttl span{display:block;font-size:13px;color:var(--chart-muted)}
-.pill{min-height:44px;padding:0 14px;border-radius:var(--chart-button-radius);border:3px double var(--chart-ink);background:var(--chart-paper);font-weight:500;font-size:15px;display:inline-flex;align-items:center;gap:6px;
-  font-family:'Fraunces', Georgia, serif;}
-.pill[aria-expanded="true"]{background:var(--chart-ink);color:#F7FAFB}
 .steps{display:flex;gap:5px}
 .steps i{flex:1;height:6px;border-radius:3px;background:color-mix(in srgb, var(--chart-ink) 16%, transparent)}
 .steps i.done{background:var(--deep)}

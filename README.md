@@ -250,3 +250,5 @@ En cumplimiento con las bases de la hackatón, se declara el uso de herramientas
   > Lectura y verificación de fuentes, plan, implementación, pruebas y revisión con capturas con Claude Code (modelo Claude Opus 5.5), a partir de la investigación y el encargo preparados por quien lleva el issue. Cada frase y cada flecha de la red cita su fuente con el lugar del estudio; la escena, los tamaños, las profundidades y los tiempos son ilustrativos y la interfaz lo dice. No se agregaron porcentajes de dieta ni simulaciones de población.
 - **Mapa 2D deshabilitado (#227):**
   > Relevamiento de los archivos afectados, redacción del issue, implementación, pruebas y documentación con Claude Code (modelo Claude Opus 5.5), a pedido de quien lleva el issue. No se agregaron datos ni fuentes.
+- **Componentes de interfaz: una sola definición, primario azul y sin líneas dobles (#234, #231, #232, #233):**
+  > Relevamiento de las hojas de estilo, redacción de los issues, implementación, pruebas, capturas y documentación con asistencia de IA, con revisión en pantalla de quien lleva los issues. No se agregaron datos ni fuentes.

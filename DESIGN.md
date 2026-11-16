@@ -10,7 +10,7 @@ description: Sistema visual de pergamino claro, tinta neutra y cartografía edit
 
 La interfaz es un cuaderno de expedición para divulgación y educación: cálido, sobrio y cartográfico. El pergamino claro y la tinta marrón neutra construyen su identidad; la geografía, las preguntas y las observaciones organizan el contenido. Tiene que transmitir exploración y cuidado documental, con lectura clara en escritorio y celular.
 
-La dirección vigente es la propuesta «Pergamino claro» de la ficha real «Océano», aprobada el 15 de noviembre de 2026. Conserva la composición de la primera referencia —marcos dobles, carta de Antártida, rosa y tipografías— con un soporte marfil claro, textura tenue y sombra suave. La segunda referencia blanca cálida y la prueba ocre intensa se conservan como comparadores históricos.
+La dirección vigente es la propuesta «Pergamino claro» de la ficha real «Océano», aprobada el 15 de noviembre de 2026. Conserva la composición de la primera referencia —carta de Antártida, rosa y tipografías— con un soporte marfil claro, textura tenue y sombra suave. Los marcos dobles de esa referencia se reemplazaron por una sola línea ([DEC-234](docs/decisiones/DEC-234-componentes-de-interfaz.md)). La segunda referencia blanca cálida y la prueba ocre intensa se conservan como comparadores históricos.
 
 ![Ficha Océano · Pergamino claro aprobado](docs/diseno/referencias/ficha-oceano-pergamino-claro.png)
 
@@ -45,9 +45,9 @@ colors:
 | `secondary` | Gris marrón de anotación | Texto secundario, rótulos y fuentes; conserva legibilidad sin volver gris la pregunta principal. |
 | `neutral` | Pergamino claro | Base del papel y relleno de tierra en la viñeta. |
 | `surface` | Aguada marfil | Botón en reposo y agua de la viñeta; aporta calidez sin acercarse al ocre intenso. |
-| `rule` | Filete gris cálido | Líneas decorativas y marco interior; no usar como texto ni como único indicador de un control. |
+| `rule` | Filete gris cálido | Líneas decorativas y separadores; no usar como texto ni como único indicador de un control. |
 | `accent` | Óxido cartográfico | Aguja decorativa de la rosa; no significa error ni una medición. |
-| `interaction` | Azul profundo | Hover del botón principal y foco visible. |
+| `interaction` | Azul profundo | Fondo del botón primario y foco visible. |
 
 Los cinco primeros valores son los valores explícitos del prototipo aprobado, expresados en hexadecimal para que la referencia sea reproducible. Correspondencia: `primary` → `--chart-ink`, `secondary` → `--chart-muted`, `neutral` → `--chart-paper`, `surface` → `--chart-wash`, `rule` → `--chart-rule`. `accent` y `interaction` conservan `--oxide` y `--deep`; el mapeo semántico se mantiene aunque la paleta vigente ya no dependa de una normalización de `color-mix()`.
 
@@ -110,9 +110,9 @@ Las demás superficies adaptan este ritmo a su función: leyenda compacta, índi
 
 La profundidad es la de una hoja apoyada sobre el mapa. El marco y el tono del papel establecen la jerarquía interna; la sombra exterior separa el panel de la escena.
 
-La ficha usa una sombra exterior suave `0 9px 26px rgb(64 53 54 / 15%)`, un borde interior claro de 6 px seguido por un filete a 7 px y una aguada interior tenue. Los bordes tienen variación suave; el centro debe conservar contraste suficiente para leer.
+La ficha usa una sombra exterior suave `0 9px 26px rgb(64 53 54 / 15%)` y una aguada interior tenue, con una sola línea de borde: sin marco interior (DEC-234). Los bordes tienen variación suave; el centro debe conservar contraste suficiente para leer.
 
-El botón en reposo incorpora un marco interior de papel de 3 px. En hover pierde esa sombra interior y pasa a azul profundo. El cierre no lleva sombra. Las superficies secundarias no necesitan acumular todos los efectos de la ficha principal.
+El botón lleva una sola línea de 1,5 px y no tiene marco interior. El botón primario es azul profundo con texto claro: es la acción principal de la pantalla y va último, a la derecha. En hover, cualquier botón oscurece un poco su color de reposo y se pinta entero; no cambia a azul (DEC-234). El aspecto de cada componente se define una sola vez en `packages/core/src/styles/components.css`, con los tokens de componente de `tokens.css` (regla `.agents/rules/project/40-componentes-ui.md`). El cierre no lleva sombra. Las superficies secundarias no necesitan acumular todos los efectos de la ficha principal.
 
 El oscurecimiento del fondo indica una capa modal. Un panel persistente de la expedición sigue perteneciendo a la pantalla y permite explorar la escena. La apariencia de papel por sí sola no determina el comportamiento modal.
 
@@ -132,7 +132,7 @@ La dirección aceptada para toda la UI usa `rounded.panel: 13px` en paneles flot
 
 Los controles circulares conservan esa forma; `circular` representa un círculo sobre una caja cuadrada. **Histórico de la referencia anterior:** el cierre medía 44 × 44 px. El foco visible usa contorno azul de 3 px, separado 3 px, con radio de 2 px.
 
-Los filetes simples miden 1 px; los dobles, 3 px en total. La rosa y la viñeta son SVG decorativos, con contornos de tinta y aguja de óxido. Las formas interactivas tienen un área de pulsación mayor que sus trazos. Los símbolos de disponibilidad y procedencia deben distinguirse también por forma y texto.
+Los filetes miden 1 px; no se usan filetes dobles (DEC-234). La rosa y la viñeta son SVG decorativos, con contornos de tinta y aguja de óxido. Las formas interactivas tienen un área de pulsación mayor que sus trazos. Los símbolos de disponibilidad y procedencia deben distinguirse también por forma y texto.
 
 ## Components
 
@@ -168,14 +168,16 @@ components:
     backgroundColor: "{colors.neutral}"
     textColor: "{colors.secondary}"
     typography: "{typography.caption}"
-  button-primary:
+  button:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.primary}"
     typography: "{typography.action}"
     rounded: "{rounded.button}"
-  button-primary-hover:
+  button-primary:
     backgroundColor: "{colors.interaction}"
     textColor: "{colors.neutral}"
+    typography: "{typography.action}"
+    rounded: "{rounded.button}"
   button-close:
     textColor: "{colors.primary}"
     size: 44px
@@ -210,7 +212,7 @@ Los componentes con tokens describen la ficha aprobada y las superficies que com
 
 ### Fichas y acciones
 
-La ficha abre con «Cuaderno de campo» y un cierre con nombre accesible. Una acción de ancho completo cierra la hoja o avanza en el contexto correspondiente. Mantener el borde doble del botón, icono y texto explícito. Fuentes y notas conservan jerarquía y espacio propio.
+La ficha abre con «Cuaderno de campo» y un cierre con nombre accesible. Una acción de ancho completo cierra la hoja o avanza en el contexto correspondiente. Mantener el borde de una línea del botón, icono y texto explícito. Fuentes y notas conservan jerarquía y espacio propio.
 
 Las acciones secundarias usan contorno simple y papel o fondo transparente. Las opciones seleccionadas combinan tinta oscura, papel claro y un borde distinto, conservando `aria-pressed` o `aria-current`. Los controles deshabilitados conservan su estado semántico y reducen el énfasis. El foco es visible tanto en reposo como sobre un control seleccionado.
 

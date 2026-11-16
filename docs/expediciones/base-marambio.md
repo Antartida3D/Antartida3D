@@ -100,10 +100,31 @@ Tipos: **Dato real** (con una fuente oficial) y **Reconstrucción** (lo que el d
 
 La tira de meses muestra además, para cada mes, «En {mes}: N días con ventisca alta y T °C de temperatura media (SMN, 1991-2020)», con los mismos valores.
 
+## Archivo fotográfico (#207)
+
+Siete fotos de Eduardo Olivero, del archivo de la familia, se muestran en los puntos de interés (`MARAMBIO_PHOTOS` en `packages/core/src/content/marambio.ts`; archivos en `packages/core/src/assets/marambio/`). Cada foto está en un solo punto.
+
+- **Autoría y permiso:** la familia confirmó el 16 de noviembre de 2026 que todas son fotos de Eduardo y que todas las de la carpeta «FOTOS PARA ROCHI NACHO» tienen autorización para publicarse en este proyecto. El original queda en la carpeta local `Documentation/`, que no se sube ([DEC-7-2](../decisiones/DEC-7-2-documentacion-local.md)).
+- **Fechas:** son las que registró la cámara (EXIF). La familia confirmó que están bien. Se publican redimensionadas a 720 px y sin metadatos.
+- **Epígrafes:** dicen solo lo que se ve. Los carteles se transcriben tal como se leen en la foto; no se afirma la historia de esas casillas.
+
+| Punto | Archivo | Original | Fecha de la cámara | Qué se ve |
+| --- | --- | --- | --- | --- |
+| Meseta | `helicoptero-campamento.webp` | `02 Marambio campamento/IMG_0454.JPG` | 22/02/2011 | Helicóptero H-81 de la Fuerza Aérea Argentina dejando un equipo y su carga en el campo, junto al mar con hielo. Acompaña la ficha de Marambio como punto de partida de los campamentos. |
+| Pista | `hercules-pista.webp` | `01 R Gallegos Marambio/CAV 2014 040.JPG` | 03/02/2014 | Un Hércules a baja altura sobre la pista de tierra con nieve. |
+| Hércules | `hercules-aniversario.webp` | `01 R Gallegos Marambio/DSCN6974.JPG` | 21/01/2009 | Hércules estacionado con «40 Aniversario» en la cola. |
+| Hércules | `hercules-grupo.webp` | `01 R Gallegos Marambio/2017.jpg` | sin fecha (escaneo) | Grupo de campaña frente al Hércules TC-68, sobre una plataforma sin nieve. |
+| Hangar | `hangar-carga.webp` | `02 Marambio campamento/IMG_0062.JPG` | 27/01/2011 | Carga frente al hangar rojo con «MARAMBIO» pintado. |
+| Edificios | `deposito-polar.webp` | `01 R Gallegos Marambio/DSCN6981.JPG` | 24/01/2009 | Casilla roja con el cartel «Depósito Polar Adelantado». |
+| Edificios | `casa-historica.webp` | `01 R Gallegos Marambio/DSCN6982.JPG` | 24/01/2009 | Casilla roja con el cartel «Casa Histórica - I, año 1970». |
+
 ## Pendientes
 
 No se publica nada de esto hasta tener fuente.
 
+- **Lugar de la foto del grupo frente al Hércules TC-68 (#207):** [Fuente a definir]. La carpeta se llama «R Gallegos Marambio» y no hay nieve; puede ser Río Gallegos, pero no está confirmado. El epígrafe no nombra el lugar.
+- **Lugar exacto del helicóptero en el campo (#207):** [Fuente a definir]. El epígrafe no nombra la isla ni el campamento.
+- **Historia del «Depósito Polar Adelantado» y de la «Casa Histórica - I» (#207):** [Fuente a definir]. Solo se transcriben sus carteles.
 - **Velocidad del viento por mes:** [Fuente a definir]. Las normales 1991-2020 del SMN dan «S/D» en todas las tablas de viento de Marambio (velocidad, viento máximo, dirección y días con viento fuerte), igual que las estadísticas 2011-2020. Las únicas velocidades mensuales oficiales encontradas son las de 1971-1990, en una página del SMN que solo sobrevive en el Internet Archive; no se usan.
 - **Qué es «ventisca alta» y «ventisca baja»:** [Fuente a definir]. El SMN no las define en sus estadísticas. Las fichas usan las palabras del SMN sin explicarlas.
 - **Dirección del viento de la ventisca en la escena:** la nieve vuela desde el sudoeste. Sigue a Asmi et al., «Primary sources control the variability of aerosol optical properties in the Antarctic Peninsula», Tellus B 70(1), 2018 (CC BY 4.0, https://b.tellusjournals.se/articles/10.1080/16000889.2017.1414571), que dice que la mayoría de los temporales llegan con viento del sudoeste. Se leyó a través de un resumidor: es solo una decisión de la simulación, ninguna ficha lo afirma, y falta revisión humana.

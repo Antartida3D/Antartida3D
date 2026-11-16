@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { AVAILABLE_COUNT } from '../../core/src/content/points.ts';
 import { clearStorage } from '../storage.ts';
-import { MARAMBIO_SPOTS, marambioFacts } from '../../core/src/content/marambio.ts';
+import { MARAMBIO_SPOTS, marambioFacts, marambioPhotos } from '../../core/src/content/marambio.ts';
 import { ORCADAS_GUIDING_QUESTION } from '../../core/src/content/orcadas.ts';
 import { mockOpenMeteo } from './weather-helpers.ts';
 
@@ -93,6 +93,37 @@ test.describe('with WebGL', () => {
     await section.getByRole('button', { name: 'Volver al mapa' }).click();
     await expect(log(page)).toContainText(`0/${AVAILABLE_COUNT}`);
     await expect(page.locator('.toast')).toHaveCount(0);
+  });
+
+  test('a point shows its archive photographs, and each opens full size with its credit (#207)', async ({ page }) => {
+    await openMarambio(page);
+    const section = page.getByRole('region', { name: 'Expedición Base Marambio' });
+    await section.getByRole('button', { name: 'Punto de interés: Los edificios' }).click();
+    const archive = section.getByRole('group', { name: 'Archivo fotográfico' });
+    const photos = marambioPhotos('buildings');
+    await expect(archive.getByRole('button')).toHaveCount(photos.length);
+
+    const card = archive.getByRole('button', { name: `Abrir fotografía: ${photos[0].caption}` });
+    await card.click();
+    const dialog = page.getByRole('dialog', { name: 'Archivo fotográfico' });
+    await expect(dialog.getByRole('img', { name: photos[0].alt })).toBeVisible();
+    await expect(dialog).toContainText(`Fecha de la cámara: ${photos[0].date}`);
+    await expect(dialog).toContainText('Eduardo Olivero');
+    await expect(dialog.getByRole('button', { name: 'Cerrar' })).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+    await expect(card).toBeFocused();
+    // Escape closed only the photo: the visit is still on the same point.
+    await expect(heading(page, 'Los edificios')).toBeVisible();
+
+    // The family archive is listed with the sources.
+    await section.getByRole('button', { name: 'Fuentes', exact: true }).click();
+    await expect(section.locator('.mar-sources')).toContainText('Archivo fotográfico de E. B. Olivero');
+    // The tower has no photograph.
+    await section.getByRole('button', { name: 'Volver a la base' }).click();
+    await section.getByRole('button', { name: 'Atrás' }).click();
+    await expect(heading(page, 'La torre de control')).toBeVisible();
+    await expect(section.getByRole('group', { name: 'Archivo fotográfico' })).toHaveCount(0);
   });
 
   test('the Irízar at sea offers the trip to Orcadas, and the trip opens Orcadas', async ({ page }) => {

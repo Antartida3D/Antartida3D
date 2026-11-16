@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type RefObject } from 'react';
 import { ponchoActOpeningAt, ponchoPhotoAt, previousVoyageCard, nextVoyageCard, voyageStops, type PonchoPhoto } from '@antartida/core';
 import ponchoPageUrl from '@antartida/core/assets/poncho/poncho-pagina.jpg';
 import sledTeamUrl from '@antartida/core/assets/poncho/perros-trineo.jpg';
+import esperanzaUrl from '@antartida/core/assets/poncho/esperanza.jpg';
 import { BottomSheet } from '../BottomSheet.tsx';
 import { useIsDesktop } from '../hooks.ts';
 import { Icon, Quoted } from '../ui.tsx';
@@ -10,7 +11,7 @@ import type { DioramaTour } from './PonchoDiorama.tsx';
 import type { VoyageController } from './useVoyage.ts';
 
 /** File of each photograph of a stop (PONCHO_PHOTOS in @antartida/core). */
-export const PONCHO_PHOTO_URL = { 'poncho-pagina.jpg': ponchoPageUrl, 'perros-trineo.jpg': sledTeamUrl } as const;
+export const PONCHO_PHOTO_URL = { 'poncho-pagina.jpg': ponchoPageUrl, 'perros-trineo.jpg': sledTeamUrl, 'esperanza.jpg': esperanzaUrl } as const;
 
 /**
  * «‹ Hito N de M ›» of the common card of a story told in order (where there is no scene): goes back to a stop already
@@ -35,6 +36,18 @@ export function HitoNav({ voyage }: { voyage: VoyageController }) {
         </button>
       )}
     </div>
+  );
+}
+
+/** The source of a photograph and, when it has a free license, its author and license: shown wherever the photograph is. */
+export function PhotoCredit({ photo }: { photo: PonchoPhoto }) {
+  return (
+    <>
+      {photo.credit && (
+        <span>Foto: {photo.credit.author}. Licencia <a href={photo.credit.licenseUrl} target="_blank" rel="noreferrer">{photo.credit.license}</a>.</span>
+      )}
+      <span>Fuente: <a href={photo.source.url} target="_blank" rel="noreferrer">{photo.source.publisher}</a>, consultada el {photo.source.accessed}.</span>
+    </>
   );
 }
 
@@ -65,7 +78,7 @@ function PhotoDialog({ photo, onClose }: { photo: PonchoPhoto; onClose: () => vo
         <img src={PONCHO_PHOTO_URL[photo.file]} alt={photo.alt} />
         <figcaption>
           <Quoted text={photo.caption} />
-          <span>Fuente: <a href={photo.source.url} target="_blank" rel="noreferrer">{photo.source.publisher}</a>, consultada el {photo.source.accessed}.</span>
+          <PhotoCredit photo={photo} />
         </figcaption>
       </figure>
     </dialog>

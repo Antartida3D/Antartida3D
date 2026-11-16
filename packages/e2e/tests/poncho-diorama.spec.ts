@@ -98,3 +98,21 @@ test('the photograph of a stop opens in a modal and Escape closes it without lea
   await expect(panel.getByRole('heading', { name: stop.title })).toBeVisible();
   await expect(archive).toBeFocused();
 });
+
+// #216: the first stop shows the Base Esperanza, and its photograph shows its author and license.
+test('the photograph of Esperanza at the end of the first stop names its author and license', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Poncho/ }).click();
+  await page.getByRole('button', { name: 'Comenzar' }).click();
+  const panel = page.locator('.poncho-panel');
+  while (!(await panel.getByRole('button', { name: 'Seguir con Poncho' }).isVisible())) await panel.getByRole('button', { name: 'Siguiente' }).click();
+  await panel.getByRole('button', { name: 'Abrir fotografía del archivo' }).click();
+  const modal = page.getByRole('dialog', { name: 'Archivo fotográfico' });
+  await expect(modal.getByRole('img')).toBeVisible();
+  await expect(modal).toContainText('Godot13');
+  await expect(modal.getByRole('link', { name: 'CC BY-SA 4.0' })).toHaveAttribute('href', 'https://creativecommons.org/licenses/by-sa/4.0/');
+  await expect(modal.getByRole('link', { name: 'Wikimedia Commons' })).toHaveAttribute('href', /^https:\/\/commons\.wikimedia\.org\//);
+  await page.keyboard.press('Escape');
+  await expect(modal).toHaveCount(0);
+});

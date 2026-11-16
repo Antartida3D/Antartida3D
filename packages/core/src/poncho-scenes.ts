@@ -182,9 +182,12 @@ export const PONCHO_SCENES: Readonly<Record<string, SceneDef>> = {
     setting: 'coast',
     radius: 4,
     elements: [
-      // The base: low huts on the side of the sea.
-      prop('baseHut', -1.9, 2.75, Math.PI, 1, { radius: 1.2 }),
-      prop('baseHut', 1.3, 2.85, Math.PI, 1, { radius: 1.2 }),
+      // The base: orange huts on bare rock over the shore, with its masts and dish (one prop; it stands behind where people walk, so it takes no room on the ground).
+      prop('baseEsperanza', 0, 3.1, 0, 1, { radius: 0.01 }),
+      // The dogs of the base rest by the huts all the time, and a man looks after them while the first sentence is told.
+      dog('pack', 3.3, 0.2, 0.4, { curled: true }),
+      dog('pack', 3.9, -0.4, 2.6, { curled: true }),
+      person(NAVY, 3.65, 0.95, yawToward(3.65, 0.95, 3.3, 0.2), 'tend', 0.7, { until: 1 }),
       // 0: two men go to and fro (the first leaves prints), and the pup stays by its mother.
       person(ORANGE, -2.5, -1.1, 0, 'walk', 0, { path: 'to-and-fro', until: 1 }),
       person(RED, 2.5, 0.5, Math.PI, 'walk', 1.3, { path: 'fro-and-to', until: 1 }),
@@ -196,7 +199,7 @@ export const PONCHO_SCENES: Readonly<Record<string, SceneDef>> = {
       dog('pack', -2, -0.6, 0, { scale: 0.5, appearAt: 1, until: 2, path: 'litter', lag: 1.6 }),
       dog('pack', -2, -0.6, 0, { scale: 0.5, appearAt: 1, until: 2, path: 'litter', lag: 2.4 }),
       // 2: training. The instructor wears the belt, the line goes to the harness of Poncho, a little ahead.
-      person(ORANGE, -2, 0.45, 0, 'walk', 0, { appearAt: 2, path: 'slalom', rope: { to: 11, length: 2.2 } }),
+      person(ORANGE, -2, 0.45, 0, 'walk', 0, { appearAt: 2, path: 'slalom', rope: { to: 13, length: 2.2 } }),
       dog('poncho', -2, 0.45, 0, { scale: 0.85, appearAt: 2, path: 'slalom', lag: -3.2 }),
       prop('slalomPoles', 0, -0.3, 0, 1.3, { appearAt: 2, radius: 0.02 }), // thin poles: the weave goes between them
       sled(-2.6, -1.8, 0.3, { appearAt: 2, radius: 0.8 }),
@@ -205,15 +208,15 @@ export const PONCHO_SCENES: Readonly<Record<string, SceneDef>> = {
     ],
     paths: [
       { id: 'to-and-fro', from: [-2.5, -1.1], via: [[2.5, -1.1], [2.8, -0.9], [2.5, -0.7], [-2.5, -0.7], [-2.8, -0.9]], to: [-2.5, -1.1], loop: true, delay: 0.4, duration: 20, prints: true },
-      { id: 'fro-and-to', from: [2.5, 0.5], via: [[-2.5, 0.5], [-2.8, 0.75], [-2.5, 1], [2.5, 1], [2.8, 0.75]], to: [2.5, 0.5], loop: true, delay: 0.4, duration: 20 },
+      { id: 'fro-and-to', from: [2.5, 0.5], via: [[-2.5, 0.5], [-2.8, 0.65], [-2.5, 0.8], [2.5, 0.8], [2.8, 0.65]], to: [2.5, 0.5], loop: true, delay: 0.4, duration: 20 },
       { id: 'litter', from: [-2, -0.6], via: [[-1, 0.8], [0, -0.8], [1, 0.8], [2, -0.6], [1, -1.5], [-0.6, -1.6]], to: [-2, -0.6], loop: true, delay: 0.3, duration: 11 },
-      { id: 'slalom', from: [-2, 0.45], via: [[-1.43, 0.45], [-0.715, -0.95], [0, 0.45], [0.715, -0.95], [1.43, 0.45], [2, 0.45], [2.4, 0.8], [1.6, 1.15], [-1.6, 1.15], [-2.4, 0.8]], to: [-2, 0.45], loop: true, delay: 0.4, duration: 28 },
+      { id: 'slalom', from: [-2, 0.45], via: [[-1.43, 0.45], [-0.715, -0.95], [0, 0.45], [0.715, -0.95], [1.43, 0.45], [2, 0.45], [2.4, 0.7], [1.6, 0.85], [-1.6, 0.85], [-2.4, 0.7]], to: [-2, 0.45], loop: true, delay: 0.4, duration: 28 },
     ],
     camera: { distanceFactor: 1.05, elevationDeg: 42, azimuthDeg: -112 },
     shots: [
-      shot(0, [-1.4, 1.1, 1.6], 12.5, 12, -92),
-      shot(1, [-0.3, 0.3, -0.4], 10.5, 28, -96),
-      shot(2, [-0.7, 0.5, 0], 10.5, 24, -100),
+      shot(0, [-0.2, 1.1, 1.5], 14, 16, -92),
+      shot(1, [-0.3, 0.3, -0.5], 9, 26, -96),
+      shot(2, [-0.5, 0.5, 0], 11, 24, -100),
     ],
   },
   // Probing for crevasses (book p. 12), in three stages: 0 the team of the great winter expedition arrives; 1 Poncho goes ahead

@@ -39,7 +39,7 @@ import { useFocusReturn } from '../hooks.ts';
 import { Quoted } from '../ui.tsx';
 import { Fact, TripContext, type OpenSources } from './Fact.tsx';
 import { PonchoDiorama } from './PonchoDiorama.tsx';
-import { HitoNav, PONCHO_PHOTO_URL, PonchoPanel } from './PonchoPanel.tsx';
+import { HitoNav, PONCHO_PHOTO_URL, PhotoCredit, PonchoPanel } from './PonchoPanel.tsx';
 import { PonchoIntro } from './PonchoIntro.tsx';
 import { SightingIcon } from './SightingIcon.tsx';
 import type { VoyageController } from './useVoyage.ts';
@@ -280,7 +280,7 @@ function MilestoneCard({ voyage, animated, onExit, onSource }: {
         <figure className="vphoto">
           <img src={PONCHO_PHOTO_URL[photo.file]} alt={photo.alt} loading="lazy" />
           <figcaption>
-            <Quoted text={photo.caption} /> Fuente: <a href={photo.source.url} target="_blank" rel="noreferrer">{photo.source.publisher}</a>, consultada el {photo.source.accessed}.
+            <Quoted text={photo.caption} /> <PhotoCredit photo={photo} />
           </figcaption>
         </figure>
       )}

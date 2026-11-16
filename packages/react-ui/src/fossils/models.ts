@@ -40,68 +40,6 @@ export function partAtRest(part: Part): Box[] {
   return part.boxes.map(([x, y, z, sx, sy, sz, c]) => [x + px, y + py, z + pz, sx, sy, sz, c]);
 }
 
-// --- Ammonite -------------------------------------------------------------------------------
-
-const TURNS = Math.PI * 4.6;
-/**
- * Where the spiral starts, so that it ends straight down: the last whorl, the body chamber where the
- * animal lived, opens at the bottom of the shell, facing forward (+x), with the arms coming out there.
- */
-const START = Math.PI * 1.5 - TURNS;
-
-/** A continuous stepped spiral in the xy plane, with ribs and a visible outer aperture at the bottom. */
-export function ammoniteShell(stripes: boolean): Box[] {
-  const boxes: Box[] = [];
-  for (let i = 0; i < 110; i++) {
-    const t = i / 109;
-    const angle = START + TURNS * t;
-    const radius = 0.035 + t * 0.39;
-    const width = 0.045 + t * 0.065;
-    const ribbed = i % 6 === 0;
-    boxes.push([Math.cos(angle) * radius, 0.48 + Math.sin(angle) * radius, 0, width, width, 0.17 + t * 0.06,
-      ribbed ? (stripes ? C.shellStripe : C.rib) : C.shell]);
-  }
-  return boxes;
-}
-export const AMMONITE_APERTURE: readonly [number, number, number] = [Math.cos(START + TURNS) * 0.425, 0.48 + Math.sin(START + TURNS) * 0.425, 0.025];
-
-export const AMMONITE_FOSSIL: readonly Box[] = [
-  ...ammoniteShell(false),
-  [AMMONITE_APERTURE[0], AMMONITE_APERTURE[1], AMMONITE_APERTURE[2], 0.13, 0.12, 0.25, C.dark],
-];
-
-/** Living ammonite: striped shell, soft body with eyes; the arms are a separate part each. */
-export const AMMONITE_BODY: readonly Box[] = [
-  ...ammoniteShell(true),
-  [AMMONITE_APERTURE[0] + 0.07, AMMONITE_APERTURE[1], 0.025, 0.14, 0.11, 0.17, C.ammoniteSoft],
-  [AMMONITE_APERTURE[0] + 0.05, AMMONITE_APERTURE[1] + 0.06, 0.025, 0.12, 0.03, 0.15, C.shellStripe],
-  [AMMONITE_APERTURE[0] + 0.1, AMMONITE_APERTURE[1] + 0.02, 0.105, 0.035, 0.035, 0.012, C.ink],
-  [AMMONITE_APERTURE[0] + 0.1, AMMONITE_APERTURE[1] + 0.02, -0.055, 0.035, 0.035, 0.012, C.ink],
-];
-export const AMMONITE_ARM_COUNT = 8;
-/** One arm in three segments: [pivot of the first, boxes] per segment, each in the frame of the previous. */
-export function ammoniteArm(i: number): Part[] {
-  const z = 0.025 + ((i % 4) - 1.5) * 0.035;
-  const y = AMMONITE_APERTURE[1] - 0.04 + Math.floor(i / 4) * 0.06;
-  const len = 0.09 - (i % 2) * 0.015;
-  return [0, 1, 2].map((s) => ({
-    pivot: s === 0 ? [AMMONITE_APERTURE[0] + 0.14, y, z] as const : [len, 0, 0] as const,
-    boxes: [[len / 2, 0, 0, len, 0.022 - s * 0.004, 0.022 - s * 0.004, s === 2 ? C.shellStripe : C.ammoniteSoft]],
-  }));
-}
-export const AMMONITE_ALIVE: readonly Box[] = [
-  ...AMMONITE_BODY,
-  ...Array.from({ length: AMMONITE_ARM_COUNT }, (_, i) => chainAtRest(ammoniteArm(i))).flat(),
-];
-
-/** Boxes of a chain of parts, each pivot relative to the previous one, at rest. */
-export function chainAtRest(chain: readonly Part[]): Box[] {
-  let ox = 0, oy = 0, oz = 0;
-  return chain.flatMap((part) => {
-    ox += part.pivot[0]; oy += part.pivot[1]; oz += part.pivot[2];
-    return part.boxes.map(([x, y, z, sx, sy, sz, c]): Box => [x + ox, y + oy, z + oz, sx, sy, sz, c]);
-  });
-}
 
 // --- Dinosaur jaw ---------------------------------------------------------------------------
 
@@ -175,68 +113,7 @@ function geologistAtRest(parka: Parka, beard: boolean): Box[] {
   ];
 }
 
-// --- Antarctopelta (reconstruction) ---------------------------------------------------------
-
-/** Low, broad armored herbivore. No tail club: its rear end is a plain tapering tail. */
-export const DINO_NECK: readonly [number, number, number] = [0.27, 0.34, 0];
-export const DINO_TAIL: readonly [number, number, number] = [-0.18, 0.31, 0];
-export const DINO_TAIL_SEGMENT = 0.15;
-export const DINO_HIPS: readonly (readonly [number, number, number])[] = [
-  [0.15, 0.22, 0.12], [0.15, 0.22, -0.12], [-0.08, 0.24, 0.12], [-0.08, 0.24, -0.12],
-];
-
-function osteoderms(x0: number, x1: number, y: number, halfWidth: number, rows: number, color: number): Box[] {
-  const out: Box[] = [];
-  const cols = Math.max(2, Math.round((x1 - x0) / 0.075));
-  for (let i = 0; i < cols; i++) {
-    for (let r = 0; r < rows; r++) {
-      const z = rows === 1 ? 0 : -halfWidth + (2 * halfWidth * r) / (rows - 1);
-      out.push([x0 + ((i + 0.5) * (x1 - x0)) / cols, y, z, 0.05, 0.035, 0.05, (i + r) % 2 ? color : C.armorDark]);
-    }
-  }
-  return out;
-}
-
-export function dinosaurParts() {
-  const body: Box[] = [
-    [0.05, 0.3, 0, 0.44, 0.2, 0.32, C.dinoGreen],
-    [0.04, 0.42, 0, 0.4, 0.05, 0.28, C.dinoDark],
-    [0.05, 0.205, 0, 0.36, 0.035, 0.24, C.belly],
-    ...osteoderms(-0.15, 0.25, 0.46, 0.1, 4, C.armor),
-    // Side spikes along the flanks
-    ...[-0.1, 0.0, 0.1, 0.2].flatMap((x): Box[] => [
-      [x, 0.33, 0.175, 0.05, 0.05, 0.05, C.armor], [x, 0.33, -0.175, 0.05, 0.05, 0.05, C.armor],
-    ]),
-  ];
-  const head: Box[] = [
-    [0.05, 0, 0, 0.1, 0.1, 0.15, C.dinoGreen],
-    [0.14, -0.01, 0, 0.12, 0.1, 0.13, C.dinoGreen],
-    [0.21, -0.035, 0, 0.03, 0.04, 0.07, C.beak],
-    [0.13, 0.045, 0, 0.1, 0.02, 0.12, C.armor],
-    [0.17, 0.02, 0.066, 0.025, 0.025, 0.01, C.ink],
-    [0.17, 0.02, -0.066, 0.025, 0.025, 0.01, C.ink],
-  ];
-  const tail: Box[][] = [0, 1, 2].map((i) => [
-    [-DINO_TAIL_SEGMENT / 2, -0.01 * i, 0, DINO_TAIL_SEGMENT + 0.01, 0.12 - i * 0.035, 0.18 - i * 0.05, C.dinoGreen],
-    ...osteoderms(-DINO_TAIL_SEGMENT, 0, 0.07 - i * 0.025, 0.06 - i * 0.02, i === 2 ? 1 : 2, C.armor),
-  ]);
-  const leg: Box[] = [
-    [0, -0.1, 0, 0.08, 0.2, 0.085, C.dinoGreen],
-    [0.02, -0.2, 0, 0.1, 0.03, 0.09, C.dinoDark],
-  ];
-  return { body, head, tail, leg };
-}
-
-function dinosaurAtRest(): Box[] {
-  const p = dinosaurParts();
-  const at = (boxes: Box[], [px, py, pz]: readonly [number, number, number]) =>
-    boxes.map(([x, y, z, sx, sy, sz, c]): Box => [x + px, y + py, z + pz, sx, sy, sz, c]);
-  return [
-    ...p.body, ...at(p.head, DINO_NECK),
-    ...p.tail.flatMap((boxes, i) => at(boxes, [DINO_TAIL[0] - i * DINO_TAIL_SEGMENT, DINO_TAIL[1], 0])),
-    ...DINO_HIPS.flatMap((hip) => at(p.leg, hip)),
-  ];
-}
+// --- Remains: dinosaur bones and plesiosaur skeleton (the living animals are in lowPolyFossils.ts)
 
 /** Recovered pieces, laid on the ground: jaw, vertebrae, ribs and armor plates. */
 export const DINO_BONES: readonly Box[] = [
@@ -248,64 +125,6 @@ export const DINO_BONES: readonly Box[] = [
   [0.32, 0.02, 0.05, 0.06, 0.03, 0.06, C.armor], [0.38, 0.02, 0.16, 0.07, 0.03, 0.05, C.armorDark],
   [-0.38, 0.03, 0.15, 0.16, 0.05, 0.05, C.boneShade], [-0.42, 0.04, 0.15, 0.05, 0.07, 0.07, C.bone],
 ];
-
-// --- Plesiosaur (elasmosaur reconstruction) -------------------------------------------------
-
-export const PLESIO_NECK_SEGMENTS = 7;
-export const PLESIO_NECK_LENGTH = 0.07;
-export const PLESIO_NECK: readonly [number, number, number] = [0.06, 0.09, 0];
-export const PLESIO_FLIPPERS: readonly (readonly [number, number, number])[] = [
-  [0.0, 0.05, 0.09], [0.0, 0.05, -0.09], [-0.24, 0.05, 0.08], [-0.24, 0.05, -0.08],
-];
-
-export function plesiosaurParts() {
-  const body: Box[] = [
-    [-0.12, 0.07, 0, 0.34, 0.11, 0.2, C.plesioBack],
-    [-0.12, 0.03, 0, 0.3, 0.03, 0.18, C.plesioBelly],
-    [0.04, 0.08, 0, 0.06, 0.08, 0.12, C.plesioBack],
-    [-0.34, 0.07, 0, 0.12, 0.07, 0.09, C.plesioBack],
-    [-0.44, 0.07, 0, 0.09, 0.045, 0.055, C.plesioBack],
-    [-0.51, 0.07, 0, 0.06, 0.03, 0.035, C.plesioSpot],
-    ...[-0.22, -0.12, -0.02].flatMap((x): Box[] => [
-      [x, 0.128, 0.04, 0.04, 0.008, 0.03, C.plesioSpot], [x + 0.05, 0.128, -0.04, 0.04, 0.008, 0.03, C.plesioSpot],
-    ]),
-  ];
-  const neck: Box[][] = Array.from({ length: PLESIO_NECK_SEGMENTS }, (_, i) => [
-    [PLESIO_NECK_LENGTH / 2, 0, 0, PLESIO_NECK_LENGTH + 0.008, 0.06 - i * 0.003, 0.065 - i * 0.004, i % 2 ? C.plesioBack : C.plesioSpot],
-  ]);
-  // Head with long jaws and the conical teeth of a marine reptile
-  const head: Box[] = [
-    [0.035, 0.005, 0, 0.07, 0.045, 0.05, C.plesioBack],
-    [0.085, -0.008, 0, 0.06, 0.02, 0.04, C.plesioBack],
-    [0.08, -0.025, 0, 0.07, 0.015, 0.038, C.plesioBelly],
-    [0.045, 0.018, 0.026, 0.016, 0.016, 0.008, C.ink],
-    [0.045, 0.018, -0.026, 0.016, 0.016, 0.008, C.ink],
-    ...[0.06, 0.08, 0.1].flatMap((x): Box[] => [
-      [x, -0.019, 0.017, 0.006, 0.014, 0.006, C.tooth], [x, -0.019, -0.017, 0.006, 0.014, 0.006, C.tooth],
-    ]),
-  ];
-  // A flipper reaches out sideways (+z); the right ones are mirrored when placed.
-  const flipper: Box[] = [
-    [-0.01, 0, 0.07, 0.08, 0.016, 0.14, C.plesioBack],
-    [-0.035, 0, 0.17, 0.055, 0.013, 0.08, C.plesioBack],
-    [-0.05, 0, 0.225, 0.03, 0.01, 0.04, C.plesioSpot],
-  ];
-  return { body, neck, head, flipper };
-}
-
-export const mirrorZ = (boxes: readonly Box[]): Box[] => boxes.map(([x, y, z, sx, sy, sz, c]) => [x, y, -z, sx, sy, sz, c]);
-
-function plesiosaurAtRest(): Box[] {
-  const p = plesiosaurParts();
-  const at = (boxes: readonly Box[], [px, py, pz]: readonly [number, number, number]) =>
-    boxes.map(([x, y, z, sx, sy, sz, c]): Box => [x + px, y + py, z + pz, sx, sy, sz, c]);
-  return [
-    ...p.body,
-    ...p.neck.flatMap((boxes, i) => at(boxes, [PLESIO_NECK[0] + i * PLESIO_NECK_LENGTH, PLESIO_NECK[1], 0])),
-    ...at(p.head, [PLESIO_NECK[0] + PLESIO_NECK_SEGMENTS * PLESIO_NECK_LENGTH, PLESIO_NECK[1], 0]),
-    ...PLESIO_FLIPPERS.flatMap((pos) => at(pos[2] > 0 ? p.flipper : mirrorZ(p.flipper), pos)),
-  ];
-}
 
 /** Vertebral column laid in the sediment, head to tail along a gentle curve, in the xz plane. */
 export const PLESIO_VERTEBRAE = 52;
@@ -428,24 +247,6 @@ export const BROADLEAF_BOXES: readonly Box[] = [
 
 // --- Sea floor: Cretaceous and Eocene -------------------------------------------------------
 
-/** Goniasterid sea star: big pentagonal disc, short arms, pale marginal plates, eye spots at the tips. */
-export const STAR_BOXES: readonly Box[] = (() => {
-  const boxes: Box[] = [
-    [0, 0.04, 0, 0.36, 0.08, 0.36, C.starOrange],
-    [0, 0.085, 0, 0.2, 0.02, 0.2, C.starPlate],
-    [0, 0.098, 0, 0.06, 0.01, 0.06, C.starSpot],
-  ];
-  for (let k = 0; k < 5; k++) {
-    const a = (k / 5) * Math.PI * 2 + Math.PI / 2;
-    for (let s = 0; s < 3; s++) {
-      const d = 0.19 + s * 0.09;
-      const w = 0.16 - s * 0.04;
-      boxes.push([Math.cos(a) * d, 0.035, Math.sin(a) * d, w, 0.07 - s * 0.012, w, s === 1 ? C.starPlate : C.starOrange]);
-    }
-    boxes.push([Math.cos(a) * 0.45, 0.03, Math.sin(a) * 0.45, 0.04, 0.03, 0.04, C.starSpot]);
-  }
-  return boxes;
-})();
 export const BRYOZOAN_BOXES: readonly Box[] = [
   [0, 0.04, 0, 0.12, 0.08, 0.12, C.bryozoanRed],
   ...Array.from({ length: 12 }, (_, i): Box => {
@@ -517,15 +318,14 @@ export const STAR_SLAB_BOXES: readonly Box[] = [
 ];
 
 export const FOSSIL_MODELS: Readonly<Record<string, readonly Box[]>> = {
-  'fossil-ammonite': AMMONITE_FOSSIL, 'living-ammonite': AMMONITE_ALIVE,
-  'fossil-jaw': JAW_BOXES, 'antarctopelta-bones': DINO_BONES, 'antarctopelta-illustration': dinosaurAtRest(),
-  'plesiosaur-illustration': plesiosaurAtRest(), 'plesiosaur-skeleton': PLESIO_SKELETON,
+  'fossil-jaw': JAW_BOXES, 'antarctopelta-bones': DINO_BONES,
+  'plesiosaur-skeleton': PLESIO_SKELETON,
   'field-tent': TENT_BOXES, 'field-crate': CRATE_BOXES, 'field-sled': SLED_BOXES, 'field-mast': MAST_BOXES,
   'field-geologist-red': geologistAtRest('red', true), 'field-geologist-yellow': geologistAtRest('yellow', false),
   'field-geologist-orange': geologistAtRest('orange', true), 'fossil-log': LOG_BOXES,
   'cretaceous-conifer': CONIFER_BOXES, 'cretaceous-cycad': CYCAD_BOXES, 'cretaceous-fern': FERN_BOXES,
   'cretaceous-broadleaf': BROADLEAF_BOXES, 'inoceramid-bivalve': INOCERAMUS_BOXES,
-  'eocene-sea-star': STAR_BOXES, 'eocene-bryozoan': BRYOZOAN_BOXES, 'eocene-brachiopod': BRACHIOPOD_BOXES,
+  'eocene-bryozoan': BRYOZOAN_BOXES, 'eocene-brachiopod': BRACHIOPOD_BOXES,
   'eocene-urchin': URCHIN_BOXES, 'eocene-crinoid': [...CRINOID_STALK, ...partAtRest({ pivot: CRINOID_TOP, boxes: CRINOID_CROWN })],
   'eocene-chiton': CHITON_BOXES, 'star-slab': STAR_SLAB_BOXES,
 };

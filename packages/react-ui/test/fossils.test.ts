@@ -7,9 +7,8 @@ import {
   CAMP_FLAT, FOREST_PLANTS, MESA_TOP, WATER_LEVEL, buildFieldBoxes, buildForestBoxes, buildSeaFloorBoxes,
   fieldHeight, seaFloorHeight,
 } from '../src/fossils/fossilTerrain.ts';
-import {
-  AMMONITE_APERTURE, FOSSIL_MODELS, PLESIO_NECK_SEGMENTS, PLESIO_VERTEBRAE, ammoniteShell, plesioVertebra,
-} from '../src/fossils/models.ts';
+import { FOSSIL_MODELS, PLESIO_VERTEBRAE, plesioVertebra } from '../src/fossils/models.ts';
+import { PLESIO_NECK_SEGMENTS } from '../src/fossils/lowPolyFossils.ts';
 import { SCENE_MODELS } from '../src/voyage/sightingModels.ts';
 
 const times = Array.from({ length: 200 }, (_, i) => i * 0.137);
@@ -103,17 +102,5 @@ describe('fossil figures', () => {
     expect(columnWave(PLESIO_VERTEBRAE - 1, PLESIO_VERTEBRAE, 2.9)).toBeGreaterThan(0);
     for (let i = 0; i < PLESIO_VERTEBRAE; i++) expect(columnWave(i, PLESIO_VERTEBRAE, 4)).toBe(0);
     expect(plesioVertebra(0)[0]).toBeGreaterThan(plesioVertebra(PLESIO_VERTEBRAE - 1)[0]);
-  });
-});
-
-describe('Fósiles: the ammonite', () => {
-  it('ends its shell at the bottom, where the animal lived, with the opening facing forward', () => {
-    const shell = ammoniteShell(false);
-    const lowest = Math.min(...shell.map((b) => b[1]));
-    const last = shell[shell.length - 1];
-    expect(last[1]).toBeCloseTo(lowest, 5);
-    expect(AMMONITE_APERTURE[1]).toBeLessThan(Math.min(...shell.slice(0, -10).map((b) => b[1])));
-    // The whorl before the opening runs towards +x: the opening faces forward, not up.
-    expect(last[0]).toBeGreaterThan(shell[shell.length - 4][0]);
   });
 });

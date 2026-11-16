@@ -10,6 +10,7 @@ import { shouldTick, type FossilState, type FossilView } from '@antartida/core';
 import { InkEffect } from '../map3d/InkEffect.ts';
 import { stationSkyFragmentShader, stationSkyVertexShader } from '../orcadas/stationSky.glsl.ts';
 import { buildBoxGeometry, vehicleMaterial, type Box } from '../voyage/vehicles.ts';
+import { boxShade, buildPolyGeometry, mirrorZ, type Tri } from '../voyage/lowPoly.ts';
 import {
   PLESIO_SWIM, STILL_TIME, ammonitePose, columnWave, crinoidSway, dinoPose, geologistPose, plesioPose,
   restAmmonite, restDino, restGeologist, restPlesio, type Geologist, type Loop,
@@ -19,14 +20,18 @@ import {
   fieldHeight, forestHeight, scatter, seaFloorHeight,
 } from './fossilTerrain.ts';
 import {
-  AMMONITE_ARM_COUNT, AMMONITE_BODY, AMMONITE_FOSSIL, BRACHIOPOD_BOXES, BROADLEAF_BOXES, BRYOZOAN_BOXES,
+  BRACHIOPOD_BOXES, BROADLEAF_BOXES, BRYOZOAN_BOXES,
   CHITON_BOXES, CONIFER_BOXES, CRATE_BOXES, CRINOID_CROWN, CRINOID_STALK, CRINOID_TOP, CYCAD_BOXES,
-  DINO_BONES, DINO_HIPS, DINO_NECK, DINO_TAIL, DINO_TAIL_SEGMENT, FERN_BOXES, FOSSIL_PALETTE as C,
+  DINO_BONES, FERN_BOXES, FOSSIL_PALETTE as C,
   GEOLOGIST_HIP, GEOLOGIST_NECK, GEOLOGIST_SHOULDER, INOCERAMUS_BOXES, JAW_BOXES, JAW_TOOTH_CENTER, LOG_BOXES,
-  MAST_BOXES, PLESIO_BONES, PLESIO_FLIPPERS, PLESIO_NECK, PLESIO_NECK_LENGTH, PLESIO_NECK_SEGMENTS,
-  PLESIO_VERTEBRAE, SLED_BOXES, STAR_BOXES, STAR_SLAB_BOXES, TENT_BOXES, URCHIN_BOXES, ammoniteArm,
-  dinosaurParts, geologistParts, mirrorZ, plesioVertebra, plesiosaurParts, type Parka,
+  MAST_BOXES, PLESIO_BONES, PLESIO_VERTEBRAE, SLED_BOXES, STAR_SLAB_BOXES, TENT_BOXES, URCHIN_BOXES,
+  geologistParts, plesioVertebra, type Parka,
 } from './models.ts';
+import {
+  AMMONITE_ARM_COUNT, AMMONITE_BODY_TRIS, AMMONITE_FOSSIL_TRIS, DINO_HIPS, DINO_NECK, DINO_TAIL, DINO_TAIL_SEGMENT,
+  PLESIO_FLIPPERS, PLESIO_NECK, PLESIO_NECK_LENGTH, PLESIO_NECK_SEGMENTS, STAR_TRIS, ammoniteArm, dinosaurParts,
+  plesiosaurParts,
+} from './lowPolyFossils.ts';
 
 type Vec3 = readonly [number, number, number];
 type World = 'field' | 'forest' | 'cretaceous-sea' | 'eocene-sea';
@@ -50,6 +55,19 @@ function partGeometry(key: string, boxes: () => readonly Box[]): BufferGeometry 
   let g = parts.get(key);
   if (!g) { g = buildBoxGeometry(boxes()); parts.set(key, g); }
   return g;
+}
+
+/** The same, for low-poly parts: faces shaded like the boxes they share the scene with (#116). */
+function polyGeometry(key: string, tris: () => readonly Tri[]): BufferGeometry {
+  let g = parts.get(key);
+  if (!g) { g = buildPolyGeometry(tris(), boxShade); parts.set(key, g); }
+  return g;
+}
+/** A repeated low-poly model: the geometry is shared. */
+function PolyProp({ id, tris, position, scale = 1, rotation = [0, 0, 0] }: {
+  id: string; tris: readonly Tri[]; position: Vec3; scale?: number; rotation?: Vec3;
+}) {
+  return <mesh geometry={polyGeometry(id, () => tris)} material={vehicleMaterial} position={[...position]} scale={scale} rotation={[...rotation]} />;
 }
 
 /** A static model built once per mount and released on unmount. */
@@ -225,7 +243,7 @@ function GeologistFigure({ who, parka, beard, scale = 1.1, reduced, heightAt = f
 // --- Animals --------------------------------------------------------------------------------
 
 function LivingAmmonite({ position, scale, seed, reduced, yaw = 0 }: { position: Vec3; scale: number; seed: number; reduced: boolean; yaw?: number }) {
-  const body = partGeometry('ammonite-body', () => AMMONITE_BODY);
+  const body = polyGeometry('ammonite-body', () => AMMONITE_BODY_TRIS);
   const arms = useMemo(() => Array.from({ length: AMMONITE_ARM_COUNT }, (_, i) => ammoniteArm(i)), []);
   const root = useRef<Group>(null);
   const segs = useRef<(Group | null)[]>([]);
@@ -243,7 +261,7 @@ function LivingAmmonite({ position, scale, seed, reduced, yaw = 0 }: { position:
     <group ref={root} scale={scale}>
       <mesh geometry={body} material={vehicleMaterial} />
       {arms.map((chain, i) => {
-        const g = chain.map((part, s) => partGeometry(`ammonite-arm-${i}-${s}`, () => part.boxes));
+        const g = chain.map((part, s) => polyGeometry(`ammonite-arm-${i}-${s}`, () => part.tris));
         const ref = (k: number) => (n: Group | null) => void (segs.current[i * 3 + k] = n);
         return (
           <group key={i} ref={ref(0)} position={[...chain[0].pivot]}>
@@ -262,8 +280,8 @@ function LivingAmmonite({ position, scale, seed, reduced, yaw = 0 }: { position:
 function Dinosaur({ loop, reduced, scale = 3.4, heightAt }: { loop: Loop | null; reduced: boolean; scale?: number; heightAt: (x: number, z: number) => number }) {
   const p = useMemo(() => dinosaurParts(), []);
   const geo = {
-    body: partGeometry('dino-body', () => p.body), head: partGeometry('dino-head', () => p.head),
-    tail: p.tail.map((boxes, i) => partGeometry(`dino-tail-${i}`, () => boxes)), leg: partGeometry('dino-leg', () => p.leg),
+    body: polyGeometry('dino-body', () => p.body), head: polyGeometry('dino-head', () => p.head),
+    tail: p.tail.map((tris, i) => polyGeometry(`dino-tail-${i}`, () => tris)), leg: polyGeometry('dino-leg', () => p.leg),
   };
   const root = useRef<Group>(null);
   const head = useRef<Group>(null);
@@ -303,9 +321,9 @@ function Dinosaur({ loop, reduced, scale = 3.4, heightAt }: { loop: Loop | null;
 function Plesiosaur({ loop, depth, scale = 4.5, reduced }: { loop: Loop; depth: number; scale?: number; reduced: boolean }) {
   const p = useMemo(() => plesiosaurParts(), []);
   const geo = {
-    body: partGeometry('plesio-body', () => p.body), head: partGeometry('plesio-head', () => p.head),
-    neck: p.neck.map((boxes, i) => partGeometry(`plesio-neck-${i}`, () => boxes)),
-    flipL: partGeometry('plesio-flip-l', () => p.flipper), flipR: partGeometry('plesio-flip-r', () => mirrorZ(p.flipper)),
+    body: polyGeometry('plesio-body', () => p.body), head: polyGeometry('plesio-head', () => p.head),
+    neck: p.neck.map((tris, i) => polyGeometry(`plesio-neck-${i}`, () => tris)),
+    flipL: polyGeometry('plesio-flip-l', () => p.flipper), flipR: polyGeometry('plesio-flip-r', () => mirrorZ(p.flipper)),
   };
   const root = useRef<Group>(null);
   const neck = useRef<(Group | null)[]>([]);
@@ -370,7 +388,7 @@ function CrawlingStar({ position, scale, seed, reduced }: { position: Vec3; scal
     g.current.position.set(position[0] + Math.sin(t) * 0.25, position[1], position[2] + Math.cos(t * 0.8) * 0.2);
     g.current.rotation.y = t * 0.6;
   });
-  return <group ref={g} position={[...position]} scale={scale} rotation={[0, seed, 0]}><Prop id="star" boxes={STAR_BOXES} position={[0, 0, 0]} /></group>;
+  return <group ref={g} position={[...position]} scale={scale} rotation={[0, seed, 0]}><PolyProp id="star" tris={STAR_TRIS} position={[0, 0, 0]} /></group>;
 }
 
 // --- Finds and their interactions -----------------------------------------------------------
@@ -574,7 +592,7 @@ function FieldWorld({ view, state, reduced }: { view: FossilView; state: FossilS
       <group position={at(ax, az)}>
         <Model boxes={ROCK} />
         <group position={[0, 0.06, 0.58]} rotation={[-0.3, 0, 0]} scale={0.9}>
-          <Prop id="ammonite-fossil" boxes={AMMONITE_FOSSIL} position={[0, 0, 0]} />
+          <PolyProp id="ammonite-fossil" tris={AMMONITE_FOSSIL_TRIS} position={[0, 0, 0]} />
           <Sediment cleaned={view === 'ammonite-rock' || closing ? state.cleaned : 3} reduced={reduced} />
         </group>
       </group>
@@ -610,18 +628,18 @@ function FieldWorld({ view, state, reduced }: { view: FossilView; state: FossilS
       {/* Slab of the Eocene sea stars, with its printed scale */}
       <group position={at(sx, sz)} scale={1.4}>
         <Prop id="star-slab" boxes={STAR_SLAB_BOXES} position={[0, 0, 0]} />
-        <Prop id="star" boxes={STAR_BOXES} position={[0.08, 0.135, -0.08]} scale={0.34} rotation={[0, 0.3, 0]} />
-        <Prop id="star" boxes={STAR_BOXES} position={[-0.22, 0.135, 0.12]} scale={0.3} rotation={[0, 1.1, 0]} />
+        <PolyProp id="star" tris={STAR_TRIS} position={[0.08, 0.135, -0.08]} scale={0.34} rotation={[0, 0.3, 0]} />
+        <PolyProp id="star" tris={STAR_TRIS} position={[-0.22, 0.135, 0.12]} scale={0.3} rotation={[0, 1.1, 0]} />
         <group position={[0.08, 0.2, -0.08]}><StarRuler active={state.measured && view === 'star-slab'} reduced={reduced} length={0.16} /></group>
       </group>
 
       {/* Closing: the four finds displayed on crates at sunset */}
       {closing && <group position={at(dx, dz)}>
         {[-1.6, -0.55, 0.55, 1.6].map((x, i) => <Prop key={i} id="crate" boxes={CRATE_BOXES} position={[x, 0, 0]} scale={0.9} />)}
-        <Prop id="ammonite-fossil" boxes={AMMONITE_FOSSIL} position={[-1.6, 0.38, 0]} scale={0.55} />
+        <PolyProp id="ammonite-fossil" tris={AMMONITE_FOSSIL_TRIS} position={[-1.6, 0.38, 0]} scale={0.55} />
         <Prop id="plesio-bones" boxes={PLESIO_BONES} position={[-0.55, 0.39, 0]} scale={0.5} />
         <Prop id="jaw" boxes={JAW_BOXES} position={[0.55, 0.38, 0]} scale={0.7} />
-        <Prop id="star" boxes={STAR_BOXES} position={[1.6, 0.39, 0]} scale={0.32} />
+        <PolyProp id="star" tris={STAR_TRIS} position={[1.6, 0.39, 0]} scale={0.32} />
       </group>}
 
       <GeologistFigure who={people.walker} parka="red" beard reduced={reduced} />

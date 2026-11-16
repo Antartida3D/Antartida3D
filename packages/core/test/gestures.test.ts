@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { SHEET_SNAP_PX, SHEET_TAP_PX, legendSwipe, legendSwipeStarts, moveTwoFingers, sheetAfterDrag, startTwoFingers, type TwoFingerState } from '../src/index.ts';
+import {
+  DOUBLE_TAP_MS, DOUBLE_TAP_PX, DOUBLE_TAP_ZOOM, ONE_FINGER_IDLE, SHEET_SNAP_PX, SHEET_TAP_PX, TAP_DRAG_DOUBLING_PX, TAP_MAX_MS, TAP_MOVE_PX,
+  legendSwipe, legendSwipeStarts, moveTwoFingers, oneFingerDown, oneFingerMove, oneFingerUp, sheetAfterDrag, startTwoFingers, tapDragZoom,
+  type OneFingerZoomState, type TwoFingerState,
+} from '../src/index.ts';
 
 type Point = { x: number; y: number };
 /** Runs a gesture through its moves and adds up what it did. */
@@ -157,5 +161,68 @@ describe('swiping the map legend', () => {
     expect(legendSwipeStarts(2, 10, 40)).toBe(false);
     // Sideways it still closes, scrolled or not.
     expect(legendSwipeStarts(-10, 2, 40)).toBe(true);
+  });
+});
+
+describe('one finger zooms like in a phone map app (#165)', () => {
+  /** Taps once at (x, y), landing at `t` ms and lifting 80 ms later. */
+  const tap = (state: OneFingerZoomState, x: number, y: number, t: number) =>
+    oneFingerUp(oneFingerDown(state, { x, y, t }), { x, y, t: t + 80 });
+
+  it('a second tap close in time and place is a double tap', () => {
+    const first = tap(ONE_FINGER_IDLE, 200, 400, 0);
+    expect(first.doubleTap).toBe(false);
+    const down = oneFingerDown(first.state, { x: 210, y: 405, t: 80 + DOUBLE_TAP_MS - 1 });
+    expect(down.down?.second).toBe(true);
+    const up = oneFingerUp(down, { x: 210, y: 405, t: 500 });
+    expect(up.doubleTap).toBe(true);
+    // Done: a third tap starts over, it is not another double tap.
+    expect(oneFingerDown(up.state, { x: 210, y: 405, t: 550 }).down?.second).toBe(false);
+  });
+
+  it('a second tap that comes too late or too far away is a new first tap', () => {
+    const first = tap(ONE_FINGER_IDLE, 200, 400, 0).state;
+    expect(oneFingerDown(first, { x: 200, y: 400, t: 80 + DOUBLE_TAP_MS + 1 }).down?.second).toBe(false);
+    expect(oneFingerDown(first, { x: 200 + DOUBLE_TAP_PX + 1, y: 400, t: 150 }).down?.second).toBe(false);
+  });
+
+  it('a drag or a long press is not the first tap of a double tap', () => {
+    const dragged = oneFingerMove(oneFingerDown(ONE_FINGER_IDLE, { x: 200, y: 400, t: 0 }), { x: 200 + TAP_MOVE_PX, y: 400 });
+    expect(dragged.zoom).toBe(1);
+    const afterDrag = oneFingerUp(dragged.state, { x: 200, y: 400, t: 80 }).state;
+    expect(oneFingerDown(afterDrag, { x: 200, y: 400, t: 150 }).down?.second).toBe(false);
+    const held = oneFingerUp(oneFingerDown(ONE_FINGER_IDLE, { x: 200, y: 400, t: 0 }), { x: 200, y: 400, t: TAP_MAX_MS + 1 }).state;
+    expect(oneFingerDown(held, { x: 200, y: 400, t: TAP_MAX_MS + 50 }).down?.second).toBe(false);
+  });
+
+  it('dragging the second touch up zooms in and down zooms out, from where it landed', () => {
+    let state = oneFingerDown(tap(ONE_FINGER_IDLE, 200, 400, 0).state, { x: 200, y: 400, t: 150 });
+    // Short of a tap's move nothing happens yet.
+    let step = oneFingerMove(state, { x: 200, y: 400 - (TAP_MOVE_PX - 1) });
+    expect(step.zoom).toBe(1);
+    step = oneFingerMove(step.state, { x: 200, y: 400 - TAP_DRAG_DOUBLING_PX });
+    expect(step.zoom).toBeCloseTo(2, 9);
+    // Back down past where it landed: the factor is from the start, not from the last move.
+    step = oneFingerMove(step.state, { x: 205, y: 400 + TAP_DRAG_DOUBLING_PX });
+    expect(step.zoom).toBeCloseTo(0.5, 9);
+    state = step.state;
+    // Lifted after dragging: no extra step.
+    expect(oneFingerUp(state, { x: 205, y: 550, t: 900 }).doubleTap).toBe(false);
+  });
+
+  it('a second touch held still for long and let go is still a double tap', () => {
+    const down = oneFingerDown(tap(ONE_FINGER_IDLE, 200, 400, 0).state, { x: 200, y: 400, t: 150 });
+    expect(oneFingerUp(oneFingerMove(down, { x: 203, y: 402 }).state, { x: 203, y: 402, t: 2000 }).doubleTap).toBe(true);
+  });
+
+  it('a first touch never zooms, it is left to pan', () => {
+    const down = oneFingerDown(ONE_FINGER_IDLE, { x: 200, y: 400, t: 0 });
+    expect(oneFingerMove(down, { x: 200, y: 100 }).zoom).toBe(1);
+  });
+
+  it('the zoom factor of the drag is symmetric up and down', () => {
+    expect(tapDragZoom(0)).toBe(1);
+    expect(tapDragZoom(-75) * tapDragZoom(75)).toBeCloseTo(1, 12);
+    expect(DOUBLE_TAP_ZOOM).toBeGreaterThan(1);
   });
 });

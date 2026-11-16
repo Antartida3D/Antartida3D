@@ -210,3 +210,5 @@ En cumplimiento con las bases de la hackatón, se declara el uso de herramientas
   > Planificación, implementación, pruebas y verificación con capturas con asistencia de IA, con revisión del equipo. No se agregaron datos ni fuentes.
 - **Tope del zoom en el relieve 3D (#127):**
   > Diagnóstico, mediciones en el navegador, implementación, pruebas y capturas con Claude Code (modelo Claude Opus 5.5), con revisión del equipo. Cada valor del tope lo eligió quien lleva el issue. No se agregaron datos ni fuentes.
+- **Zoom con un dedo en el celular: doble toque y arrastre del segundo toque (#165):**
+  > Implementación, pruebas unitarias y e2e con toques simulados con Claude Code (modelo Claude Opus 5.5), con revisión del equipo. Los umbrales del gesto los propuso el agente y quedan para que los confirme quien lleva el issue ([DEC-165](docs/decisiones/DEC-165-zoom-con-un-dedo.md)). No se agregaron datos ni fuentes.

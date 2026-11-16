@@ -11,7 +11,7 @@ El viaje ocurre **dentro del mapa 3D que el usuario ya vio**, no en otra escena:
 ## Recorrido (tres niveles)
 
 1. **Explorar:** el usuario toca Ushuaia y elige un medio real y científico: rompehielos *Almirante Irízar*, avión Hércules C-130 o aviso *Puerto Argentino*. Ve los modelos 3D y compara duración y rol.
-2. **Descubrir:** el viaje animado sobre el mapa. **El usuario controla el ritmo** (arrastrar o mantener para avanzar; soltar para pausar; también teclado y botón «Continuar»). La cámara queda siempre centrada en el vehículo: se puede girar y acercar alrededor de él, pero no alejarse arrastrando (decisión posterior del equipo: soltar la cámara no aportaba). Aparecen datos en los hitos: Canal Beagle, salida al mar abierto, Cabo de Hornos, Drake, Convergencia Antártica, 60° S, Shetland, Marambio.
+2. **Descubrir:** el viaje animado sobre el mapa. **El usuario controla el ritmo** (arrastrar o mantener para avanzar; soltar para pausar; también teclado y botón «Continuar»). La cámara queda siempre centrada en el vehículo: se puede girar, acercar y alejar alrededor de él hasta un tope (#167), pero no alejarse arrastrando (decisión posterior del equipo: soltar la cámara no aportaba). Aparecen datos en los hitos: Canal Beagle, salida al mar abierto, Cabo de Hornos, Drake, Convergencia Antártica, 60° S, Shetland, Marambio.
 3. **Profundizar:** «Saber más» en cada dato y al llegar. Cierra con cuidado ambiental y logística.
 
 El turismo se menciona como una línea de contexto: no es un transporte jugable (no es parte del eje).
@@ -45,6 +45,14 @@ El turismo se menciona como una línea de contexto: no es un transporte jugable 
 - Sobre el botón, un globito muestra la velocidad mientras se mantiene, de a medio punto (×1,5, ×2… ×4).
 - Reemplaza a las marchas por toques seguidos (×2 y ×3,5) y al cartel «¿Sabías?» que las explicaba: ya no hace falta saber nada para ir más rápido.
 - «Próximo hito» no cambia: va rápido hasta el siguiente hito y se detiene.
+
+## Tope de alejamiento durante el viaje (#167)
+
+- Mientras dura el viaje la cámara no se aleja hasta la vista general del continente: el lado corto de la pantalla abarca como máximo 80 unidades de mapa, unos 600 km (`VOYAGE_VIEW_SPAN` y `voyageMaxDistance3D` en `core/src/camera.ts`). Más lejos, el vehículo se perdía entre las tierras.
+- El tope mide lo mismo en terreno en una pantalla ancha y en un celular: unas 110 unidades de distancia en escritorio y unas 240 en un celular vertical. Desde el tope se ven Tierra del Fuego, el Cabo de Hornos y las Malvinas a la vez.
+- Vale para la rueda, el pellizco, las teclas y los botones de zoom. «Ver todo el continente» durante el viaje aleja hasta el tope, sin soltar el vehículo.
+- Al salir del viaje vuelve el tope de siempre (`homeDistance3D`).
+- El mapa 2D no cambia.
 
 ## Avistajes (mapa vivo)
 

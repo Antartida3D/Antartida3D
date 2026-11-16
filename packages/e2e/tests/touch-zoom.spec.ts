@@ -213,6 +213,8 @@ for (const mode of ['Mapa 2D', 'Relieve 3D'] as const) {
 // opening its magnifier too: over the map those touches zoom, so nothing there may be selected (#190).
 test('the map and what lies over it cannot be selected, and what is there to read still can (#190)', async ({ page }) => {
   await page.goto('/');
+  // Place names are not addresses: the browser does not turn them into map links (#190).
+  await expect(page.locator('meta[name="format-detection"]')).toHaveAttribute('content', /address=no/);
   const selectable = (selector: string) =>
     page.evaluate((s) => {
       const style = getComputedStyle(document.querySelector(s)!);

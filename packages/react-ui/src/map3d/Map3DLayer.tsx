@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react';
-import { Box3, Vector3 } from 'three';
+import { Box3, Spherical, Vector3 } from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { CameraControls, PerformanceMonitor } from '@react-three/drei';
 import { EffectComposer } from '@react-three/postprocessing';
@@ -389,6 +389,7 @@ function ControlsBridge({
 
   const target = useRef(new Vector3());
   const eye = useRef(new Vector3());
+  const sphere = useRef(new Spherical());
   useFrame(({ camera }) => {
     const cc = controlsRef.current;
     if (!cc) return;
@@ -400,10 +401,13 @@ function ControlsBridge({
     }
     const at = fromWorld(cc.getTarget(target.current));
     cc.minDistance = minCameraDistance(at.x, at.y);
+    // Measured where the camera is heading, not where it is: a move passing by on its way (the trip
+    // from the overview down to the ship at departure) would be cut short at the limit (#181).
+    const heading = cc.getSpherical(sphere.current, true).radius;
     // Panning out of Tierra del Fuego while close: back off before reaching the ice plateau.
-    if (cc.distance < cc.minDistance - 0.01) void cc.dollyTo(cc.minDistance, !reduced);
+    if (heading < cc.minDistance - 0.01) void cc.dollyTo(cc.minDistance, !reduced);
     // A narrower window has a farther overview: come back in when the window gets wider.
-    if (cc.distance > cc.maxDistance + 0.01) void cc.dollyTo(cc.maxDistance, !reduced);
+    if (heading > cc.maxDistance + 0.01) void cc.dollyTo(cc.maxDistance, !reduced);
     const near = cc.distance < NEAR_FROM ? NEAR_CLOSE : NEAR;
     if (camera.near !== near) {
       camera.near = near;

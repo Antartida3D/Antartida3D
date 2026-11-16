@@ -3,6 +3,7 @@ import { clearStorage } from '../storage.ts';
 import { ORCADAS_GUIDING_QUESTION, ORCADAS_INTRO_DESC } from '../../core/src/content/orcadas.ts';
 import { answerFor } from '../../core/src/orcadas.ts';
 import { clickOrcadasMarker, openOrcadasFromMap } from './orcadas-helpers.ts';
+import { mockOpenMeteo } from './weather-helpers.ts';
 
 const log = (page: Page) => page.locator('.reg');
 const primary = (page: Page) => page.locator('.ebar .btn.primary');
@@ -50,6 +51,7 @@ test.beforeEach(async ({ page }) => {
     if (m.type() === 'error') consoleErrors.push(m.text());
   });
   page.on('pageerror', (e) => consoleErrors.push(e.message));
+  await mockOpenMeteo(page);
   await page.goto('/');
   await clearStorage(page);
   await page.reload();

@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { clearStorage } from '../storage.ts';
+import { mockOpenMeteo } from './weather-helpers.ts';
 
 let consoleErrors: string[] = [];
 
@@ -9,6 +10,7 @@ test.beforeEach(async ({ page }) => {
     if (m.type() === 'error') consoleErrors.push(m.text());
   });
   page.on('pageerror', (e) => consoleErrors.push(e.message));
+  await mockOpenMeteo(page);
   await page.goto('/');
   await clearStorage(page);
   await page.reload();
@@ -68,4 +70,25 @@ test('while travelling the camera cannot back off as far as the overview, and ca
   await map.focus();
   for (let i = 0; i < 8; i++) await page.keyboard.press('-');
   expect(await settledDistance(page)).toBeGreaterThan(far * 2);
+});
+
+test('with motion, setting off the camera comes all the way down to the ship, past the farthest zoom of the trip (#181)', async ({ page }) => {
+  test.setTimeout(90_000);
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.reload();
+  const relief = page.getByRole('group', { name: 'Modo de vista' }).getByRole('button', { name: 'Relieve 3D' });
+  if ((await relief.getAttribute('aria-pressed')) !== 'true') await relief.click();
+  await page.waitForFunction(() => (window as any).__cameraControls && (window as any).__invalidate);
+  await settledDistance(page);
+
+  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Desde Ushuaia/ }).click();
+  await page.getByRole('group', { name: 'Medio de transporte' }).getByRole('button', { name: /Irízar/ }).click();
+  await page.getByRole('button', { name: 'Zarpar' }).click();
+
+  // The departure view, close and low over the Beagle Channel: once there it is far closer than the trip's limit.
+  await expect(async () => {
+    const d = await settledDistance(page);
+    expect(d).toBeLessThan(30);
+  }).toPass({ timeout: 20_000 });
 });

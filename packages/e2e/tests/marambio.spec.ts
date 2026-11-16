@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { clearStorage } from '../storage.ts';
 import { MARAMBIO_SPOTS, marambioFacts } from '../../core/src/content/marambio.ts';
 import { ORCADAS_GUIDING_QUESTION } from '../../core/src/content/orcadas.ts';
+import { mockOpenMeteo } from './weather-helpers.ts';
 
 const log = (page: Page) => page.locator('.reg');
 const primary = (page: Page) => page.locator('.mar .ebar .btn.primary');
@@ -23,6 +24,7 @@ test.beforeEach(async ({ page }) => {
     if (m.type() === 'error') consoleErrors.push(m.text());
   });
   page.on('pageerror', (e) => consoleErrors.push(e.message));
+  await mockOpenMeteo(page);
 });
 
 test.afterEach(() => {
@@ -222,6 +224,41 @@ test.describe('with WebGL', () => {
       await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
       await waitRest(page);
       expect((await cam(page)).d).toBeLessThan(panned.d * 0.8);
+    });
+
+    test('on a phone, a double tap comes closer and the second touch dragged down goes back out (#165)', async ({ page, isMobile }) => {
+      test.skip(!isMobile, 'touch gestures belong to the phone layout');
+      await openMarambio(page);
+      await waitRest(page);
+      const cdp = await page.context().newCDPSession(page);
+      const touch = (type: 'touchStart' | 'touchMove' | 'touchEnd', p?: { x: number; y: number }) =>
+        cdp.send('Input.dispatchTouchEvent', { type, touchPoints: p ? [p] : [] });
+      const tap = async (p: { x: number; y: number }) => {
+        await touch('touchStart', p);
+        await touch('touchEnd');
+      };
+
+      // Clear of the dots: tapping one opens its point.
+      const p = await freePoint(page, 80);
+      const before = await cam(page);
+      await tap(p);
+      await tap(p);
+      await waitRest(page);
+      const closer = await cam(page);
+      expect(closer.d).toBeLessThan(before.d * 0.8);
+      expect(closer.polar).toBeCloseTo(before.polar, 3);
+      expect(closer.az).toBeCloseTo(before.az, 3);
+
+      await page.waitForTimeout(400); // past the double tap time
+      await tap(p);
+      await touch('touchStart', p);
+      for (let i = 1; i <= 10; i++) await touch('touchMove', { x: p.x, y: p.y + 8 * i });
+      await touch('touchEnd');
+      await waitRest(page);
+      const out = await cam(page);
+      expect(out.d).toBeGreaterThan(closer.d * 1.2);
+      // Never past the diorama's own farthest view.
+      expect(out.d).toBeLessThanOrEqual(await page.evaluate(() => (window as any).__marambioCamera.maxDistance + 0.01));
     });
   });
 });

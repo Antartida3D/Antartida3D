@@ -24,6 +24,8 @@ export interface VoyageBus {
   closeSighting: () => void;
   /** Speed multiplier of "advance" while it is held (1 otherwise): it picks up little by little (#166). */
   speed: number;
+  /** Speed multiplier for how far the camera is (voyagePace): set by the 3D scene, 1 on the 2D map. */
+  pace: number;
   /** Ids of the milestones whose card was opened on this trip: their pins turn grey. */
   opened: readonly string[];
   /** The user touched the pin of a milestone already passed: opens its card. */
@@ -81,7 +83,7 @@ export interface VoyageController {
 
 export function useVoyage(): VoyageController {
   const [state, setState] = useState<VoyageState | null>(null);
-  const bus = useRef<VoyageBus>({ state: null, seen: [], spot: () => {}, beside: null, open: null, back: false, transfer: null, closeSighting: () => {}, speed: 1, opened: [], openStop: () => {}, openSource: () => {}, listeners: new Set() }).current;
+  const bus = useRef<VoyageBus>({ state: null, seen: [], spot: () => {}, beside: null, open: null, back: false, transfer: null, closeSighting: () => {}, speed: 1, pace: 1, opened: [], openStop: () => {}, openSource: () => {}, listeners: new Set() }).current;
   const frame = useRef(0);
 
   const [seen, setSeen] = useState<readonly string[]>([]);
@@ -171,7 +173,8 @@ export function useVoyage(): VoyageController {
       d.held = d.auto ? 0 : nextHeld(d.held, dt, d.pressed);
       const speed = d.auto ? SKIP_SPEED : rampSpeed(d.held);
       bus.speed = d.pressed ? speed : 1;
-      const seconds = dt * speed * d.power;
+      // From farther the trip goes faster, so it does not crawl on the screen (#168).
+      const seconds = dt * speed * bus.pace * d.power;
       // Going by itself it stops at the next milestone; held, it goes past them (#157).
       const next = d.back ? retreatVoyage(before, seconds) : advanceVoyage(before, seconds, d.auto);
       bus.state = next;

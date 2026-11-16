@@ -137,6 +137,12 @@ Cada PR declara su impacto documental y registra las decisiones nuevas o reempla
   - **Dato real:** las fichas con fuente oficial (fundación, pista, vuelos, población, laboratorio). Ninguna se apoya solo en OpenStreetMap. La medida de la pista (1.200 × 35 m) lleva la fecha de la nota de la Fuerza Aérea que la da, 2020.
   - **Reconstrucción:** el diorama y las fichas que se apoyan solo en OpenStreetMap (el hangar junto a la plataforma y los nombres de los edificios). Las plantas, los nombres y los colores salen de OpenStreetMap; las posiciones están acercadas en el orden real, se dibuja solo un tramo de la pista y el borde de la meseta está más cerca y más bajo. La torre de control, las alturas, los techos y la pintura del avión salen de fotos. La pasarela, los detalles del hangar y de la pista y la utilería son ilustrativos.
   - Lo que no tiene fuente (largo actual de la pista, cantidad de edificios, entre otros) está en «Pendientes» de `docs/expediciones/base-marambio.md` y no se muestra.
+- **Temperatura actual estimada por zona (apps/dibujado):** estimación de modelo meteorológico, no medición de estación. **[Pendiente de revisión: confirmar límite de uso gratuito no comercial y texto de atribución]**.
+  - Organismo / servicio: Open-Meteo.com.
+  - Documentación: [https://open-meteo.com/en/docs](https://open-meteo.com/en/docs).
+  - Términos de uso: [https://open-meteo.com/en/terms](https://open-meteo.com/en/terms).
+  - Licencia: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+  - Fecha de consulta: 11 de noviembre de 2026.
 - **Librerías 3D (apps/dibujado y react-ui):** Three.js (licencia MIT), React Three Fiber (licencia MIT), @react-three/drei (licencia MIT), @react-three/postprocessing (licencia MIT).
 - **Costa y barreras de hielo:** [Natural Earth](https://www.naturalearthdata.com/) (`ne_50m_land`, `ne_50m_antarctic_ice_shelves_polys`), dominio público. [Términos de uso](https://www.naturalearthdata.com/about/terms-of-use/).
 - **Base Orcadas:** coordenadas de [Armada Argentina · bases permanentes](https://www.argentina.gob.ar/armada/antartida/bases-permanentes) e historia y ubicación de [Cancillería Argentina](https://cancilleria.gob.ar/es/iniciativas/dna/antartida-argentina/bases/orcadas).
@@ -147,6 +153,8 @@ Cada PR declara su impacto documental y registra las decisiones nuevas o reempla
 
 En cumplimiento con las bases de la hackatón, se declara el uso de herramientas de inteligencia artificial en el desarrollo de los prototipos:
 
+- **Botón «atrás» del navegador (#185):**
+  > Análisis del problema, implementación, pruebas e2e y registro de la decisión con Claude Code (modelo Claude Sonnet 5.5), con revisión de quien lleva el issue. No se agregaron datos ni fuentes.
 - **Control de documentación por PR (#109):**
   > Diseño del control, implementación, pruebas y documentación con asistencia de Codex, a partir de la aprobación del usuario. La revisión del PR y la activación del requisito obligatorio en GitHub quedan pendientes de su entrega.
 - **Reclamos territoriales antárticos (#108):**
@@ -206,3 +214,7 @@ En cumplimiento con las bases de la hackatón, se declara el uso de herramientas
   > Diagnóstico, mediciones en el navegador, implementación, pruebas y capturas con Claude Code (modelo Claude Opus 5.5), con revisión del equipo. Cada valor del tope lo eligió quien lleva el issue. No se agregaron datos ni fuentes.
 - **Atajos de zoom del navegador y vistas compactas:**
   > Diagnóstico, implementación y pruebas e2e automatizadas con entrada real en Chrome usando Codex (Luna), revisión de producción con Codex (Astra) sin bloqueos y revisión humana pendiente. En los mapas 2D, 3D y el diorama de Orcadas, Ctrl + y Ctrl - siguen la misma ruta que la rueda normal, centrada en la vista; Ctrl + rueda también sigue la rueda normal y no cambia el zoom óptico de la cámara. Meta, Alt, Ctrl + Meta, Ctrl + Alt y Ctrl 0 pasan al navegador. Los atajos de cámara sin modificadores se conservan. El ajuste de altura compacta no agrega datos ni fuentes.
+- **Zoom con un dedo en el celular: doble toque y arrastre del segundo toque (#165):**
+  > Implementación, pruebas unitarias y e2e con toques simulados con Claude Code (modelo Claude Opus 5.5), con revisión del equipo. Los umbrales del gesto los propuso el agente y quedan para que los confirme quien lleva el issue ([DEC-165](docs/decisiones/DEC-165-zoom-con-un-dedo.md)). No se agregaron datos ni fuentes.
+- **Botones primarios a la derecha (#177):**
+  > Relevamiento, implementación, pruebas y capturas en celular y escritorio con Claude Code (modelo Claude Opus 5.5), con revisión del equipo. No se agregaron datos ni fuentes.

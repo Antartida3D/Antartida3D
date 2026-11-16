@@ -107,3 +107,75 @@ export function useTimers() {
 export function useLoadingStore<S extends string>(store: LoadingStore<S>): LoadingSnapshot<S> {
   return useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
 }
+
+// Browser «back» closes the top open layer instead of leaving the app (#185). The app keeps one
+// history entry while any layer is open; «back» consumes it, and if layers remain, it is made again.
+const backLayers: { close: () => void }[] = [];
+let backEntry = false;
+// True from the `history.back()` that drops the entry until its popstate arrives: pushing meanwhile cancels it.
+let backPending = false;
+let backSyncing = false;
+let backListening = false;
+
+function syncBackEntry() {
+  backSyncing = false;
+  try {
+    if (backLayers.length > 0 && !backEntry && !backPending) {
+      history.pushState({ antartida: 1 }, '');
+      backEntry = true;
+    } else if (backLayers.length === 0 && backEntry) {
+      // Closed by the interface: drop the entry, and ignore the popstate this causes.
+      backEntry = false;
+      backPending = true;
+      history.back();
+    }
+  } catch {
+    // History blocked (sandboxed frame): «back» keeps leaving the app, nothing else breaks.
+  }
+}
+
+/** Batches changes of the same tick (a list that closes as a sheet opens) into one history change. */
+function scheduleBackSync() {
+  if (backSyncing) return;
+  backSyncing = true;
+  setTimeout(syncBackEntry, 0);
+}
+
+function onBackPop() {
+  if (backPending) {
+    backPending = false;
+    syncBackEntry();
+    return;
+  }
+  backEntry = false;
+  backLayers[backLayers.length - 1]?.close();
+  scheduleBackSync();
+}
+
+/** While `open`, browser «back» calls `onClose`. The last layer opened closes first. */
+export function useBackLayer(open: boolean, onClose: () => void) {
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  useEffect(() => {
+    if (!open) return;
+    const layer = { close: () => closeRef.current() };
+    // Never removed: the popstate of an entry dropped by the interface arrives after the last layer is gone.
+    if (!backListening) {
+      window.addEventListener('popstate', onBackPop);
+      // Going back restores the scroll of the entry; in a short landscape phone it threw the page off (#185).
+      try {
+        history.scrollRestoration = 'manual';
+      } catch {
+        // History blocked: see syncBackEntry.
+      }
+      backListening = true;
+    }
+    backLayers.push(layer);
+    // At once: «back» right after opening must already close the layer, even if the page is busy drawing.
+    syncBackEntry();
+    return () => {
+      backLayers.splice(backLayers.indexOf(layer), 1);
+      scheduleBackSync();
+    };
+  }, [open]);
+}

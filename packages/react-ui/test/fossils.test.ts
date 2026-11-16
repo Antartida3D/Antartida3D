@@ -78,6 +78,7 @@ describe('fossil figures', () => {
       { act: 'walk', x: 0, z: 0, yaw: 0, seed: 1, loop: { cx: 1, cz: 2, rx: 3, rz: 2, period: 18 } },
       { act: 'hammer', x: 1, z: 1, yaw: 0.4, seed: 2 },
       { act: 'sit', x: -1, z: 0, yaw: 1, seed: 3 },
+      { act: 'kneel', x: -2, z: 1, yaw: 0, seed: 5 },
       { act: 'look', x: 2, z: -1, yaw: 0, seed: 4 },
     ];
     const pose = restGeologist();
@@ -87,6 +88,12 @@ describe('fossil figures', () => {
       if (g.act === 'walk') expect(Math.hypot((pose.x - 1) / 3, (pose.z - 2) / 2)).toBeCloseTo(1, 5);
       if (g.act === 'hammer') expect(pose.armR).toBeGreaterThanOrEqual(0.8);
       if (g.act === 'sit') expect(pose.y).toBeLessThan(0);
+      // Kneeling, the legs go back (-x), never forward into the find in front.
+      if (g.act === 'kneel') {
+        expect(pose.y).toBeLessThan(0);
+        expect(pose.legL).toBeLessThan(-1);
+        expect(pose.legR).toBeLessThan(-1);
+      }
     }
   });
 

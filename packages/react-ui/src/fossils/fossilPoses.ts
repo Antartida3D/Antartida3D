@@ -24,7 +24,7 @@ export function onLoop(loop: Loop, t: number, phase = 0): { x: number; z: number
 
 // --- People ---------------------------------------------------------------------------------
 
-export type GeologistAct = 'walk' | 'hammer' | 'sit' | 'look';
+export type GeologistAct = 'walk' | 'hammer' | 'sit' | 'kneel' | 'look';
 export interface Geologist {
   act: GeologistAct;
   x: number; z: number; yaw: number; seed: number;
@@ -41,6 +41,8 @@ export const restGeologist = (): GeologistPose => ({
 /** Legs sticking forward along the ground: sitting to work on a find, as in the camp photographs. */
 export const SIT_DROP = 0.38;
 export const SIT_LEGS = 1.45;
+/** Kneeling at the edge of a find: the legs lie on the ground behind, so nothing reaches into it. */
+export const KNEEL_LEGS = -1.45;
 
 /** Arm and leg angles turn around the z axis: a positive angle swings the limb forward (+x). */
 export function geologistPose(g: Geologist, t: number, out: GeologistPose): GeologistPose {
@@ -83,6 +85,17 @@ export function geologistPose(g: Geologist, t: number, out: GeologistPose): Geol
       out.armR = 1.0 + Math.sin(t * 4.5 + g.seed) * 0.22;
       out.armL = 0.85;
       out.headPitch = 0.4;
+      out.headYaw = 0;
+      break;
+    }
+    case 'kneel': {
+      // Same work as sitting, on the knees: the body over the find, the legs back along the ground.
+      out.y = -SIT_DROP;
+      out.legL = KNEEL_LEGS; out.legR = KNEEL_LEGS;
+      out.lean = 0.42 + Math.sin(t * 0.8 + g.seed) * 0.04;
+      out.armR = 1.05 + Math.sin(t * 4.5 + g.seed) * 0.22;
+      out.armL = 0.9;
+      out.headPitch = 0.45;
       out.headYaw = 0;
       break;
     }

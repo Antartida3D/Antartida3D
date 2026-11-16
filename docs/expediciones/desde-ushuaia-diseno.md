@@ -26,7 +26,7 @@ El turismo se menciona como una línea de contexto: no es un transporte jugable 
 - Contenido en `EXPEDITION` (`core/src/content/ushuaia.ts`), por id de hito. Cada nota vale para todos, para un tipo de vehículo (`kind`) o para un vehículo (`only`).
 - `expeditionAt(hito, vehículo)` filtra notas y pregunta; `quizScore(vehículo, respuestas)` cuenta aciertos. Las dos son puras y tienen pruebas.
 - `useVoyage` guarda la opción elegida por id de hito y la borra al empezar o salir del viaje. La primera respuesta queda fija.
-- La tarjeta del hito muestra la pregunta, después los datos; la última tarjeta muestra «acertaste X de Y». Detalle del contenido en `desde-ushuaia.md`, sección 8 ter.
+- La pregunta es opcional (#157): la tarjeta la muestra detrás del botón «Responder una pregunta», y después los datos que la responden. La última tarjeta muestra «respondiste X de Y y acertaste Z». Detalle del contenido en `desde-ushuaia.md`, sección 8 ter.
 
 ## Ushuaia al inicio del viaje
 
@@ -52,7 +52,7 @@ El turismo se menciona como una línea de contexto: no es un transporte jugable 
 - Más fauna cuanto más al sur. El cuaderno cuenta los avistajes («4 de 9»); los perdidos quedan como siluetas «sin ver», lo que invita a repetir el viaje con otro medio.
 - Los animales son botones HTML proyectados sobre el canvas, como los marcadores actuales (`ProjectMarkers`): accesibles por teclado, con `aria-label`, sin raycasting. El cuaderno incluye la lista de avistajes alcanzable con Tab.
 - También hay **lugares** (faros Les Éclaireurs y San Juan de Salvamento, pingüinera de Isla Martillo): se abren igual que los animales, se dibujan en su posición aproximada y el cuaderno los cuenta aparte. Un lugar fuera de la vista queda sostenido en el borde de la pantalla, en su dirección.
-- Durante el viaje se puede retroceder manteniendo «◀»; los hitos ya vistos no repiten su tarjeta. Cada hito se marca en el mapa con un pin (ocre si falta llegar, gris si ya se pasó).
+- Durante el viaje se puede retroceder manteniendo «◀». Cada hito se marca en el mapa con un pin: ocre mientras no se leyó, gris cuando se abrió su tarjeta (#157). El pin de un hito ya pasado abre su tarjeta.
 - Cada animal y cada lugar se ve en el mapa con un modelo voxel procedural, dentro de un aro punteado que late para mostrar que se puede tocar; el icono va en la esquina del aro. Los animales se mueven (las aves planean en círculo, los delfines saltan, la ballena sube a respirar, focas y pingüinos se mecen). **Modelos y movimientos son ilustrativos**; con movimiento reducido quedan quietos.
 - Solo hay especies con ficha y fuente verificada. Las posiciones son **ilustrativas**. La interfaz ya no lo rotula (decisión del 11-11-2026, a pedido de quien lleva el issue); queda registrado en esta documentación.
 - Solapa con #16 (fauna, Irízar, ruta Ushuaia–Marambio): ver «Coordinación».
@@ -263,8 +263,8 @@ Pedido de quien lleva el issue, para dejar lista la llegada antes de empezar la 
 **Etapa 2 (hecha el 13-11-2026, con #68 ya en `main`):**
 
 - **Qué es:** una animación de 6 segundos (`TRANSFER_SECONDS`). Un helicóptero Sea King despega de la cubierta de vuelo del Irízar, cruza el mar y se posa en la base. Solo en el Irízar: `[O24]` habla de ese buque.
-- **Cuándo se ofrece:** al responder la pregunta de la llegada aparece el botón «Ver el traslado». Está junto a los botones fijos de la ficha, en su propio renglón, para que se vea sin desplazar las notas. Es el botón principal hasta que se vio el traslado; después lo es «Terminar el viaje». Se puede volver a ver.
-- **Durante el vuelo:** la ficha se cambia por una barra chica, para que se vea el mapa. La barra dice qué se ve con su fuente («Un helicóptero Sea King lleva la carga y el personal del rompehielos a la base» `[O24]`) y que es un dibujo. Tiene el botón «Saltar», que posa el helicóptero de una vez. La tecla Escape hace lo mismo. Al posarse, vuelve la ficha de llegada con la respuesta guardada.
+- **Cuándo se ve:** siempre, al tocar «Continuar» en la ficha de llegada (#157). Antes no había un botón aparte «Ver el traslado»: se sacó por pedido de quien lleva el issue, para que no haya dos confirmaciones y el traslado no se pueda saltear.
+- **Durante el vuelo:** la ficha se cambia por una barra chica, para que se vea el mapa. La barra dice qué se ve con su fuente («Un helicóptero Sea King lleva la carga y el personal del rompehielos a la base» `[O24]`) y que es un dibujo. No tiene botones: el vuelo dura unos segundos y no se puede saltear. Al posarse, vuelve la ficha de llegada con la respuesta guardada, el resumen del viaje y «Terminar el viaje».
 - **Es ilustrativo y la interfaz lo dice:** «La animación es ilustrativa: no muestra un vuelo real ni su recorrido. El helicóptero está agrandado para que se vea.» `[O24]` dice que el traslado se hace con un Sea King. No dice por dónde vuela ni cuánto tarda.
 - **Sin animación** con movimiento reducido o en el mapa 2D: el botón no aparece y la respuesta la dan las notas, como en la etapa 1.
 - **Modelo:** el Sea King de #68 (`HELICOPTER_BOXES`, `HELICOPTER_ROTOR_BOXES` y `HELICOPTER_ROTOR_ORIGIN`, en `react-ui/src/orcadas/stationModels.ts`). No se dibujó otro modelo. El rotor gira mientras vuela y se detiene al posarse.
@@ -275,7 +275,7 @@ Pedido de quien lleva el issue, para dejar lista la llegada antes de empezar la 
 - **Pin de la base:** se oculta desde que el helicóptero despega. Los pines se dibujan por encima de todo, y el de la base tapaba el aterrizaje. Después, el helicóptero posado marca la base.
 - **Cámara:** no sigue al helicóptero, a diferencia de lo previsto. En la llegada la cámara ya está a mitad de camino entre el buque y la base (etapa 1), así que todo el vuelo entra en pantalla en celular y en escritorio.
 - **Estado:** `useVoyage.ts` guarda si el traslado no empezó, está en vuelo o terminó (`transfer`), y avanza el vuelo cuadro a cuadro. Un cuadro largo no hace saltar al helicóptero. El estado se limpia al empezar otro viaje o al salir.
-- **Pruebas:** en `core/test/voyage.test.ts`, el helicóptero sale de la cubierta y termina en la base; nunca vuela por debajo del relieve; sube y baja derecho y no salta; gira por el lado corto. La prueba E2E `voyage-arrival.spec.ts` suma el flujo con movimiento (botón, barra, vuelta sola de la ficha, repetir y «Saltar») y comprueba que con movimiento reducido el botón no aparece.
+- **Pruebas:** en `core/test/voyage.test.ts`, el helicóptero sale de la cubierta y termina en la base; nunca vuela por debajo del relieve; sube y baja derecho y no salta; gira por el lado corto. La prueba E2E `voyage-arrival.spec.ts` suma el flujo con movimiento («Continuar», barra sin botones, vuelta sola de la ficha) y comprueba que con movimiento reducido la ficha termina el viaje sin traslado.
 - **Verificación:** capturas del vuelo a 390 y 1440 px, sin errores de consola. La prueba E2E con movimiento tarda cerca de 40 s a 390 px y 80 s a 1440 px en un equipo sin placa de video.
 
 ### Vuelta suave de la cámara al vehículo (13-11-2026)
@@ -297,3 +297,15 @@ Pedido de quien lleva el issue: sacar los rayos, porque en el Pasaje de Drake no
 
 - **Qué cambia:** `Storm3D.tsx` ya no dibuja relámpagos. Quedan el banco de nubes, la lluvia, las crestas blancas y las ráfagas de viento. El componente ya no recibe `reduced`: los relámpagos eran lo único que lo usaba (el resto se queda quieto con el reloj del mar). `Map3DLayer.tsx`, archivo compartido, cambia en una línea para no pasarlo.
 - **Fuente:** pendiente. El cambio quita un elemento del dibujo y no agrega ningún dato a la interfaz; la frase «no hay tormentas eléctricas» no se publica en ninguna ficha.
+
+## Hitos y preguntas opcionales (#157)
+
+Pedido de quien lleva el issue: el viaje frenaba en cada hito y obligaba a leer. Para quien no quiere leer todo, los hitos y las preguntas pasan a ser opcionales.
+
+- **El viaje no frena:** al mantener «avanzar» el vehículo pasa los hitos de largo (`advanceVoyage`, en `core/src/voyage.ts`). Solo la llegada detiene el viaje y abre su tarjeta. La salida tampoco abre la suya: el viaje arranca sin tarjeta.
+- **Se ofrecen:** la barra del viaje muestra el hito por el que se acaba de pasar (`voyageStopAt`) con un botón «Leer» y, si tiene pregunta sin responder, otro «¿Una pregunta?». Si se retrocede, ofrece el hito que quedó detrás. El pin gris de un hito pasado también es un botón que abre su tarjeta. Mientras la tarjeta está abierta el viaje espera, como con los animales.
+- **«Próximo hito»** viaja hasta el siguiente hito y se detiene ahí, sin abrirlo. En el mapa 2D y con movimiento reducido salta al hito, también sin abrirlo.
+- **La pregunta** espera detrás de «Responder una pregunta». Si la tarjeta se abrió desde «¿Una pregunta?», la pregunta se ve de entrada. En la llegada no hay botón extra: la pregunta se ve de entrada y responderla sigue siendo opcional.
+- **Llegada en el Irízar (mapa 3D):** la ficha muestra la pregunta y un solo botón, «Continuar», que hace el traslado en helicóptero sin opción de saltearlo. El resumen (preguntas, hitos y cuaderno) aparece cuando el helicóptero se posa. Si la pregunta quedó sin responder, se oculta y se muestran las notas: el traslado ya dio la respuesta.
+- **Al llegar,** la tarjeta lista los hitos como el cuaderno de avistajes: en sólido los abiertos y punteados los que no («abriste X de Y»; la llegada no se cuenta). A diferencia de los animales, un hito sin abrir muestra su nombre y se puede abrir desde ahí: es contenido para leer, no algo que encontrar. Al cerrarlo se vuelve a la llegada («Volver a la llegada»).
+- **Pruebas:** `core/test/voyage.test.ts` (el viaje no frena, se detiene en la llegada, «Próximo hito» no abre, una tarjeta se abre solo si ya se pasó el hito, después de la llegada se vuelve a ella, puntaje con preguntas sin responder). E2E en `voyage-arrival.spec.ts` y `voyage3d.spec.ts`.

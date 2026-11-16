@@ -1,6 +1,8 @@
 import { CircleGeometry, MeshBasicMaterial, Shape, ShapeGeometry } from 'three';
 
 const HEAD_Y = 0.68;
+/** Height of the center of the round head of a pin, in pin units: where its button goes. */
+export const PIN_HEAD_Y = HEAD_Y;
 const HEAD_R = 0.32;
 /** Width of the ink line around the pin, like the line around the markers of the map. */
 const LINE = 0.055;
@@ -30,5 +32,5 @@ export const buildPinGeometry = () => ({
 
 // Always drawn over the relief: a milestone must be seen coming.
 const flat = (color: number) => new MeshBasicMaterial({ color, depthTest: false, depthWrite: false, transparent: true });
-/** Colors of the map markers: --ocre while the milestone is ahead, --pencil once reached, --ink line, --paper dot. */
-export const pinMaterial = { ahead: flat(0xc0862f), reached: flat(0x5e656c), line: flat(0x1f2a36), dot: flat(0xf3ebdd) };
+/** Colors of the map markers: --ocre while the milestone is unread, --pencil once its card was opened, --ink line, --paper dot. */
+export const pinMaterial = { unread: flat(0xc0862f), read: flat(0x5e656c), line: flat(0x1f2a36), dot: flat(0xf3ebdd) };

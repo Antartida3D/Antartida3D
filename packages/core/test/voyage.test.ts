@@ -40,6 +40,7 @@ import {
   VOYAGE_TRANSFER,
   advanceVoyage,
   closeVoyageCard,
+  openVoyageCard,
   flightClearance,
   fuegiaWorldHeight,
   heightAt,
@@ -61,6 +62,7 @@ import {
   project,
   skipToNextStop,
   startVoyage,
+  voyageStopAt,
   stormAt,
   stormCeiling,
   toWorld,
@@ -418,15 +420,17 @@ describe('how the expedition works', () => {
     expect(drawing('hercules')).toBe(false);
   });
 
-  it('counts the questions answered right', () => {
-    expect(quizScore('irizar', {})).toEqual({ right: 0, total: 3 });
-    expect(quizScore('hercules', {})).toEqual({ right: 0, total: 2 });
-    expect(quizScore('puerto-argentino', {})).toEqual({ right: 0, total: 2 });
-    expect(quizScore('irizar', { beagle: 0, 'paralelo-60': 1, marambio: 0 })).toEqual({ right: 2, total: 3 });
-    expect(quizScore('irizar', { beagle: 0, 'paralelo-60': 1, marambio: 2 })).toEqual({ right: 3, total: 3 });
+  it('counts the questions answered, and the ones answered right', () => {
+    expect(quizScore('irizar', {})).toEqual({ right: 0, answered: 0, total: 3 });
+    expect(quizScore('hercules', {})).toEqual({ right: 0, answered: 0, total: 2 });
+    expect(quizScore('puerto-argentino', {})).toEqual({ right: 0, answered: 0, total: 2 });
+    expect(quizScore('irizar', { beagle: 0, 'paralelo-60': 1, marambio: 0 })).toEqual({ right: 2, answered: 3, total: 3 });
+    expect(quizScore('irizar', { beagle: 0, 'paralelo-60': 1, marambio: 2 })).toEqual({ right: 3, answered: 3, total: 3 });
+    // The questions are optional (#157): one left unanswered is neither right nor wrong.
+    expect(quizScore('irizar', { beagle: 1 })).toEqual({ right: 0, answered: 1, total: 3 });
     // The question of Marambio is about the Irízar: an answer to it does not count on another transport.
-    expect(quizScore('hercules', { beagle: 0, 'paralelo-60': 1, marambio: 2 })).toEqual({ right: 2, total: 2 });
-    expect(quizScore('puerto-argentino', { beagle: 0, 'paralelo-60': 1, marambio: 2 })).toEqual({ right: 2, total: 2 });
+    expect(quizScore('hercules', { beagle: 0, 'paralelo-60': 1, marambio: 2 })).toEqual({ right: 2, answered: 2, total: 2 });
+    expect(quizScore('puerto-argentino', { beagle: 0, 'paralelo-60': 1, marambio: 2 })).toEqual({ right: 2, answered: 2, total: 2 });
   });
 });
 
@@ -656,56 +660,85 @@ describe('advance gears', () => {
 });
 
 describe('voyage state', () => {
-  it('starts with the departure card open and does not move until it is closed', () => {
+  const ship = voyageStops('ship');
+  const last = ship.length - 1;
+
+  it('sets off at once: the departure is offered, not opened', () => {
     const s = startVoyage('irizar');
-    expect(s.card).toBe(0);
-    expect(advanceVoyage(s, 5)).toBe(s);
-    expect(advanceVoyage(closeVoyageCard(s), 1).t).toBeCloseTo(1 / VOYAGE_SECONDS.ship);
+    expect(s.card).toBe(-1);
+    expect(voyageStopAt(s)).toBe(0);
+    expect(advanceVoyage(s, 1).t).toBeCloseTo(1 / VOYAGE_SECONDS.ship);
   });
 
-  it('stops at every milestone, however long the user holds', () => {
-    let s = closeVoyageCard(startVoyage('irizar'));
-    const stops = voyageStops('ship');
-    for (let i = 1; i < stops.length; i++) {
-      s = advanceVoyage(s, 1000);
-      expect(s.t).toBe(stops[i].t);
-      expect(s.card).toBe(i);
-      s = closeVoyageCard(s);
+  it('goes past the milestones without stopping and stops only at the arrival (#157)', () => {
+    const s = startVoyage('irizar');
+    const half = advanceVoyage(s, VOYAGE_SECONDS.ship * ((ship[3].t + ship[4].t) / 2));
+    expect(half.card).toBe(-1);
+    expect(half.reached).toBe(4);
+    expect(voyageStopAt(half)).toBe(3);
+    const end = advanceVoyage(half, 1000);
+    expect(end.t).toBe(ship[last].t);
+    expect(end.card).toBe(last);
+    expect(voyageArrived(end)).toBe(true);
+    expect(voyageStopAt(end)).toBe(-1);
+    expect(advanceVoyage(end, 10)).toBe(end);
+  });
+
+  it('stops at the next milestone, without opening it, when asked to', () => {
+    let s = startVoyage('irizar');
+    for (let i = 1; i < last; i++) {
+      s = advanceVoyage(s, 1000, true);
+      expect(s.t).toBe(ship[i].t);
+      expect(s.card).toBe(-1);
+      expect(voyageStopAt(s)).toBe(i);
     }
-    expect(voyageArrived(s)).toBe(true);
-    expect(advanceVoyage(s, 10)).toBe(s);
+    s = advanceVoyage(s, 1000, true);
+    expect(s.card).toBe(last);
   });
 
-  it('goes back without reopening the milestones already seen', () => {
-    let s = closeVoyageCard(advanceVoyage(closeVoyageCard(startVoyage('irizar')), 1000));
-    const reached = s.reached;
+  it('opens the card of a milestone passed only when asked, and holds the trip while it is open', () => {
+    const s = advanceVoyage(startVoyage('irizar'), 1000, true);
+    expect(openVoyageCard(s, 2)).toBe(s); // not passed yet
+    const open = openVoyageCard(s, 1);
+    expect(open.card).toBe(1);
+    expect(advanceVoyage(open, 5)).toBe(open);
+    expect(retreatVoyage(open, 5)).toBe(open);
+    expect(closeVoyageCard(open)).toEqual(s);
+  });
+
+  it('after the arrival, closing the card of another milestone goes back to the one of the arrival', () => {
+    const end = advanceVoyage(startVoyage('irizar'), 1000);
+    const other = openVoyageCard(end, 2);
+    expect(other.card).toBe(2);
+    expect(closeVoyageCard(other).card).toBe(last);
+  });
+
+  it('goes back keeping the milestones passed, and offers the one behind the vehicle', () => {
+    let s = advanceVoyage(startVoyage('irizar'), 1000, true);
+    s = advanceVoyage(s, 1000, true);
     const at = s.t;
     s = retreatVoyage(s, 1);
     expect(s.t).toBeCloseTo(at - 1 / VOYAGE_SECONDS.ship);
-    expect(s.reached).toBe(reached);
-    expect(s.card).toBe(-1);
-    // Forward again: straight past the milestone it came back from, up to the next one.
-    s = advanceVoyage(s, 1000);
-    expect(s.card).toBe(reached);
-    expect(s.t).toBe(voyageStops('ship')[reached].t);
+    expect(s.reached).toBe(3);
+    expect(voyageStopAt(s)).toBe(1);
   });
 
-  it('does not go back past Ushuaia nor while a card is open', () => {
-    const open = startVoyage('irizar');
-    expect(retreatVoyage(open, 5)).toBe(open);
-    const start = closeVoyageCard(open);
+  it('does not go back past Ushuaia', () => {
+    const start = startVoyage('irizar');
     expect(retreatVoyage(start, 5)).toBe(start);
     expect(retreatVoyage(advanceVoyage(start, 1), 1000).t).toBe(0);
   });
 
-  it('can be travelled step by step', () => {
+  it('can be travelled step by step, opening only the arrival', () => {
     let s = startVoyage('hercules');
     let steps = 0;
     while (!voyageArrived(s)) {
-      s = skipToNextStop(closeVoyageCard(s));
+      s = skipToNextStop(s);
       steps++;
+      if (!voyageArrived(s)) expect(s.card).toBe(-1);
     }
     expect(steps).toBe(voyageStops('plane').length - 1);
+    expect(s.card).toBe(voyageStops('plane').length - 1);
     expect(s.t).toBe(1);
   });
 });

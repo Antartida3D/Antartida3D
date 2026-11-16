@@ -4,7 +4,7 @@ import {
   buildMarkers, diveView, markerPress, geometry, isWheelNotch, keyView, oneFingerDown, oneFingerMove, oneFingerUp, panBy, welcomeView, wheelFactor, zoomAround, zoomCenter,
   type ArrivalId, type MapPoint, type Marker, type OneFingerZoomState, type SeaPoint, type Size, type View, type ClaimsCoverage,
 } from '@antartida/core';
-import { usePageSettled, useReducedMotion, useTimers } from '../hooks.ts';
+import { useBackLayer, usePageSettled, useReducedMotion, useTimers } from '../hooks.ts';
 import { useVoyage, type VoyageBus } from '../voyage/useVoyage.ts';
 import { Icon } from '../ui.tsx';
 import { ExplorationLog } from './ExplorationLog.tsx';
@@ -184,6 +184,13 @@ export function MapView({
   const [command, setCommand] = useState<Layer3DProps['command']>(null);
   const live = useRef({ size, view, phase, is3D });
   live.current = { size, view, phase, is3D };
+
+  // Browser «back» closes the top layer instead of leaving the app (#185).
+  useBackLayer(list, () => setList(false));
+  useBackLayer(!!sheet, () => setSheet(null));
+  useBackLayer(!!pendingOrcadas && phase === 'idle', () => setPendingOrcadas(null));
+  useBackLayer(voyaging, () => onEndVoyage?.(false));
+  useBackLayer(is3D && claimsEnabled && claimsDetails && !sheet, closeClaimsDetails);
 
   /** Moves the 3D camera; `send3D` when the user asked for it. */
   const queue3D = (cmd: Camera3DCommand) => setCommand((c) => ({ n: (c?.n ?? 0) + 1, cmd }));

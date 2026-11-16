@@ -23,7 +23,7 @@ import {
   type ArrivalId,
   type MapPoint,
 } from '@antartida/core';
-import { useReducedMotion, useTimers } from './hooks.ts';
+import { useBackLayer, useReducedMotion, useTimers } from './hooks.ts';
 import { LoadingScreen } from './loading/LoadingScreen.tsx';
 import { MapView, type Layer3DProps, type Phase, type ViewMode } from './map/MapView.tsx';
 import { Filters } from './ui.tsx';
@@ -243,6 +243,9 @@ export function AntarcticaApp() {
     else setToast('');
     later('ret', () => setPhase('idle'), RETURN_MS);
   };
+
+  // Browser «back» inside an expedition returns to the map, like «Volver al mapa» (#185).
+  useBackLayer(screen !== 'map', () => leave(false));
 
   return (
     <div className="app">

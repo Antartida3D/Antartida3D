@@ -121,7 +121,7 @@ test.describe('with WebGL', () => {
     await expect(page.getByRole('heading', { level: 2, name: ORCADAS_GUIDING_QUESTION })).toBeVisible({ timeout: 20_000 });
     await page.waitForFunction(() => (window as unknown as { __orcadasReady?: boolean }).__orcadasReady === true);
     await page.getByRole('button', { name: 'Volver al mapa' }).click();
-    await expect(log(page)).toContainText('0/3');
+    await expect(log(page)).toContainText(`0/${AVAILABLE_COUNT}`);
   });
 
   test('the strip of months shows the days of ventisca of each month with their source', async ({ page }) => {

@@ -153,6 +153,8 @@ Cada PR declara su impacto documental y registra las decisiones nuevas o reempla
 
 En cumplimiento con las bases de la hackatón, se declara el uso de herramientas de inteligencia artificial en el desarrollo de los prototipos:
 
+- **Botón «atrás» del navegador (#185):**
+  > Análisis del problema, implementación, pruebas e2e y registro de la decisión con Claude Code (modelo Claude Sonnet 5.5), con revisión de quien lleva el issue. No se agregaron datos ni fuentes.
 - **Control de documentación por PR (#109):**
   > Diseño del control, implementación, pruebas y documentación con asistencia de Codex, a partir de la aprobación del usuario. La revisión del PR y la activación del requisito obligatorio en GitHub quedan pendientes de su entrega.
 - **Reclamos territoriales antárticos (#108):**

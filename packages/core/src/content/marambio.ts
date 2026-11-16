@@ -302,6 +302,76 @@ export const MARAMBIO_SPOTS: readonly MarambioSpot[] = [
   { id: 'buildings', label: 'Los edificios', shortLabel: 'Edificios', subtitle: 'Donde se vive y se trabaja' },
 ];
 
+/**
+ * The photographs of Eduardo Olivero shown at the points of interest (#207). A family archive has
+ * no URL, so it is not one of MARAMBIO_SOURCES; the sources panel lists it apart.
+ */
+export const MARAMBIO_PHOTO_ARCHIVE = {
+  label: 'Archivo fotográfico de E. B. Olivero',
+  org: 'Familia Olivero',
+  consulted: '16 de noviembre de 2026',
+  detail: 'Fotografías tomadas por Eduardo Olivero en sus campañas antárticas, aportadas por la familia con autorización para publicarlas en este proyecto. Las fechas son las que registró la cámara; la foto del grupo es un escaneo y no guarda fecha ni lugar.',
+} as const;
+
+export type MarambioPhotoId =
+  | 'hercules-runway' | 'hercules-anniversary' | 'hercules-group' | 'hangar-cargo'
+  | 'polar-depot' | 'historic-house' | 'field-helicopter';
+
+export interface MarambioPhoto {
+  id: MarambioPhotoId;
+  /** The point of interest that shows it: each photograph is in one point only. */
+  spot: MarambioSpotId;
+  alt: string;
+  caption: string;
+  /** As the camera recorded it; null when the file keeps no date. */
+  date: string | null;
+}
+
+export const MARAMBIO_PHOTO_CREDIT = 'Foto: Eduardo Olivero · Archivo E. B. Olivero, publicación autorizada por la familia';
+
+/** In the order they are shown inside each point. */
+export const MARAMBIO_PHOTOS: readonly MarambioPhoto[] = [
+  {
+    id: 'field-helicopter', spot: 'plateau', date: '22 de febrero de 2011',
+    alt: 'Un helicóptero blanco y naranja de la Fuerza Aérea Argentina, con la matrícula H-81, descarga equipos sobre un suelo de piedras junto al mar con hielo flotante; dos personas ordenan bolsos y otra saca fotos',
+    caption: 'Un helicóptero deja a un equipo y su carga en el campo',
+  },
+  {
+    id: 'hercules-runway', spot: 'runway', date: '3 de febrero de 2014',
+    alt: 'Un Hércules C-130 pasa a baja altura sobre la pista de tierra con manchas de nieve, bajo un cielo gris; adelante, una baranda roja y tambores naranjas',
+    caption: 'Un Hércules sobre la pista de tierra',
+  },
+  {
+    id: 'hercules-anniversary', spot: 'hercules', date: '21 de enero de 2009',
+    alt: 'Un Hércules C-130 con camuflaje verde y marrón estacionado sobre la pista; en la cola, la bandera argentina y un escudo con el número 40 y la palabra «Aniversario». Personas con camperas naranjas caminan alrededor',
+    caption: 'Un Hércules en la plataforma, con «40 Aniversario» en la cola',
+  },
+  {
+    id: 'hercules-group', spot: 'hercules', date: null,
+    alt: 'Un grupo de unas treinta personas, casi todas con camperas y pantalones naranjas de abrigo, posa frente a un Hércules C-130 con la matrícula TC-68, sobre una plataforma sin nieve',
+    caption: 'Un grupo de campaña antártica frente al Hércules TC-68',
+  },
+  {
+    id: 'hangar-cargo', spot: 'hangar', date: '27 de enero de 2011',
+    alt: 'Cajones de madera, bolsos y bultos naranjas apilados frente a un hangar rojo de techo curvo con la palabra MARAMBIO pintada en celeste y blanco; varias personas con ropa de abrigo esperan al lado',
+    caption: 'Carga de una campaña frente al hangar',
+  },
+  {
+    id: 'polar-depot', spot: 'buildings', date: '24 de enero de 2009',
+    alt: 'Una casilla roja de chapa con techo a dos aguas, la bandera argentina, un escudo redondo y un cartel que dice «Depósito Polar Adelantado», sobre una plataforma verde con escarcha',
+    caption: 'La casilla del «Depósito Polar Adelantado»',
+  },
+  {
+    id: 'historic-house', spot: 'buildings', date: '24 de enero de 2009',
+    alt: 'Una casilla roja y gastada con un cartel que dice «Casa Histórica - I, año 1970», junto a una pasarela con baranda y nieve; atrás, la casilla del Depósito Polar Adelantado',
+    caption: 'La «Casa Histórica - I», con un cartel que dice «año 1970»',
+  },
+];
+
+export function marambioPhotos(spot: MarambioSpotId): readonly MarambioPhoto[] {
+  return MARAMBIO_PHOTOS.filter((photo) => photo.spot === spot);
+}
+
 export function marambioFacts(spot: MarambioSpotId | 'scene' | 'months'): readonly MarambioFact[] {
   return MARAMBIO_FACTS.filter((fact) => fact.spot === spot);
 }

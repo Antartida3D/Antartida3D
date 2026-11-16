@@ -152,6 +152,24 @@
   flex: 1 1 auto;
 }
 
+/* Photographs of Eduardo Olivero's archive (#207): cards under the facts, as in Fósiles. */
+.mar-archive-list { display: flex; flex-direction: column; gap: 14px; margin: 18px 0 4px; }
+.mar-archive { margin: 0; display: flex; gap: 15px; align-items: center; width: 100%; min-height: 44px; text-align: left; padding: 0; border: 0; background: transparent; color: var(--ink); font: inherit; cursor: pointer; }
+.mar-archive:focus-visible { outline: 3px solid var(--deep); outline-offset: 4px; }
+.mar-archive img { width: 78px; height: 88px; object-fit: cover; filter: saturate(.65); border: 4px solid color-mix(in srgb, var(--ice) 60%, var(--paper)); box-shadow: 0 1px 4px color-mix(in srgb, var(--ink) 22%, transparent); transform: rotate(var(--tilt, -3deg)); flex-shrink: 0; }
+.mar-archive > span { display: flex; flex-direction: column; gap: 5px; }
+.mar-archive small { font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--pencil); }
+.mar-archive b { font-size: 14px; font-weight: 400; }
+.mar-archive span > span { font-size: 11px; text-decoration: underline; text-underline-offset: 3px; }
+
+.mar-photo { width: min(650px, 100%); max-height: calc(100dvh - 32px); overflow-y: auto; box-sizing: border-box; background: var(--paper); color: var(--ink); border: 2px solid var(--ink); border-radius: var(--chart-radius); box-shadow: 4px 6px 0 rgba(31, 42, 54, 0.2); padding: 16px 18px; }
+.mar-photo-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.mar-photo h2 { margin: 0; font-family: 'Fraunces', Georgia, serif; font-size: 20px; }
+.mar-photo figure { margin: 12px 0 0; }
+.mar-photo img { display: block; width: 100%; max-height: 60dvh; object-fit: contain; }
+.mar-photo figcaption { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; font-size: 12px; line-height: 1.5; }
+.mar-photo figcaption b { font-size: 14px; font-weight: 400; }
+
 /* Strip of months: the stripe under each month is its days of ventisca, in a snow grey. */
 .mar .orc-month-ice-stripe.is-blizzard,
 .mar .orc-month-legend-ice.is-blizzard {

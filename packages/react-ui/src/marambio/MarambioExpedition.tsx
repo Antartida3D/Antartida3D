@@ -6,12 +6,17 @@ import {
   marambioBlizzard,
   marambioClimate,
   MARAMBIO_OSM_SOURCE_ID,
+  MARAMBIO_PHOTO_ARCHIVE,
+  MARAMBIO_PHOTO_CREDIT,
   MARAMBIO_SOURCES,
   MARAMBIO_SPOTS,
   MARAMBIO_TITLE,
   marambioFacts,
+  marambioPhotos,
   marambioSourcesOf,
   type MarambioFact,
+  type MarambioPhoto,
+  type MarambioPhotoId,
   type MarambioSpotId,
 } from '@antartida/core';
 import { BottomSheet, type OpenSheetSize } from '../BottomSheet.tsx';
@@ -21,6 +26,18 @@ import { MonthStrip, type MonthStripSeason } from '../orcadas/MonthStrip.tsx';
 import { Icon, Quoted } from '../ui.tsx';
 import { MarambioScene } from './MarambioScene.tsx';
 import { IRIZAR_DOT, SPOT_VIEWS } from './spots.ts';
+import herculesRunway from '@antartida/core/assets/marambio/hercules-pista.webp';
+import herculesAnniversary from '@antartida/core/assets/marambio/hercules-aniversario.webp';
+import herculesGroup from '@antartida/core/assets/marambio/hercules-grupo.webp';
+import hangarCargo from '@antartida/core/assets/marambio/hangar-carga.webp';
+import polarDepot from '@antartida/core/assets/marambio/deposito-polar.webp';
+import historicHouse from '@antartida/core/assets/marambio/casa-historica.webp';
+import fieldHelicopter from '@antartida/core/assets/marambio/helicoptero-campamento.webp';
+
+const PHOTO_URL: Readonly<Record<MarambioPhotoId, string>> = {
+  'hercules-runway': herculesRunway, 'hercules-anniversary': herculesAnniversary, 'hercules-group': herculesGroup,
+  'hangar-cargo': hangarCargo, 'polar-depot': polarDepot, 'historic-house': historicHouse, 'field-helicopter': fieldHelicopter,
+};
 
 const sourceAnchor = (id: string) => `mar-source-${id}`;
 
@@ -123,6 +140,48 @@ function SceneBadge({ onOpenSource }: { onOpenSource: (id: string) => void }) {
   );
 }
 
+/** A photograph of the archive, full size with its caption and credit. Escape or «Cerrar» close it. */
+function PhotoDialog({ photo, onClose }: { photo: MarambioPhoto; onClose: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  // Focus goes to the close button, and back to the photo card when it closes.
+  useFocusReturn(true, ref, '.iconbtn');
+  return (
+    <div className="mar-trip-scrim" onClick={onClose}>
+      <div
+        ref={ref}
+        className="mar-photo"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="mar-photo-title"
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') {
+            e.stopPropagation();
+            onClose();
+          }
+          // The close button is the only stop: Tab stays on it.
+          if (e.key === 'Tab') e.preventDefault();
+        }}
+      >
+        <div className="mar-photo-head">
+          <h2 id="mar-photo-title">Archivo fotográfico</h2>
+          <button type="button" className="iconbtn" aria-label="Cerrar" onClick={onClose}>
+            {Icon.close}
+          </button>
+        </div>
+        <figure>
+          <img src={PHOTO_URL[photo.id]} alt={photo.alt} />
+          <figcaption>
+            <b>{photo.caption}</b>
+            <span>{photo.date ? `Fecha de la cámara: ${photo.date}` : 'Sin fecha ni lugar registrados'}</span>
+            <span>{MARAMBIO_PHOTO_CREDIT}</span>
+          </figcaption>
+        </figure>
+      </div>
+    </div>
+  );
+}
+
 /**
  * Base Marambio: a diorama of the base to walk round, one point of interest at a time. First
  * delivery of the expedition (#74): no chapters yet, the visit ends at the last point.
@@ -190,6 +249,7 @@ export function MarambioExpedition({
   onTravelToOrcadas: (done: boolean) => void;
 }) {
   const [trip, setTrip] = useState(false);
+  const [photo, setPhoto] = useState<MarambioPhoto | null>(null);
   // The month the visit starts in is today's: the blizzard of the season the visitor is in.
   const [month, setMonth] = useState(() => new Date().getMonth() + 1);
   const reachedEnd = useRef(false);
@@ -214,6 +274,7 @@ export function MarambioExpedition({
   const last = index === MARAMBIO_SPOTS.length - 1;
   if (last) reachedEnd.current = true;
   const facts = marambioFacts(spot.id);
+  const photos = marambioPhotos(spot.id);
 
   // After a change of point or of view, the heading takes the focus so a screen reader reads on from it.
   useEffect(() => {
@@ -277,6 +338,12 @@ export function MarambioExpedition({
                 </a>
               </li>
             ))}
+            <li className="mar-source">
+              <strong>{MARAMBIO_PHOTO_ARCHIVE.label}</strong>
+              <span>{MARAMBIO_PHOTO_ARCHIVE.org}</span>
+              <span>{MARAMBIO_PHOTO_ARCHIVE.detail}</span>
+              <span>Consultado el {MARAMBIO_PHOTO_ARCHIVE.consulted} · archivo familiar, sin enlace público</span>
+            </li>
           </ul>
         ) : (
           <div className="orc-chapter-content">
@@ -287,6 +354,28 @@ export function MarambioExpedition({
                 <FactCard key={fact.id} fact={fact} onOpenSource={openSources} />
               ))}
             </div>
+            {photos.length > 0 && (
+              <div className="mar-archive-list" role="group" aria-label="Archivo fotográfico">
+                {photos.map((p, i) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    className="mar-archive"
+                    style={{ '--tilt': `${i % 2 ? 2.5 : -3}deg` } as CSSProperties}
+                    aria-haspopup="dialog"
+                    aria-label={`Abrir fotografía: ${p.caption}`}
+                    onClick={() => setPhoto(p)}
+                  >
+                    <img src={PHOTO_URL[p.id]} alt="" loading="lazy" />
+                    <span>
+                      <small>Archivo fotográfico{p.date ? ` · ${p.date.split(' de ').pop()}` : ''}</small>
+                      <b>{p.caption}</b>
+                      <span>Ver fotografía ↗</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -395,6 +484,7 @@ export function MarambioExpedition({
         </BottomSheet>
       )}
 
+      {photo && <PhotoDialog photo={photo} onClose={() => setPhoto(null)} />}
       {trip && <TripDialog onClose={() => setTrip(false)} onTravel={() => onTravelToOrcadas(reachedEnd.current)} />}
     </section>
   );

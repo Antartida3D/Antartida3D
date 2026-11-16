@@ -16,6 +16,7 @@ import { KindChip } from '../orcadas/KindChip.tsx';
 import { OrcadasIntro } from '../orcadas/OrcadasIntro.tsx';
 import { ViewToggle } from './ViewToggle.tsx';
 import { Map2DLayer, type LayerProps } from './Map2DLayer.tsx';
+import { ctrlZoomWheelDelta, dispatchWheelAtCenter } from '../keyboardWheel.ts';
 
 const VoyagePanel = lazy(() => import('../voyage/VoyagePanel.tsx').then((m) => ({ default: m.VoyagePanel })));
 
@@ -379,6 +380,13 @@ export function MapView({
 
   const onKey = (e: KeyboardEvent) => {
     if (e.target !== vpRef.current) return;
+    const deltaY = ctrlZoomWheelDelta(e.nativeEvent);
+    if (deltaY !== null) {
+      e.preventDefault();
+      dispatchWheelAtCenter(vpRef.current, deltaY);
+      return;
+    }
+    if (e.metaKey || e.altKey || e.ctrlKey) return;
     if (is3D) {
       const cmd = keyCommand3D(e.key);
       if (cmd) {

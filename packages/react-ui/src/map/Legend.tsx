@@ -22,7 +22,7 @@ export function Legend({ open, onToggle, mode = '2d' }: { open: boolean; onToggl
     let dragged = false;
     let closes = false;
     const scrolledTop = (target: EventTarget | null) => {
-      let top = 0;
+      let top = el.scrollTop;
       for (let n = target as Element | null; n && n !== el; n = n.parentElement) top += n.scrollTop;
       return top;
     };
@@ -71,6 +71,7 @@ export function Legend({ open, onToggle, mode = '2d' }: { open: boolean; onToggl
     <div
       className={'legend' + (offset ? ' swiping' : '')}
       ref={ref}
+      tabIndex={mode === '3d' ? 0 : undefined}
       style={offset ? { transform: `translate3d(${offset.x}px, ${offset.y}px, 0)` } : undefined}
     >
       <button type="button" className="lt" onClick={onToggle} aria-expanded={open}>

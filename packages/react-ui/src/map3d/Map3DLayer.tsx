@@ -248,6 +248,7 @@ function ControlsBridge({
     smoothTime: 0.25,
     boundary,
     invalidate,
+    normalizeCtrlWheel: true,
   });
 
   useLayoutEffect(() => {

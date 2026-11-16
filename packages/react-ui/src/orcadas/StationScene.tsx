@@ -55,6 +55,7 @@ import {
 } from '@antartida/core';
 import { InkEffect } from '../map3d/InkEffect.ts';
 import { useMapGestures } from '../map3d/useMapGestures.ts';
+import { ctrlZoomWheelDelta, dispatchWheelAtCenter, isFormControlTarget } from '../keyboardWheel.ts';
 import {
   ICEBERG_DRAFT,
   ICEBERG_PEAKS_POLY,
@@ -1822,6 +1823,7 @@ function StationCameraAndProjection({
   const controlsRef = useRef<CameraControls>(null);
   const camera = useThree((s) => s.camera);
   const size = useThree((s) => s.size);
+  const gl = useThree((s) => s.gl);
   const invalidate = useThree((s) => s.invalidate);
   const readyFiredRef = useRef(false);
   const initializedRef = useRef(false);
@@ -1868,6 +1870,7 @@ function StationCameraAndProjection({
     smoothTime: 0.32,
     boundary,
     invalidate,
+    normalizeCtrlWheel: true,
   });
 
   useLayoutEffect(() => {
@@ -2023,6 +2026,23 @@ function StationCameraAndProjection({
   // Keyboard orbit (Arrow keys) and zoom (+ / -)
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
+      const deltaY = ctrlZoomWheelDelta(e);
+      if (deltaY !== null) {
+        if (isFormControlTarget(e.target)) return;
+        e.preventDefault();
+        userControlledRef.current = true;
+        if (returningRef.current.active) {
+          returningRef.current.active = false;
+          if (!arrivalSettledRef.current) {
+            arrivalSettledRef.current = true;
+            onCameraSettled?.();
+          }
+        }
+        dispatchWheelAtCenter(gl.domElement, deltaY);
+        invalidate();
+        return;
+      }
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
       const target = e.target as HTMLElement | null;
       if (
         target &&
@@ -2065,7 +2085,7 @@ function StationCameraAndProjection({
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [reduced, invalidate, onCameraSettled]);
+  }, [reduced, gl, invalidate, onCameraSettled]);
 
   // The phone's chapter panel changes height without the camera moving: place the dots again.
   useEffect(() => {

@@ -4,8 +4,8 @@
   position: absolute;
   inset: 0 0 auto 0;
   width: 100%;
-  /* The shared .app has min-height: 600px; on a landscape phone the expedition must still fit
-     the screen, or the bottom of the scene and its hotspots fall below it. */
+  /* The expedition fills the available viewport; on a landscape phone its scene and hotspots
+     must remain inside the screen. */
   height: min(100%, 100dvh);
   overflow: hidden;
   background: var(--paper);

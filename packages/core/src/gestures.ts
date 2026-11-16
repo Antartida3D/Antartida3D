@@ -66,6 +66,77 @@ export function moveTwoFingers(state: TwoFingerState, a: Point, b: Point): TwoFi
   return { state: next, zoom: distance(now) / Math.max(distance(from), 1), turn: turnBetween(angle(from), angle(now)), tilt: 0 };
 }
 
+/**
+ * One finger zooms like in a phone map app (#165). Tapping twice zooms in one step around the
+ * tapped point. Tapping twice and keeping the second touch down, then dragging up zooms in and
+ * dragging down zooms out, for as long as the finger moves; letting go without moving is a plain
+ * double tap. The pan of one finger stays for any other touch.
+ */
+export interface TimedPoint {
+  x: number;
+  y: number;
+  /** Ms, from the event's timeStamp. */
+  t: number;
+}
+
+export interface OneFingerZoomState {
+  /** The finger that is down: where and when it landed, whether it is the second tap of a double tap, and whether it moved past a tap. */
+  down: (TimedPoint & { second: boolean; moved: boolean }) | null;
+  /** The last tap that lifted, waiting for a second one. */
+  lastTap: TimedPoint | null;
+}
+
+/** Ms from the first tap lifting to the second one landing. */
+export const DOUBLE_TAP_MS = 300;
+/** Px between the two taps of a double tap. */
+export const DOUBLE_TAP_PX = 50;
+/** A finger that moves less than this is still tapping. */
+export const TAP_MOVE_PX = 10;
+/** The first tap lifts within this many ms; a longer press is not the start of a double tap. */
+export const TAP_MAX_MS = 300;
+/** Factor a double tap zooms in by. */
+export const DOUBLE_TAP_ZOOM = 2;
+/** Dragging the second touch this many px up doubles the zoom; as many down halves it. */
+export const TAP_DRAG_DOUBLING_PX = 150;
+
+export const ONE_FINGER_IDLE: OneFingerZoomState = { down: null, lastTap: null };
+
+/** A lone finger lands. `down.second` says it is the second tap: from now on it zooms, it does not pan. */
+export function oneFingerDown(state: OneFingerZoomState, p: TimedPoint): OneFingerZoomState {
+  const last = state.lastTap;
+  const second =
+    last !== null && p.t - last.t <= DOUBLE_TAP_MS && Math.hypot(p.x - last.x, p.y - last.y) <= DOUBLE_TAP_PX;
+  return { down: { ...p, second, moved: false }, lastTap: null };
+}
+
+/**
+ * The finger moved. `zoom` is the factor to multiply the scale of the view by since the second
+ * touch landed (over 1 zooms in); it stays 1 until the finger moves past a tap, and for any
+ * touch that is not a second tap.
+ */
+export function oneFingerMove(state: OneFingerZoomState, p: { x: number; y: number }): { state: OneFingerZoomState; zoom: number } {
+  const d = state.down;
+  if (!d) return { state, zoom: 1 };
+  const moved = d.moved || Math.hypot(p.x - d.x, p.y - d.y) >= TAP_MOVE_PX;
+  const next = moved === d.moved ? state : { ...state, down: { ...d, moved } };
+  return { state: next, zoom: d.second && moved ? tapDragZoom(p.y - d.y) : 1 };
+}
+
+/** Zoom factor for the second touch dragged `dy` px down the screen: up zooms in, down zooms out. */
+export function tapDragZoom(dy: number): number {
+  return 2 ** (-dy / TAP_DRAG_DOUBLING_PX);
+}
+
+/** The finger lifts. `doubleTap` is true when it ended a double tap without dragging: zoom in one step around `down`. */
+export function oneFingerUp(state: OneFingerZoomState, p: TimedPoint): { state: OneFingerZoomState; doubleTap: boolean } {
+  const d = state.down;
+  if (!d) return { state: ONE_FINGER_IDLE, doubleTap: false };
+  const moved = d.moved || Math.hypot(p.x - d.x, p.y - d.y) >= TAP_MOVE_PX;
+  if (d.second) return { state: ONE_FINGER_IDLE, doubleTap: !moved };
+  const tap = !moved && p.t - d.t <= TAP_MAX_MS;
+  return { state: { down: null, lastTap: tap ? { x: d.x, y: d.y, t: p.t } : null }, doubleTap: false };
+}
+
 /** Px a sheet is dragged by its handle before it snaps to the other size. */
 export const SHEET_SNAP_PX = 40;
 /** A press that moves less than this is a tap, not a drag. */

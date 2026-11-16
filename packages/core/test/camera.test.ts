@@ -29,6 +29,9 @@ import {
   EXPEDITION_POINT,
   ORCADAS_POINT,
   homeDistance3D,
+  voyageMaxDistance3D,
+  VOYAGE_VIEW_SPAN,
+  ICE_MIN_DISTANCE,
   kFromDistance3D,
   distanceFromK3D,
   viewFrom3D,
@@ -69,6 +72,18 @@ describe('camera', () => {
       // farther than the overview on desktop, so the first zoom in moved the camera away.
       expect(distanceFromK3D(aspect, 1.6)).toBeLessThan(home);
       expect(kFromDistance3D(aspect, distanceFromK3D(aspect, 2.5))).toBeCloseTo(2.5, 6);
+    }
+  });
+
+  it('during the trip the camera backs off much less than to the overview, the same ground on any screen (#167)', () => {
+    const half = Math.tan((FOV * Math.PI) / 360);
+    for (const s of [size, { vw: 390, vh: 844 }, { vw: 1920, vh: 1080 }]) {
+      const aspect = s.vw / s.vh;
+      const far = voyageMaxDistance3D(aspect);
+      expect(far).toBeLessThan(homeDistance3D(aspect) / 3);
+      expect(far).toBeGreaterThan(ICE_MIN_DISTANCE * 3);
+      // The shorter side of the screen spans VOYAGE_VIEW_SPAN of ground at the target.
+      expect(2 * far * half * Math.min(1, aspect)).toBeCloseTo(VOYAGE_VIEW_SPAN, 6);
     }
   });
 

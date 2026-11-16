@@ -26,6 +26,8 @@ export interface MapGesturesOptions {
   smoothTime?: number;
   boundary?: Box3;
   invalidate?: () => void;
+  /** Route Ctrl+wheel through the normal camera action instead of CameraControls' zoom action. */
+  normalizeCtrlWheel?: boolean;
 }
 
 /** The point a one-finger zoom goes around is at most this many camera distances from the target. */
@@ -82,6 +84,7 @@ export function useMapGestures(
   options: MapGesturesOptions = {}
 ) {
   const gl = useThree((s) => s.gl);
+  const eventsConnected = useThree((s) => s.events.connected);
   const r3fInvalidate = useThree((s) => s.invalidate);
   const invalidate = options.invalidate ?? r3fInvalidate;
   const {
@@ -93,6 +96,7 @@ export function useMapGestures(
     maxAzimuthAngle,
     smoothTime,
     boundary,
+    normalizeCtrlWheel = false,
   } = options;
 
   useLayoutEffect(() => {
@@ -126,6 +130,40 @@ export function useMapGestures(
     smoothTime,
     boundary,
   ]);
+
+  useEffect(() => {
+    if (!normalizeCtrlWheel) return;
+    const cc = controlsRef.current;
+    if (!cc) return;
+    const el = eventsConnected || gl.domElement;
+    const { ACTION } = CameraControlsImpl;
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey || !cc.enabled || cc.mouseButtons.wheel === ACTION.NONE) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      gl.domElement.dispatchEvent(
+        new WheelEvent(e.type, {
+          bubbles: e.bubbles,
+          cancelable: e.cancelable,
+          clientX: e.clientX,
+          clientY: e.clientY,
+          deltaX: e.deltaX,
+          deltaY: e.deltaY,
+          deltaZ: e.deltaZ,
+          deltaMode: e.deltaMode,
+          screenX: e.screenX,
+          screenY: e.screenY,
+          button: e.button,
+          buttons: e.buttons,
+          altKey: e.altKey,
+          metaKey: e.metaKey,
+          shiftKey: e.shiftKey,
+        })
+      );
+    };
+    el.addEventListener('wheel', onWheel, { capture: true, passive: false });
+    return () => el.removeEventListener('wheel', onWheel, { capture: true });
+  }, [controlsRef, eventsConnected, gl, normalizeCtrlWheel]);
 
   // Two fingers, like in a globe app: pinching zooms, twisting turns the camera and dragging both
   // up or down tilts it. One finger zooms with a double tap, or by dragging the second touch of

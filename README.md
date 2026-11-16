@@ -212,6 +212,8 @@ En cumplimiento con las bases de la hackatón, se declara el uso de herramientas
   > Planificación, implementación, pruebas y verificación con capturas con asistencia de IA, con revisión del equipo. No se agregaron datos ni fuentes.
 - **Tope del zoom en el relieve 3D (#127):**
   > Diagnóstico, mediciones en el navegador, implementación, pruebas y capturas con Claude Code (modelo Claude Opus 5.5), con revisión del equipo. Cada valor del tope lo eligió quien lleva el issue. No se agregaron datos ni fuentes.
+- **Atajos de zoom del navegador y vistas compactas:**
+  > Diagnóstico, implementación y pruebas e2e automatizadas con entrada real en Chrome usando Codex (Luna), revisión de producción con Codex (Astra) sin bloqueos y revisión humana pendiente. En los mapas 2D, 3D y el diorama de Orcadas, Ctrl + y Ctrl - siguen la misma ruta que la rueda normal, centrada en la vista; Ctrl + rueda también sigue la rueda normal y no cambia el zoom óptico de la cámara. Meta, Alt, Ctrl + Meta, Ctrl + Alt y Ctrl 0 pasan al navegador. Los atajos de cámara sin modificadores se conservan. El ajuste de altura compacta no agrega datos ni fuentes.
 - **Zoom con un dedo en el celular: doble toque y arrastre del segundo toque (#165):**
   > Implementación, pruebas unitarias y e2e con toques simulados con Claude Code (modelo Claude Opus 5.5), con revisión del equipo. Los umbrales del gesto los propuso el agente y quedan para que los confirme quien lleva el issue ([DEC-165](docs/decisiones/DEC-165-zoom-con-un-dedo.md)). No se agregaron datos ni fuentes.
 - **Botones primarios a la derecha (#177):**

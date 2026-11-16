@@ -14,6 +14,7 @@ Por qué un viaje sobre el mapa y no una escena propia: la historia tiene saltos
 - **Tramos:** 0 trineo por la Península, 1 barco a Belgrano, 2 trineo en Belgrano, 3 barco de regreso, 4 trineo en Esperanza, 5 barco a Ushuaia. Cada parada abre en su tramo y en su lugar (`anchor` y `place`).
 - **Control del ritmo:** mantener «Avanzar» (con tres marchas), retroceder, saltar a la próxima parada. Con la preferencia de movimiento reducido o en el mapa 2D no hay animación: el viaje avanza **de parada en parada**.
 - **Orden:** las paradas siguen el orden del libro; el año no baja.
+- **Volver atrás (#214):** desde cualquier parada se vuelve al mapa con «Volver al mapa» (el avance se guarda y se retoma con «Continuar»). Las paradas ya recorridas se releen sin perder el avance: «‹ Hito N de M ›» en la ficha va al hito anterior y al siguiente hasta el último recorrido; la barra de viaje ofrece «Volver a leer el hito» de la parada donde está el equipo, y el pin de cada parada pasada abre su ficha. No se puede saltear una parada que todavía no se recorrió (DEC-146).
 
 ## 3. Estructura de una ficha
 

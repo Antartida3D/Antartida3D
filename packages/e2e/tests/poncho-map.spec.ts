@@ -43,3 +43,38 @@ test('«Volver al mapa» leaves the diorama for the map and the trip resumes aft
   const controls = page.getByRole('group', { name: 'Controles del viaje' });
   await expect(controls.locator('.vtrip')).toHaveText(`1 de ${PONCHO_MILESTONES.length} hitos de su historia`);
 });
+
+// #214: in the story one can go back to read a stop that went by, and forward again.
+test('the card of a stop goes back to the one before and forward again, and the bar offers the stop to read it again', async ({ page }) => {
+  const [first, second] = PONCHO_MILESTONES;
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Poncho/ }).click();
+  await page.getByRole('button', { name: 'Comenzar' }).click();
+
+  const diorama = page.locator('.pdio');
+  const leave = async () => {
+    // The sentences go one by one (until #211 changes it), then the main button leaves.
+    const nextSentence = diorama.getByRole('button', { name: 'Siguiente' });
+    while (await nextSentence.isVisible()) await nextSentence.click();
+    await diorama.getByRole('button', { name: /^Seguir con Poncho$/ }).click();
+    await expect(diorama).toHaveCount(0);
+  };
+  await expect(diorama.getByRole('heading', { name: first.title })).toBeVisible();
+  // The first stop has nothing before it, and nothing after it yet.
+  await expect(diorama.getByRole('button', { name: /^Hito anterior/ })).toHaveCount(0);
+  await expect(diorama.getByRole('button', { name: /^Hito siguiente/ })).toHaveCount(0);
+  await leave();
+
+  // The bar offers the stop the team is at, to read it again.
+  const controls = page.getByRole('group', { name: 'Controles del viaje' });
+  await expect(controls.getByRole('button', { name: `Volver a leer el hito: ${first.title}` })).toBeVisible();
+  await controls.getByRole('button', { name: 'Próximo hito', exact: true }).click();
+
+  await expect(diorama.getByRole('heading', { name: second.title })).toBeVisible();
+  await expect(diorama.getByRole('button', { name: /^Hito siguiente/ })).toHaveCount(0);
+  await diorama.getByRole('button', { name: `Hito anterior: ${first.title}` }).click();
+  await expect(diorama.getByRole('heading', { name: first.title })).toBeVisible();
+  await diorama.getByRole('button', { name: `Hito siguiente: ${second.title}` }).click();
+  await expect(diorama.getByRole('heading', { name: second.title })).toBeVisible();
+});

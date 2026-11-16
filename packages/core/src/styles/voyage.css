@@ -153,3 +153,10 @@
 .vphoto img{display:block;width:100%;height:auto;max-height:240px;object-fit:cover;border:2px solid var(--ink);border-radius:var(--chart-radius);background:var(--glacier)}
 .vphoto figcaption{margin-top:4px;font-size:12px;line-height:1.3;color:var(--pencil)}
 .vphoto a{color:var(--deep)}
+
+/* «‹ Hito N de M ›»: in a story, go back to a stop already read and forward again. */
+.vstepbar{display:flex;align-items:center;gap:6px}
+.vstepbar .vstep{display:inline}
+.vstepgo{min-width:32px;min-height:32px;padding:0;display:inline-flex;align-items:center;justify-content:center}
+.vstepgo .ico{width:16px;height:16px}
+.vstepnext .ico{transform:rotate(180deg)}

@@ -19,6 +19,8 @@ import {
   VOYAGE_SOURCE_CODES,
   VOYAGE_TOURISM_NOTE,
   VOYAGE_TRANSFER,
+  nextVoyageCard,
+  previousVoyageCard,
   storyInOrder,
   voyageArrived,
   voyageProgress,
@@ -35,7 +37,7 @@ import ponchoPageUrl from '@antartida/core/assets/poncho/poncho-pagina.jpg';
 import sledTeamUrl from '@antartida/core/assets/poncho/perros-trineo.jpg';
 import { BottomSheet } from '../BottomSheet.tsx';
 import { useFocusReturn, useMediaQuery } from '../hooks.ts';
-import { Quoted } from '../ui.tsx';
+import { Icon, Quoted } from '../ui.tsx';
 import { Fact, TripContext, type OpenSources } from './Fact.tsx';
 import { PonchoDiorama, type DioramaTour } from './PonchoDiorama.tsx';
 import { PonchoIntro } from './PonchoIntro.tsx';
@@ -273,11 +275,26 @@ function MilestoneCard({ voyage, animated, onExit, onSource, tour }: {
   const next = () => (beforeHop ? voyage.startTransfer() : last ? onExit(true) : voyage.closeCard());
   // The trip of Poncho is told in order, in acts: the first stop of each one shows its title above its own.
   const story = storyInOrder(state.kind);
+  // In a story the user can go back to read a stop passed, and forward again up to the last passed.
+  const prevCard = previousVoyageCard(state);
+  const nextCard = nextVoyageCard(state);
   const photo = story ? ponchoPhotoAt(milestone.id) : undefined;
   const act = story ? ponchoActOpeningAt(milestone.id) : undefined;
   const body = (
     <>
-      <small className="vstep">Hito {state.card + 1} de {stops.length}</small>
+      <div className="vstepbar">
+        {story && prevCard !== null && (
+          <button type="button" className="btn ghost vstepgo" onClick={() => voyage.openMilestone(prevCard)} aria-label={`Hito anterior: ${stops[prevCard].milestone.title}`}>
+            {Icon.back}
+          </button>
+        )}
+        <small className="vstep">Hito {state.card + 1} de {stops.length}</small>
+        {story && nextCard !== null && (
+          <button type="button" className="btn ghost vstepgo vstepnext" onClick={() => voyage.openMilestone(nextCard)} aria-label={`Hito siguiente: ${stops[nextCard].milestone.title}`}>
+            {Icon.back}
+          </button>
+        )}
+      </div>
       {act && <small className="vact">Acto {act.number} · {act.act.title}</small>}
       <h2 id="voyage-title" tabIndex={tour ? -1 : undefined}>{milestone.title}</h2>
       {photo && (!tour || tour.view.step >= photo.fromStep) && (
@@ -501,10 +518,10 @@ function TravelBar({ voyage, animated, onExit, onSource }: { voyage: VoyageContr
   }, [bus, animated]);
 
   const next = voyageStops(state.kind)[state.reached].milestone;
-  // The trip of Poncho opens every milestone by itself: there is none to offer.
-  const stop = here >= 0 && !storyInOrder(state.kind) ? voyageStops(state.kind)[here].milestone : null;
+  // The trip of Poncho opens every milestone by itself, and the one the team is at stays here to be read again.
+  const stop = here >= 0 ? voyageStops(state.kind)[here].milestone : null;
   const question = stop ? expeditionAt(stop.id, state.transport).question : null;
-  const read = stop ? voyage.opened.includes(stop.id) : false;
+  const read = stop ? voyage.opened.includes(stop.id) || storyInOrder(state.kind) : false;
   /** Handlers of a press-and-hold button that moves the trip forward or back. */
   const holdProps = (back: boolean) => {
     const press = () => voyage.hold(true, back);

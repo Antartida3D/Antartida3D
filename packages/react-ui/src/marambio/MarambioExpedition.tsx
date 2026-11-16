@@ -177,10 +177,14 @@ function TripDialog({ onTravel, onClose }: { onTravel: () => void; onClose: () =
 
 export function MarambioExpedition({
   reduced,
+  resume,
+  onProgress,
   onLeave,
   onTravelToOrcadas,
 }: {
   reduced: boolean;
+  resume?: { step: number; sub?: number };
+  onProgress?: (step: number, sub?: number) => void;
   onLeave: (done: boolean) => void;
   /** Leaves Marambio on the Irízar towards Orcadas. `done`: the visit reached its last point. */
   onTravelToOrcadas: (done: boolean) => void;
@@ -190,7 +194,14 @@ export function MarambioExpedition({
   const [month, setMonth] = useState(() => new Date().getMonth() + 1);
   const reachedEnd = useRef(false);
   const isDesktop = useIsDesktop(900);
-  const [index, setIndex] = useState(0);
+  const [index, setIndex] = useState(() =>
+    Math.max(0, Math.min(MARAMBIO_SPOTS.length - 1, Math.trunc(resume?.step ?? 0)))
+  );
+  const onProgressRef = useRef(onProgress);
+  onProgressRef.current = onProgress;
+  useEffect(() => {
+    onProgressRef.current?.(index);
+  }, [index]);
   const [showSources, setShowSources] = useState(false);
   const [highlight, setHighlight] = useState<string | null>(null);
   const [sheetSize, setSheetSize] = useState<OpenSheetSize>('small');

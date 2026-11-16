@@ -723,8 +723,13 @@ export const storyInOrder = (kind: TransportKind): boolean => kind === 'dogs';
 /** Index of the arrival, the last stop: the only one whose card opens by itself. */
 const lastStop = (kind: TransportKind) => voyageStops(kind).length - 1;
 
-export function startVoyage(transport: TransportId): VoyageState {
+export function startVoyage(transport: TransportId, atReached?: number): VoyageState {
   const kind = findTransport(transport).kind;
+  if (atReached !== undefined) {
+    const stops = voyageStops(kind);
+    const reached = Math.max(1, Math.min(stops.length - 1, Math.trunc(atReached)));
+    return { transport, kind, t: stops[reached - 1].t, reached, card: -1 };
+  }
   // The departure is passed at once, its card closed: it is offered, not shown (#157). Poncho's story
   // is told in order, so there the first milestone is the departure and its card opens right away.
   return { transport, kind, t: 0, reached: 1, card: storyInOrder(kind) ? 0 : -1 };

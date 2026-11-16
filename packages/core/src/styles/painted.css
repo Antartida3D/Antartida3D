@@ -87,6 +87,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid #1E3E5C;outline-
 
 .top{position:absolute;left:0;right:0;top:0;padding:14px 16px 28px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;background:linear-gradient(var(--paper) 55%,rgba(243,235,221,0));pointer-events:none;z-index:10}
 .top > *{pointer-events:auto}
+.brand{pointer-events:none}
 /* 3D: the sea reaches the screen edges, so the full-width paper bands read as a white fog.
    Controls are already paper cards; only the bare title keeps a soft local watercolor wash. */
 .stage.m3d .top,.stage.m3d .bottom{background:none}
@@ -107,6 +108,9 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid #1E3E5C;outline-
 .btn:hover{background:#fff}
 .btn.primary{background:var(--deep);border-color:var(--deep);color:#F7FAFB}
 .btn.primary:hover{background:#16314A}
+/* Resume an expedition (#186): ocre like the expedition markers, so it stands out from the sea. */
+.btn.resume{background:var(--ocre);color:var(--ink)}
+.btn.resume:hover{background:#E0A93C}
 .btn[disabled]{opacity:.55;cursor:not-allowed;box-shadow:none}
 .btn.ghost{background:transparent;box-shadow:none;border-color:rgba(31,42,54,.5)}
 .zoom{display:flex;flex-direction:column;gap:8px}

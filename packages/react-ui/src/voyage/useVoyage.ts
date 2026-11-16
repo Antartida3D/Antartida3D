@@ -47,7 +47,7 @@ export interface VoyageController {
   /** Updated at milestones and when the user lets go, not on every frame. */
   state: VoyageState | null;
   bus: VoyageBus;
-  start: (transport: TransportId) => void;
+  start: (transport: TransportId, atReached?: number) => void;
   /** Move while true, forward or back along the trip: the user sets the pace. */
   hold: (on: boolean, back?: boolean) => void;
   /** Jump to the next milestone: the step-by-step trip of the 2D map and of reduced motion. */
@@ -244,10 +244,10 @@ export function useVoyage(): VoyageController {
     answer: (id, option) => setAnswers((a) => (id in a ? a : { ...a, [id]: option })),
     transfer,
     startTransfer,
-    start: (transport) => {
+    start: (transport, atReached) => {
       bus.back = false;
       clearSightings();
-      commit(startVoyage(transport));
+      commit(startVoyage(transport, atReached));
     },
     hold: (on, back = false) => {
       const d = drive.current;

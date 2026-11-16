@@ -1,8 +1,8 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import {
-  DOUBLE_TAP_ZOOM, DRAG_THRESHOLD, EXPEDITION_POINT, HOME, KEY_PAN, MIN_K, ONE_FINGER_IDLE, PTS, VOYAGE_POINT, VOYAGE_POINTS, ZOOM_MS,
-  buildMarkers, diveView, markerPress, geometry, isWheelNotch, keyView, oneFingerDown, oneFingerMove, oneFingerUp, panBy, welcomeView, wheelFactor, zoomAround, zoomCenter,
-  type ArrivalId, type MapPoint, type Marker, type OneFingerZoomState, type SeaPoint, type Size, type TransportId, type View, type ClaimsCoverage,
+  DOUBLE_TAP_ZOOM, DRAG_THRESHOLD, EXPEDITION_POINT, HOME, KEY_PAN, MIN_K, ONE_FINGER_IDLE, PONCHO_POINT, PONCHO_TRANSPORT, PTS, TRANSPORTS, VOYAGE_POINT, VOYAGE_POINTS, ZOOM_MS,
+  buildMarkers, diveView, markerPress, geometry, isWheelNotch, keyView, oneFingerDown, oneFingerMove, oneFingerUp, panBy, resumeDetail, welcomeView, wheelFactor, zoomAround, zoomCenter,
+  type ArrivalId, type MapPoint, type Marker, type OneFingerZoomState, type ResumePoint, type SeaPoint, type Size, type TransportId, type View, type ClaimsCoverage,
 } from '@antartida/core';
 import { useBackLayer, usePageSettled, useReducedMotion, useTimers } from '../hooks.ts';
 import { useVoyage, type VoyageBus } from '../voyage/useVoyage.ts';
@@ -61,6 +61,8 @@ export type Layer3DProps = LayerProps & {
 export interface MapViewProps {
   phase: Phase;
   explored: readonly string[];
+  /** Unfinished expedition offered to resume from the map (#186). */
+  resume?: ResumePoint | null;
   /** Chosen Orcadas arrival transport for the 3D travel phase. */
   arrival?: ArrivalId;
   /** The trip from Ushuaia is open: its panel replaces the map's own controls. */
@@ -81,12 +83,15 @@ export interface MapViewProps {
   Layer3D?: (props: Layer3DProps) => React.ReactNode;
   onToggleLegend: () => void;
   onToggleMode?: (next: ViewMode) => void;
-  onStart: (point: MapPoint, arrival?: ArrivalId) => void;
+  onStart: (point: MapPoint, arrival?: ArrivalId, resuming?: boolean) => void;
   onSkipTravel?: () => void;
   /** Transport the trip starts with when it is not picked (Poncho's team); undefined: the traveller picks. */
   voyageTransport?: TransportId;
-  onStartVoyage?: (point: MapPoint) => void;
+  /** Unfinished voyage step to resume directly without the picker (#186). */
+  voyageResume?: ResumePoint | null;
+  onStartVoyage?: (point: MapPoint, resume?: ResumePoint) => void;
   onEndVoyage?: (done: boolean) => void;
+  onVoyageProgress?: (step: number, sub: number) => void;
 }
 
 /** Keyboard navigation of the 3D camera: same keys as 2D, plus Q and E to turn. */
@@ -145,6 +150,7 @@ export function MapView({
   welcome = false,
   onWelcomeShown,
   mode = '2d',
+  resume = null,
   showToggle = false,
   available3D = true,
   Layer3D,
@@ -153,8 +159,10 @@ export function MapView({
   onStart,
   onSkipTravel,
   voyageTransport,
+  voyageResume = null,
   onStartVoyage,
   onEndVoyage,
+  onVoyageProgress,
 }: MapViewProps) {
   const vpRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState<Size>({ vw: 390, vh: 844 });
@@ -183,10 +191,28 @@ export function MapView({
   const later = useTimers();
   const reduced = useReducedMotion();
   const voyage = useVoyage();
+  const resumeTransport = (r: ResumePoint): TransportId | undefined =>
+    r.id === PONCHO_POINT.id ? PONCHO_TRANSPORT.id : TRANSPORTS[r.sub ?? -1]?.id;
 
   useEffect(() => {
-    if (!voyaging) voyage.reset();
-  }, [voyaging]);
+    if (!voyaging) {
+      voyage.reset();
+      return;
+    }
+    if (!voyage.bus.state && voyageResume && voyageResume.step >= 1) {
+      const transport = resumeTransport(voyageResume);
+      if (transport) voyage.start(transport, voyageResume.step);
+    }
+  }, [voyaging, voyageResume]);
+
+  const onVoyageProgressRef = useRef(onVoyageProgress);
+  onVoyageProgressRef.current = onVoyageProgress;
+  useEffect(() => {
+    if (!voyaging || !voyage.state) return;
+    const { transport, reached } = voyage.state;
+    const sub = transport === PONCHO_TRANSPORT.id ? 0 : TRANSPORTS.findIndex((t) => t.id === transport);
+    if (sub >= 0) onVoyageProgressRef.current?.(reached, sub);
+  }, [voyaging, voyage.state]);
 
   const is3D = mode === '3d' && !!Layer3D;
   const [command, setCommand] = useState<Layer3DProps['command']>(null);
@@ -601,6 +627,33 @@ export function MapView({
                 setClaimsStatus('loading');
                 vpRef.current?.focus();
               }} />}
+            {(() => {
+              const resumePoint = resume && phase === 'idle' && !voyaging && !welcome && !welcoming
+                ? PTS.find((p) => p.id === resume.id)
+                : null;
+              const detail = resumePoint && resume ? resumeDetail(resumePoint.id, resume.step, resume.sub) : null;
+              return resumePoint ? (
+                <button
+                  type="button"
+                  className="btn resume"
+                  onClick={() => {
+                    setSheet(null);
+                    setPendingOrcadas(null);
+                    if (VOYAGE_POINTS.some((v) => v.id === resumePoint.id)) {
+                      if (resume && resume.step >= 1) {
+                        const transport = resumeTransport(resume);
+                        if (transport) voyage.start(transport, resume.step);
+                      }
+                      onStartVoyage?.(resumePoint, resume ?? undefined);
+                    } else {
+                      onStart(resumePoint, undefined, true);
+                    }
+                  }}
+                >
+                  Continuar: {resumePoint.title}{detail ? ` · ${detail}` : ''}
+                </button>
+              ) : null;
+            })()}
             <button type="button" className="btn" onClick={() => { setSheet(null); setPendingOrcadas(null); setList(true); }}>
               {Icon.list}
               Ver como lista

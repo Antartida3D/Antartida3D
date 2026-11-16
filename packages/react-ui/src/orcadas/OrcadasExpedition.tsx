@@ -101,10 +101,14 @@ function SceneBadge({ onOpenSource }: { onOpenSource?: (id: string) => void }) {
 export function OrcadasExpedition({
   arrival = 'ship',
   reduced,
+  resume,
+  onProgress,
   onLeave,
 }: {
   arrival?: ArrivalId;
   reduced: boolean;
+  resume?: { step: number; sub?: number };
+  onProgress?: (step: number, sub?: number) => void;
   onLeave: (done: boolean) => void;
 }) {
   const [initDate] = useState(() => {
@@ -123,10 +127,28 @@ export function OrcadasExpedition({
   const [s, dispatch] = useReducer(
     orcadasReducer,
     undefined,
-    () => initialOrcadas(initDate.month, initDate.year)
+    () => {
+      let state = initialOrcadas(initDate.month, initDate.year);
+      if (resume) {
+        const clamped = Math.max(0, Math.min(CHAPTERS.length - 1, Math.trunc(resume.step)));
+        const target = CHAPTERS[clamped];
+        if (target && target !== state.chapter) {
+          state = orcadasReducer(state, { type: 'goto', chapter: target });
+        }
+        if (resume.sub !== undefined && resume.sub > 0) {
+          state = orcadasReducer(state, { type: 'tourGo', index: resume.sub });
+        }
+      }
+      return state;
+    }
   );
 
-  const [focus, setFocus] = useState<HotspotId | null>(() => chapterFocus('arrival', 0));
+  const [focus, setFocus] = useState<HotspotId | null>(() => chapterFocus(s.chapter, s.tourIndex));
+  const onProgressRef = useRef(onProgress);
+  onProgressRef.current = onProgress;
+  useEffect(() => {
+    onProgressRef.current?.(chapterIndex(s.chapter), s.tourIndex);
+  }, [s.chapter, s.tourIndex]);
   const [openSpot, setOpenSpot] = useState<Exclude<HotspotId, 'overview'> | null>(null);
   const [highlightSource, setHighlightSource] = useState<string | null>(null);
   const [sheetSize, setSheetSize] = useState<OpenSheetSize>('small');

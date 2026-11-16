@@ -8,6 +8,9 @@ import {
   loadWelcomeSeen,
   saveWelcomeSeen,
   WELCOME_KEY,
+  LAST_EXPEDITION_KEY,
+  loadLastExpedition,
+  saveLastExpedition,
   ORCADAS_POINT,
 } from '../src/index.ts';
 
@@ -18,6 +21,7 @@ describe('storage', () => {
     (globalThis as { localStorage?: unknown }).localStorage = {
       getItem: (k: string) => mem.get(k) ?? null,
       setItem: (k: string, v: string) => void mem.set(k, v),
+      removeItem: (k: string) => void mem.delete(k),
     };
   });
 
@@ -73,5 +77,56 @@ describe('storage', () => {
     };
     expect(loadWelcomeSeen()).toBe(false);
     expect(() => saveWelcomeSeen()).not.toThrow();
+  });
+
+  it('persists and clears the last opened expedition', () => {
+    expect(loadLastExpedition()).toBeNull();
+    saveLastExpedition({ id: 'marambio', step: 2 });
+    expect(loadLastExpedition()).toEqual({ id: 'marambio', step: 2 });
+    expect(mem.get(LAST_EXPEDITION_KEY)).toBe(JSON.stringify({ id: 'marambio', step: 2 }));
+    saveLastExpedition({ id: 'orcadas', step: 1, sub: 3 });
+    expect(loadLastExpedition()).toEqual({ id: 'orcadas', step: 1, sub: 3 });
+    saveLastExpedition(null);
+    expect(loadLastExpedition()).toBeNull();
+  });
+
+  it('ignores legacy string and corrupt last expedition values', () => {
+    for (const raw of [
+      '',
+      'marambio',
+      'null',
+      '[]',
+      JSON.stringify({ id: '', step: 0 }),
+      JSON.stringify({ id: 'marambio', step: -1 }),
+      JSON.stringify({ id: 'marambio', step: 1.5 }),
+      JSON.stringify({ id: 'marambio', step: 0, sub: -1 }),
+      JSON.stringify({ id: 'marambio', step: 0, sub: 'x' }),
+    ]) {
+      mem.set(LAST_EXPEDITION_KEY, raw);
+      expect(loadLastExpedition()).toBeNull();
+    }
+    (globalThis as { localStorage?: unknown }).localStorage = {
+      getItem: () => 42 as unknown as string,
+      setItem: () => {},
+      removeItem: () => {},
+    };
+    expect(loadLastExpedition()).toBeNull();
+  });
+
+  it('survives throwing storage for last expedition', () => {
+    (globalThis as { localStorage?: unknown }).localStorage = {
+      getItem: () => {
+        throw new Error('blocked');
+      },
+      setItem: () => {
+        throw new Error('blocked');
+      },
+      removeItem: () => {
+        throw new Error('blocked');
+      },
+    };
+    expect(loadLastExpedition()).toBeNull();
+    expect(() => saveLastExpedition({ id: 'marambio', step: 0 })).not.toThrow();
+    expect(() => saveLastExpedition(null)).not.toThrow();
   });
 });

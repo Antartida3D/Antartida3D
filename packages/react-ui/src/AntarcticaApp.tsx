@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import {
   APPROACH_MS,
   DIVE_MS,
@@ -19,11 +19,15 @@ import {
   saveViewMode,
   loadWelcomeSeen,
   saveWelcomeSeen,
+  loadLastExpedition,
+  saveLastExpedition,
+  isValidResume,
   showsWelcome,
   map3dLoadingStore,
   PTS,
   type ArrivalId,
   type MapPoint,
+  type ResumePoint,
 } from '@antartida/core';
 import { useBackLayer, useReducedMotion, useTimers } from './hooks.ts';
 import { LoadingScreen } from './loading/LoadingScreen.tsx';
@@ -91,6 +95,8 @@ export function AntarcticaApp() {
   const [phase, setPhase] = useState<Phase>('idle');
   const [arrival, setArrival] = useState<ArrivalId>('ship');
   const [explored, setExplored] = useState<string[]>([]);
+  const [lastExpedition, setLastExpedition] = useState<ResumePoint | null>(null);
+  const [resuming, setResuming] = useState(false);
   const [voyaging, setVoyaging] = useState(false);
   // The point whose trip is on the map: Ushuaia (the traveller picks a vehicle) or Poncho (one team, no picking).
   const [voyagePoint, setVoyagePoint] = useState<MapPoint>(VOYAGE_POINT);
@@ -111,6 +117,7 @@ export function AntarcticaApp() {
 
   useEffect(() => {
     setExplored(loadExplored());
+    setLastExpedition(loadLastExpedition());
     const webgl = hasWebGL();
     setWebglSupported(webgl);
 
@@ -179,9 +186,15 @@ export function AntarcticaApp() {
   };
 
   /** Opens an expedition: on the 3D map (`can3D`) with its trip or camera approach, else with the dive. */
-  const begin = (point: MapPoint, id: ExpeditionId, chosenArrival: ArrivalId, can3D: boolean) => {
+  const begin = (point: MapPoint, id: ExpeditionId, chosenArrival: ArrivalId, can3D: boolean, isResuming = false) => {
     setToast('');
     setActivePoint(point);
+    setResuming(isResuming);
+    if (!isResuming || lastExpedition?.id !== id) {
+      const fresh: ResumePoint = { id, step: 0 };
+      setLastExpedition(fresh);
+      saveLastExpedition(fresh);
+    }
     void EXPEDITIONS[id]();
     if (id === 'orcadas') {
       setArrival(chosenArrival);
@@ -207,10 +220,10 @@ export function AntarcticaApp() {
     );
   };
 
-  const start = (point: MapPoint, chosenArrival: ArrivalId = 'ship') => {
+  const start = (point: MapPoint, chosenArrival: ArrivalId = 'ship', isResuming = false) => {
     const id = point.id;
     if (phase !== 'idle' || !isExpedition(id)) return;
-    begin(point, id, chosenArrival, !reduced && mode === '3d' && document.querySelector('.stage.m3d canvas') !== null);
+    begin(point, id, chosenArrival, !reduced && mode === '3d' && document.querySelector('.stage.m3d canvas') !== null, isResuming);
   };
 
   /**
@@ -230,25 +243,45 @@ export function AntarcticaApp() {
     begin(ORCADAS_POINT, 'orcadas', 'ship', !reduced && mode === '3d' && webglSupported === true);
   };
 
+  const recordProgress = useCallback((id: string, step: number, sub?: number) => {
+    const next: ResumePoint = sub !== undefined ? { id, step, sub } : { id, step };
+    setLastExpedition((prev) => {
+      if (prev && prev.id === next.id && prev.step === next.step && prev.sub === next.sub) return prev;
+      saveLastExpedition(next);
+      return next;
+    });
+  }, []);
+
   /** Marks an expedition as explored and announces it. */
   const complete = (point: { id: string; title: string }) => {
     const ids = explored.includes(point.id) ? explored : [...explored, point.id];
     setExplored(ids);
     saveExplored(ids);
+    setLastExpedition(null);
+    saveLastExpedition(null);
+    setResuming(false);
     setToast(returnToast(point.title, ids.length, AVAILABLE_COUNT));
     later('toast', () => setToast(''), TOAST_MS);
   };
 
   // The trips happen on the 3D map; without WebGL they advance step by step on the 2D one.
-  const startVoyage = (point: MapPoint) => {
+  const startVoyage = (point: MapPoint, resumePoint?: ResumePoint) => {
     setToast('');
     setVoyagePoint(point);
+    const isResuming = !!resumePoint && resumePoint.id === point.id;
+    setResuming(isResuming);
+    if (!isResuming) {
+      const fresh: ResumePoint = { id: point.id, step: 0 };
+      setLastExpedition(fresh);
+      saveLastExpedition(fresh);
+    }
     if (webglSupported) setMode('3d');
     setVoyaging(true);
   };
 
   const endVoyage = (done: boolean) => {
     setVoyaging(false);
+    setResuming(false);
     if (done) complete(voyagePoint);
   };
 
@@ -256,6 +289,7 @@ export function AntarcticaApp() {
     setScreen('map');
     setPhase('ret');
     setReturned(true);
+    setResuming(false);
     if (done) complete(activePoint);
     else setToast('');
     later('ret', () => setPhase('idle'), RETURN_MS);
@@ -263,6 +297,14 @@ export function AntarcticaApp() {
 
   // Browser «back» inside an expedition returns to the map, like «Volver al mapa» (#185).
   useBackLayer(screen !== 'map', () => leave(false));
+
+  const resume =
+    lastExpedition && isValidResume(lastExpedition) && !explored.includes(lastExpedition.id)
+      ? lastExpedition
+      : null;
+  const activeResume = resuming && lastExpedition?.id === screen ? lastExpedition : undefined;
+  const activeVoyageResume =
+    voyaging && resuming && lastExpedition?.id === voyagePoint.id ? lastExpedition : null;
 
   return (
     <div className="app">
@@ -273,9 +315,11 @@ export function AntarcticaApp() {
             phase={phase}
             arrival={arrival}
             explored={explored}
+            resume={resume}
             voyaging={voyaging}
             // Poncho has one team: his trip starts without a vehicle picker.
             voyageTransport={voyagePoint.id === PONCHO_POINT.id ? 'poncho' : undefined}
+            voyageResume={activeVoyageResume}
             diveTarget={activePoint}
             toast={toast}
             legend={legend}
@@ -293,6 +337,7 @@ export function AntarcticaApp() {
             onSkipTravel={skipTravel}
             onStartVoyage={startVoyage}
             onEndVoyage={endVoyage}
+            onVoyageProgress={(step, sub) => recordProgress(voyagePoint.id, step, sub)}
           />
           {mode === '3d' && !map3dLoaderDismissed && (
             <LoadingScreen
@@ -304,13 +349,37 @@ export function AntarcticaApp() {
       ) : (
         <Suspense fallback={null}>
           {screen === 'marambio' ? (
-            <MarambioExpedition reduced={reduced} onLeave={leave} onTravelToOrcadas={travelFromMarambio} />
+            <MarambioExpedition
+              reduced={reduced}
+              resume={activeResume}
+              onProgress={(step, sub) => recordProgress('marambio', step, sub)}
+              onLeave={leave}
+              onTravelToOrcadas={travelFromMarambio}
+            />
           ) : screen === 'fosiles' ? (
-            <FossilExpedition reduced={reduced} webgl={webglSupported === true} onLeave={leave} />
+            <FossilExpedition
+              reduced={reduced}
+              webgl={webglSupported === true}
+              resume={activeResume}
+              onProgress={(step, sub) => recordProgress('fosiles', step, sub)}
+              onLeave={leave}
+            />
           ) : screen === 'oceano' ? (
-            <MarineExpedition reduced={reduced} webgl={webglSupported === true} onLeave={leave} />
+            <MarineExpedition
+              reduced={reduced}
+              webgl={webglSupported === true}
+              resume={activeResume}
+              onProgress={(step, sub) => recordProgress('oceano', step, sub)}
+              onLeave={leave}
+            />
           ) : (
-            <OrcadasExpedition reduced={reduced} arrival={arrival} onLeave={leave} />
+            <OrcadasExpedition
+              reduced={reduced}
+              arrival={arrival}
+              resume={activeResume}
+              onProgress={(step, sub) => recordProgress('orcadas', step, sub)}
+              onLeave={leave}
+            />
           )}
         </Suspense>
       )}

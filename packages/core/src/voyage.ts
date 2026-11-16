@@ -637,12 +637,19 @@ export function expeditionAt(milestoneId: string, transport: TransportId): { not
   return { notes, question };
 }
 
-/** How many questions of the trip were answered right. `answers` holds the option chosen at each milestone id. */
-export function quizScore(transport: TransportId, answers: Readonly<Record<string, number>>): { right: number; total: number } {
+/**
+ * How many questions of the trip were answered right. `answers` holds the option chosen at each
+ * milestone id. The questions are optional (#157): `answered` says how many were answered at all.
+ */
+export function quizScore(transport: TransportId, answers: Readonly<Record<string, number>>): { right: number; answered: number; total: number } {
   const asked = voyageStops(kindOf(transport))
     .map((stop) => ({ id: stop.milestone.id, question: expeditionAt(stop.milestone.id, transport).question }))
     .filter((q) => q.question);
-  return { right: asked.filter((q) => answers[q.id] === q.question!.answer).length, total: asked.length };
+  return {
+    right: asked.filter((q) => answers[q.id] === q.question!.answer).length,
+    answered: asked.filter((q) => q.id in answers).length,
+    total: asked.length,
+  };
 }
 
 /**
@@ -681,47 +688,90 @@ export interface VoyageState {
   kind: TransportKind;
   /** Fraction of the trip travelled. */
   t: number;
-  /** Stops already opened (index into voyageStops). */
+  /** Stops already passed (index into voyageStops). The departure is passed from the start. */
   reached: number;
   /** Index of the stop whose card is open, or -1. The trip does not advance while a card is open. */
   card: number;
 }
 
+/** The trip of Poncho is a story told in order: every milestone stops the trip and opens its card (the others are optional, #157). */
+export const storyInOrder = (kind: TransportKind): boolean => kind === 'dogs';
+
+/** Index of the arrival, the last stop: the only one whose card opens by itself. */
+const lastStop = (kind: TransportKind) => voyageStops(kind).length - 1;
+
 export function startVoyage(transport: TransportId): VoyageState {
   const kind = findTransport(transport).kind;
-  // The first milestone is the departure: its card opens right away.
-  return { transport, kind, t: 0, reached: 1, card: 0 };
+  // The departure is passed at once, its card closed: it is offered, not shown (#157). Poncho's story
+  // is told in order, so there the first milestone is the departure and its card opens right away.
+  return { transport, kind, t: 0, reached: 1, card: storyInOrder(kind) ? 0 : -1 };
 }
 
 export const voyageArrived = (s: VoyageState) => s.reached >= voyageStops(s.kind).length;
 
 /**
- * Advances the trip by `seconds` of the user holding "advance". Stops exactly at the next
- * milestone and opens its card, so the user sets the pace and never skips one.
+ * Advances the trip by `seconds` of the user holding "advance". The milestones on the way are
+ * passed without stopping: their cards are offered, not opened (#157), for whoever does not want
+ * to read them all. Only the arrival stops the trip and opens its card. With `toNext` it stops at
+ * the next milestone, without opening it: the "next milestone" button.
  */
-export function advanceVoyage(s: VoyageState, seconds: number): VoyageState {
+export function advanceVoyage(s: VoyageState, seconds: number, toNext = false): VoyageState {
   if (s.card >= 0 || voyageArrived(s) || seconds <= 0) return s;
-  const next = voyageStops(s.kind)[s.reached];
+  const stops = voyageStops(s.kind);
+  const last = lastStop(s.kind);
   const t = s.t + seconds / VOYAGE_SECONDS[s.kind];
-  if (t < next.t) return { ...s, t };
-  return { ...s, t: next.t, reached: s.reached + 1, card: s.reached };
+  if (storyInOrder(s.kind)) {
+    // Stops exactly at the next milestone and opens its card: the user sets the pace and never skips one.
+    const next = stops[s.reached];
+    return t < next.t ? { ...s, t } : { ...s, t: next.t, reached: s.reached + 1, card: s.reached };
+  }
+  let reached = s.reached;
+  while (reached < stops.length && t >= stops[reached].t) {
+    if (reached === last) return { ...s, t: stops[last].t, reached: last + 1, card: last };
+    if (toNext) return { ...s, t: stops[reached].t, reached: reached + 1 };
+    reached++;
+  }
+  return { ...s, t, reached };
 }
 
 /**
  * Goes back along the trip by `seconds` of the user holding "go back", to look again at something
- * missed. Milestones already opened stay opened: going forward again does not repeat their cards.
+ * missed. Milestones already passed stay passed.
  */
 export function retreatVoyage(s: VoyageState, seconds: number): VoyageState {
   if (s.card >= 0 || s.t <= 0 || seconds <= 0) return s;
   return { ...s, t: Math.max(0, s.t - seconds / VOYAGE_SECONDS[s.kind]) };
 }
 
-/** Jumps to the next milestone: the step-by-step trip for reduced motion and the 2D map. */
+/** Jumps to the next milestone without opening it, except the arrival: the step-by-step trip for reduced motion and the 2D map. */
 export function skipToNextStop(s: VoyageState): VoyageState {
   if (s.card >= 0 || voyageArrived(s)) return s;
-  return { ...s, t: voyageStops(s.kind)[s.reached].t, reached: s.reached + 1, card: s.reached };
+  const arriving = storyInOrder(s.kind) || s.reached === lastStop(s.kind);
+  return { ...s, t: voyageStops(s.kind)[s.reached].t, reached: s.reached + 1, card: arriving ? s.reached : -1 };
 }
 
+/**
+ * The milestone the vehicle is at or last went by, offered to be read: the last passed stop not
+ * ahead of the vehicle (it may have gone back). -1 once arrived: the arrival card is open.
+ */
+export function voyageStopAt(s: VoyageState): number {
+  if (voyageArrived(s)) return -1;
+  const stops = voyageStops(s.kind);
+  let at = 0;
+  for (let i = 1; i < s.reached; i++) if (stops[i].t <= s.t + 1e-9) at = i;
+  return at;
+}
+
+/** Opens the card of a milestone already passed, when the user asks for it. */
+export function openVoyageCard(s: VoyageState, index: number): VoyageState {
+  if (index < 0 || index >= s.reached || index === s.card) return s;
+  return { ...s, card: index };
+}
+
+/** Closes the open card. Once arrived, closing another card goes back to the one of the arrival. */
 export function closeVoyageCard(s: VoyageState): VoyageState {
-  return s.card < 0 ? s : { ...s, card: -1 };
+  if (s.card < 0) return s;
+  const last = lastStop(s.kind);
+  if (voyageArrived(s)) return s.card === last ? { ...s, card: -1 } : { ...s, card: last };
+  return { ...s, card: -1 };
 }

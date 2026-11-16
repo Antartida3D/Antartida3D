@@ -155,20 +155,20 @@ describe('sea (fauna, icebergs, and ARA Almirante Irizar)', () => {
     }
   });
 
-  it('places all desktop (16) and mobile (8) instances in water (depthAt < -20)', () => {
+  it('places all desktop (14) and mobile (8) instances in water (depthAt < -20)', () => {
     const desktop = generateSeaLifeInstances({ seed: 202611, mobile: false });
     const mobile = generateSeaLifeInstances({ seed: 202611, mobile: true });
 
-    expect(desktop).toHaveLength(16);
+    expect(desktop).toHaveLength(14);
     expect(mobile).toHaveLength(8);
 
-    // Verify species breakdown on desktop: 1 Irizar (+wake), 3 humpbacks, 3 orcas, 1 minke, 2 penguins, 1 seal, 4 icebergs
+    // Verify species breakdown on desktop: 1 Irizar (+wake), 3 humpbacks, 2 orcas, 1 minke, 1 penguins, 1 seal, 4 icebergs
     expect(desktop.filter((i) => i.species === 'irizar')).toHaveLength(1);
     expect(desktop.filter((i) => i.species === 'irizar-wake')).toHaveLength(1);
     expect(desktop.filter((i) => i.species === 'humpback')).toHaveLength(3);
-    expect(desktop.filter((i) => i.species === 'orca')).toHaveLength(3);
+    expect(desktop.filter((i) => i.species === 'orca')).toHaveLength(2);
     expect(desktop.filter((i) => i.species === 'minke')).toHaveLength(1);
-    expect(desktop.filter((i) => i.species === 'penguins')).toHaveLength(2);
+    expect(desktop.filter((i) => i.species === 'penguins')).toHaveLength(1);
     expect(desktop.filter((i) => i.species === 'seal')).toHaveLength(1);
     expect(desktop.filter((i) => i.species === 'iceberg')).toHaveLength(4);
 

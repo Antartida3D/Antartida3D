@@ -2,12 +2,14 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   MALVINAS_FLAG, fuegiaGroundHeight, loadFuegiaMesh, toWorld,
 } from '@antartida/core';
-import { buildBoxGeometry, vehicleMaterial } from '../voyage/vehicles.ts';
+import { boxShade, buildPolyGeometry } from '../voyage/lowPoly.ts';
+import { vehicleMaterial } from '../voyage/vehicles.ts';
+import { boxesToFlagPoly } from './claimFlagPoly.ts';
 import { MALVINAS_FLAG_BOXES } from './malvinasFlagModel.ts';
 
 /** Rigid illustrative flag with a fixed world size, including when the camera approaches it. */
 export function MalvinasFlag({ wide }: { wide: boolean }) {
-  const geometry = useMemo(() => buildBoxGeometry(MALVINAS_FLAG_BOXES), []);
+  const geometry = useMemo(() => buildPolyGeometry(boxesToFlagPoly(MALVINAS_FLAG_BOXES), boxShade), []);
   const [ground, setGround] = useState<number | null>(null);
   useEffect(() => () => geometry.dispose(), [geometry]);
   useEffect(() => {

@@ -36,7 +36,8 @@ const pinOf = (page: Page, n: number) =>
     const pins: { x: number; z: number }[] = [];
     (window as any).__scene.traverse((o: any) => {
       const order = o.children.map((c: any) => c.renderOrder).join();
-      if (o.type === 'Group' && order === '1001,1000,1002') pins.push({ x: o.position.x, z: o.position.z });
+      // A pin passed also holds the button that opens it.
+      if (o.type === 'Group' && order.startsWith('1001,1000,1002')) pins.push({ x: o.position.x, z: o.position.z });
     });
     return pins[n - 2];
   }, n);
@@ -54,10 +55,11 @@ for (const [name, kind, start] of [['Hércules C-130', 'plane', 'Despegar'], ['A
     await page.getByRole('group', { name: 'Medio de transporte' }).getByRole('button', { name: new RegExp(name) }).click();
     await page.getByRole('button', { name: start }).click();
 
-    // The first milestone opens at the departure. Then up to the Drake Passage; the ship goes by
-    // Cabo de Hornos, a place off its path, on the way.
+    // Up to the Drake Passage, opening each milestone from the bar: the trip does not open them (#157).
+    // The ship goes by Cabo de Hornos, a place off its path, on the way.
     for (let n = 1; ; n++) {
       if (n > 1) await page.getByRole('button', { name: 'Próximo hito' }).click();
+      await page.getByRole('group', { name: 'Hito por el que pasás' }).getByRole('button', { name: /^Leer el hito: / }).click();
       await expect(page.locator('.vstep')).toHaveText(new RegExp(`^Hito ${n} de`));
       if (n > 1) {
         const want = (await pinOf(page, n))!;
@@ -70,7 +72,7 @@ for (const [name, kind, start] of [['Hércules C-130', 'plane', 'Despegar'], ['A
           .toBeLessThan(0.5);
       }
       if (await page.getByRole('heading', { level: 2, name: 'Pasaje de Drake' }).isVisible()) break;
-      await page.getByRole('button', { name: 'Continuar' }).click();
+      await page.getByRole('button', { name: 'Seguir viaje' }).click();
     }
 
     // With the camera there, the canvas rests: following a vehicle that stands still draws no frames,

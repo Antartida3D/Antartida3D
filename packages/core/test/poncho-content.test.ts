@@ -41,7 +41,7 @@ describe('content of the expedition of Poncho', () => {
   // The trip of Poncho has no questions or «así funciona» notes (issue #140): its closing card shows no score.
   it('asks no questions and has no notes: nothing to score', () => {
     for (const m of PONCHO_MILESTONES) expect(expeditionAt(m.id, 'poncho'), m.id).toEqual({ notes: [], question: null });
-    expect(quizScore('poncho', {})).toEqual({ right: 0, total: 0 });
+    expect(quizScore('poncho', {})).toEqual({ right: 0, answered: 0, total: 0 });
   });
 
   it('names no person: the book leaves them out on purpose', () => {
@@ -232,5 +232,23 @@ describe('citationLabel', () => {
   it('falls back to the number when the source has no short name, and shows only the number without a page', () => {
     expect(citationLabel('P2', 33, 3)).toBe('33 · p. 3');
     expect(citationLabel('P1', 32)).toBe('32');
+  });
+});
+
+describe('the trip of Poncho is told in order, the others are optional (#157)', () => {
+  it('opens the departure at once and stops at every milestone, while the trips from Ushuaia pass them by', async () => {
+    const { advanceVoyage, startVoyage, storyInOrder, voyageStops } = await import('../src/index.ts');
+    expect(storyInOrder('dogs')).toBe(true);
+    expect(storyInOrder('ship')).toBe(false);
+    const poncho = startVoyage('poncho');
+    expect(poncho.card).toBe(0);
+    // Held down for a long while, it still stops at the first milestone after the departure and opens its card.
+    const first = advanceVoyage({ ...poncho, card: -1 }, 1e6);
+    expect(first.card).toBe(1);
+    expect(first.reached).toBe(2);
+    const ushuaia = startVoyage('irizar');
+    expect(ushuaia.card).toBe(-1);
+    const end = advanceVoyage(ushuaia, 1e6);
+    expect(end.card).toBe(voyageStops('ship').length - 1);
   });
 });

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  TRANSFER_SECONDS, VOYAGE_GEARS, advanceVoyage, retreatVoyage, closeVoyageCard, nextGear, skipToNextStop, startVoyage, voyageArrived, type TransportId, type VoyageSourceCode, type VoyageState,
+  TRANSFER_SECONDS, VOYAGE_GEARS, advanceVoyage, retreatVoyage, closeVoyageCard, nextGear, openVoyageCard, skipToNextStop, startVoyage, voyageArrived, voyageStops, type TransportId, type VoyageSourceCode, type VoyageState,
 } from '@antartida/core';
 
 /**
@@ -22,6 +22,10 @@ export interface VoyageBus {
   /** Fraction flown of the helicopter hop from the ship to the base (1 once it landed), or null before it. */
   transfer: number | null;
   closeSighting: () => void;
+  /** Ids of the milestones whose card was opened on this trip: their pins turn grey. */
+  opened: readonly string[];
+  /** The user touched the pin of a milestone already passed: opens its card. */
+  openStop: (index: number) => void;
   openSource: (code: VoyageSourceCode) => void;
   listeners: Set<() => void>;
 }
@@ -56,6 +60,15 @@ export interface VoyageController {
   /** The open card is next to the animal on the map, not in the panel. */
   popover: boolean;
   openSighting: (id: string, beside?: boolean) => void;
+  /** Ids of the milestones whose card was opened on this trip: they are optional (#157). */
+  opened: readonly string[];
+  /**
+   * Opens the card of a milestone already passed (index into voyageStops). The trip pauses while
+   * it is open. With `ask` the card opens with its question shown.
+   */
+  openMilestone: (index: number, ask?: boolean) => void;
+  /** The open card was asked for through its question: it shows the question at once. */
+  asking: boolean;
   /** Option chosen for the question of each milestone, by milestone id. */
   answers: Readonly<Record<string, number>>;
   answer: (milestoneId: string, option: number) => void;
@@ -63,14 +76,12 @@ export interface VoyageController {
   /** The helicopter hop from the ship to the base: not started, flying (the arrival card steps aside) or landed. */
   transfer: 'none' | 'flying' | 'landed';
   startTransfer: () => void;
-  /** Lands the helicopter on the base at once: the user skipped the rest of the hop. */
-  skipTransfer: () => void;
   reset: () => void;
 }
 
 export function useVoyage(): VoyageController {
   const [state, setState] = useState<VoyageState | null>(null);
-  const bus = useRef<VoyageBus>({ state: null, seen: [], spot: () => {}, beside: null, open: null, back: false, transfer: null, closeSighting: () => {}, openSource: () => {}, listeners: new Set() }).current;
+  const bus = useRef<VoyageBus>({ state: null, seen: [], spot: () => {}, beside: null, open: null, back: false, transfer: null, closeSighting: () => {}, opened: [], openStop: () => {}, openSource: () => {}, listeners: new Set() }).current;
   const frame = useRef(0);
   const [gear, setGear] = useState(0);
   const press = useRef({ gear: 0, at: -Infinity });
@@ -78,11 +89,24 @@ export function useVoyage(): VoyageController {
   const [seen, setSeen] = useState<readonly string[]>([]);
   const [sighting, setSighting] = useState<{ id: string; beside: boolean } | null>(null);
   const [answers, setAnswers] = useState<Readonly<Record<string, number>>>({});
+  const opened = useRef<readonly string[]>([]);
+  const [openedIds, setOpened] = useState<readonly string[]>([]);
+  const [asking, setAsking] = useState(false);
 
   const notify = () => bus.listeners.forEach((fn) => fn());
+  /** Hands a state to React, and counts the card it opens as read (the arrival opens by itself). */
+  const show = (next: VoyageState | null) => {
+    setState(next);
+    if (!next || next.card < 0) return;
+    const { id } = voyageStops(next.kind)[next.card].milestone;
+    if (opened.current.includes(id)) return;
+    opened.current = [...opened.current, id];
+    bus.opened = opened.current;
+    setOpened(opened.current);
+  };
   const commit = (next: VoyageState | null) => {
     bus.state = next;
-    setState(next);
+    show(next);
     notify();
   };
   // `auto`: travelling by itself to the next milestone.
@@ -143,14 +167,21 @@ export function useVoyage(): VoyageController {
       const moving = d.pressed || d.auto;
       // Ease in and out instead of starting and stopping dead.
       d.power += ((moving ? 1 : 0) - d.power) * (1 - Math.exp(-dt / EASE_SECONDS));
-      const next = (d.back ? retreatVoyage : advanceVoyage)(before, dt * d.speed * d.power);
+      const seconds = dt * d.speed * d.power;
+      // Going by itself it stops at the next milestone; held, it goes past them (#157).
+      const next = d.back ? retreatVoyage(before, seconds) : advanceVoyage(before, seconds, d.auto);
       bus.state = next;
       notify();
       const atEnd = d.back ? next.t <= 0 : voyageArrived(next);
-      if (next.card !== before.card || atEnd || (!moving && d.power < 0.03)) {
+      const passed = next.reached !== before.reached;
+      if (next.card !== before.card || atEnd || (d.auto && passed) || (!moving && d.power < 0.03)) {
         stop();
-        setState(next);
-      } else frame.current = requestAnimationFrame(tick);
+        show(next);
+      } else {
+        // The panel offers the milestone just passed: it needs to know, though the trip goes on.
+        if (passed) show(next);
+        frame.current = requestAnimationFrame(tick);
+      }
     };
     frame.current = requestAnimationFrame(tick);
   };
@@ -172,6 +203,15 @@ export function useVoyage(): VoyageController {
   };
   bus.spot = openSighting;
   bus.closeSighting = () => showSighting(null);
+  const openMilestone = (index: number, ask = false) => {
+    if (!bus.state) return;
+    const next = openVoyageCard(bus.state, index);
+    if (next === bus.state) return;
+    stop();
+    setAsking(ask);
+    commit(next);
+  };
+  bus.openStop = (index) => openMilestone(index);
   const clearSightings = () => {
     bus.seen = [];
     setSeen([]);
@@ -179,6 +219,10 @@ export function useVoyage(): VoyageController {
     bus.open = null;
     setSighting(null);
     setAnswers({});
+    opened.current = [];
+    bus.opened = [];
+    setOpened([]);
+    setAsking(false);
     endTransfer(null);
   };
 
@@ -191,12 +235,14 @@ export function useVoyage(): VoyageController {
     popover: sighting?.beside ?? false,
     openSighting,
     closeSighting: bus.closeSighting,
+    opened: openedIds,
+    openMilestone,
+    asking,
     answers,
     // The first answer stands: the notes that follow give it away.
     answer: (id, option) => setAnswers((a) => (id in a ? a : { ...a, [id]: option })),
     transfer,
     startTransfer,
-    skipTransfer: () => endTransfer(1),
     start: (transport) => {
       bus.back = false;
       clearSightings();
@@ -237,7 +283,11 @@ export function useVoyage(): VoyageController {
       d.speed = SKIP_SPEED;
       run();
     },
-    closeCard: () => bus.state && commit(closeVoyageCard(bus.state)),
+    closeCard: () => {
+      if (!bus.state) return;
+      setAsking(false);
+      commit(closeVoyageCard(bus.state));
+    },
     reset: () => {
       stop();
       clearSightings();

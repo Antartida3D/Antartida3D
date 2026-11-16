@@ -63,7 +63,6 @@ import { Storm3D } from '../voyage/Storm3D.tsx';
 import { OrcadasSite } from './OrcadasSite.tsx';
 import { MarambioSite } from './MarambioSite.tsx';
 import { PointModels, pointFocus } from './PointModels.tsx';
-import { StationBeacons } from './StationBeacons.tsx';
 import { OrcadasTravel3D } from '../voyage/OrcadasTravel3D.tsx';
 import { Voyage3D } from '../voyage/Voyage3D.tsx';
 
@@ -156,7 +155,6 @@ function SceneContent({
       <OrcadasSite reduced={reduced} />
       <MarambioSite reduced={reduced} hidden={Boolean(voyage)} />
       <PointModels reduced={reduced} />
-      <StationBeacons reduced={Boolean(reduced)} />
       <Storm3D />
       {phase === 'travel' && <OrcadasTravel3D arrival={arrival ?? 'ship'} reduced={reduced} />}
       {voyage && <Voyage3D bus={voyage} picker={voyagePicker} reduced={reduced} overlay={overlayRef} />}

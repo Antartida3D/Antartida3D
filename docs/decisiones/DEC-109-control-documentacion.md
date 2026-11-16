@@ -23,12 +23,13 @@ El documento histórico se actualiza, pero combina explicaciones vigentes con an
 
 ## Referencias
 
-- [Issue #109](https://github.com/Roolivero/Antartida3D/issues/109): alcance y aceptación del trabajo.
+- [Issue #109](https://github.com/Antartida3D/Antartida3D/issues/109): alcance y aceptación del trabajo.
 - Acuerdo del usuario en la conversación del 14 de noviembre de 2026: «te parece agregar este nuevo control? asi evitamos que se pierdan decisiones», en respuesta a la propuesta de declaración por PR, vigencia de decisiones, comprobación automática y revisión antes de integrar. El issue registra esa autorización; esta cita no representa una revisión posterior de la implementación.
+- Reanudación autorizada el 15 de noviembre de 2026: el issue existente se reabrió como `open/reopened`, conservando su única asignación a `GiulianoPoeta99`; no se creó un duplicado ni se añadió un comentario.
 - [Reglas, formato y activación](../control-documentacion.md).
 
 ## Estado de implementación y verificación
 
-Implementado localmente en la rama `109-control-documentacion`, sobre `d2834ef`. Verificación del 14 de noviembre de 2026: 18 pruebas del validador, 253 de core y 113 de react-ui aprobadas; `pnpm typecheck` y `pnpm build` completados. La compilación advierte sobre chunks mayores de 500 kB. La declaración preparada para este cambio pasa y la plantilla sin completar falla como se espera.
+Implementado localmente en la rama `109-control-documentacion`, rebasada sobre `origin/main` (`045517c`). La verificación del 15 de noviembre de 2026 pasó `pnpm docs:test` (19 pruebas), `pnpm test` (19 documentales, 361 de core y 259 de react-ui), `pnpm typecheck`, `pnpm build`, `pnpm docs:check --body-file /tmp/antartida-109-pr.md --base origin/main` y `git diff --check origin/main`; el build conserva el aviso de Vite por chunks mayores de 500 kB.
 
 La ejecución del workflow en GitHub y la activación del requisito obligatorio en `main` siguen pendientes. Activarlo requiere una acción administrativa; la aceptación de esta decisión no equivale a que el control ya esté activo.

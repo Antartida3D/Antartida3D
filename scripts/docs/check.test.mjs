@@ -165,18 +165,40 @@ test('CLI local incluye documentos nuevos sin stage y devuelve código no cero a
   assert.equal(run().status, 1);
 });
 
-test('CLI de CI lee el evento como datos y compara el ancestro común del PR', (t) => {
+test('CLI de CI valida el merge integrado contra la base actual y detecta destinos borrados por main', (t) => {
+  const f = fixture(t);
+  f.write('docs/manual.md', '# Manual\n');
+  f.git('add', '.'); f.git('commit', '-m', 'Manual base');
+  f.git('switch', '-c', 'cambio');
+  f.write('README.md', '# Inicio actualizado\n\n[Manual](docs/manual.md)\n');
+  f.git('add', '.'); f.git('commit', '-m', 'Cambio');
+  const head = f.git('rev-parse', 'HEAD');
+  f.git('switch', 'main');
+  f.git('rm', 'docs/manual.md'); f.git('commit', '-m', 'Borrar manual en main');
+  const base = f.git('rev-parse', 'HEAD');
+  f.git('merge', '--no-ff', 'cambio', '-m', 'Integrar PR');
+  const integrated = f.git('rev-parse', 'HEAD');
+  const body = declaration({ impact: 'updated', documents: ['README.md'], reason: 'Texto literal $(exit 99) `exit 98`; no se ejecuta.' });
+  f.write('event.json', JSON.stringify({ pull_request: { base: { sha: base }, head: { sha: head }, body } }));
+  const result = spawnSync(process.execPath, [CHECKER], { cwd: f.directory, env: { ...f.env, GITHUB_EVENT_PATH: path.join(f.directory, 'event.json'), GITHUB_SHA: integrated }, encoding: 'utf8' });
+  assert.equal(result.status, 1, result.error?.message ?? result.stdout);
+  assert.match(result.stderr, /enlace local/);
+});
+
+test('CLI de CI no atribuye al PR una decisión incorporada solo por main', (t) => {
   const f = fixture(t);
   f.git('switch', '-c', 'cambio');
   f.write('README.md', '# Inicio actualizado\n');
   f.git('add', '.'); f.git('commit', '-m', 'Cambio');
   const head = f.git('rev-parse', 'HEAD');
   f.git('switch', 'main');
-  f.write('docs/solo-main.md', '# Cambio ajeno\n');
-  f.git('add', '.'); f.git('commit', '-m', 'Cambio ajeno');
+  f.write(recordPath('DEC-1'), record());
+  f.git('add', '.'); f.git('commit', '-m', 'Decisión ajena en main');
   const base = f.git('rev-parse', 'HEAD');
-  const body = declaration({ impact: 'updated', documents: ['README.md'], reason: 'Texto literal $(exit 99) `exit 98`; no se ejecuta.' });
+  f.git('merge', '--no-ff', 'cambio', '-m', 'Integrar PR');
+  const integrated = f.git('rev-parse', 'HEAD');
+  const body = declaration({ impact: 'updated', documents: ['README.md'], reason: 'Se actualiza solo la guía del PR.' });
   f.write('event.json', JSON.stringify({ pull_request: { base: { sha: base }, head: { sha: head }, body } }));
-  const result = spawnSync(process.execPath, [CHECKER], { cwd: f.directory, env: { ...f.env, GITHUB_EVENT_PATH: path.join(f.directory, 'event.json') }, encoding: 'utf8' });
+  const result = spawnSync(process.execPath, [CHECKER], { cwd: f.directory, env: { ...f.env, GITHUB_EVENT_PATH: path.join(f.directory, 'event.json'), GITHUB_SHA: integrated }, encoding: 'utf8' });
   assert.equal(result.status, 0, result.error?.message ?? result.stderr);
 });

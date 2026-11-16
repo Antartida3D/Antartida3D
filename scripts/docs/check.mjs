@@ -201,13 +201,15 @@ function main() {
   }
   const event = !options['--body-file'] && process.env.GITHUB_EVENT_PATH ? JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8')) : null;
   const base = options['--base'] ?? event?.pull_request?.base?.sha;
-  const head = options['--head'] ?? event?.pull_request?.head?.sha;
+  const head = options['--head'] ?? (event ? process.env.GITHUB_SHA : null);
   const body = options['--body-file'] ? readFileSync(options['--body-file'], 'utf8') : event?.pull_request?.body;
   if (!base || typeof body !== 'string') throw new Error('Falta el cuerpo del PR o su base. Usar --body-file y --base, o un evento pull_request.');
   const resolve = (ref) => git(['rev-parse', '--verify', '--end-of-options', `${ref}^{commit}`]).trim();
+  if (event && !head) throw new Error('Falta GITHUB_SHA: el workflow debe validar el commit integrado que dejó checkout en el árbol.');
+  const baseRevision = resolve(base);
   const headRevision = head ? resolve(head) : null;
-  const ancestor = git(['merge-base', resolve(base), headRevision ?? 'HEAD']).trim();
-  const errors = validateDocumentation({ body, before: snapshot(ancestor), after: snapshot(headRevision) });
+  const beforeRevision = event ? baseRevision : git(['merge-base', baseRevision, headRevision ?? 'HEAD']).trim();
+  const errors = validateDocumentation({ body, before: snapshot(beforeRevision), after: snapshot(headRevision) });
   if (errors.length) {
     console.error('Control documental fallido:\n' + errors.map((error) => `- ${error}`).join('\n'));
     process.exitCode = 1;

@@ -2,7 +2,7 @@
 
 Cada PR declara su impacto documental. Un cambio está completo cuando la documentación afectada describe el resultado y las decisiones anteriores que modifica quedan explícitamente reemplazadas. La regla se aplica al equipo y a sus agentes.
 
-Este control se incorpora en el [issue #109](https://github.com/Roolivero/Antartida3D/issues/109). Su decisión está en [DEC-109](decisiones/DEC-109-control-documentacion.md). El registro histórico permanece en [decisiones.md](decisiones.md); su revisión completa queda fuera de este cambio.
+Este control se incorpora en el [issue #109](https://github.com/Antartida3D/Antartida3D/issues/109). Su decisión está en [DEC-109](decisiones/DEC-109-control-documentacion.md). El registro histórico permanece en [decisiones.md](decisiones.md); su revisión completa queda fuera de este cambio.
 
 ## Qué registrar
 
@@ -70,7 +70,7 @@ node --test scripts/docs/check.test.mjs
 node scripts/docs/check.mjs --body-file /tmp/antartida-pr.md --base origin/main
 ```
 
-Por defecto se incluye el árbol de trabajo y sus archivos nuevos no ignorados. Para revisar un commit exacto, agregar `--head <sha>`. Se compara con el ancestro común de la base y la rama para no atribuir al PR cambios ajenos integrados después.
+Por defecto se incluye el árbol de trabajo y sus archivos nuevos no ignorados. Para revisar un commit exacto, agregar `--head <sha>`. En la comprobación local se compara con el ancestro común de la base y la rama. En GitHub, el workflow compara la base actual del evento con `GITHUB_SHA`, el commit integrado que dejó `actions/checkout` en el árbol; así detecta destinos borrados por `main` y no atribuye al PR decisiones que ya estaban en la base.
 
 ## Comprobación en GitHub
 

@@ -1,6 +1,6 @@
-import { block, chamferRect, chunk, prism, strut, type Tri, type Vec3 } from '../voyage/lowPoly.ts';
+import { block, chamferRect, chunk, lathe, prism, quad, strut, type Tri, type Vec3 } from '../voyage/lowPoly.ts';
 import { body, column, spike } from './lowPolyFossils.ts';
-import { FOSSIL_PALETTE as C } from './models.ts';
+import { FOSSIL_PALETTE as C, PLESIO_VERTEBRAE, plesioVertebra } from './models.ts';
 
 /**
  * Low-poly scenery of Fósiles (#7, rule 30): the plants of the Cretaceous forest, the life of the
@@ -163,6 +163,93 @@ export const STAR_SLAB_TRIS: readonly Tri[] = [
   ...chunk(-0.4, 0.15, -0.28, 0.12, 0.04, 0.07, 513, C.shellStripe), ...chunk(-0.52, 0.15, 0.05, 0.1, 0.05, 0.1, 514, C.urchin),
 ];
 
+// --- Camp -----------------------------------------------------------------------------------
+
+/** Pyramid field tent, like the ones in the camp photographs: a dark band, a skirt, the door and pegs. */
+export const TENT_TRIS: readonly Tri[] = (() => {
+  const h = 0.9;
+  const r0 = 0.72;
+  // Four-sided: corners at 45 degrees, so the faces look along +x, -x, +z and -z.
+  const sides = lathe(0, 0, [[0.04, r0], [0.3, r0 * 0.7], [0.36, r0 * 0.62], [h, 0.05], [h + 0.05, 0]], 4, (_, band) => (band === 1 ? C.tentDark : C.tent), Math.PI / 4);
+  const skirt = prism(chamferRect(0, 0, 1.06, 1.06, 0.02), 0, 0.04, C.tentDark, C.tentDark);
+  // The door on the +z face, just off the cloth.
+  const faceZ = (y: number) => (r0 * Math.SQRT1_2) * (1 - (y - 0.04) / (h - 0.04)) + 0.006;
+  const door = quad([-0.11, 0.04, faceZ(0.04)], [0.11, 0.04, faceZ(0.04)], [0.06, 0.4, faceZ(0.4)], [-0.06, 0.4, faceZ(0.4)], C.tentDark);
+  const vent = quad([-0.05, 0.56, faceZ(0.56)], [0.05, 0.56, faceZ(0.56)], [0.04, 0.62, faceZ(0.62)], [-0.04, 0.62, faceZ(0.62)], C.canvas);
+  const pegs = [[0.55, 0.55], [-0.55, 0.55], [0.55, -0.55], [-0.55, -0.55]].flatMap(([x, z]) => block(x, 0.04, z, 0.04, 0.08, 0.04, C.metal));
+  return [...sides, ...skirt, ...door, ...vent, ...pegs, ...strut([0, h, 0], [0, h + 0.08, 0], 0.012, C.ink)];
+})();
+
+/** A field crate: a box is a box, so it keeps its shape; lid, straps, label and feet. */
+export const CRATE_TRIS: readonly Tri[] = [
+  ...block(0, 0.2, 0, 0.6, 0.36, 0.4, C.crate),
+  ...block(0, 0.4, 0, 0.62, 0.04, 0.42, C.crateDark),
+  ...block(0, 0.2, 0, 0.62, 0.05, 0.41, C.crateDark),
+  ...block(0, 0.2, 0, 0.61, 0.05, 0.42, C.crateDark),
+  ...block(0.12, 0.3, 0.203, 0.18, 0.08, 0.006, C.canvas),
+  ...block(0.12, 0.3, 0.207, 0.12, 0.02, 0.004, C.ink),
+  ...[[-0.24, 0.16], [0.24, 0.16], [-0.24, -0.16], [0.24, -0.16]].flatMap(([x, z]) => block(x, 0.01, z, 0.06, 0.02, 0.06, C.crateDark)),
+];
+
+/** Sled with upturned runners and a wrapped load, as in the photograph of the ammonite being moved. */
+export const SLED_TRIS: readonly Tri[] = [
+  ...prism(chamferRect(0, 0, 1, 0.42, 0.04), 0.03, 0.06, C.canvas),
+  ...[0.2, -0.2].flatMap((z) => [
+    ...strut([-0.52, 0.015, z], [0.42, 0.015, z], 0.012, C.metal),
+    ...strut([0.42, 0.015, z], [0.56, 0.09, z], 0.012, C.metal),
+  ]),
+  ...column(0, 0, [[0.06, 0.2, 0.15], [0.18, 0.21, 0.155], [0.26, 0.15, 0.11], [0.28, 0.08, 0.06]], 8, (band) => (band === 2 ? C.shellStripe : C.shell)),
+  ...[-0.12, 0.12].flatMap((x) => block(x, 0.17, 0, 0.02, 0.22, 0.32, C.ink)),
+  ...[0.12, -0.12].flatMap((z) => strut([0.56, 0.09, z], [0.74, 0.09, z * 0.6], 0.008, C.ink)),
+];
+
+/** Radio mast with a pennant, a landmark of every camp photograph. */
+export const MAST_TRIS: readonly Tri[] = [
+  ...prism(chamferRect(0, 0, 0.16, 0.16, 0.02), 0, 0.1, C.crateDark),
+  ...Array.from({ length: 8 }, (_, i) => strut([0, 0.1 + i * 0.1, 0], [0, 0.2 + i * 0.1, 0], 0.016, i % 2 ? C.metal : C.canvas)).flat(),
+  ...strut([-0.06, 0.97, 0], [0.06, 0.97, 0], 0.008, C.metal),
+  // The pennant: a triangle of cloth, seen from both sides.
+  ...[[[0, 0.94, 0], [0, 0.86, 0], [0.22, 0.9, 0.01]] as Vec3[]].flatMap(([a, b, c]) => [[a, b, c, C.tent], [a, c, b, C.tent]] as Tri[]),
+  ...strut([0, 0.9, 0], [0, 1.04, 0], 0.008, C.ink),
+];
+
+// --- Remains --------------------------------------------------------------------------------
+
+/** The jaw fragment of 1986: a bone with its sockets and the leaf-shaped tooth, crown wider than root. */
+export const JAW_TOOTH_CENTER: Vec3 = [0.06, 0.31, 0];
+export const JAW_TRIS: readonly Tri[] = [
+  ...body([[-0.44, 0.1, 0.04, 0.06], [-0.32, 0.11, 0.06, 0.08], [0.1, 0.12, 0.07, 0.09], [0.22, 0.15, 0.1, 0.08], [0.32, 0.16, 0.07, 0.06]],
+    (_, seg) => (seg >= 6 ? C.rib : C.bone), [C.rib, C.bone], 8),
+  ...Array.from({ length: 6 }, (_, i) => block(-0.32 + i * 0.075, 0.19, 0.035, 0.035, 0.012, 0.05, C.dark)).flat(),
+  ...column(0.06, 0, [[0.18, 0.02, 0.014], [0.27, 0.028, 0.016], [0.32, 0.05, 0.018], [0.36, 0.035, 0.016], [0.39, 0.01, 0.01]], 6, C.bone),
+];
+
+/** Recovered pieces of Antarctopelta laid on the ground: vertebrae, ribs, a limb bone and armor plates. */
+export const DINO_BONES_TRIS: readonly Tri[] = [
+  ...body([[-0.41, 0.03, 0.025, 0.03], [-0.34, 0.03, 0.02, 0.025], [-0.22, 0.03, 0.02, 0.025], [-0.19, 0.035, 0.03, 0.035]], () => C.bone, [C.boneShade, C.boneShade], 6),
+  ...[-0.1, 0, 0.1].flatMap((x, i) => column(x, 0.11, [[0, 0.04, 0.04], [0.05, 0.035, 0.035], [0.065, 0.02, 0.02]], 6, i === 1 ? C.boneShade : C.bone)),
+  ...strut([0.09, 0.015, -0.12], [0.33, 0.02, -0.13], 0.015, C.rib),
+  ...strut([0.07, 0.015, -0.19], [0.28, 0.02, -0.22], 0.015, C.rib),
+  ...chunk(-0.15, 0.015, -0.22, 0.08, 0.03, 0.07, 601, C.armor), ...chunk(-0.05, 0.015, -0.25, 0.06, 0.03, 0.06, 602, C.armor),
+  ...chunk(0.32, 0.015, 0.05, 0.07, 0.03, 0.06, 603, C.armor), ...chunk(0.38, 0.015, 0.16, 0.07, 0.03, 0.05, 604, C.armorDark),
+  ...body([[-0.46, 0.04, 0.03, 0.035], [-0.38, 0.035, 0.022, 0.025], [-0.3, 0.035, 0.025, 0.03]], () => C.boneShade, [C.bone, C.bone], 6)
+    .map(([a, b, c, col]): Tri => [[a[0], a[1], a[2] + 0.15], [b[0], b[1], b[2] + 0.15], [c[0], c[1], c[2] + 0.15], col]),
+];
+
+/** Ribs, girdles and four paddles of small phalanges of the plesiosaur; the vertebrae are drawn apart. */
+export const PLESIO_BONES_TRIS: readonly Tri[] = [
+  ...Array.from({ length: 8 }, (_, i) => {
+    const [x, , z] = plesioVertebra(27 + i * 1.6);
+    return [...strut([x, 0.012, z + 0.02], [x - 0.015, 0.012, z + 0.16], 0.007, C.boneShade), ...strut([x, 0.012, z - 0.02], [x - 0.015, 0.012, z - 0.16], 0.007, C.boneShade)];
+  }).flat(),
+  ...chunk(0.0, 0.01, 0, 0.1, 0.02, 0.22, 611, C.bone), ...chunk(-0.2, 0.01, 0, 0.09, 0.02, 0.2, 612, C.bone),
+  ...[[0.0, 1], [0.0, -1], [-0.2, 1], [-0.2, -1]].flatMap(([x, s]) =>
+    Array.from({ length: 6 }, (_, k) => chunk(x - 0.015 * k, 0.008, s * (0.14 + k * 0.035), 0.03 - k * 0.003, 0.014, 0.026, 620 + k, k % 2 ? C.bone : C.boneShade)).flat()),
+];
+
+/** One vertebra, a short six-sided spool one unit wide and tall, white: its color is set per instance. */
+export const VERTEBRA_TRIS: readonly Tri[] = column(0, 0, [[-0.5, 0.42, 0.42], [-0.3, 0.5, 0.5], [0.3, 0.5, 0.5], [0.5, 0.42, 0.42]], 6, 0xffffff);
+
 /** Every model of this file, for the test of least detail. */
 export const FOSSIL_SCENERY_MODELS: Readonly<Record<string, readonly Tri[]>> = {
   'cretaceous-conifer': CONIFER_TRIS, 'cretaceous-cycad': CYCAD_TRIS, 'cretaceous-fern': FERN_TRIS,
@@ -171,4 +258,12 @@ export const FOSSIL_SCENERY_MODELS: Readonly<Record<string, readonly Tri[]>> = {
   'eocene-crinoid': [...CRINOID_STALK_TRIS, ...CRINOID_CROWN_TRIS.map(([a, b, c, col]): Tri => [
     [a[0], a[1] + CRINOID_TOP[1], a[2]], [b[0], b[1] + CRINOID_TOP[1], b[2]], [c[0], c[1] + CRINOID_TOP[1], c[2]], col])],
   'eocene-chiton': CHITON_TRIS, 'inoceramid-bivalve': INOCERAMUS_TRIS, 'star-slab': STAR_SLAB_TRIS,
+  'field-tent': TENT_TRIS, 'field-crate': CRATE_TRIS, 'field-sled': SLED_TRIS, 'field-mast': MAST_TRIS,
+  'fossil-jaw': JAW_TRIS, 'antarctopelta-bones': DINO_BONES_TRIS,
+  'plesiosaur-skeleton': [...PLESIO_BONES_TRIS, ...Array.from({ length: PLESIO_VERTEBRAE }, (_, i) => {
+    const [x, y, z, size] = plesioVertebra(i);
+    return VERTEBRA_TRIS.map(([a, b, c]): Tri => [
+      [x + a[0] * size * 0.85, y + a[1] * size, z + a[2] * size * 1.15], [x + b[0] * size * 0.85, y + b[1] * size, z + b[2] * size * 1.15],
+      [x + c[0] * size * 0.85, y + c[1] * size, z + c[2] * size * 1.15], i % 2 ? C.bone : C.boneShade]);
+  }).flat()],
 };

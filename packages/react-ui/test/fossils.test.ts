@@ -7,8 +7,9 @@ import {
   CAMP_FLAT, DISTANT_MESAS, FOREST_PLANTS, MESA_TOP, WATER_LEVEL, buildFieldTris, buildForestTris, buildSeaFloorTris,
   fieldHeight, seaFloorHeight,
 } from '../src/fossils/fossilTerrain.ts';
-import { FOSSIL_MODELS, PLESIO_VERTEBRAE, plesioVertebra } from '../src/fossils/models.ts';
-import { PLESIO_NECK_SEGMENTS } from '../src/fossils/lowPolyFossils.ts';
+import { PLESIO_VERTEBRAE, plesioVertebra } from '../src/fossils/models.ts';
+import { FOSSIL_POLY_MODELS, PLESIO_NECK_SEGMENTS } from '../src/fossils/lowPolyFossils.ts';
+import { FOSSIL_SCENERY_MODELS } from '../src/fossils/lowPolyScenery.ts';
 import { SCENE_MODELS } from '../src/voyage/sightingModels.ts';
 import { normalOf } from '../src/voyage/lowPoly.ts';
 import { inward } from './polyHelpers.ts';
@@ -59,8 +60,17 @@ describe('fossil scene ground', () => {
 });
 
 describe('fossil figures', () => {
-  it('registers every fossil model for the least detail test', () => {
-    for (const name of Object.keys(FOSSIL_MODELS)) expect(SCENE_MODELS[name]).toBeDefined();
+  it('has every fossil model in low-poly, none left in blocks', () => {
+    // Every model the expedition had in blocks is now low-poly, and each one has its test of least detail.
+    const poly = { ...FOSSIL_POLY_MODELS, ...FOSSIL_SCENERY_MODELS };
+    for (const name of [
+      'antarctopelta-bones', 'antarctopelta-illustration', 'cretaceous-broadleaf', 'cretaceous-conifer', 'cretaceous-cycad',
+      'cretaceous-fern', 'eocene-brachiopod', 'eocene-bryozoan', 'eocene-chiton', 'eocene-crinoid', 'eocene-sea-star',
+      'eocene-urchin', 'field-crate', 'field-geologist-orange', 'field-geologist-red', 'field-geologist-yellow', 'field-mast',
+      'field-sled', 'field-tent', 'fossil-ammonite', 'fossil-jaw', 'fossil-log', 'inoceramid-bivalve', 'living-ammonite',
+      'plesiosaur-illustration', 'plesiosaur-skeleton', 'star-slab',
+    ]) expect(poly[name], name).toBeDefined();
+    for (const name of Object.keys(poly)) expect(SCENE_MODELS[name], name).toBeUndefined();
   });
 
   it('walks geologists along their loop and keeps every pose finite', () => {

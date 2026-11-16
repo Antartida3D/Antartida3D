@@ -10,7 +10,7 @@ import { shouldTick, type FossilState, type FossilView } from '@antartida/core';
 import { InkEffect } from '../map3d/InkEffect.ts';
 import { stationSkyFragmentShader, stationSkyVertexShader } from '../orcadas/stationSky.glsl.ts';
 import { buildBoxGeometry, vehicleMaterial, type Box } from '../voyage/vehicles.ts';
-import { boxShade, buildPolyGeometry, mirrorZ, type Tri } from '../voyage/lowPoly.ts';
+import { block, boxShade, buildPolyGeometry, chamferRect, chunk, mirrorZ, prism, strut, type Tri } from '../voyage/lowPoly.ts';
 import {
   PLESIO_SWIM, STILL_TIME, ammonitePose, columnWave, crinoidSway, dinoPose, geologistPose, plesioPose,
   restAmmonite, restDino, restGeologist, restPlesio, type Geologist, type Loop,
@@ -19,11 +19,7 @@ import {
   DISTANT_MESAS, FLOES, FLOE_TRIS, FOREST_PLANTS, WATER_LEVEL, buildFieldTris, buildForestTris, buildSeaFloorTris,
   fieldHeight, forestHeight, scatter, seaFloorHeight,
 } from './fossilTerrain.ts';
-import {
-  CRATE_BOXES, DINO_BONES, FOSSIL_PALETTE as C, JAW_BOXES, JAW_TOOTH_CENTER,
-  MAST_BOXES, PLESIO_BONES, PLESIO_VERTEBRAE, SLED_BOXES, TENT_BOXES,
-  plesioVertebra, type Parka,
-} from './models.ts';
+import { FOSSIL_PALETTE as C, PLESIO_VERTEBRAE, plesioVertebra, type Parka } from './models.ts';
 import {
   AMMONITE_ARM_COUNT, AMMONITE_BODY_TRIS, AMMONITE_FOSSIL_TRIS, DINO_HIPS, DINO_NECK, DINO_TAIL, DINO_TAIL_SEGMENT,
   GEOLOGIST_HIP, GEOLOGIST_NECK, GEOLOGIST_SHOULDER, geologistPolyParts,
@@ -32,7 +28,8 @@ import {
 } from './lowPolyFossils.ts';
 import {
   BRACHIOPOD_TRIS, BROADLEAF_TRIS, BRYOZOAN_TRIS, CHITON_TRIS, CONIFER_TRIS, CRINOID_CROWN_TRIS, CRINOID_STALK_TRIS, CRINOID_TOP,
-  CYCAD_TRIS, FERN_TRIS, INOCERAMUS_TRIS, LOG_TRIS, STAR_SLAB_TRIS, URCHIN_TRIS,
+  CRATE_TRIS, CYCAD_TRIS, DINO_BONES_TRIS, FERN_TRIS, INOCERAMUS_TRIS, JAW_TOOTH_CENTER, JAW_TRIS, LOG_TRIS, MAST_TRIS,
+  PLESIO_BONES_TRIS, SLED_TRIS, STAR_SLAB_TRIS, TENT_TRIS, URCHIN_TRIS, VERTEBRA_TRIS,
 } from './lowPolyScenery.ts';
 
 type Vec3 = readonly [number, number, number];
@@ -53,13 +50,7 @@ export function worldOf(view: FossilView, state: Pick<FossilState, 'habitat' | '
 
 /** Geometries of small repeated parts, built once and shared by every figure that uses them. */
 const parts = new Map<string, BufferGeometry>();
-function partGeometry(key: string, boxes: () => readonly Box[]): BufferGeometry {
-  let g = parts.get(key);
-  if (!g) { g = buildBoxGeometry(boxes()); parts.set(key, g); }
-  return g;
-}
-
-/** The same, for low-poly parts: faces shaded like the boxes they share the scene with (#116). */
+/** Geometry of a low-poly part, built once: faces shaded like the boxes of the other dioramas (#116). */
 function polyGeometry(key: string, tris: () => readonly Tri[]): BufferGeometry {
   let g = parts.get(key);
   if (!g) { g = buildPolyGeometry(tris(), boxShade); parts.set(key, g); }
@@ -72,25 +63,11 @@ function PolyProp({ id, tris, position, scale = 1, rotation = [0, 0, 0] }: {
   return <mesh geometry={polyGeometry(id, () => tris)} material={vehicleMaterial} position={[...position]} scale={scale} rotation={[...rotation]} />;
 }
 
-/** A static model built once per mount and released on unmount. */
-function Model({ boxes, position = [0, 0, 0], scale = 1, rotation = [0, 0, 0] }: {
-  boxes: readonly Box[]; position?: Vec3; scale?: number; rotation?: Vec3;
-}) {
-  const geometry = useMemo(() => buildBoxGeometry(boxes), [boxes]);
-  useEffect(() => () => geometry.dispose(), [geometry]);
-  return <mesh geometry={geometry} material={vehicleMaterial} position={[...position]} scale={scale} rotation={[...rotation]} />;
-}
 /** A static low-poly model (a ground, far islands) built once per mount and released on unmount. */
-function PolyModel({ tris }: { tris: readonly Tri[] }) {
+function PolyModel({ tris, scale = 1 }: { tris: readonly Tri[]; scale?: number }) {
   const geometry = useMemo(() => buildPolyGeometry(tris, boxShade), [tris]);
   useEffect(() => () => geometry.dispose(), [geometry]);
-  return <mesh geometry={geometry} material={vehicleMaterial} />;
-}
-/** A repeated model: the geometry is shared. */
-function Prop({ id, boxes, position, scale = 1, rotation = [0, 0, 0] }: {
-  id: string; boxes: readonly Box[]; position: Vec3; scale?: number; rotation?: Vec3;
-}) {
-  return <mesh geometry={partGeometry(id, () => boxes)} material={vehicleMaterial} position={[...position]} scale={scale} rotation={[...rotation]} />;
+  return <mesh geometry={geometry} material={vehicleMaterial} scale={scale} />;
 }
 
 // The ground is a field of faces over this height: things stand on it as it is, not on steps.
@@ -453,7 +430,7 @@ function Glow({ position, size, active, reduced }: { position: Vec3; size: Vec3;
 
 /** Vertebrae drawn one by one, so a light can run along the column when the visitor follows it. */
 function Column({ follow, reduced }: { follow: boolean; reduced: boolean }) {
-  const geometry = useMemo(() => buildBoxGeometry([[0, 0, 0, 1, 1, 1, 0xffffff]]), []);
+  const geometry = useMemo(() => buildPolyGeometry(VERTEBRA_TRIS, boxShade), []);
   const mesh = useMemo(() => new InstancedMesh(geometry, vehicleMaterial, PLESIO_VERTEBRAE), [geometry]);
   useEffect(() => () => { geometry.dispose(); mesh.dispose(); }, [geometry, mesh]);
   const start = useRef<number | null>(null);
@@ -528,7 +505,7 @@ function Reconstruction({ reduced, children }: { reduced: boolean; children: Rea
   });
   return (
     <>
-      <group ref={bones}><Prop id="dino-bones" boxes={DINO_BONES} position={[0, 0, 0]} /></group>
+      <group ref={bones}><PolyProp id="dino-bones" tris={DINO_BONES_TRIS} position={[0, 0, 0]} /></group>
       <group ref={animal} scale={reduced ? 1 : 0.001}>{children}</group>
     </>
   );
@@ -537,27 +514,37 @@ function Reconstruction({ reduced, children }: { reduced: boolean; children: Rea
 // --- Worlds ---------------------------------------------------------------------------------
 
 /** An outcrop of stacked strata with a flat front face, where the ammonite shows. */
-const ROCK: readonly Box[] = [
-  [0, 0.2, 0, 1.7, 0.4, 1.1, C.strataBrown],
-  [0.05, 0.5, 0, 1.6, 0.2, 1.1, C.strataTan],
-  [-0.05, 0.69, -0.02, 1.4, 0.18, 1.06, C.strataGrey],
-  [0.1, 0.86, -0.15, 0.9, 0.14, 0.6, C.strataTan],
-  [-0.5, 0.06, 0.62, 0.3, 0.12, 0.2, C.gravelMid],
-  [0.62, 0.05, 0.55, 0.22, 0.1, 0.18, C.gravelLight],
+/**
+ * An outcrop of stacked strata with bevelled edges and a flat front face, where the ammonite shows;
+ * two loose stones at its foot.
+ */
+const ROCK: readonly Tri[] = [
+  ...prism(chamferRect(0, 0, 1.7, 1.1, 0.06), 0, 0.4, C.strataBrown),
+  ...prism(chamferRect(0.05, 0, 1.6, 1.1, 0.08), 0.4, 0.6, C.strataTan),
+  ...prism(chamferRect(-0.05, -0.02, 1.4, 1.06, 0.1), 0.6, 0.78, C.strataGrey),
+  ...prism(chamferRect(0.1, -0.15, 0.9, 0.6, 0.1), 0.78, 0.93, C.strataTan),
+  ...chunk(-0.5, 0.06, 0.62, 0.3, 0.14, 0.2, 701, C.gravelMid),
+  ...chunk(0.62, 0.05, 0.55, 0.22, 0.12, 0.18, 702, C.gravelLight),
 ];
-const PIT: readonly Box[] = [
-  [0, -0.02, 0, 2.6, 0.06, 1.5, C.dark],
-  ...[-1.3, 1.3].map((x): Box => [x, 0.1, 0, 0.06, 0.2, 1.56, C.gravelLight]),
-  ...[-0.75, 0.75].map((z): Box => [0, 0.1, z, 2.66, 0.2, 0.06, C.gravelLight]),
-  // String grid over the excavation
-  ...[-0.65, 0, 0.65].map((x): Box => [x, 0.22, 0, 0.012, 0.012, 1.5, C.parkaRed]),
-  ...[-0.35, 0.35].map((z): Box => [0, 0.22, z, 2.6, 0.012, 0.012, C.parkaRed]),
-  ...[[-1.3, -0.75], [1.3, -0.75], [-1.3, 0.75], [1.3, 0.75]].map(([x, z]): Box => [x, 0.18, z, 0.05, 0.36, 0.05, C.crate]),
+/** The excavation: a dark pit framed by gravel, a string grid over it and four corner posts. */
+const PIT: readonly Tri[] = [
+  ...block(0, -0.02, 0, 2.6, 0.06, 1.5, C.dark),
+  ...[-1.3, 1.3].flatMap((x) => block(x, 0.1, 0, 0.06, 0.2, 1.56, C.gravelLight)),
+  ...[-0.75, 0.75].flatMap((z) => block(0, 0.1, z, 2.66, 0.2, 0.06, C.gravelLight)),
+  ...[-0.65, 0, 0.65].flatMap((x) => strut([x, 0.22, -0.75], [x, 0.22, 0.75], 0.006, C.parkaRed, false)),
+  ...[-0.35, 0.35].flatMap((z) => strut([-1.3, 0.22, z], [1.3, 0.22, z], 0.006, C.parkaRed, false)),
+  ...[[-1.3, -0.75], [1.3, -0.75], [-1.3, 0.75], [1.3, 0.75]].flatMap(([x, z]) => strut([x, 0, z], [x, 0.36, z], 0.025, C.crate)),
 ];
-const FROZEN: readonly Box[] = [
-  [0.6, 0.01, 0.3, 0.7, 0.04, 0.4, C.iceBlue], [-0.8, 0.01, -0.35, 0.5, 0.04, 0.3, C.snow], [-0.3, 0.012, 0.45, 0.35, 0.035, 0.2, C.iceBlue],
+/** Patches of ice in the frozen ground of the dig. */
+const FROZEN: readonly Tri[] = [
+  ...chunk(0.6, 0.01, 0.3, 0.7, 0.04, 0.4, 711, C.iceBlue), ...chunk(-0.8, 0.01, -0.35, 0.5, 0.04, 0.3, 712, C.snow),
+  ...chunk(-0.3, 0.012, 0.45, 0.35, 0.035, 0.2, 713, C.iceBlue),
 ];
-const TARP: readonly Box[] = [[0, 0.01, 0, 2.2, 0.02, 1.4, C.canvas], [0, 0.015, 0.68, 2.2, 0.02, 0.04, C.tent], [0, 0.015, -0.68, 2.2, 0.02, 0.04, C.tent]];
+/** The tarp the bones are laid on, with its two orange edges. */
+const TARP: readonly Tri[] = [
+  ...prism(chamferRect(0, 0, 2.2, 1.4, 0.05), 0, 0.02, C.canvas),
+  ...block(0, 0.015, 0.68, 2.2, 0.02, 0.04, C.tent), ...block(0, 0.015, -0.68, 2.2, 0.02, 0.04, C.tent),
+];
 
 function FieldWorld({ view, state, reduced }: { view: FossilView; state: FossilState; reduced: boolean }) {
   const ground = useMemo(() => buildFieldTris(), []);
@@ -588,20 +575,20 @@ function FieldWorld({ view, state, reduced }: { view: FossilView; state: FossilS
       ))}</group>
 
       {/* Camp: pyramid tents, crates, radio mast and a fossil trunk on the gravel */}
-      <Prop id="tent" boxes={TENT_BOXES} position={at(-3.2, -2.4)} scale={1.9} rotation={[0, 0.2, 0]} />
-      <Prop id="tent" boxes={TENT_BOXES} position={at(-0.9, -3.5)} scale={1.7} rotation={[0, -0.15, 0]} />
-      <Prop id="tent" boxes={TENT_BOXES} position={at(-5.3, -4.3)} scale={1.6} rotation={[0, 0.5, 0]} />
-      <Prop id="tent" boxes={TENT_BOXES} position={at(1.7, -2.8)} scale={1.5} rotation={[0, -0.4, 0]} />
-      <Prop id="mast" boxes={MAST_BOXES} position={at(-2.1, -0.9)} scale={3.2} />
-      <Prop id="crate" boxes={CRATE_BOXES} position={at(0.3, -1.4)} scale={0.9} rotation={[0, 0.3, 0]} />
-      <Prop id="crate" boxes={CRATE_BOXES} position={at(0.95, -1.15)} scale={0.8} rotation={[0, -0.2, 0]} />
-      <Prop id="crate" boxes={CRATE_BOXES} position={at(-4.4, -1.9)} scale={0.85} />
+      <PolyProp id="tent" tris={TENT_TRIS} position={at(-3.2, -2.4)} scale={1.9} rotation={[0, 0.2, 0]} />
+      <PolyProp id="tent" tris={TENT_TRIS} position={at(-0.9, -3.5)} scale={1.7} rotation={[0, -0.15, 0]} />
+      <PolyProp id="tent" tris={TENT_TRIS} position={at(-5.3, -4.3)} scale={1.6} rotation={[0, 0.5, 0]} />
+      <PolyProp id="tent" tris={TENT_TRIS} position={at(1.7, -2.8)} scale={1.5} rotation={[0, -0.4, 0]} />
+      <PolyProp id="mast" tris={MAST_TRIS} position={at(-2.1, -0.9)} scale={3.2} />
+      <PolyProp id="crate" tris={CRATE_TRIS} position={at(0.3, -1.4)} scale={0.9} rotation={[0, 0.3, 0]} />
+      <PolyProp id="crate" tris={CRATE_TRIS} position={at(0.95, -1.15)} scale={0.8} rotation={[0, -0.2, 0]} />
+      <PolyProp id="crate" tris={CRATE_TRIS} position={at(-4.4, -1.9)} scale={0.85} />
       <PolyProp id="log" tris={LOG_TRIS} position={at(8.5, -3.6)} scale={3.4} rotation={[0, 0.5, 0]} />
-      <Prop id="sled" boxes={SLED_BOXES} position={at(ax - 1.4, az + 1.2)} scale={1.2} rotation={[0, 0.4, 0]} />
+      <PolyProp id="sled" tris={SLED_TRIS} position={at(ax - 1.4, az + 1.2)} scale={1.2} rotation={[0, 0.4, 0]} />
 
       {/* Ammonite in its outcrop, under the sediment */}
       <group position={at(ax, az)}>
-        <Model boxes={ROCK} />
+        <PolyModel tris={ROCK} />
         {/* Set into the face of the rock, only its front half showing, as a fossil the weather has uncovered. */}
         <group position={[0, 0.04, 0.52]} scale={0.6}>
           <PolyProp id="ammonite-fossil" tris={AMMONITE_FOSSIL_TRIS} position={[0, 0, 0]} />
@@ -611,9 +598,9 @@ function FieldWorld({ view, state, reduced }: { view: FossilView; state: FossilS
 
       {/* Plesiosaur skeleton in its excavation */}
       <group position={at(px, pz)}>
-        <Model boxes={PIT} />
+        <PolyModel tris={PIT} />
         <group scale={2.3} position={[0, 0.02, 0]} rotation={[0, 0.1, 0]}>
-          <Prop id="plesio-bones" boxes={PLESIO_BONES} position={[0, 0, 0]} />
+          <PolyProp id="plesio-bones" tris={PLESIO_BONES_TRIS} position={[0, 0, 0]} />
           <Column follow={state.column && view === 'plesio-dig'} reduced={reduced} />
         </group>
       </group>
@@ -621,17 +608,17 @@ function FieldWorld({ view, state, reduced }: { view: FossilView; state: FossilS
       {/* The jaw with its tooth, then the frozen dig and the bones on a tarp */}
       <group position={at(jx, jz)}>
         {view === 'dig' ? <>
-          <Model boxes={PIT} />
-          <Model boxes={FROZEN} />
-          <Prop id="dino-bones" boxes={DINO_BONES} position={[0, 0.03, 0]} scale={2} />
+          <PolyModel tris={PIT} />
+          <PolyModel tris={FROZEN} />
+          <PolyProp id="dino-bones" tris={DINO_BONES_TRIS} position={[0, 0.03, 0]} scale={2} />
         </> : view === 'dinosaur' ? <>
-          <Model boxes={TARP} />
-          <Prop id="dino-bones" boxes={DINO_BONES} position={[0, 0.03, 0]} scale={2.4} />
-          <Prop id="jaw" boxes={JAW_BOXES} position={[0.7, 0.02, 0.35]} scale={0.8} />
+          <PolyModel tris={TARP} />
+          <PolyProp id="dino-bones" tris={DINO_BONES_TRIS} position={[0, 0.03, 0]} scale={2.4} />
+          <PolyProp id="jaw" tris={JAW_TRIS} position={[0.7, 0.02, 0.35]} scale={0.8} />
         </> : <>
-          <Model boxes={ROCK} scale={0.6} />
+          <PolyModel tris={ROCK} scale={0.6} />
           <group position={[0.05, 0.42, 0.3]} scale={1.1}>
-            <Prop id="jaw" boxes={JAW_BOXES} position={[0, 0, 0]} />
+            <PolyProp id="jaw" tris={JAW_TRIS} position={[0, 0, 0]} />
             <Glow position={JAW_TOOTH_CENTER} size={[0.16, 0.2, 0.1]} active={state.tooth && view === 'jaw'} reduced={reduced} />
           </group>
         </>}
@@ -647,10 +634,10 @@ function FieldWorld({ view, state, reduced }: { view: FossilView; state: FossilS
 
       {/* Closing: the four finds displayed on crates at sunset */}
       {closing && <group position={at(dx, dz)}>
-        {[-1.6, -0.55, 0.55, 1.6].map((x, i) => <Prop key={i} id="crate" boxes={CRATE_BOXES} position={[x, 0, 0]} scale={0.9} />)}
+        {[-1.6, -0.55, 0.55, 1.6].map((x, i) => <PolyProp key={i} id="crate" tris={CRATE_TRIS} position={[x, 0, 0]} scale={0.9} />)}
         <PolyProp id="ammonite-fossil" tris={AMMONITE_FOSSIL_TRIS} position={[-1.6, 0.38, 0]} scale={0.55} />
-        <Prop id="plesio-bones" boxes={PLESIO_BONES} position={[-0.55, 0.39, 0]} scale={0.5} />
-        <Prop id="jaw" boxes={JAW_BOXES} position={[0.55, 0.38, 0]} scale={0.7} />
+        <PolyProp id="plesio-bones" tris={PLESIO_BONES_TRIS} position={[-0.55, 0.39, 0]} scale={0.5} />
+        <PolyProp id="jaw" tris={JAW_TRIS} position={[0.55, 0.38, 0]} scale={0.7} />
         <PolyProp id="star" tris={STAR_TRIS} position={[1.6, 0.39, 0]} scale={0.32} />
       </group>}
 

@@ -374,8 +374,9 @@ export function column(cx: number, cz: number, rings: readonly (readonly [number
 
 /**
  * A person in a field parka, about one unit tall, facing +x, with the pivots of the block figure:
- * legs hang from the hips, arms from the shoulders, the head turns on the neck. One arm can carry a
- * geologist's hammer. Eduardo (`beard`) has his beard. Illustrations of the camp photographs.
+ * legs hang from the hips, arms from the shoulders, the head turns on the neck. One arm carries a
+ * geologist's hammer, or a brush to clean a find. Eduardo (`beard`) has his beard. Illustrations of
+ * the camp photographs.
  */
 export function geologistPolyParts(parka: Parka, beard: boolean) {
   const coat = PARKA_COLORS[parka];
@@ -410,7 +411,13 @@ export function geologistPolyParts(parka: Parka, beard: boolean) {
     ...strut([-0.005, -0.33, 0], [0.17, -0.33, 0], 0.012, C.handle),
     ...block(0.17, -0.33, 0, 0.035, 0.07, 0.1, C.metal),
   ];
-  return { torso, head, leg, arm, hammerArm };
+  // A soft brush, to clean the sediment off a find without scratching it.
+  const brushArm: Tri[] = [
+    ...arm,
+    ...strut([-0.005, -0.34, 0], [0.13, -0.36, 0], 0.01, C.crateDark),
+    ...block(0.16, -0.365, 0, 0.06, 0.03, 0.06, C.light),
+  ];
+  return { torso, head, leg, arm, hammerArm, brushArm };
 }
 
 /** Pivots of the figure, shared with the poses of fossilPoses.ts. */

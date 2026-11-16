@@ -189,6 +189,7 @@ function GeologistFigure({ who, parka, beard, scale = 1.1, reduced, heightAt = f
     leg: polyGeometry(`geo-leg-${key}`, () => p.leg),
     arm: polyGeometry(`geo-arm-${key}`, () => p.arm),
     hammer: polyGeometry(`geo-hammer-${key}`, () => p.hammerArm),
+    brush: polyGeometry(`geo-brush-${key}`, () => p.brushArm),
   };
   const root = useRef<Group>(null);
   const upper = useRef<Group>(null);
@@ -221,7 +222,7 @@ function GeologistFigure({ who, parka, beard, scale = 1.1, reduced, heightAt = f
         <mesh geometry={geo.torso} material={vehicleMaterial} />
         <group ref={head} position={[GEOLOGIST_NECK[0], GEOLOGIST_NECK[1] - hy, 0]}><mesh geometry={geo.head} material={vehicleMaterial} /></group>
         <group ref={(n) => void (limbs.current[2] = n)} position={[sx, sy - hy, sz]}><mesh geometry={geo.arm} material={vehicleMaterial} /></group>
-        <group ref={(n) => void (limbs.current[3] = n)} position={[sx, sy - hy, -sz]}><mesh geometry={geo.hammer} material={vehicleMaterial} /></group>
+        <group ref={(n) => void (limbs.current[3] = n)} position={[sx, sy - hy, -sz]}>{/* Sitting at a find they clean it with a brush; standing at the rock they use the hammer. */}<mesh geometry={who.act === 'sit' ? geo.brush : geo.hammer} material={vehicleMaterial} /></group>
       </group>
     </group>
   );
@@ -559,7 +560,8 @@ function FieldWorld({ view, state, reduced }: { view: FossilView; state: FossilS
     plesio: { act: 'sit', x: SPOT.plesio[0] + 0.3, z: SPOT.plesio[1] + 1.1, yaw: Math.PI / 2, seed: 1.3 } as Geologist,
     plesio2: { act: 'sit', x: SPOT.plesio[0] - 1.1, z: SPOT.plesio[1] - 0.9, yaw: -0.4, seed: 2.1 } as Geologist,
     finder: { act: 'look', x: SPOT.jaw[0] + 1.3, z: SPOT.jaw[1] + 0.6, yaw: Math.PI * 0.85, seed: 0.9 } as Geologist,
-    stars: { act: 'sit', x: SPOT.stars[0] - 1.6, z: SPOT.stars[1] - 0.4, yaw: 0.2, seed: 3.3 } as Geologist,
+    // At the edge of the slab, close enough that the brush reaches the stone.
+    stars: { act: 'sit', x: SPOT.stars[0] - 1.2, z: SPOT.stars[1] - 0.2, yaw: -0.12, seed: 3.3 } as Geologist,
   }), []);
   const closing = view === 'closing';
   const [ax, az] = SPOT.ammonite, [px, pz] = SPOT.plesio, [jx, jz] = SPOT.jaw, [sx, sz] = SPOT.stars, [dx, dz] = SPOT.display;

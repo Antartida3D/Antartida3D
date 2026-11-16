@@ -112,10 +112,10 @@ function Picker({ onStart, onExit, onSource, preview, reduced }: {
         <Fact fact={VOYAGE_TOURISM_NOTE} onSource={onSource} />
       </ul>
       <div className="row vactions">
+        <button type="button" className="btn" onClick={onExit}>Volver al mapa</button>
         <button type="button" className="btn primary" onClick={() => onStart(picked)}>
           {transport.kind === 'plane' ? 'Despegar' : 'Zarpar'}
         </button>
-        <button type="button" className="btn" onClick={onExit}>Volver al mapa</button>
       </div>
     </BottomSheet>
     </>
@@ -318,14 +318,14 @@ function MilestoneCard({ voyage, animated, onExit, onSource }: {
         </>
       )}
       <div className="row vactions">
-        <button type="button" className="btn primary" onClick={next}>
-          {beforeHop ? 'Continuar' : last ? 'Terminar el viaje' : arrived ? 'Volver a la llegada' : 'Seguir viaje'}
-        </button>
         {!beforeHop && (
           <button type="button" className="btn ghost" aria-expanded={more} onClick={() => setMore((m) => !m)}>
             {more ? 'Ver menos' : 'Saber más'}
           </button>
         )}
+        <button type="button" className="btn primary" onClick={next}>
+          {beforeHop ? 'Continuar' : last ? 'Terminar el viaje' : arrived ? 'Volver a la llegada' : 'Seguir viaje'}
+        </button>
       </div>
     </section>
   );
@@ -491,8 +491,11 @@ function TravelBar({ voyage, animated, onExit }: { voyage: VoyageController; ani
           )}
         </div>
       )}
-      {/* One row, with the main button at the same corner as "Seguir viaje" in the milestone card: the pointer stays put. */}
+      {/* One row, with the main button at the same corner as "Seguir viaje" in the milestone card: the pointer stays put.
+          It is the last one, on the right, where the thumb reaches on a phone (#177). */}
       <div className="row">
+        <button type="button" className="btn ghost vexit" onClick={onExit} aria-label="Salir del viaje" title="Salir del viaje">✕</button>
+        <button type="button" className={'btn' + (animated ? '' : ' primary')} onClick={() => voyage.skip(animated)}>Próximo hito</button>
         {animated && (
           <button
             type="button"
@@ -518,8 +521,6 @@ function TravelBar({ voyage, animated, onExit }: { voyage: VoyageController; ani
             {voyage.gear > 0 && <span className="vgear">×{String(VOYAGE_GEARS[voyage.gear]).replace('.', ',')}</span>}
           </button>
         )}
-        <button type="button" className={'btn' + (animated ? '' : ' primary')} onClick={() => voyage.skip(animated)}>Próximo hito</button>
-        <button type="button" className="btn ghost vexit" onClick={onExit} aria-label="Salir del viaje" title="Salir del viaje">✕</button>
       </div>
     </div>
   );

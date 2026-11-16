@@ -119,7 +119,7 @@ function OrcadasTravelBar({ arrival, onSkip }: { arrival: ArrivalId; onSkip?: ()
         <KindChip kind="recon" label="Reconstrucción ilustrada" />
         <span className="vsmall">Tramo ilustrativo desde Isla Marambio hasta Isla Laurie; el vehículo está agrandado para que se vea.</span>
       </p>
-      <div className="row">
+      <div className="row end">
         <button ref={skipRef} type="button" className="btn primary" onClick={() => onSkipRef.current?.()}>
           Saltar viaje
         </button>

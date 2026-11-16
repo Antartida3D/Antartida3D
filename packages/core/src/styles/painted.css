@@ -204,6 +204,8 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid #1E3E5C;outline-
 .tag.tc{background:transparent;color:#4C535A;border:1.5px dashed #5E656C}
 .tag.tsea{background:#D6E5EF;color:#1E3E5C;border:1.5px solid #1E3E5C}
 .row{display:flex;gap:10px;flex-wrap:wrap}
+/* A row whose main button stands alone: it goes on the right, where the thumb reaches on a phone (#177). */
+.row.end{justify-content:flex-end}
 .anno{font-family:'Caveat',cursive;font-size:19px;color:#1E3E5C;line-height:1.1}
 
 /* .vp is not a stacking context, so map markers (20 when shown) compete with the list: stay above them and the bars (#48). */

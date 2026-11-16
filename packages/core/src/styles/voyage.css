@@ -9,8 +9,9 @@
 .orc-intro-sources .orc-sources{z-index:23}
 .vscrim{z-index:6}
 .sheet.voyage p{margin:8px 0}
-/* The actions stay in view at the bottom of the sheet however long its content is. */
-.vactions{position:sticky;bottom:-24px;margin:12px 0 -24px;padding:8px 0 24px;background:var(--paper)}
+/* The actions stay in view at the bottom of the sheet however long its content is. The main one goes
+   last, on the right, where the thumb reaches on a phone (#177). */
+.vactions{position:sticky;bottom:-24px;margin:12px 0 -24px;padding:8px 0 24px;background:var(--paper);justify-content:flex-end}
 .vstep{display:block;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--pencil)}
 .vpick{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
 .vopt{flex:1 1 104px;min-height:48px;padding:8px 10px;text-align:left;border:2px solid var(--ink);border-radius:8px 14px 10px 12px;background:var(--ice)}
@@ -54,7 +55,8 @@
 /* Tip above the bar; empty until it is needed, so screen readers announce it when it appears. */
 .vhint{position:absolute;left:0;right:0;bottom:100%;margin:0 0 8px;padding:8px 12px;background:var(--paper);border:2px solid var(--ink);border-left:6px solid var(--ocre);border-radius:8px 14px 10px 12px;font-size:14px;line-height:1.3;pointer-events:none}
 .vhint:empty{display:none}
-.vbar .row{margin-top:8px;flex-wrap:nowrap;gap:8px}
+/* «Salir» on the left and the main button on the right, where the thumb reaches (#177). */
+.vbar .row{margin-top:8px;flex-wrap:nowrap;gap:8px;justify-content:space-between}
 .vbar .btn{padding:0 12px;white-space:nowrap}
 .vbar .vhold{flex:1;white-space:nowrap}
 .vbar .vback,.vbar .vexit{flex:none;width:48px;padding:0;touch-action:none;user-select:none;-webkit-user-select:none}

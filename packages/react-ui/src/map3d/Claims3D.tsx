@@ -6,7 +6,9 @@ import {
   MODEL_MIN_PX, placeModelSize, project, screenPx, terrainSurfaceHeight,
   type ClaimId, type ClaimsCoverage, type TerrainMesh,
 } from '@antartida/core';
-import { buildBoxGeometry, vehicleMaterial } from '../voyage/vehicles.ts';
+import { boxShade, buildPolyGeometry } from '../voyage/lowPoly.ts';
+import { vehicleMaterial } from '../voyage/vehicles.ts';
+import { boxesToFlagPoly } from './claimFlagPoly.ts';
 import { CLAIM_FLAG_MODELS } from './claimFlagModels.ts';
 import type { ClaimsSelection, ClaimsStatus } from '../map/ClaimsControl.tsx';
 
@@ -75,7 +77,7 @@ export function Claims3D({ wide, selection, coverage, onStatus }: {
         const height = terrainSurfaceHeight(terrain, point.x, point.y);
         return height === null ? [] : [[point.x - 500, height + lift, point.y - 500] as [number, number, number]];
       });
-      return { claim, geometries, flags, borderColor: new Color(claim.color).multiplyScalar(.65), flagGeometry: buildBoxGeometry(CLAIM_FLAG_MODELS[claim.id]) };
+      return { claim, geometries, flags, borderColor: new Color(claim.color).multiplyScalar(.65), flagGeometry: buildPolyGeometry(boxesToFlagPoly(CLAIM_FLAG_MODELS[claim.id]), boxShade) };
     });
   }, [terrain, coverage]);
 

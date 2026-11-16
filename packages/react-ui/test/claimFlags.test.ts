@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { boxesToFlagPoly } from '../src/map3d/claimFlagPoly.ts';
 import { CLAIM_FLAG_MODELS } from '../src/map3d/claimFlagModels.ts';
+import { MALVINAS_FLAG_BOXES } from '../src/map3d/malvinasFlagModel.ts';
+import { boxShade, buildPolyGeometry, POLY_MIN_COLORS, POLY_MIN_TRIS } from '../src/voyage/lowPoly.ts';
 
 // The broad white stripe must be above the red at the upper hoist.
 // Buckinghamshire Flag Protocol (March 2026), p. 4; see the claims source document.
@@ -21,4 +24,17 @@ describe('Union Flag orientation, including the Australian and New Zealand canto
       }
     });
   }
+});
+
+describe('low-poly claim and Malvinas flags', () => {
+  it('converts Malvinas and all claim flags into finite low-poly geometries', () => {
+    for (const boxes of [MALVINAS_FLAG_BOXES, ...Object.values(CLAIM_FLAG_MODELS)]) {
+      const tris = boxesToFlagPoly(boxes);
+      expect(tris.length).toBeGreaterThanOrEqual(POLY_MIN_TRIS);
+      expect(new Set(tris.map((t) => t[3])).size).toBeGreaterThanOrEqual(POLY_MIN_COLORS);
+      const geometry = buildPolyGeometry(tris, boxShade);
+      expect(geometry.getAttribute('position').count).toBe(tris.length * 3);
+      geometry.dispose();
+    }
+  });
 });

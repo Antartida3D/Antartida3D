@@ -7,6 +7,7 @@ Desde el issue #109, las decisiones nuevas usan registros individuales con estad
 ## Decisión vigente de la UI cartográfica
 
 - [DEC-202: Pergamino claro y carga cartográfica](decisiones/DEC-202-pergamino-claro.md): dirección visual aprobada para el issue #202, con paneles de 13 px, botones rectangulares de 9 px y loader compartido 2D/3D.
+- [DEC-227: mapa 2D deshabilitado](decisiones/DEC-227-mapa-2d-deshabilitado.md): sin selector ni botón «Ver mapa 2D»; el 2D aparece solo, sin WebGL o si falla el 3D. Se reactiva con `MAP_2D_ENABLED`.
 
 > La app es **dibujado**. El repositorio tuvo antes un segundo prototipo (`apps/atlas`), que se descartó y se quitó (#1). Se recupera en el commit `2ab6f80`.
 
@@ -251,6 +252,8 @@ Plan: `.agents/plans/plan-helipuerto-orcadas.md`.
 
 ### Sin WebGL, «Relieve 3D» avisa cómo activarlo (#123, 14-11-2026)
 
+> **Reemplazado en parte por [DEC-227](decisiones/DEC-227-mapa-2d-deshabilitado.md) (16-11-2026)** mientras el mapa 2D esté deshabilitado: no hay selector. Queda solo el botón «Relieve 3D · apagado» con su aviso, sin WebGL o tras un error de carga del 3D.
+
 - **Problema:** en un navegador con WebGL apagado (por ejemplo Opera con la aceleración por hardware desactivada, o con la placa de video bloqueada), el selector «Mapa 2D / Relieve 3D» desaparecía entero. La persona no sabía que existía el 3D ni qué hacer para verlo. El toast «WebGL no está disponible» nunca se veía, porque no quedaba botón que lo disparara.
 - **Ahora:** el selector se ve siempre. Sin WebGL, el segundo botón dice «Relieve 3D · apagado» (borde punteado ocre, como lo ilustrativo) y al tocarlo abre un aviso que explica qué pasa y cómo activar la aceleración por hardware. El aviso se cierra con «Entendido» o con Escape, y el foco vuelve al botón (`useFocusReturn`). El mapa sigue en 2D.
 - **No es `disabled` ni `aria-disabled`:** el botón hace algo (abre el aviso), así que se anuncia como un botón común. Su nombre accesible es «Relieve 3D apagado: ver cómo activarlo», y `aria-expanded` dice si el aviso está abierto.
@@ -270,7 +273,7 @@ Pedido de quien lleva el issue: quien entra por primera vez se queda perdido y n
 - **Una sola vez:** se guarda en `localStorage` (`antartida:welcome`) apenas se muestra, con `try/catch`. Si el almacenamiento está bloqueado, se muestra una vez por visita. Tampoco se muestra si «Desde Ushuaia» ya está explorada.
 - **Dónde está la regla:** `welcomeView(size)` y `showsWelcome(seen, explored)` en `core/src/welcome.ts`, con pruebas; la clave, en `core/src/storage.ts`. La misma vista sirve para 2D (`glide`) y 3D (el comando `focus` de la cámara, el mismo de los grupos de marcadores). El movimiento de la bienvenida no cuenta como gesto de la persona (`touched`).
 - **Borde del mapa:** el mapa no deja que el centro de la vista pase de x = 80 (`clampView`) y Ushuaia está en x = 31. Por eso queda un poco a la izquierda del centro; a ×3 sigue bien dentro de la pantalla y su cartel entra a la derecha.
-- **Cambio de 2D a 3D durante la bienvenida:** la vista inicial puede cambiar después del primer dibujo, porque `useReducedMotion` lee la preferencia en un efecto: con movimiento reducido la app elige 3D y enseguida pasa a 2D. Mientras dura la bienvenida, si el modo cambia (por eso o porque la persona toca el botón), el mapa se vuelve a acercar a Ushuaia en el modo nuevo.
+- **Cambio de 2D a 3D durante la bienvenida:** la vista inicial puede cambiar después del primer dibujo, porque `useReducedMotion` lee la preferencia en un efecto: con movimiento reducido la app elige 3D y enseguida pasa a 2D. Mientras dura la bienvenida, si el modo cambia (por eso o porque la persona toca el botón), el mapa se vuelve a acercar a Ushuaia en el modo nuevo. Con el mapa 2D deshabilitado ([DEC-227](decisiones/DEC-227-mapa-2d-deshabilitado.md)) este cambio no ocurre: con WebGL la app arranca y sigue en 3D.
 - **Movimiento reducido:** sin animación de cámara en 3D; en 2D, el mismo acercamiento que usan los botones de zoom.
 - **Pruebas e2e:** como cada prueba arranca con el almacenamiento vacío, todas verían la bienvenida y empezarían con el mapa cerca de Ushuaia. `playwright.config.ts` les da la bienvenida ya vista (`storageState`), y las siete specs que limpiaban `localStorage` usan `clearStorage(page)`, que limpia y la deja vista (`packages/e2e/storage.ts`). Solo `welcome.spec.ts` arranca vacía. La clave se importa de `@antartida/core/storage` (subruta nueva: el índice del core no se puede cargar fuera de Vite).
 - **Orden completo (#75):** ya no queda afuera, ver [DEC-75](decisiones/DEC-75-orden-sugerido.md).

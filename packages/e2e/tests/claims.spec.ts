@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { mockOpenMeteo } from './weather-helpers.ts';
+import { MAP_2D_ENABLED, show3D } from './map-helpers.ts';
 
 /**
  * Hides the claims details (#148). On a phone they are a sheet over the bottom half, over their own
@@ -38,7 +39,7 @@ test('claims start off, toggle areas and flags together, and keep the map camera
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('/');
-  await page.getByRole('button', { name: 'Relieve 3D', exact: true }).click();
+  await show3D(page);
   const toggle = page.getByRole('switch', { name: 'Reclamos territoriales' });
   await page.waitForFunction(() => (window as any).__scene);
   await expect(toggle).toHaveCount(0);
@@ -129,7 +130,7 @@ test('claims offer sea sectors and land coverage, with the full ocean extent', a
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('/');
-  await page.getByRole('button', { name: 'Relieve 3D', exact: true }).click();
+  await show3D(page);
   await openFromPole(page);
   const panel = page.getByRole('region', { name: 'Reclamos antárticos' });
   // This test enables the overlay during the initial high-resolution WebGL load.
@@ -154,7 +155,7 @@ test('claims offer sea sectors and land coverage, with the full ocean extent', a
 test('claims controls fit the viewport and preserve selection when changing view mode', async ({ page, isMobile }) => {
   test.setTimeout(60_000);
   await page.goto('/');
-  await page.getByRole('button', { name: 'Relieve 3D', exact: true }).click();
+  await show3D(page);
   await openFromPole(page);
   await page.getByRole('group', { name: 'País reclamante' }).getByRole('button', { name: 'Noruega', exact: true }).click();
   await expect(page.getByRole('region', { name: 'Reclamos antárticos' }).getByRole('status')).toContainText('isla Pedro I');
@@ -171,14 +172,16 @@ test('claims controls fit the viewport and preserve selection when changing view
   expect(withLegend!.y).toBeGreaterThanOrEqual(0);
   // On a phone the details cover the view buttons: hidden first, shown again in 3D below.
   if (isMobile) await hideDetails(page, isMobile);
-  await page.getByRole('button', { name: 'Mapa 2D', exact: true }).click();
-  await expect(page.getByRole('switch', { name: 'Reclamos territoriales' })).toHaveCount(0);
-  // The 2D map has no claims layer, so the South Pole sheet does not offer it.
-  await page.getByRole('button', { name: 'Ver como lista', exact: true }).click();
-  await page.getByRole('dialog').getByRole('button', { name: /^El Polo Sur/ }).click();
-  await expect(page.getByRole('dialog').getByRole('button', { name: /reclamos/i })).toHaveCount(0);
-  await page.getByRole('dialog').getByRole('button', { name: 'Volver al mapa', exact: true }).click();
-  await page.getByRole('button', { name: 'Relieve 3D', exact: true }).click();
+  if (MAP_2D_ENABLED) {
+    await page.getByRole('button', { name: 'Mapa 2D', exact: true }).click();
+    await expect(page.getByRole('switch', { name: 'Reclamos territoriales' })).toHaveCount(0);
+    // The 2D map has no claims layer, so the South Pole sheet does not offer it.
+    await page.getByRole('button', { name: 'Ver como lista', exact: true }).click();
+    await page.getByRole('dialog').getByRole('button', { name: /^El Polo Sur/ }).click();
+    await expect(page.getByRole('dialog').getByRole('button', { name: /reclamos/i })).toHaveCount(0);
+    await page.getByRole('dialog').getByRole('button', { name: 'Volver al mapa', exact: true }).click();
+    await show3D(page);
+  }
   await expect(page.getByRole('switch', { name: 'Reclamos territoriales' })).toHaveAttribute('aria-checked', 'true');
   if (isMobile) await page.getByRole('button', { name: 'Detalles de reclamos', exact: true }).click();
   await expect(page.getByRole('group', { name: 'País reclamante' }).getByRole('button', { name: 'Noruega', exact: true })).toHaveAttribute('aria-pressed', 'true');

@@ -1,10 +1,12 @@
 import { useId, useRef, useState, type KeyboardEvent } from 'react';
-import { useFocusReturn } from '../hooks.ts';
+import { MAP_2D_ENABLED, map3dLoadingStore } from '@antartida/core';
+import { useFocusReturn, useLoadingStore } from '../hooks.ts';
 
 /**
  * Switches between the 2D map and the 3D relief. Without WebGL (for example, hardware
  * acceleration turned off in the browser) «Relieve 3D» stays on screen, marked as not available,
- * and opens a note on how to turn it on (#123).
+ * and opens a note on how to turn it on (#123). With the 2D map off (#227) only that note remains,
+ * and it also explains a 3D load error.
  */
 export function ViewToggle({
   mode,
@@ -19,6 +21,9 @@ export function ViewToggle({
   const noteRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
   useFocusReturn(note, noteRef);
+  // With WebGL present, a 3D map that is off failed to load (the 2D map, when on, keeps its toggle).
+  const loadError = useLoadingStore(map3dLoadingStore).error;
+  const failed = !MAP_2D_ENABLED && loadError !== null;
 
   const onNoteKey = (e: KeyboardEvent) => {
     if (e.key === 'Escape') setNote(false);
@@ -28,26 +33,37 @@ export function ViewToggle({
     <>
       {note && (
         <div ref={noteRef} className="webgl-note" role="dialog" aria-labelledby={titleId} onKeyDown={onNoteKey}>
-          <p className="wn-title" id={titleId}>El relieve 3D está apagado en este navegador</p>
-          <p>Para dibujar el 3D, la página usa la placa de video (WebGL), y este navegador la tiene desactivada. Para activarla:</p>
-          <ol>
-            <li>Abrí la configuración del navegador y buscá <em>“aceleración por hardware”</em>.</li>
-            <li>Activá <em>“Usar aceleración por hardware cuando esté disponible”</em>.</li>
-            <li>Cerrá el navegador, volvé a abrirlo y recargá esta página.</li>
-          </ol>
+          {failed ? (
+            <>
+              <p className="wn-title" id={titleId}>No pudimos cargar el relieve 3D</p>
+              <p>{loadError} Recargá la página para intentarlo de nuevo.</p>
+            </>
+          ) : (
+            <>
+              <p className="wn-title" id={titleId}>El relieve 3D está apagado en este navegador</p>
+              <p>Para dibujar el 3D, la página usa la placa de video (WebGL), y este navegador la tiene desactivada. Para activarla:</p>
+              <ol>
+                <li>Abrí la configuración del navegador y buscá <em>“aceleración por hardware”</em>.</li>
+                <li>Activá <em>“Usar aceleración por hardware cuando esté disponible”</em>.</li>
+                <li>Cerrá el navegador, volvé a abrirlo y recargá esta página.</li>
+              </ol>
+            </>
+          )}
           <p>Mientras tanto, podés seguir en el mapa 2D.</p>
           <button type="button" className="btn" onClick={() => setNote(false)}>Entendido</button>
         </div>
       )}
       <div className="view-toggle" role="group" aria-label="Modo de vista">
-        <button
-          type="button"
-          className={'chip' + (mode === '2d' ? ' active' : '')}
-          aria-pressed={mode === '2d'}
-          onClick={() => onChange('2d')}
-        >
-          Mapa 2D
-        </button>
+        {MAP_2D_ENABLED && (
+          <button
+            type="button"
+            className={'chip' + (mode === '2d' ? ' active' : '')}
+            aria-pressed={mode === '2d'}
+            onClick={() => onChange('2d')}
+          >
+            Mapa 2D
+          </button>
+        )}
         {available3D ? (
           <button
             type="button"

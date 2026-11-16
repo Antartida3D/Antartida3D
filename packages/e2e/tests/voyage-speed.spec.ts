@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { clearStorage } from '../storage.ts';
 import { mockOpenMeteo } from './weather-helpers.ts';
+import { show3D } from './map-helpers.ts';
 
 let consoleErrors: string[] = [];
 
@@ -23,8 +24,7 @@ test.afterEach(() => {
 
 test('holding «avanzar» the trip picks up speed little by little up to ×4, and lets it go when released (#166)', async ({ page }) => {
   test.setTimeout(90_000);
-  const relief = page.getByRole('group', { name: 'Modo de vista' }).getByRole('button', { name: 'Relieve 3D' });
-  if ((await relief.getAttribute('aria-pressed')) !== 'true') await relief.click();
+  await show3D(page);
   await expect(page.locator('canvas').first()).toBeVisible();
   await page.getByRole('button', { name: 'Ver como lista' }).click();
   await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Desde Ushuaia/ }).click();
@@ -49,8 +49,7 @@ test('holding «avanzar» the trip picks up speed little by little up to ×4, an
 
 test('from farther the trip goes faster, so it does not crawl on the screen (#168)', async ({ page }) => {
   test.setTimeout(90_000);
-  const relief = page.getByRole('group', { name: 'Modo de vista' }).getByRole('button', { name: 'Relieve 3D' });
-  if ((await relief.getAttribute('aria-pressed')) !== 'true') await relief.click();
+  await show3D(page);
   await expect(page.locator('canvas').first()).toBeVisible();
   await page.getByRole('button', { name: 'Ver como lista' }).click();
   await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Desde Ushuaia/ }).click();

@@ -5,6 +5,7 @@ import { AVAILABLE_COUNT } from '../../core/src/content/points.ts';
 import { EXPLORED_KEY } from '../../core/src/storage.ts';
 import { clearStorage } from '../storage.ts';
 import { mockOpenMeteo } from './weather-helpers.ts';
+import { MAP_2D_ENABLED, show3D } from './map-helpers.ts';
 
 let consoleErrors: string[] = [];
 
@@ -57,8 +58,8 @@ async function completeMarambioFromList(page: Page) {
 }
 
 async function openGroupPicker(page: Page) {
-  const toggle = page.getByRole('group', { name: 'Modo de vista' });
-  await toggle.getByRole('button', { name: 'Mapa 2D' }).click();
+  if (MAP_2D_ENABLED) await page.getByRole('group', { name: 'Modo de vista' }).getByRole('button', { name: 'Mapa 2D' }).click();
+  else await show3D(page);
   const group = page.locator('.vp .mk.cluster[aria-label*="Fósiles"]');
   for (let i = 0; i < 6; i++) {
     await expect(group).toHaveCount(1);
@@ -108,7 +109,7 @@ test('with campana explored, suggests Base Marambio and announces it on its clus
 });
 
 test('in 3D relief, the suggested marker carries the next class', async ({ page }) => {
-  await page.getByRole('group', { name: 'Modo de vista' }).getByRole('button', { name: 'Relieve 3D' }).click();
+  await show3D(page);
   await expect(page.locator('.ld')).toHaveCount(0, { timeout: 10_000 });
   const marker = page.locator('.vp .mk.next');
   await expect(marker).toHaveCount(1);
@@ -166,8 +167,16 @@ test('next card does not overlap or intercept clicks on the suggested marker, an
   const card = page.locator('.next-sheet');
   const marker = page.locator('.vp .mk.next, .vp .mk.has-next').first();
   await expect(marker).toBeVisible();
-  // Let framing and sheet entrance settle before measuring boxes.
+  // Let framing and sheet entrance settle before measuring boxes (the 3D camera eases into place).
   await page.waitForTimeout(200);
+  await expect
+    .poll(() =>
+      marker.evaluate((el) => {
+        const r = el.getBoundingClientRect();
+        return Boolean(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest('.mk.next, .mk.has-next'));
+      }),
+    )
+    .toBe(true);
 
   const cardBox = (await card.boundingBox())!;
   const markerBox = (await marker.boundingBox())!;
@@ -249,8 +258,13 @@ test('dragging the map moves it while the next card stays open', async ({ page }
   await page.mouse.move(startX + 100, startY + 50, { steps: 6 });
   await page.mouse.up();
 
-  const after = (await marker.boundingBox())!;
-  expect(Math.hypot(after.x - before.x, after.y - before.y)).toBeGreaterThan(30);
+  // The 3D camera eases into place after the drag: wait for the marker to follow.
+  await expect
+    .poll(async () => {
+      const after = (await marker.boundingBox())!;
+      return Math.hypot(after.x - before.x, after.y - before.y);
+    })
+    .toBeGreaterThan(30);
   await expect(card).toBeVisible();
 });
 
@@ -269,7 +283,7 @@ test('list view shows expeditions ordered 1 to 6 and labels the next suggested o
     await expect(items.nth(i).locator('strong')).toHaveText(expectedTitles[i]);
   }
   await expect(items.nth(0).locator('.go')).toHaveText('Explorado · volver a entrar');
-  await expect(items.nth(1).locator('.go.next')).toHaveText('Siguiente sugerida · empezar');
+  await expect(items.nth(1).locator('.go.next')).toHaveText('Siguiente sugerida');
   await expect(items.nth(2).locator('.go')).toHaveText('Empezar expedición');
 });
 

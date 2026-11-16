@@ -51,7 +51,7 @@ export function ListView({ explored, onClose, onPick, points }: {
                     {g.tier === 'A' && order(p) >= 0 && <span className="num" aria-hidden="true">{order(p) + 1}</span>}
                     <span className="t"><strong>{p.title}</strong><span className="p">{p.place}</span></span>
                     <span className={'go' + (p.id === next ? ' next' : '')}>
-                      {g.tier !== 'A' ? 'Ver ficha' : explored.includes(p.id) ? 'Explorado · volver a entrar' : p.id === next ? 'Siguiente sugerida · empezar' : 'Empezar expedición'}
+                      {g.tier !== 'A' ? 'Ver ficha' : explored.includes(p.id) ? 'Explorado · volver a entrar' : p.id === next ? 'Siguiente sugerida' : 'Empezar expedición'}
                     </span>
                   </button>
                 </li>

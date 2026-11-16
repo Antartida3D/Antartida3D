@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { ORCADAS_GUIDING_QUESTION } from '../../core/src/content/orcadas.ts';
 import { FUEGIA_MIN_DISTANCE, GROUND_TARGET_MAX, GROUND_TARGET_MIN, ICE_MIN_DISTANCE } from '../../core/src/fuegia.ts';
 import { project } from '../../core/src/projection.ts';
+import { MAP_2D_ENABLED, NO_2D, show3D } from './map-helpers.ts';
 
 /**
  * Waits until the camera has reached where it was heading. `active` turns false as soon as the
@@ -38,7 +39,26 @@ test.afterEach(() => {
 });
 
 test.describe('3D relief view', () => {
+  test('with the 2D map off there is no toggle and the map starts in 3D, even with 2D saved (#227)', async ({ page }) => {
+    test.skip(MAP_2D_ENABLED, 'Solo con el mapa 2D deshabilitado');
+    // reducedMotion: 'reduce' (playwright.config) and a saved 2D used to start in 2D.
+    await page.addInitScript(() => {
+      try {
+        localStorage.setItem('antartida:view', '2d');
+      } catch {}
+    });
+    await page.goto('/');
+    await expect(page.locator('section.ld')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Ver mapa 2D' })).toHaveCount(0);
+    await show3D(page);
+    await expect(page.getByRole('group', { name: 'Modo de vista' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Mapa 2D' })).toHaveCount(0);
+    // The 2D map never mounted, not even behind the loading screen.
+    expect(await page.evaluate(() => document.querySelector('.layer') === null)).toBe(true);
+  });
+
   test('toggle switches between 2D and 3D and renders canvas', async ({ page }) => {
+    test.skip(!MAP_2D_ENABLED, NO_2D);
     await page.goto('/');
     const toggle = page.getByRole('group', { name: 'Modo de vista' });
     await expect(toggle).toBeVisible();
@@ -48,7 +68,7 @@ test.describe('3D relief view', () => {
     await expect(page.locator('.layer')).toBeVisible();
 
     // Switch to 3D
-    await toggle.getByRole('button', { name: 'Relieve 3D' }).click();
+    await show3D(page);
     await expect(toggle.getByRole('button', { name: 'Relieve 3D' })).toHaveAttribute('aria-pressed', 'true');
     const canvas = page.locator('canvas');
     await expect(canvas).toBeVisible();
@@ -65,12 +85,7 @@ test.describe('3D relief view', () => {
 
   test('markers are focusable in 3D and Orcadas opens the expedition', async ({ page }) => {
     await page.goto('/');
-    const toggle = page.getByRole('group', { name: 'Modo de vista' });
-    await expect(toggle).toBeVisible();
-
-    // Switch to 3D
-    await toggle.getByRole('button', { name: 'Relieve 3D' }).click();
-    await page.waitForSelector('canvas');
+    await show3D(page);
 
     // Click cluster containing orcadas or directly orcadas marker
     const clusterOrMarker = page.locator('.ov [data-key*="orcadas"] button');
@@ -94,7 +109,7 @@ test.describe('3D relief view', () => {
   test('wheel, buttons and keys all stop at the same closest distance over the ice (#127)', async ({ page }) => {
     test.setTimeout(120000);
     await page.goto('/');
-    await page.getByRole('group', { name: 'Modo de vista' }).getByRole('button', { name: 'Relieve 3D' }).click();
+    await show3D(page);
     await page.waitForFunction(() => (window as any).__cameraControls && (window as any).__invalidate);
     const map = page.getByRole('application', { name: /Mapa en relieve 3D/ });
 
@@ -155,7 +170,7 @@ test.describe('3D relief view', () => {
 
   test('zoom buttons move the orbit camera from where it is, without resetting it', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('group', { name: 'Modo de vista' }).getByRole('button', { name: 'Relieve 3D' }).click();
+    await show3D(page);
     await page.waitForFunction(() => (window as any).__cameraControls);
 
     type Cam = { d: number; polar: number; az: number; tx: number; tz: number };
@@ -206,7 +221,7 @@ test.describe('3D relief view', () => {
 
   test('the farthest view is the overview and the sea reaches the top of the screen, with no paper', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('group', { name: 'Modo de vista' }).getByRole('button', { name: 'Relieve 3D' }).click();
+    await show3D(page);
     await page.waitForFunction(() => (window as any).__cameraControls);
     const overview = await page.evaluate(() => (window as any).__cameraControls.distance as number);
 
@@ -245,7 +260,7 @@ test.describe('3D relief view', () => {
 
   test('dragging moves over the map and the right button turns the camera', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('group', { name: 'Modo de vista' }).getByRole('button', { name: 'Relieve 3D' }).click();
+    await show3D(page);
     await page.waitForFunction(() => (window as any).__cameraControls);
 
     // Open sea in the South Pacific, away from every marker; the camera is south of its target, looking north.
@@ -303,7 +318,7 @@ test.describe('3D relief view', () => {
   test('on a touch screen one finger moves over the map', async ({ page, isMobile }) => {
     test.skip(!isMobile, 'touch gestures belong to the phone layout');
     await page.goto('/');
-    await page.getByRole('group', { name: 'Modo de vista' }).getByRole('button', { name: 'Relieve 3D' }).click();
+    await show3D(page);
     await page.waitForFunction(() => (window as any).__cameraControls);
     await page.evaluate(() => {
       const cc = (window as any).__cameraControls;
@@ -338,7 +353,7 @@ test.describe('3D relief view', () => {
   test('on a touch screen two fingers zoom by pinching, turn by twisting and tilt by dragging up', async ({ page, isMobile }) => {
     test.skip(!isMobile, 'touch gestures belong to the phone layout');
     await page.goto('/');
-    await page.getByRole('group', { name: 'Modo de vista' }).getByRole('button', { name: 'Relieve 3D' }).click();
+    await show3D(page);
     await page.waitForFunction(() => (window as any).__cameraControls);
     const reset = () =>
       page.evaluate(() => {
@@ -430,7 +445,7 @@ test.describe('3D relief view', () => {
   test('on a touch screen a double tap zooms in one step around the tapped point, and the second touch dragged up or down zooms (#165)', async ({ page, isMobile }) => {
     test.skip(!isMobile, 'touch gestures belong to the phone layout');
     await page.goto('/');
-    await page.getByRole('group', { name: 'Modo de vista' }).getByRole('button', { name: 'Relieve 3D' }).click();
+    await show3D(page);
     await page.waitForFunction(() => (window as any).__cameraControls);
     const reset = async (d: number, x = 0) => {
       await page.evaluate(([d, x]) => {
@@ -557,7 +572,7 @@ test.describe('3D relief view', () => {
     test.skip(!isMobile, 'touch gestures belong to the phone layout');
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     await page.goto('/');
-    await page.getByRole('group', { name: 'Modo de vista' }).getByRole('button', { name: 'Relieve 3D' }).click();
+    await show3D(page);
     await page.waitForFunction(() => (window as any).__cameraControls);
     await page.evaluate(() => {
       const cc = (window as any).__cameraControls;
@@ -586,8 +601,7 @@ test.describe('3D relief view', () => {
 
   test('terrain is rendered and South Pole pixel is not ocean color', async ({ page }) => {
     await page.goto('/');
-    const toggle = page.getByRole('group', { name: 'Modo de vista' });
-    await toggle.getByRole('button', { name: 'Relieve 3D' }).click();
+    await show3D(page);
     const canvas = page.locator('canvas');
     await expect(canvas).toBeVisible();
 
@@ -615,7 +629,7 @@ test.describe('3D relief view', () => {
 
   test('Tierra del Fuego has relief and the camera gets closer there than over Antarctica', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('group', { name: 'Modo de vista' }).getByRole('button', { name: 'Relieve 3D' }).click();
+    await show3D(page);
     await page.waitForFunction(() => (window as any).__cameraControls);
 
     // Look at Ushuaia (map 31.5, 313.6 -> world -468.5, -186.4).
@@ -667,8 +681,7 @@ test.describe('3D relief view', () => {
 
   test('with PointSheet open, elementFromPoint at sheet center returns an element inside the sheet', async ({ page }) => {
     await page.goto('/');
-    const toggle = page.getByRole('group', { name: 'Modo de vista' });
-    await toggle.getByRole('button', { name: 'Relieve 3D' }).click();
+    await show3D(page);
     await page.waitForSelector('canvas');
     await page.waitForTimeout(1000);
 
@@ -695,8 +708,7 @@ test.describe('3D relief view', () => {
 
   test('sea cards show the block model of their point, and the Drake card shows none (#50)', async ({ page }) => {
     await page.goto('/');
-    const toggle = page.getByRole('group', { name: 'Modo de vista' });
-    await toggle.getByRole('button', { name: 'Relieve 3D' }).click();
+    await show3D(page);
     await page.waitForSelector('canvas');
     await page.waitForTimeout(1000);
 
@@ -722,8 +734,7 @@ test.describe('3D relief view', () => {
   test('markers stay locked to their 3D world point while the camera moves (#152)', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     await page.goto('/');
-    const toggle = page.getByRole('group', { name: 'Modo de vista' });
-    await toggle.getByRole('button', { name: 'Relieve 3D' }).click();
+    await show3D(page);
     await page.waitForSelector('canvas');
     await page.waitForFunction(() => Boolean((window as any).__cameraControls));
 

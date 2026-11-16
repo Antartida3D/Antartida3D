@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   EXPEDITION,
+  FOSSIL_PHOTOS,
+  FOSSIL_SOURCES,
+  FOSSIL_STOPS,
+  FOSSIL_STORY,
   MARAMBIO_FACTS,
   MILESTONES,
   ORCADAS_FACTS,
@@ -47,6 +51,7 @@ describe('quotes in the content (#190)', () => {
   const content = JSON.stringify([
     VOYAGE_SOURCES, TRANSPORTS, MILESTONES, EXPEDITION, VOYAGE_TRANSFER, VOYAGE_TOURISM_NOTE, SIGHTINGS,
     PONCHO_TRANSPORT, PONCHO_MILESTONES, PONCHO_LOG, PONCHO_PHOTOS, ORCADAS_FACTS, MARAMBIO_FACTS,
+    FOSSIL_SOURCES, FOSSIL_PHOTOS, FOSSIL_STOPS, FOSSIL_STORY,
   ]);
 
   it('has no «angle» quotes: a quotation goes between “ and ”', () => {

@@ -50,6 +50,11 @@ test('explores the four fossils and three habitats, opens sources and records co
   const note = page.getByRole('dialog', { name: 'El desvío de 1986' });
   await expect(note).toContainText('veo un pedacito de huesos saliendo de una roca');
   await expect(note).toContainText('Las frases entre comillas son textuales');
+  // What he said goes between “ ” and in italics (#190).
+  const said = note.locator('em', { hasText: 'Lo ocultamos' });
+  await expect(said).toHaveText('“Lo ocultamos hasta tenerlo publicado.”');
+  await expect(said).toHaveCSS('font-style', 'italic');
+  await expect(note).not.toContainText(/[«»]/);
   await expect(note.getByRole('link', { name: /Eduardo Olivero cuenta el hallazgo/ })).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(note).not.toBeVisible();

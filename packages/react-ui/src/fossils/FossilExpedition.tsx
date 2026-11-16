@@ -20,7 +20,7 @@ import chitonPhoto from '@antartida/core/assets/fossils/quiton.webp';
 import { BottomSheet, type OpenSheetSize } from '../BottomSheet.tsx';
 import { FossilTimeline } from './FossilTimeline.tsx';
 import { useIsDesktop } from '../hooks.ts';
-import { Icon } from '../ui.tsx';
+import { Icon, Quoted } from '../ui.tsx';
 
 const Scene = lazy(() => import('./FossilScene.tsx').then((m) => ({ default: m.FossilScene })));
 const PHOTO_URL: Readonly<Record<FossilPhotoId, string>> = {
@@ -199,7 +199,7 @@ export function FossilExpedition({ reduced, webgl, onLeave }: {
         {Object.entries(FOSSIL_SOURCES).map(([id, source]) => <article className="fossil-source-entry" key={id}><h3><SourceLink id={id as FossilSourceId} /></h3><p>{source.org}</p><p>{source.detail}</p><small>Consultado: {source.date.split('-').reverse().join('/')}</small></article>)}
         <p className="fossil-pending">Para seguir completando con Eduardo: especie y medidas de los amonites elegidos, relato de su hallazgo, fecha y lugar de cada fotografía del archivo y nuevos testimonios. Los modelos de los animales son una primera interpretación visual.</p>
       </> : modal?.kind === 'story' ? <article className="fossil-story">
-        {FOSSIL_STORY.paragraphs.map((text) => <p key={text}>{text}</p>)}
+        {FOSSIL_STORY.paragraphs.map((text) => <p key={text}><Quoted text={text} /></p>)}
         <footer><span>{FOSSIL_STORY.credit}</span><SourceLink id={FOSSIL_STORY.source} /></footer>
       </article> : <figure className="fossil-archive-full"><img src={PHOTO_URL[shown]} alt={photo.alt} /><figcaption><b>{photo.caption}</b>{photo.note && <span className="fossil-photo-note">{photo.note}</span>}<span>{photo.credit}</span><SourceLink id={photo.source} /></figcaption></figure>}
     </dialog>

@@ -78,7 +78,7 @@ describe('fossil expedition', () => {
     expect(FOSSIL_SOURCES[FOSSIL_STORY.source].url).toMatch(/^https:\/\/www\.infobae\.com\//);
     expect(FOSSIL_STORY.credit).toMatch(/textuales/);
     // Every quote opens and closes.
-    for (const p of FOSSIL_STORY.paragraphs) expect((p.match(/«/g) ?? []).length).toBe((p.match(/»/g) ?? []).length);
+    for (const p of FOSSIL_STORY.paragraphs) expect((p.match(/“/g) ?? []).length).toBe((p.match(/”/g) ?? []).length);
   });
 
   it('the time line goes from the Late Cretaceous to the end of the Eocene, to scale, with the ICS boundaries', () => {

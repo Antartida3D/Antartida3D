@@ -37,10 +37,14 @@ El turismo se menciona como una línea de contexto: no es un transporte jugable 
 - **El barco no tapa el pueblo:** el viaje en barco arranca unos 10 km adentro de su propia ruta (`SHIP_HEAD_START` en `core/src/voyage.ts`), ya en la bahía. La ruta no cambia: el mapa 2D la dibuja completa desde Ushuaia y el avión sale del punto de siempre. La cámara de salida apunta al vehículo.
 - El humo pide cuadros solo con la cámara cerca y se queda quieto con movimiento reducido.
 
-## Pista de velocidad
+## Velocidad al avanzar (#166)
 
-- Si alguien mantiene «avanzar» 4 segundos seguidos sin haber usado una marcha rápida, aparece sobre la barra el cartel «¿Sabías? Tocá el botón dos veces seguidas y mantenelo apretado para ir más rápido.».
-- Se muestra una sola vez por visita. Se va al usar una marcha rápida o a los 9 segundos.
+- Mientras se mantiene «avanzar» (o «retroceder»), el vehículo va tomando velocidad de a poco: arranca a ×1 y en 3 segundos llega a ×4, la velocidad máxima (`rampSpeed`, `VOYAGE_TOP_SPEED` y `VOYAGE_RAMP_SECONDS` en `core/src/voyage.ts`).
+- La subida es suave al principio y al final: medio segundo de toque casi no cambia la velocidad, para poder acercarse a un animal o a un hito con precisión.
+- Al soltar, el vehículo frena suave como antes. Si se vuelve a apretar enseguida, conserva casi toda la velocidad: lo ganado se pierde el doble de rápido de lo que se ganó (`nextHeld`). Al darse vuelta, vuelve a ×1.
+- Sobre el botón, un globito muestra la velocidad mientras se mantiene, de a medio punto (×1,5, ×2… ×4).
+- Reemplaza a las marchas por toques seguidos (×2 y ×3,5) y al cartel «¿Sabías?» que las explicaba: ya no hace falta saber nada para ir más rápido.
+- «Próximo hito» no cambia: va rápido hasta el siguiente hito y se detiene.
 
 ## Avistajes (mapa vivo)
 

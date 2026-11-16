@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  TRANSFER_SECONDS, VOYAGE_GEARS, advanceVoyage, retreatVoyage, closeVoyageCard, nextGear, openVoyageCard, skipToNextStop, startVoyage, voyageArrived, voyageStops, type TransportId, type VoyageSourceCode, type VoyageState,
+  TRANSFER_SECONDS, advanceVoyage, retreatVoyage, closeVoyageCard, nextHeld, openVoyageCard, rampSpeed, skipToNextStop, startVoyage, voyageArrived, voyageStops, type TransportId, type VoyageSourceCode, type VoyageState,
 } from '@antartida/core';
 
 /**
@@ -22,6 +22,8 @@ export interface VoyageBus {
   /** Fraction flown of the helicopter hop from the ship to the base (1 once it landed), or null before it. */
   transfer: number | null;
   closeSighting: () => void;
+  /** Speed multiplier of "advance" while it is held (1 otherwise): it picks up little by little (#166). */
+  speed: number;
   /** Ids of the milestones whose card was opened on this trip: their pins turn grey. */
   opened: readonly string[];
   /** The user touched the pin of a milestone already passed: opens its card. */
@@ -47,8 +49,6 @@ export interface VoyageController {
   state: VoyageState | null;
   bus: VoyageBus;
   start: (transport: TransportId) => void;
-  /** Index into VOYAGE_GEARS: quick repeated presses of "advance" go faster. */
-  gear: number;
   /** Move while true, forward or back along the trip: the user sets the pace. */
   hold: (on: boolean, back?: boolean) => void;
   /** Go to the next milestone: travelling there fast when `animate`, or at once (reduced motion, 2D map). */
@@ -81,10 +81,8 @@ export interface VoyageController {
 
 export function useVoyage(): VoyageController {
   const [state, setState] = useState<VoyageState | null>(null);
-  const bus = useRef<VoyageBus>({ state: null, seen: [], spot: () => {}, beside: null, open: null, back: false, transfer: null, closeSighting: () => {}, opened: [], openStop: () => {}, openSource: () => {}, listeners: new Set() }).current;
+  const bus = useRef<VoyageBus>({ state: null, seen: [], spot: () => {}, beside: null, open: null, back: false, transfer: null, closeSighting: () => {}, speed: 1, opened: [], openStop: () => {}, openSource: () => {}, listeners: new Set() }).current;
   const frame = useRef(0);
-  const [gear, setGear] = useState(0);
-  const press = useRef({ gear: 0, at: -Infinity });
 
   const [seen, setSeen] = useState<readonly string[]>([]);
   const [sighting, setSighting] = useState<{ id: string; beside: boolean } | null>(null);
@@ -109,14 +107,16 @@ export function useVoyage(): VoyageController {
     show(next);
     notify();
   };
-  // `auto`: travelling by itself to the next milestone.
-  const drive = useRef({ pressed: false, auto: false, power: 0, speed: 1, back: false });
+  // `auto`: travelling by itself to the next milestone. `held`: seconds of holding that count for the speed.
+  const drive = useRef({ pressed: false, auto: false, power: 0, held: 0, back: false });
   const stop = () => {
     cancelAnimationFrame(frame.current);
     frame.current = 0;
     drive.current.pressed = false;
     drive.current.auto = false;
     drive.current.power = 0;
+    drive.current.held = 0;
+    bus.speed = 1;
   };
 
   const [transfer, setTransfer] = useState<VoyageController['transfer']>('none');
@@ -167,7 +167,11 @@ export function useVoyage(): VoyageController {
       const moving = d.pressed || d.auto;
       // Ease in and out instead of starting and stopping dead.
       d.power += ((moving ? 1 : 0) - d.power) * (1 - Math.exp(-dt / EASE_SECONDS));
-      const seconds = dt * d.speed * d.power;
+      // Held, it picks up speed little by little; going by itself to the next milestone it goes fast at once.
+      d.held = d.auto ? 0 : nextHeld(d.held, dt, d.pressed);
+      const speed = d.auto ? SKIP_SPEED : rampSpeed(d.held);
+      bus.speed = d.pressed ? speed : 1;
+      const seconds = dt * speed * d.power;
       // Going by itself it stops at the next milestone; held, it goes past them (#157).
       const next = d.back ? retreatVoyage(before, seconds) : advanceVoyage(before, seconds, d.auto);
       bus.state = next;
@@ -229,7 +233,6 @@ export function useVoyage(): VoyageController {
   return {
     state,
     bus,
-    gear,
     seen,
     sighting: sighting?.id ?? null,
     popover: sighting?.beside ?? false,
@@ -256,15 +259,15 @@ export function useVoyage(): VoyageController {
         return;
       }
       if (d.pressed || !bus.state) return;
-      const now = performance.now();
-      press.current = { gear: nextGear(press.current.gear, now - press.current.at), at: now };
-      setGear(press.current.gear);
       d.pressed = true;
       d.auto = false; // the user takes over
-      if (d.back !== back) d.power = 0; // turning round: no coasting the other way
+      if (d.back !== back) {
+        // Turning round: no coasting the other way, and the speed starts again from ×1.
+        d.power = 0;
+        d.held = 0;
+      }
       d.back = back;
       bus.back = back;
-      d.speed = VOYAGE_GEARS[press.current.gear];
       run();
     },
     skip: (animate = false) => {
@@ -280,7 +283,6 @@ export function useVoyage(): VoyageController {
       if (d.back) d.power = 0;
       d.back = false;
       bus.back = false;
-      d.speed = SKIP_SPEED;
       run();
     },
     closeCard: () => {

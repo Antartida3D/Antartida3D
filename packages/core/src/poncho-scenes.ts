@@ -19,10 +19,11 @@ export const SCENE_ACTIONS: readonly SceneAction[] = ['stand', 'walk', 'hammer',
 
 /**
  * What lies round the stage (issue #146): `plain` is snow to the horizon; `coast` has the sea along
- * one side (the +z side of the scene, see `sceneCoastZ`) and plain on the rest.
+ * one side (the +z side of the scene, see `sceneCoastZ`) and plain on the rest; `station` (issue #216) is the bare
+ * rock of a polar station, gravel with patches of snow, with a snowy mountain rising behind it (on the +z side).
  */
-export type SceneSetting = 'plain' | 'coast';
-export const SCENE_SETTINGS: readonly SceneSetting[] = ['plain', 'coast'];
+export type SceneSetting = 'plain' | 'coast' | 'station';
+export const SCENE_SETTINGS: readonly SceneSetting[] = ['plain', 'coast', 'station'];
 
 /** Where the sea begins on a `coast` scene: local z of the edge of the ice at the middle, and how it wanders along x. */
 export const SCENE_COAST_Z = 4.7;
@@ -128,7 +129,7 @@ export interface SceneDef {
 }
 
 /** Limits of a shot: the diorama's camera never comes closer than a dog's size, nor leaves the stage far behind. */
-export const SHOT_DISTANCE: readonly [number, number] = [2.2, 14];
+export const SHOT_DISTANCE: readonly [number, number] = [2.2, 22];
 export const SHOT_ELEVATION_DEG: readonly [number, number] = [10, 70];
 export const SHOT_TARGET_HEIGHT: readonly [number, number] = [0, 1.6];
 
@@ -179,11 +180,11 @@ export const PONCHO_SCENES: Readonly<Record<string, SceneDef>> = {
   // 0 the base on the coast, the men going to and fro and the pup next to its mother; 1 the litter running behind
   // the playful one; 2 the training: a man tied by the waist to Poncho (a slalom), the sled, a harness being fitted.
   nacimiento: {
-    setting: 'coast',
+    setting: 'station',
     radius: 4,
     elements: [
-      // The base: orange huts spread over a terrace of bare rock over the shore, with its masts, dish and flag (one prop; it stands behind where people walk, so it takes no room on the ground).
-      prop('baseEsperanza', 0, 2.8, 0, 1, { radius: 0.01 }),
+      // The base: its huts spread over the bare ground with room between them, with masts, dish and flag, under the mountain (one prop; it stands behind where people walk, so it takes no room on the ground).
+      prop('baseEsperanza', 0, 3.2, 0, 1, { radius: 0.01 }),
       // The dogs of the base rest by the huts all the time, and a man looks after them while the first sentence is told.
       dog('pack', 3.3, 0.2, 0.4, { curled: true }),
       dog('pack', 3.9, -0.4, 2.6, { curled: true }),
@@ -214,7 +215,7 @@ export const PONCHO_SCENES: Readonly<Record<string, SceneDef>> = {
     ],
     camera: { distanceFactor: 1.05, elevationDeg: 42, azimuthDeg: -112 },
     shots: [
-      shot(0, [0, 0.9, 1.7], 10.5, 18, -92),
+      shot(0, [0, 1.4, 2.6], 18, 17, -92),
       shot(1, [-0.3, 0.3, -0.5], 9, 26, -96),
       shot(2, [-0.5, 0.5, 0], 11, 24, -100),
     ],

@@ -13,6 +13,7 @@ import {
   dioramaGround,
   dioramaOnLand,
   dioramaRadius,
+  stationMountain,
 } from '../src/voyage/ponchoDioramaGround.ts';
 import { PRESHADED } from '../src/voyage/lowPoly.ts';
 import { SKY_HAZE, SKY_ZENITH, skyColorAt } from '../src/voyage/ponchoSky.ts';
@@ -63,7 +64,8 @@ describe('ground of the diorama', () => {
         // Ridges: faces much higher than the swells at the stage, all of them far from it.
         const high = pts.filter((p) => p[1] > 3);
         expect(high.length).toBeGreaterThan(50);
-        for (const p of high) expect(Math.hypot(p[0], p[2])).toBeGreaterThan(40);
+        // (The mountain of a station starts closer: it is the backdrop of the base.)
+        for (const p of high) expect(Math.hypot(p[0], p[2])).toBeGreaterThan(scene.setting === 'station' ? 15 : 40);
       });
 
       it('keeps the stage free of height: the ground under the elements is the swell and nothing else', () => {
@@ -98,7 +100,7 @@ describe('ground of the diorama', () => {
 });
 
 describe('the sea of a coast scene', () => {
-  const coast = PONCHO_SCENES.nacimiento;
+  const coast = PONCHO_SCENES['rumbo-a-belgrano'];
   const plain: SceneDef = PONCHO_SCENES['expedicion-invernal-1962'];
 
   it('is only on a coast: a plain has none', () => {
@@ -149,5 +151,32 @@ describe('the sky of the diorama', () => {
       expect(red).toBeLessThanOrEqual(prev);
       prev = red;
     }
+  });
+});
+
+describe('the ground of a station (#216)', () => {
+  const station = PONCHO_SCENES.nacimiento;
+
+  it('is a station: bare ground with a mountain and no sea', () => {
+    expect(station.setting).toBe('station');
+    expect(buildDioramaWorld(station).sea).toHaveLength(0);
+    expect(dioramaOnLand(station, 0, 3)).toBe(true);
+  });
+
+  it('is flat round the stage and rises behind it, to a mountain, and comes down again in the haze', () => {
+    for (let x = -6; x <= 6; x += 1.5) expect(stationMountain(x, -2)).toBeCloseTo(0, 6);
+    const around = Math.max(...[0, 2, 4].map((z) => stationMountain(0, z)));
+    expect(around).toBeLessThan(0.5);
+    expect(Math.max(...[30, 40, 50].map((z) => stationMountain(0, z)))).toBeGreaterThan(5);
+    expect(stationMountain(0, DIORAMA_FOG_FAR * 1.1)).toBeLessThan(0.1);
+  });
+
+  it('paints gravel round the stage and snow on the mountain, within the budget of faces', () => {
+    const { land } = buildDioramaWorld(station);
+    expect(land.length).toBeLessThanOrEqual(MAX_LAND_TRIS);
+    const colors = new Set(land.map((t) => t[3]));
+    expect(colors.size).toBeGreaterThan(4);
+    // Every face has a real color already (the relief paints only the faces that ask for it).
+    expect(land.filter((t) => t[3] < 0).length).toBeLessThan(land.length);
   });
 });

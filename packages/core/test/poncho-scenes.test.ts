@@ -189,7 +189,7 @@ describe('scenes of Poncho: data', () => {
 
   it('tells «Nace Poncho» in three stages: each sentence shows something that was not there', () => {
     const scene = PONCHO_SCENES.nacimiento;
-    expect(scene.setting).toBe('coast');
+    expect(scene.setting).toBe('station');
     const shown = (step: number) => scene.elements.filter((e) => sceneElementShown(e, step));
     const dogs = (step: number) => shown(step).filter((e) => e.kind === 'dog');
     // 1: men, a pup and its mother. 2: a litter. 3: training with a belt, a sled and a slalom.

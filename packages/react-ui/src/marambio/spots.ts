@@ -1,4 +1,4 @@
-import { MARAMBIO_GROUND_Y, MARAMBIO_HERCULES, MARAMBIO_RUNWAY_Z, marambioLayoutOf, type MarambioSpotId } from '@antartida/core';
+import { DIORAMA_METERS_PER_UNIT, MARAMBIO_GROUND_Y, MARAMBIO_HERCULES, MARAMBIO_RUNWAY_Z, marambioLayoutOf, type MarambioSpotId } from '@antartida/core';
 
 type V3 = readonly [number, number, number];
 
@@ -45,6 +45,31 @@ export const SPOT_VIEWS: Readonly<Record<MarambioSpotId, SpotView>> = {
   tower: { worldPos: TOWER, target: [TOWER[0] + 1.5, G + 1.6, TOWER[2]], distance: 19, bearingDeg: 200, elevationDeg: 13, fallbackPct: [61, 56] },
   buildings: { worldPos: at('jefatura', 2.2), target: at('jefatura', 0.8), distance: 34, bearingDeg: 150, elevationDeg: 24, fallbackPct: [73, 47] },
 };
+
+/**
+ * The Irízar waits at sea, well off the plateau, on the side the base is seen from at first. Its
+ * place is illustrative: no source says where the ship anchors off Marambio, only that it stays in
+ * front of the base and that cargo goes up by helicopter (O24). Drawn at the scale of the diorama,
+ * from its length (121.3 m, a reference for the size of the model).
+ */
+export const IRIZAR_SHIP = {
+  position: [50, 0, 105] as V3,
+  rotationY: -0.5,
+  length: 121.3 / DIORAMA_METERS_PER_UNIT,
+};
+
+/** The dot over the Irízar: it is not a stop of the visit, it offers the trip to Orcadas. */
+export const IRIZAR_DOT = {
+  id: 'irizar',
+  worldPos: [IRIZAR_SHIP.position[0], 7, IRIZAR_SHIP.position[2]] as V3,
+  fallbackPct: [86, 31] as const,
+};
+
+/** Every dot the scene places, in order: the points of interest, then the Irízar. */
+export const SCENE_DOTS: readonly { id: string; worldPos: V3 }[] = [
+  ...(Object.entries(SPOT_VIEWS) as [MarambioSpotId, SpotView][]).map(([id, v]) => ({ id, worldPos: v.worldPos })),
+  { id: IRIZAR_DOT.id, worldPos: IRIZAR_DOT.worldPos },
+];
 
 /** Free orbit all the way round the model; never from below the plateau, never straight down. */
 export const VIEW_ELEVATION_DEG: readonly [number, number] = [6, 58];

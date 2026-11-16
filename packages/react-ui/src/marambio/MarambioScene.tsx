@@ -8,7 +8,7 @@ import {
   HERCULES_LENGTH_M,
   MARAMBIO_ELEMENTS,
   MARAMBIO_HERCULES,
-  MARAMBIO_SPOTS,
+  marambioBlizzard,
   marambioLayoutOf,
   type MarambioSpotId,
 } from '@antartida/core';
@@ -19,12 +19,13 @@ import { stationSkyFragmentShader, stationSkyVertexShader } from '../orcadas/sta
 import { HERCULES_PARKED_POLY } from '../voyage/herculesModel.ts';
 import { ICEBERG_DRAFT, ICEBERG_PEAKS_POLY, ICEBERG_TABULAR_POLY, waterline, waterMaterial } from '../voyage/icebergs.ts';
 import { boxShade, buildPolyGeometry, scaled, shift, turn, type Tri, type Vec3 } from '../voyage/lowPoly.ts';
-import { vehicleMaterial } from '../voyage/vehicles.ts';
+import { buildVehicleGeometry, vehicleMaterial } from '../voyage/vehicles.ts';
 import { canUseWebGL, CONTEXT_RESTORE_MS } from '../webgl.ts';
 import { buildHangarTris, buildMarambioWalkwaysTris, buildTerminalTris } from './lowPolyMarambio.ts';
 import { buildMarambioGroundTris, buildMarambioRocksTris, buildMarambioSurfacesTris } from './marambioGround.ts';
 import { MarambioFallback } from './MarambioFallback.tsx';
-import { poseForSpot, SPOT_VIEWS, VIEW_BOUNDARY, VIEW_ELEVATION_DEG, VIEW_MAX_DISTANCE, VIEW_MIN_DISTANCE } from './spots.ts';
+import { Blizzard, marambioSun } from './MarambioWeather.tsx';
+import { IRIZAR_DOT, IRIZAR_SHIP, poseForSpot, SCENE_DOTS, VIEW_BOUNDARY, VIEW_ELEVATION_DEG, VIEW_MAX_DISTANCE, VIEW_MIN_DISTANCE } from './spots.ts';
 
 export interface MarambioSceneProps {
   focus: MarambioSpotId | null;
@@ -34,6 +35,10 @@ export interface MarambioSceneProps {
   /** The panel is a card on the right side (wide screens). */
   sidePanel: boolean;
   overlayRef: RefObject<HTMLDivElement | null>;
+  /** Month shown, 1..12: the sun and the blizzard of that month. */
+  month: number;
+  /** The Irízar at sea was tapped or clicked: offer the trip to Orcadas. */
+  onIrizar: () => void;
 }
 
 /**
@@ -84,7 +89,8 @@ function Stage() {
   return <mesh geometry={geo} material={vehicleMaterial} />;
 }
 
-function Sky() {
+/** The sky of the month: the sun of mid-month at Marambio, and more cloud in the months with more blizzards. */
+function Sky({ month }: { month: number }) {
   const geo = useMemo(() => new SphereGeometry(SKY_RADIUS, 32, 20), []);
   const mat = useMemo(
     () =>
@@ -92,7 +98,7 @@ function Sky() {
         vertexShader: stationSkyVertexShader,
         fragmentShader: stationSkyFragmentShader,
         uniforms: {
-          uSunDir: { value: SUN_DIR },
+          uSunDir: { value: SUN_DIR.clone() },
           uCloudCover: { value: 0.35 },
           uTime: { value: 0 },
           uWindVec: { value: new Vector2(0.6, 0.2) },
@@ -102,6 +108,12 @@ function Sky() {
       }),
     []
   );
+  const invalidate = useThree((s) => s.invalidate);
+  useLayoutEffect(() => {
+    mat.uniforms.uSunDir.value.copy(marambioSun(month).dir);
+    mat.uniforms.uCloudCover.value = 0.25 + 0.5 * marambioBlizzard(month);
+    invalidate();
+  }, [mat, month, invalidate]);
   useEffect(
     () => () => {
       geo.dispose();
@@ -115,7 +127,7 @@ function Sky() {
 /** Icebergs of the sea round the plateau: [x, z, size, turn, tabular]. Illustrative. */
 const ICEBERGS: readonly (readonly [number, number, number, number, boolean])[] = [
   [-84, 38, 15, 0.4, true],
-  [72, 62, 11, 2.1, false],
+  [104, 62, 11, 2.1, false],
   [-30, 78, 9, 1.2, false],
   [96, -8, 13, 3.0, true],
   [18, -62, 12, 0.9, true],
@@ -166,9 +178,36 @@ function Sea() {
   );
 }
 
+/** A click that moved the pointer more than this many pixels was a drag of the camera, not a tap. */
+const TAP_PX = 6;
+
+/** The Irízar at anchor off the base: tapping it offers the trip to Orcadas. */
+function Irizar({ onSelect }: { onSelect: () => void }) {
+  // The shared vehicle geometry: it follows the Irízar of the trip (blocks today, low-poly with #158).
+  const geo = useMemo(() => buildVehicleGeometry('irizar'), []);
+  useEffect(() => () => geo.dispose(), [geo]);
+  useEffect(() => () => void (document.body.style.cursor = ''), []);
+  return (
+    <mesh
+      geometry={geo}
+      material={vehicleMaterial}
+      position={IRIZAR_SHIP.position}
+      rotation={[0, IRIZAR_SHIP.rotationY, 0]}
+      scale={IRIZAR_SHIP.length}
+      onClick={(e) => {
+        if (e.delta > TAP_PX) return;
+        e.stopPropagation();
+        onSelect();
+      }}
+      onPointerOver={() => void (document.body.style.cursor = 'pointer')}
+      onPointerOut={() => void (document.body.style.cursor = '')}
+    />
+  );
+}
+
 const DEG = Math.PI / 180;
 
-function CameraAndDots({ focus, reduced, sheetTall, sidePanel, overlayRef }: MarambioSceneProps) {
+function CameraAndDots({ focus, reduced, sheetTall, sidePanel, overlayRef }: Omit<MarambioSceneProps, 'onIrizar'>) {
   const controlsRef = useRef<CameraControls>(null);
   const camera = useThree((s) => s.camera);
   const size = useThree((s) => s.size);
@@ -248,6 +287,9 @@ function CameraAndDots({ focus, reduced, sheetTall, sidePanel, overlayRef }: Mar
       invalidate();
     });
     ro.observe(panel);
+    // The strip of months grows when its chip opens on a phone: the dots move out from under it.
+    const strip = document.querySelector('.mar .orc-month-strip-wrap');
+    if (strip) ro.observe(strip);
     return () => ro.disconnect();
   }, [sidePanel, invalidate]);
 
@@ -261,9 +303,9 @@ function CameraAndDots({ focus, reduced, sheetTall, sidePanel, overlayRef }: Mar
       return;
     }
     const map = buttons.current;
-    if (map.size !== MARAMBIO_SPOTS.length) {
+    if (map.size !== SCENE_DOTS.length) {
       map.clear();
-      for (const spot of MARAMBIO_SPOTS) {
+      for (const spot of SCENE_DOTS) {
         const btn = overlay.querySelector<HTMLElement>(`[data-hotspot="${spot.id}"]`);
         if (btn) map.set(spot.id, btn);
       }
@@ -282,23 +324,38 @@ function CameraAndDots({ focus, reduced, sheetTall, sidePanel, overlayRef }: Mar
     const box = overlay.getBoundingClientRect();
     const panel = document.querySelector('.mar .orc-panel')?.getBoundingClientRect();
     const minY = 96;
+    // Nor under the strip of months (a card on wide screens, a chip on phones).
+    const stripBox = document.querySelector('.mar .orc-month-strip-wrap')?.getBoundingClientRect();
+    const strip = stripBox && {
+      left: stripBox.left - box.left - 24,
+      right: stripBox.right - box.left + 24,
+      bottom: stripBox.bottom - box.top + 24,
+    };
+    const underStrip = (x: number, y: number) => Boolean(strip && x >= strip.left && x <= strip.right && y < strip.bottom);
     const maxY = panel && !sidePanel ? panel.top - box.top - 26 : size.height - 60;
     const maxX = panel && sidePanel ? panel.left - box.left - 30 : size.width - 30;
     camera.updateMatrixWorld();
-    for (const spot of MARAMBIO_SPOTS) {
+    for (const spot of SCENE_DOTS) {
       const btn = map.get(spot.id);
       if (!btn) continue;
-      projected.set(...SPOT_VIEWS[spot.id].worldPos).project(camera);
+      projected.set(...spot.worldPos).project(camera);
       const sx = ((projected.x + 1) * size.width) / 2;
       const sy = ((1 - projected.y) * size.height) / 2;
-      const inside = projected.z < 1 && sx >= 30 && sx <= maxX && sy >= minY && sy <= maxY;
-      if (!inside && spot.id !== focus) {
+      const inside = projected.z < 1 && sx >= 30 && sx <= maxX && sy >= minY && sy <= maxY && !underStrip(sx, sy);
+      // The Irízar is always offered: out of the view (a narrow phone shows little sea), its dot
+      // waits at the edge on the ship's side. The focused point is kept in view the same way.
+      const kept = spot.id === focus || (spot.id === IRIZAR_DOT.id && projected.z < 1);
+      btn.dataset.edge = inside ? 'false' : 'true';
+      if (!inside && !kept) {
         btn.style.opacity = '0';
         btn.style.pointerEvents = 'none';
         continue;
       }
-      const x = Math.max(30, Math.min(maxX, sx));
-      const y = Math.max(minY, Math.min(Math.max(minY, maxY), sy));
+      // A dot held at the edge keeps its whole label on screen.
+      const half = inside ? 0 : btn.offsetWidth / 2 + 6;
+      const x = Math.max(Math.max(30, half), Math.min(Math.min(maxX, size.width - half), sx));
+      let y = Math.max(minY, Math.min(Math.max(minY, maxY), sy));
+      if (strip && underStrip(x, y)) y = Math.min(Math.max(minY, maxY), strip.bottom);
       btn.style.opacity = '1';
       btn.style.pointerEvents = 'auto';
       btn.style.left = '0px';
@@ -327,7 +384,7 @@ export const MarambioScene = memo(function MarambioScene(props: MarambioScenePro
       for (const prop of ['left', 'top', 'transform', 'opacity', 'pointer-events']) btn.style.removeProperty(prop);
     }
   }, [webglOk, overlayRef]);
-  if (!webglOk) return <MarambioFallback />;
+  if (!webglOk) return <MarambioFallback month={props.month} />;
   const start = poseForSpot(props.focus, false, false, props.sidePanel);
   return (
     <div className="orc-scene-wrap" aria-hidden="true">
@@ -353,9 +410,11 @@ export const MarambioScene = memo(function MarambioScene(props: MarambioScenePro
           });
         }}
       >
-        <Sky />
+        <Sky month={props.month} />
         <Sea />
+        <Irizar onSelect={props.onIrizar} />
         <Stage />
+        <Blizzard month={props.month} reduced={props.reduced} />
         <EffectComposer multisampling={0}>
           <InkEffect />
         </EffectComposer>

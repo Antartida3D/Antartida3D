@@ -2,19 +2,21 @@
 
 Fecha: 15 de noviembre de 2026. Este documento conserva el análisis inicial y registra la implementación de la migración entregada en la rama `202-ui-pergamino-claro` (issue #202). La evidencia de la ficha de referencia se distingue de la validación posterior del conjunto. El sistema visual y sus tokens están en [DESIGN.md](../../DESIGN.md).
 
+**Continuación del 16 de noviembre:** el PR #203 ya está integrado en `main` (`6baf7fd`). La normalización de controles partió de `d612d30`, conserva ese trabajo y aplica [DEC-202-2](../decisiones/DEC-202-2-estados-controles.md); la implementación acotada quedó reaplicada sobre `main` actualizado en `33b67f1` tras #229. La [auditoría actual](normalizacion-controles-2026-11-16.md) registra por separado sus cambios, pruebas y pendientes. Los resultados de la migración anterior que siguen abajo son históricos y no validan esta continuación.
+
 ## 1. Decisión y alcance
 
 La interfaz debe sentirse como un cuaderno de expedición construido con el lenguaje de la cartografía antigua: pergamino claro, tinta marrón neutra, filetes, títulos editoriales, costas y rosas de los vientos. El material del fondo y la composición tienen que transmitir esa identidad antes de leer el contenido.
 
 La primera referencia ocre resultaba demasiado intensa para extenderla a toda la UI y la segunda era demasiado blanca. La propuesta intermedia «Pergamino claro», probada sobre la ficha real «Océano», fue aprobada como dirección vigente: conserva composición, marcos, carta, rosa y tipografías, con centro marfil, textura tenue y sombra suave.
 
-La revisión de dirección visual posterior acepta el redondeo para toda la UI: paneles flotantes con radio de **13 px** y botones rectangulares con radio de **9 px**. Se conservan como excepciones semánticas los círculos y chips que comunican su función, la geometría de gráficos, los separadores y las esquinas de superficies pegadas al borde de la pantalla. La implementación CSS de estos tokens está aplicada en esta entrega; la verificación visual acotada y los 14 casos E2E focalizados de la revisión previa están registrados en la sección 9. La E2E global finalizó con 366 casos: 322 pasaron, 44 se omitieron y no hubo fallos.
+La revisión de dirección visual posterior acepta el redondeo para toda la UI: paneles flotantes con radio de **13 px** y botones rectangulares con radio de **9 px**. Se conservan como excepciones semánticas los círculos y chips que comunican su función, la geometría de gráficos, los separadores y las esquinas de superficies pegadas al borde de la pantalla. La implementación CSS de estos tokens está aplicada en esta entrega; la verificación visual acotada y los 14 casos E2E focalizados de la revisión previa están registrados en la sección 9. La corrida E2E global de esa integración histórica terminó con 366 casos: 322 pasaron, 44 se omitieron y no hubo fallos; la continuación actual se informa por separado.
 
 | Estado | Qué comprende |
 | --- | --- |
 | **Elegido** | Pergamino claro: composición de la primera ficha, paleta marfil de la propuesta intermedia, textura tenue, marcos, viñeta, botón delineado y redondeo común 13/9 para paneles flotantes y botones rectangulares. |
 | **Implementado localmente** | El sistema de tokens explícitos, incluido el redondeo 13/9, el material cartográfico y la composición Pergamino claro está aplicado al mapa, índice, fichas, Desde Ushuaia y Orcadas. La ficha real «Océano» conserva además su evidencia recortada de referencia. |
-| **Verificación** | La sección 9 separa la evidencia visual, la validación automatizada y los 14 casos E2E focalizados de la revisión previa; los 32 casos anteriores quedan como contexto histórico y la corrida global final de 366 casos registra 322 aprobados, 44 omitidos y ningún fallo. |
+| **Verificación** | La sección 9 separa la evidencia visual, la validación automatizada y los 14 casos E2E focalizados de la revisión previa; los 32 casos anteriores quedan como contexto histórico y la corrida global de 366 casos se conserva como registro de esa integración. |
 | **Límites** | Los colores de medición, el mapa rasterizado y las escenas 3D conservan sus funciones y recursos. La revisión visual no constituye una certificación WCAG. |
 
 La extensión del diseño a toda la UI fue autorizada para trabajo local. Las tablas de inventario describen el estado encontrado al iniciar y el cambio previsto; el estado de implementación se registra a continuación. La referencia ocre anterior permanece como histórico rechazado para esta dirección, no como token vigente.
@@ -46,9 +48,11 @@ La extracción puede resolverse con clases y componentes pequeños. El material 
 
 Cada control migrado debe tener una revisión de reposo, hover, foco por teclado, pulsación, selección y deshabilitado cuando corresponda. No todos los elementos necesitan todos esos estados.
 
-- **Botón principal:** la ficha usa papel, borde doble y altura mínima de 48 px; al pasar el puntero cambia a azul profundo con texto claro. Extenderlo conservando una acción principal reconocible.
-- **Botón secundario:** menor énfasis, misma familia de tinta y papel. Debe seguir distinguiéndose del texto corriente.
+- **Botón principal:** la ficha usa aguada marfil, borde doble y altura mínima de 48 px; al pasar el puntero usa una aguada sepia más intensa con tinta legible. La antigua instrucción de hover azul queda reemplazada por DEC-202-2 y solo explica las referencias históricas.
+- **Botón secundario:** menor énfasis, papel en reposo y aguada marfil en hover; el ghost parte de fondo transparente. «Continuar» conserva su ocre. Deben seguir distinguiéndose del texto corriente.
 - **Botón de icono:** área táctil generosa; la referencia de cierre mide 44 × 44 px. Mantener nombre accesible aunque el dibujo sea pequeño.
+- **Puntero y deshabilitado:** el hover se limita a `@media (hover: hover) and (pointer: fine)`. Los controles deshabilitados no cambian de fondo, sombra ni posición por hover o pulsación.
+- **Foco:** contorno azul de 3 px separado 3 px, conservando el radio y la forma del control. El foco no impone el radio global histórico de 2 px y no depende de que exista hover.
 - **Selección y progreso:** combinar color con marca, contorno, texto o posición. Mantener `aria-pressed`, `aria-current` y anuncios de estado existentes.
 - **Enlaces a fuentes:** reconocibles como enlaces y legibles sobre el papel. El ornamento no reemplaza su nombre ni su atribución.
 - **Carga, error y ausencia de contenido:** reservar espacio, explicar el estado y ofrecer una salida cuando corresponda. No dejar un recuadro vacío como estado final.
@@ -200,9 +204,9 @@ En la iteración de la ficha pasaron TypeScript de `react-ui` y de la app, el bu
 
 En la ejecución más amplia previa se registraron 236 pruebas de core aprobadas y un timeout en la prueba de pingüinos de `react-ui` (110 de 111 aprobadas). La tanda E2E ampliada tuvo 11 aprobadas, una omitida y dos fallos móviles: acceso a marcadores desde la lista en 3D y entrada a Orcadas sin WebGL. Esos fallos no quedaron resueltos ni se atribuyeron al cambio visual. El pase focalizado posterior no demuestra que estén corregidos.
 
-### Resultados actuales de esta migración
+### Resultados históricos de esta migración
 
-La evidencia automatizada de esta entrega registra `pnpm test` con 1.356 pruebas (19 documentales, 650 de `core` y 687 de `react-ui`), `pnpm typecheck` y `pnpm build` sin errores. La E2E global final registró 366 casos: 322 aprobados, 44 omitidos y ningún fallo. Las omisiones se distribuyeron por perfil según el reporte de Playwright: `desktop` 23, `mobile` 7, `mobile-compact` 5 y `mobile-landscape` 9; son casos omitidos, no fallos. Los 1.349 tests y los 14 casos E2E GPU de la revisión preintegración quedan como contexto histórico y no se atribuyen a esta tanda.
+La evidencia automatizada histórica de esta integración registra `pnpm test` con 1.356 pruebas (19 documentales, 650 de `core` y 687 de `react-ui`), `pnpm typecheck` y `pnpm build` sin errores. La E2E global histórica registró 366 casos: 322 aprobados, 44 omitidos y ningún fallo. Las omisiones se distribuyeron por perfil según el reporte de Playwright: `desktop` 23, `mobile` 7, `mobile-compact` 5 y `mobile-landscape` 9; son casos omitidos, no fallos. Los 1.349 tests y los 14 casos E2E GPU de la revisión preintegración quedan como contexto histórico y no se atribuyen a esta continuación.
 
 El commit `2484804` ajusta la leyenda compacta para que la variante con «Continuar» pueda desplazarse bajo la cabecera en pantallas cortas y actualiza el flujo E2E de Poncho para esperar el loader compartido y comprobar sus fuentes de procedencia. Root revisó las capturas de escritorio, móvil y landscape en 844 × 390 y 844 × 360 px.
 
@@ -221,15 +225,15 @@ Después de este cuarto arreglo, el build de Vite pasó con exit code 0, 758 mó
 
 La captura y los informes de esa revisión previa están fuera de este checkout y no forman parte de una evidencia durable de este PR. Los resultados de esta entrega se informan únicamente después de repetirlos sobre este árbol.
 
-### Integración contra `main`
+### Integración histórica contra `main` del PR #203
 
-La integración actual parte de `main` en `36c31ca` y queda consolidada en `a9f2c64`. Sobre esta base, la validación actual registra `pnpm test` con 1.344 pruebas (19 documentales, 650 de `core` y 675 de `react-ui`), `pnpm typecheck` y `pnpm build` sin errores, además de 50/50 casos E2E focalizados aprobados. La corrida E2E global previa de 366 casos (322 aprobados, 44 omitidos y ningún fallo) se conserva como contexto histórico y no se atribuye a esta integración.
+La última integración documentada del PR #203 partió de `main` en `36c31ca` y quedó consolidada en `a9f2c64`. Sobre esa base, la validación registró `pnpm test` con 1.344 pruebas (19 documentales, 650 de `core` y 675 de `react-ui`), `pnpm typecheck` y `pnpm build` sin errores, además de 50/50 casos E2E focalizados aprobados. La corrida E2E global previa de 366 casos (322 aprobados, 44 omitidos y ningún fallo) se conserva como contexto histórico y no se atribuye a esa integración ni a la normalización posterior.
 
 #### Integración anterior (antes de #204)
 
 La integración se realizó en la rama `202-ui-pergamino-claro`, comparando con `origin/main` en `dbd80932873e38ede0c81451d828030c662e5388`. El commit de código integrado es `3a27b73`; el árbol conserva la lógica y las reglas nuevas de `main` y aplica la decoración Pergamino claro compatible. El comportamiento de «Continuar» de #186 ya forma parte de la base integrada y se preserva en esta revisión; no se atribuye como funcionalidad nueva de este PR.
 
-En el árbol integrado, `pnpm test` registra 19 pruebas documentales, 650 de `core` y 687 de `react-ui` (1.356 en total); `pnpm typecheck` y `pnpm build` también pasan. La corrida E2E global final registró 366 casos: 322 aprobados, 44 omitidos y ningún fallo.
+En el árbol integrado anterior, `pnpm test` registra 19 pruebas documentales, 650 de `core` y 687 de `react-ui` (1.356 en total); `pnpm typecheck` y `pnpm build` también pasan. La corrida E2E global histórica registró 366 casos: 322 aprobados, 44 omitidos y ningún fallo.
 
 La E2E focalizada histórica pasó 32 casos: 22 de carga y bienvenida en mobile/desktop con GPU real y 10 de lista, ficha, overflow y barra de viaje en mobile/desktop. Esa tanda cubre contratos de la revisión previa; la corrida global final se documenta por separado con 322 aprobados, 44 omitidos y ningún fallo.
 
@@ -266,7 +270,7 @@ Una entrega queda terminada cuando:
 
 `DESIGN.md` pasa a ser la referencia de esta dirección visual de UI. [HANDOFF.md](../../docs/diseno/HANDOFF.md) y el [prototipo original](../../docs/diseno/design/Main.dc.html) conservan valor histórico, pero describen un alcance y una arquitectura anteriores. [decisiones.md](../../docs/decisiones.md) mantiene el registro de decisiones técnicas, geográficas y de escena. Los documentos de expedición siguen definiendo sus contenidos y recorridos.
 
-README se sincronizó con el enrutado actual: Orcadas y Desde Ushuaia son los recorridos disponibles. La declaración de IA incluye la migración. Los hitos del equipo en [ROADMAP.md](../../ROADMAP.md) conservan su seguimiento propio.
+El registro inicial del README contemplaba Orcadas y Desde Ushuaia. `main` en `d612d30` también incorpora Marambio, Poncho, Fósiles y Océano; su implementación no se atribuye a esta migración. La declaración de IA distingue la migración original de la normalización posterior. Los hitos del equipo en [ROADMAP.md](../../ROADMAP.md) conservan su seguimiento propio.
 
 El contraste nominal de los tokens sobre `#F3E8D2` es aproximadamente **9,71:1** para `#403536`, **5,31:1** para `#655D56` y **9,10:1** para `#1E3E5C`, calculado offline con sRGB. Estos valores orientan la paleta plana; no representan el contraste efectivo sobre textura, SVG, degradados, transparencia, gráficos o estados compuestos. No se presenta ninguna de estas cifras como certificación WCAG.
 
@@ -282,4 +286,12 @@ Queda por resolver durante la implementación:
 - Los casos que la sección de verificación identifique como omitidos, fallidos o no evaluados.
 - La ayuda manuscrita/translúcida «Arrastrá…» se restaura junto con el baseline; la revisión desktop confirmó su posición, fondo, radio y tipografía. La ayuda no tiene estado hover. No constituye una funcionalidad nueva de esta migración.
 
-La elección de pergamino claro y lenguaje cartográfico ya está tomada. Los puntos anteriores precisan cómo aplicarla a toda la experiencia. La implementación local y las capturas externas de revisión están disponibles; los resultados E2E amplios históricos, los casos no repetidos y la validación funcional y de rendimiento restante se mantienen separados de la evidencia visual. Ningún resultado de la ficha se presenta como validación de toda la aplicación.
+La elección de pergamino claro y lenguaje cartográfico ya está tomada. Los puntos anteriores precisan cómo aplicarla a toda la experiencia. La implementación local y las capturas externas de revisión están disponibles; los resultados E2E amplios históricos y la validación funcional focalizada se mantienen separados de la evidencia visual. La tanda de cierre sobre `33b67f1` pasó `pnpm test` con 1.365 pruebas (`19` documentales, `671` de `core` y `675` de `react-ui`), además de `typecheck` y `build`. Las suites E2E focalizadas sumaron 56 casos: 48 pasaron, 8 se omitieron por selectores 2D retirados o hover móvil y no hubo fallos; las cuatro pruebas nuevas del loader pasaron. El build conserva la advertencia preexistente de chunks mayores a 500 kB. Ningún resultado se presenta como validación de toda la aplicación.
+
+## 11. Normalización posterior a la integración
+
+El issue #202 se retoma el 16 de noviembre para normalizar los estados de controles existentes. La fuente compartida es CSS: no se promete unificar los componentes React ni alterar sus contratos funcionales. Se mantienen los radios 13/9, las excepciones semánticas, los iconos, el contenido y los comportamientos existentes.
+
+[controls.css](../../packages/core/src/styles/controls.css), importado al final de `index.css`, reúne los estados y usa los tokens `--chart-control-hover`, `--chart-control-hover-strong` y `--chart-control-ring`. El principal usa la mezcla de aguada marfil al 80 % con ocre; normal y ghost usan aguada marfil. La acción de la ficha declara su variante primaria; la selección de Marambio usa su `aria-pressed` existente. El ajuste explícito de área táctil es la altura mínima de 44 px del botón del loader.
+
+El contrato vigente está en [DEC-202-2](../decisiones/DEC-202-2-estados-controles.md) y en los estados de interacción de este documento. La [auditoría de normalización](normalizacion-controles-2026-11-16.md) separa los hallazgos de código e historia, la evidencia en navegador y las comprobaciones de esta continuación. Tras identificar las referencias, el usuario autorizó recuperar las cápsulas de `MilestoneLog` (18 px, mínimo 44 px y marco discontinuo) y la presentación monocroma de `◀️` en el retroceso. Se conservan su lógica y su ubicación; los demás cambios de alcance siguen como análisis separado.

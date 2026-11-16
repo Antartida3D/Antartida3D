@@ -692,6 +692,12 @@ export function MapView({
 
         <svg className="grain" aria-hidden="true" focusable="false"><rect width="100%" height="100%" filter="url(#paperf)" /></svg>
 
+        {/* Always mounted, so a screen reader reads the card's text when it changes. */}
+        <div className="next-live" role="status">
+          {showCard && finished ? `${finished.line}. ${after?.next ? `Siguiente sugerida: ${after.next.title}.` : 'Exploraste las seis expediciones.'}` : ''}
+        </div>
+
+        <div className="hud">
         <header className="top">
           <div className="brand">
             <CompassRose />
@@ -699,18 +705,12 @@ export function MapView({
             <p>cuaderno de campo · desde Ushuaia</p>
           </div>
           <ExplorationLog explored={explored} />
+          {welcoming ? (
+            <div className="hint" role="status">Tocá <strong>Desde Ushuaia</strong> para empezar</div>
+          ) : (
+            !touched && !voyaging && phase === 'idle' && <div className="hint">arrastrá para mover · pellizcá para acercar</div>
+          )}
         </header>
-
-        {welcoming ? (
-          <div className="hint" role="status">Tocá <strong>Desde Ushuaia</strong> para empezar</div>
-        ) : (
-          !touched && !voyaging && phase === 'idle' && <div className="hint">arrastrá para mover · pellizcá para acercar</div>
-        )}
-        {/* Always mounted, so a screen reader reads the card's text when it changes. */}
-        <div className="next-live" role="status">
-          {showCard && finished ? `${finished.line}. ${after?.next ? `Siguiente sugerida: ${after.next.title}.` : 'Exploraste las seis expediciones.'}` : ''}
-        </div>
-
         {phase !== 'travel' && (
         <div className="bottom">
           {voyaging ? <span /> : (
@@ -778,6 +778,7 @@ export function MapView({
           </div>
         </div>
         )}
+        </div>
         {phase === 'travel' && <OrcadasTravelBar arrival={arrival} onSkip={onSkipTravel} />}
 
         {list && (

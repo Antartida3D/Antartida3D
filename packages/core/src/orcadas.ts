@@ -16,6 +16,26 @@ export type Chapter = (typeof CHAPTERS)[number];
 export const READING_KINDS = ['temp', 'pressure', 'wind', 'clouds'] as const;
 export type ReadingKind = (typeof READING_KINDS)[number];
 
+/** Instrument and input limits shared by every Orcadas reading control. */
+export const ORCADAS_READING_LIMITS: Record<
+  ReadingKind,
+  { readonly min: number; readonly max: number; readonly step: number }
+> = {
+  temp: { min: -25, max: 10, step: 0.1 },
+  pressure: { min: 950, max: 1030, step: 0.1 },
+  wind: { min: 0, max: 120, step: 1 },
+  clouds: { min: 0, max: 8, step: 1 },
+};
+
+/** Round and clamp a user reading to the range exposed by its instrument. */
+export function normalizeReadingGuess(kind: ReadingKind, value: number): number {
+  if (!Number.isFinite(value)) return value;
+  const { min, max, step } = ORCADAS_READING_LIMITS[kind];
+  const rounded = step < 1 ? Math.round(value * 10) / 10 : Math.round(value);
+  const clamped = Math.max(min, Math.min(max, rounded));
+  return Object.is(clamped, -0) ? 0 : clamped;
+}
+
 export const ORCADAS_FIRST_YEAR = 1903;
 export const ORCADAS_LAT = -60.74;
 
@@ -202,7 +222,7 @@ export function orcadasReducer(s: OrcadasState, a: OrcadasAction): OrcadasState 
     case 'guess':
       return {
         ...s,
-        guesses: { ...s.guesses, [a.kind]: a.value },
+        guesses: { ...s.guesses, [a.kind]: normalizeReadingGuess(a.kind, a.value) },
       };
     case 'clearGuesses':
       return {

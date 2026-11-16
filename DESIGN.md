@@ -16,11 +16,15 @@ La dirección vigente es la propuesta «Pergamino claro» de la ficha real «Oc�
 
 [Referencia ocre histórica](docs/diseno/referencias/ficha-cartografica-v2.png) · [CSS del prototipo aprobado](docs/diseno/referencias/ficha-oceano-pergamino-claro.css) · [Componente](packages/react-ui/src/map/PointSheet.tsx) · [CSS estructural](packages/core/src/styles/point-sheet.css).
 
-**Estado:** dirección visual aprobada y aplicada en la rama `202-ui-pergamino-claro` para el issue #202. La ficha prototipo está verificada en 456 × 645 px. La validación automatizada registrada para esta entrega reúne 1.356 pruebas (`19` documentales, `650` de `core` y `687` de `react-ui`), además de `pnpm typecheck` y `pnpm build` sin errores. La E2E global terminó con 366 casos: 322 pasaron, 44 se omitieron y no hubo fallos. Las capturas de escritorio, móvil y landscape en 844 × 390 y 844 × 360 px fueron revisadas como evidencia visual acotada, no como certificación exhaustiva de todos los recorridos. El material común vive en `tokens.css` y `cartography.css`; los layouts conservan sus hojas específicas. El [plan de migración](docs/diseno/plan-migracion-ui.md) separa implementación, evidencia y límites de validación.
+**Estado:** la dirección visual de #202 se integró mediante el [PR #203](https://github.com/Antartida3D/Antartida3D/pull/203), en `6baf7fd`. La continuación del 16 de noviembre partió de `main` en `d612d30`, normaliza los estados según [DEC-202-2](docs/decisiones/DEC-202-2-estados-controles.md) y quedó reaplicada sobre `main` actualizado en `33b67f1` tras #229. El [registro de normalización](docs/diseno/normalizacion-controles-2026-11-16.md) distingue el cambio local, las comprobaciones actuales y la auditoría de posibles regresiones.
+
+La ficha prototipo conserva su evidencia de 456 × 645 px. Las 1.356 pruebas y la corrida E2E de 366 casos (322 pasados y 44 omitidos) pertenecen a una integración anterior; la última validación registrada del PR #203 fue de 1.344 pruebas y 50/50 E2E focalizados. Esos resultados y las capturas anteriores no validan esta continuación. El material común vive en `tokens.css` y `cartography.css`; los layouts conservan sus hojas específicas. El [plan de migración](docs/diseno/plan-migracion-ui.md) mantiene la evidencia histórica y sus límites.
 
 ### Formato y procedencia
 
 Este archivo adopta la [especificación abierta DESIGN.md de Google Labs, versión alpha](https://github.com/google-labs-code/design.md/blob/main/docs/spec.md), consultada el 15 de noviembre de 2026. Usa metadatos YAML, tokens en bloques YAML y las ocho secciones canónicas en su orden. Se mantienen los encabezados en inglés para su reconocimiento por herramientas y el contenido en español. Es un formato en desarrollo, no un estándar universal ratificado.
+
+La consulta del 16 de noviembre confirmó que el formato admite valores CSS `color-mix()`; por eso la aguada de hover conserva su mezcla derivada en los tokens, sin inventar un hexadecimal. Esta comprobación del formato no sustituye la revisión visual del color.
 
 Se eligió porque define un contrato de archivo verificable. La [guía de Claude Design](https://support.claude.com/en/articles/14604397-set-up-your-design-system-in-claude-design) consultada describe la extracción de colores, tipografía, componentes y layouts, pero no prescribe un esquema equivalente de `DESIGN.md`. El [formato DTCG 2025.10](https://www.designtokens.org/tr/2025.10/format/) sirve para intercambiar tokens; no sustituye la documentación de intención visual. Estas dos fuentes también se consultaron el 15 de noviembre de 2026.
 
@@ -37,6 +41,7 @@ colors:
   rule: "#B9B0A5"
   accent: "#A4471F"
   interaction: "#1E3E5C"
+  control-hover-strong: "color-mix(in srgb, #EDDFC0 80%, #C0862F)"
 ```
 
 | Token | Nombre visual | Función |
@@ -47,9 +52,12 @@ colors:
 | `surface` | Aguada marfil | Botón en reposo y agua de la viñeta; aporta calidez sin acercarse al ocre intenso. |
 | `rule` | Filete gris cálido | Líneas decorativas y marco interior; no usar como texto ni como único indicador de un control. |
 | `accent` | Óxido cartográfico | Aguja decorativa de la rosa; no significa error ni una medición. |
-| `interaction` | Azul profundo | Hover del botón principal y foco visible. |
+| `interaction` | Azul profundo | Contorno de foco visible. No es el fondo de hover de los botones. |
+| `control-hover-strong` | Aguada sepia | Hover del botón principal, derivado de aguada marfil y ocre. |
 
 Los cinco primeros valores son los valores explícitos del prototipo aprobado, expresados en hexadecimal para que la referencia sea reproducible. Correspondencia: `primary` → `--chart-ink`, `secondary` → `--chart-muted`, `neutral` → `--chart-paper`, `surface` → `--chart-wash`, `rule` → `--chart-rule`. `accent` y `interaction` conservan `--oxide` y `--deep`; el mapeo semántico se mantiene aunque la paleta vigente ya no dependa de una normalización de `color-mix()`.
+
+Los estados compartidos usan `--chart-control-hover: var(--chart-wash)`, `--chart-control-hover-strong: color-mix(in srgb, var(--chart-wash) 80%, var(--ocre))` y `--chart-control-ring: var(--chart-rule)`. La aguada sepia es una mezcla derivada, no un hexadecimal nuevo. [controls.css](packages/core/src/styles/controls.css), importado al final de [index.css](packages/core/src/styles/index.css), es la fuente común de esos estados.
 
 La referencia aprobada usa `--chart-paper: #F3E8D2`, `--chart-ink: #403536`, `--chart-muted: #655D56`, `--chart-rule: #B9B0A5` y `--chart-wash: #EDDFC0`. La superficie se cubre con un degradado marfil normal al 89% sobre la textura local; esa composición describe el aporte visible de la textura sin atribuirle una opacidad independiente. La sombra combina un marco interior claro, filete cálido y una sombra exterior suave. Estos valores describen la captura aprobada y no rectifican sus radios históricos. La revisión posterior acepta un redondeo común para toda la UI, documentado en `rounded.panel` y `rounded.button`.
 
@@ -78,7 +86,7 @@ La pregunta y el lugar se componen en cursiva. Los rótulos editoriales breves u
 
 El título de la ficha interpola entre 28 y 38 px mediante `clamp(28px, 5vw, 38px)`; `title-compact` y `title` expresan sus extremos. La pregunta baja a 20 px a 380 px de ancho o menos. Los textos largos crecen en altura, sin elipsis que eliminen información esencial.
 
-Los tamaños representan la ficha aprobada. Las categorías actuales de 11 px y los avisos de 12 px requieren revisión de legibilidad al extender el diseño. No reducir fuentes o advertencias para ganar espacio. Los ejes de gráficos necesitan una escala específica validada en su tamaño real.
+Los tamaños representan la ficha aprobada. Las categorías actuales de 11 px y los avisos de 12 px requieren revisión de legibilidad al extender el diseño. No reducir fuentes o advertencias para ganar espacio. Los ejes de gráficos necesitan una escala específica validada en su tamaño real. La revisión del 16 de noviembre acepta las barras finas de progreso y las categorías sin delimitar como decisiones visuales vigentes; no se tratan como anomalías pendientes.
 
 ## Layout
 
@@ -112,7 +120,7 @@ La profundidad es la de una hoja apoyada sobre el mapa. El marco y el tono del p
 
 La ficha usa una sombra exterior suave `0 9px 26px rgb(64 53 54 / 15%)`, un borde interior claro de 6 px seguido por un filete a 7 px y una aguada interior tenue. Los bordes tienen variación suave; el centro debe conservar contraste suficiente para leer.
 
-El botón en reposo incorpora un marco interior de papel de 3 px. En hover pierde esa sombra interior y pasa a azul profundo. El cierre no lleva sombra. Las superficies secundarias no necesitan acumular todos los efectos de la ficha principal.
+El botón principal en reposo incorpora un marco interior de papel de 3 px. En hover conserva la familia de papel y tinta, con una aguada sepia más intensa; las acciones normales y transparentes usan la aguada marfil. El cierre no lleva sombra. Las superficies secundarias no necesitan acumular todos los efectos de la ficha principal. El fondo azul del hover de la referencia anterior queda reemplazado por [DEC-202-2](docs/decisiones/DEC-202-2-estados-controles.md); las capturas históricas se conservan.
 
 El oscurecimiento del fondo indica una capa modal. Un panel persistente de la expedición sigue perteneciendo a la pantalla y permite explorar la escena. La apariencia de papel por sí sola no determina el comportamiento modal.
 
@@ -122,7 +130,6 @@ El oscurecimiento del fondo indica una capa modal. Un panel persistente de la ex
 rounded:
   panel: 13px
   button: 9px
-  focus: 2px
   circular: 9999px
 ```
 
@@ -130,7 +137,7 @@ La dirección aceptada para toda la UI usa `rounded.panel: 13px` en paneles flot
 
 **Histórico de la revisión anterior:** la ficha conservaba exactamente `border-radius: 7px 3px 8px 4px / 4px 8px 3px 6px` y el botón principal `2px 7px 3px 6px`. Esos valores explican las capturas previas y quedan etiquetados como referencia histórica; no representan la dirección 13/9 aceptada posteriormente.
 
-Los controles circulares conservan esa forma; `circular` representa un círculo sobre una caja cuadrada. **Histórico de la referencia anterior:** el cierre medía 44 × 44 px. El foco visible usa contorno azul de 3 px, separado 3 px, con radio de 2 px.
+Los controles circulares conservan esa forma; `circular` representa un círculo sobre una caja cuadrada. **Histórico de la referencia anterior:** el cierre medía 44 × 44 px. El foco visible usa contorno azul de 3 px, separado 3 px, y conserva la geometría del control. No impone un radio propio: la antigua regla global de 2 px deformaba los controles circulares y dejó de ser vigente.
 
 Los filetes simples miden 1 px; los dobles, 3 px en total. La rosa y la viñeta son SVG decorativos, con contornos de tinta y aguja de óxido. Las formas interactivas tienen un área de pulsación mayor que sus trazos. Los símbolos de disponibilidad y procedencia deben distinguirse también por forma y texto.
 
@@ -174,8 +181,8 @@ components:
     typography: "{typography.action}"
     rounded: "{rounded.button}"
   button-primary-hover:
-    backgroundColor: "{colors.interaction}"
-    textColor: "{colors.neutral}"
+    backgroundColor: "{colors.control-hover-strong}"
+    textColor: "{colors.primary}"
   button-close:
     textColor: "{colors.primary}"
     size: 44px
@@ -183,8 +190,6 @@ components:
   button-close-hover:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.primary}"
-  button-focus:
-    rounded: "{rounded.focus}"
   decorative-rule:
     backgroundColor: "{colors.rule}"
   compass-needle:
@@ -214,6 +219,12 @@ La ficha abre con «Cuaderno de campo» y un cierre con nombre accesible. Una ac
 
 Las acciones secundarias usan contorno simple y papel o fondo transparente. Las opciones seleccionadas combinan tinta oscura, papel claro y un borde distinto, conservando `aria-pressed` o `aria-current`. Los controles deshabilitados conservan su estado semántico y reducen el énfasis. El foco es visible tanto en reposo como sobre un control seleccionado.
 
+Los estados visuales se comparten mediante CSS; esto no introduce un componente React universal ni cambia los contratos funcionales existentes. El botón normal parte de papel, el principal de aguada marfil y el ghost de fondo transparente. El control «Continuar» conserva su ocre. El hover se aplica únicamente con `@media (hover: hover) and (pointer: fine)`, para evitar estados pegados después de un toque. La selección mantiene su apariencia propia y puede reforzarse al pasar el puntero sin confundirse con una opción no seleccionada. Un control deshabilitado no cambia de fondo, sombra o posición por hover ni por pulsación.
+
+El foco visible es un estado independiente del hover: conserva su contorno azul y la forma de cada control. Los estados semánticos de leído, perdido, exacto y cercano conservan sus colores propios durante hover; el refuerzo interior señala la interacción sin borrar esa información. Los cambios de estado mantienen sus dimensiones y su área de interacción. La revisión debe cubrir reposo, hover, foco, pulsación, selección y deshabilitado cuando el control ofrezca esos estados.
+
+La acción principal de la ficha usa la variante primaria compartida. El botón de la pantalla de carga tiene una altura mínima de 44 px: es el ajuste explícito de área táctil de esta normalización. Los controles de Marambio con `aria-pressed="true"` conservan su selección. «Continuar» mantiene su pareja ocre existente (`#E0A93C` en reposo y `#EDBB55` en hover).
+
 ### Mapa, lista y navegación
 
 La cabecera toma forma editorial de atlas; el registro, de bitácora; la leyenda, de clave cartográfica. El índice de expediciones usa filas, títulos y divisores. Los controles 2D/3D, zoom y selección comparten acciones y foco, manteniendo sus etiquetas y alternativas por teclado.
@@ -223,6 +234,8 @@ La viñeta puede acompañar portadas y fichas principales. No se repite en cada 
 ### Expediciones, datos y formularios
 
 Desde Ushuaia usa hojas de preparación, ruta, avistajes y fuentes. Orcadas usa cabecera de capítulos, tarjetas de parada, calendario e instrumentos integrados al cuaderno. Ambos conservan sus recorridos y controles.
+
+El resumen «Hitos del viaje» conserva sus cápsulas semánticas: radio de 18 px, altura mínima de 44 px y marco discontinuo del cuaderno. Su aparición al llegar y su progreso en memoria no cambian. El control de retroceso del viaje conserva la flecha hacia la izquierda con presentación monocroma, sin un pictograma emoji azul. Son recuperaciones visuales explícitas de esta continuación de #202.
 
 Las etiquetas separan disponibilidad de expedición y naturaleza de la información. Dato real, simulación, cálculo y reconstrucción conservan nombre y símbolo propios. Los gráficos mantienen unidades, ejes, leyendas y colores funcionales. El papel enmarca las mediciones sin cubrirlas de textura.
 

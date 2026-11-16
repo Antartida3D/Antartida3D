@@ -4,8 +4,9 @@ Diferencias respecto del prototipo (`docs/diseno/design/Main.dc.html`) y decisio
 
 Desde el issue #109, las decisiones nuevas usan registros individuales con estado y reemplazos explícitos. Este documento conserva los antecedentes; no implica que todas sus notas sigan vigentes. Ver [control de documentación](control-documentacion.md) y [DEC-109: control por PR](decisiones/DEC-109-control-documentacion.md).
 
-## Decisión vigente de la UI cartográfica
+## Decisiones vigentes de la UI cartográfica
 
+- [DEC-202-2: estados compartidos de controles](decisiones/DEC-202-2-estados-controles.md): hover de papel y sepia limitado a puntero fino, foco azul que conserva la forma y estados deshabilitados estables; complementa DEC-202.
 - [DEC-202: Pergamino claro y carga cartográfica](decisiones/DEC-202-pergamino-claro.md): dirección visual aprobada para el issue #202, con paneles de 13 px, botones rectangulares de 9 px y loader compartido 2D/3D.
 - [DEC-227: mapa 2D deshabilitado](decisiones/DEC-227-mapa-2d-deshabilitado.md): sin selector ni botón «Ver mapa 2D»; el 2D aparece solo, sin WebGL o si falla el 3D. Se reactiva con `MAP_2D_ENABLED`.
 

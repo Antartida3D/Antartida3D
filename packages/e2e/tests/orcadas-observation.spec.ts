@@ -143,6 +143,57 @@ test.describe('Orcadas · observación', () => {
     expect(focusedClass.cls).toContain('orc-obs-lens-hit');
   });
 
+  test('clamps numeric input at both limits before changing chapter', async ({ page }) => {
+    for (const [raw, inputValue, ctaValue, graphValue] of [
+      ['100', '10.0', '10,0 °C', '10,0 °C'],
+      ['-100', '-25.0', '-25,0 °C', '−25,0 °C'],
+    ] as const) {
+      if (raw !== '100') {
+        await page.goto('/');
+        await clearStorage(page);
+        await page.reload();
+      }
+      await openOrcadasObservation(page);
+      await page.locator('details.orc-obs-fine > summary').click();
+
+      const input = page.getByRole('spinbutton', { name: 'Lectura numérica de Temperatura del abrigo' });
+      await input.fill(raw);
+      await page.getByRole('heading', { level: 2, name: 'Observación del día' }).click();
+      await expect(input).toHaveValue(inputValue);
+      await expect(page.locator('.orc-obs-confirm-btn').first()).toContainText(ctaValue);
+
+      // Changing chapter without pressing «Anotar lectura» exercises the typing path itself.
+      await page
+        .getByRole('navigation', { name: 'Capítulos de la expedición' })
+        .getByRole('button', { name: /Responder/ })
+        .click();
+      await expect(page.getByRole('heading', { level: 2, name: 'La respuesta' })).toBeVisible();
+      await expect(page.getByRole('img', { name: new RegExp(`umbral de referencia en ${graphValue}`) })).toBeVisible();
+    }
+  });
+
+  test('clamps digits typed on the fine slider before changing chapter', async ({
+    page,
+  }) => {
+    await openOrcadasObservation(page);
+    await page.locator('details.orc-obs-fine > summary').click();
+
+    const slider = page.getByRole('slider', { name: 'Deslizador de Temperatura del abrigo' });
+    await slider.focus();
+    await page.keyboard.press('1');
+    await page.keyboard.press('0');
+    await page.keyboard.press('0');
+    await expect(slider).toHaveAttribute('aria-valuenow', '10');
+
+    // The chapter change must consume the clamped value without requiring Enter.
+    await page
+      .getByRole('navigation', { name: 'Capítulos de la expedición' })
+      .getByRole('button', { name: /Responder/ })
+      .click();
+    await expect(page.getByRole('heading', { level: 2, name: 'La respuesta' })).toBeVisible();
+    await expect(page.getByRole('img', { name: /umbral de referencia en 10,0 °C/ })).toBeVisible();
+  });
+
   test('completes temperature via lens slider and optional readings via Mirá también with keyboard only, and carries them into Responder', async ({
     page,
   }) => {

@@ -14,6 +14,9 @@
   --chart-muted: #655D56;
   --chart-rule: #B9B0A5;
   --chart-wash: #EDDFC0;
+  --chart-control-hover: var(--chart-wash);
+  --chart-control-hover-strong: color-mix(in srgb, var(--chart-wash) 80%, var(--ocre));
+  --chart-control-ring: var(--chart-rule);
   --chart-radius: 13px;
   --chart-button-radius: 9px;
   --chart-texture: url('../assets/paper-512.webp');

@@ -213,7 +213,7 @@ export function Answer({
             textAnchor="end"
             fontSize="14"
             fontWeight="800"
-            fill="var(--chart-ink)"
+            fill={hasUserTemp ? 'var(--oxide)' : 'var(--deep)'}
             stroke="var(--chart-paper)"
             strokeWidth="4"
             paintOrder="stroke"

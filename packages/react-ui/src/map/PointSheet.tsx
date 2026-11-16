@@ -192,7 +192,7 @@ export function PointSheet({ point, onClose, fallbackFocus, preview = false, onM
         <div className="point-sheet-footer">
           <span className="point-sheet-rule" aria-hidden="true">✧</span>
           <div className="row" style={{ marginTop: 0 }}>
-            {action && <button type="button" className="btn" onClick={action.onClick}>{action.label}</button>}
+            {action && <button type="button" className="btn primary" onClick={action.onClick}>{action.label}</button>}
             <button type="button" className="btn" onClick={onClose}>Volver al mapa</button>
           </div>
         </div>

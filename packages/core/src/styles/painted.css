@@ -31,7 +31,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
 @keyframes veil-late{0%,80%{opacity:0}100%{opacity:1}}
 .vp{position:absolute;inset:0;overflow:hidden;touch-action:none;cursor:grab;outline:none}
 .vp:active{cursor:grabbing}
-.vp:focus-visible{box-shadow:inset 0 0 0 3px var(--deep)}
+.vp:focus-visible{outline:3px solid var(--deep);outline-offset:-3px}
 .layer{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
 .layer svg{display:block;width:100%;height:100%;overflow:visible}
 .layer .paint{position:absolute;max-width:none;pointer-events:none;user-select:none}
@@ -103,26 +103,17 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
 .bottom{position:absolute;left:0;right:0;bottom:0;padding:24px 16px 16px;display:flex;justify-content:space-between;align-items:flex-end;gap:10px;background:none;pointer-events:none;z-index:10}
 .bottom > *{pointer-events:auto}
 .brand{pointer-events:none}
-.btn{min-height:48px;padding:0 18px;border-radius:var(--chart-button-radius);border:3px double var(--chart-ink);background:var(--chart-wash);font-family:'Fraunces',Georgia,serif;font-weight:500;font-size:18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;box-shadow:inset 0 0 0 3px var(--chart-paper);}
-.btn:hover:not(:disabled){
-  background:var(--deep);
-  color:var(--chart-paper);
-  box-shadow:none;}
+.btn{min-height:48px;padding:0 18px;border-radius:var(--chart-button-radius);border:3px double var(--chart-ink);background:var(--chart-paper);color:var(--chart-ink);font-family:'Fraunces',Georgia,serif;font-weight:500;font-size:18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;box-shadow:inset 0 0 0 3px var(--chart-paper);}
 .btn.primary{background:var(--chart-wash);border-color:var(--chart-ink);
   color:var(--chart-ink);}
-.btn.primary:hover:not(:disabled){
-  background:var(--deep);
-  color:var(--chart-paper);}
 /* Resume an unfinished expedition (#186): keep the expedition marker color distinct. */
 .btn.resume{background:#E0A93C;color:var(--chart-ink)}
-.btn.resume:hover:not(:disabled){background:#EDBB55;color:var(--chart-ink)}
 .btn[disabled]{opacity:.55;cursor:not-allowed;box-shadow:none}
 .btn.ghost{background:transparent;box-shadow:none;border-color:color-mix(in srgb, var(--chart-ink) 50%, transparent);
   border:1px solid var(--chart-ink);
   color:var(--chart-ink);}
-.btn.ghost:hover:not(:disabled){background:var(--deep);border-color:var(--deep);color:var(--chart-paper);box-shadow:none}
 .zoom{display:flex;flex-direction:column;gap:8px}
-.iconbtn{width:48px;height:48px;border-radius:50%;border:3px double var(--chart-ink);background:var(--chart-paper);display:flex;align-items:center;justify-content:center;padding:0;
+.iconbtn{width:48px;height:48px;border-radius:50%;border:3px double var(--chart-ink);background:var(--chart-paper);color:var(--chart-ink);display:flex;align-items:center;justify-content:center;padding:0;
   box-shadow:none;}
 .iconbtn svg{width:22px;height:22px}
 .leftcol{display:flex;flex-direction:column;gap:10px;align-items:flex-start}
@@ -136,7 +127,8 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
 .legend .sw{flex:none;width:18px;height:18px;display:flex;align-items:center;justify-content:center}
 .sw .a{width:14px;height:14px;border-radius:50%;background:var(--ocre);border:2px solid var(--chart-ink)}
 .sw .b{width:12px;height:12px;border-radius:50%;background:var(--chart-wash);border:2px solid var(--chart-muted);
-  border-color:var(--chart-ink);}
+  border-color:var(--chart-ink);position:relative;}
+.sw .b::after{content:'';position:absolute;inset:3px;border-radius:50%;background:var(--chart-ink)}
 .sw .c{width:12px;height:12px;border-radius:50%;border:1.5px dashed var(--chart-muted)}
 .sw .sea{width:14px;height:14px;border-radius:50%;background:var(--chart-paper);border:1.5px solid var(--chart-ink);display:flex;align-items:center;justify-content:center}
 .sw .sea svg{width:10px;height:10px;display:block}
@@ -203,8 +195,6 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
 .li{width:100%;min-height:56px;text-align:left;display:flex;align-items:center;gap:12px;padding:16px 4px;border:0;border-radius:0;
   background:transparent;
   border-bottom:1px solid var(--chart-rule);}
-.li:hover{
-  background:var(--chart-wash);}
 .li .t{flex:1}
 .li strong{display:block;font-family:'Fraunces',Georgia,serif;
   font-size:21px;
@@ -229,7 +219,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
 .etop .ttl span{display:block;font-size:13px;color:var(--chart-muted)}
 .pill{min-height:44px;padding:0 14px;border-radius:var(--chart-button-radius);border:3px double var(--chart-ink);background:var(--chart-paper);font-weight:500;font-size:15px;display:inline-flex;align-items:center;gap:6px;
   font-family:'Fraunces', Georgia, serif;}
-.pill[aria-expanded="true"]{background:var(--chart-ink);color:#F7FAFB}
+.pill[aria-expanded="true"],.pill[aria-pressed="true"]{background:var(--chart-ink);color:#F7FAFB}
 .steps{display:flex;gap:5px}
 .steps i{flex:1;height:6px;border-radius:3px;background:color-mix(in srgb, var(--chart-ink) 16%, transparent)}
 .steps i.done{background:var(--deep)}
@@ -262,7 +252,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
 .counter span{width:40px;height:40px;border-radius:50%;border:2px dashed var(--chart-muted);display:flex;align-items:center;justify-content:center;font-weight:700;background:rgba(247,250,251,.7)}
 .counter span.f{border:2px solid var(--chart-ink);background:var(--ocre)}
 
-.chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:3px 9px;border-radius:2px;line-height:1.3;white-space:nowrap}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:3px 9px;border-radius:10px;line-height:1.3;white-space:nowrap}
 .chip.real{background:var(--chart-ink);color:#F7FAFB}
 .chip.sim{background:#D6E5EF;color:#173350;border:1.5px solid #1E3E5C}
 .chip.art{background:var(--chart-paper);color:#6B430D;border:1.5px dashed #8A5A14}
@@ -282,7 +272,6 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
 .ecard h3{font-size:17px}
 .opts{display:flex;flex-direction:column;gap:8px;margin-top:10px}
 .opt{text-align:left;min-height:52px;padding:10px 14px;border:1.5px solid color-mix(in srgb, var(--chart-ink) 50%, transparent);border-radius:var(--chart-button-radius);background:var(--chart-paper);font-size:16px}
-.opt:hover{background:var(--chart-wash)}
 .opt.sel{border:2.5px solid #1E3E5C;background:#E4EEF4}
 .fb{margin-top:10px;padding:10px 12px;border-left:0;background:#E4EEF4;border-radius:var(--chart-radius);font-size:15px}
 
@@ -405,7 +394,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
 .sheet-sources-toggle{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;min-height:32px;font:inherit;color:var(--chart-ink)}
 .sheet-sources-toggle::after{content:'▸';font-size:12px;transition:transform .15s}
 .sheet-sources-toggle[aria-expanded=true]::after{transform:rotate(90deg)}
-.sheet-sources-toggle:focus-visible{outline:2px solid var(--deep);outline-offset:2px;border-radius:4px}
+.sheet-sources-toggle:focus-visible{outline:2px solid var(--deep);outline-offset:2px}
 .sheet-sources ul[hidden]{display:none}
 
 /* Newer bottom-sheet variants. */

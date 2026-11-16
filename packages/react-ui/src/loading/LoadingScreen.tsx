@@ -4,6 +4,7 @@ import {
   ICE_SHELVES_PATH,
   MAP_2D_ENABLED,
   MAP3D_STEPS,
+  PTS,
   map3dLoadingStore,
   splitAntarcticaCoastline,
 } from '@antartida/core';
@@ -29,6 +30,32 @@ const MAP2D_STEP_COPY: readonly StepCopy[] = [
   { id: 'initialized', label: 'Inicialización', what: 'Preparando la carta' },
   { id: 'map2d', label: 'Carta 2D', what: 'Mapa base y trazos' },
 ];
+
+const MAP3D_FACT_IDS = ['vostok', 'thwaites', 'erebus'] as const;
+
+interface FactItem {
+  readonly id: string;
+  readonly text: string;
+  readonly sourceLabel: string;
+  readonly sourceUrl: string;
+}
+
+function buildMap3DFacts(): FactItem[] {
+  const items: FactItem[] = [];
+  for (const id of MAP3D_FACT_IDS) {
+    const point = PTS.find((candidate) => candidate.id === id);
+    const source = point?.sources?.[0];
+    if (!point?.desc || !source?.url) continue;
+    const firstSentence = point.desc.split(/(?<=\.)\s+/)[0] ?? point.desc;
+    items.push({
+      id,
+      text: firstSentence,
+      sourceLabel: `${source.org} · ${source.label}`,
+      sourceUrl: source.url,
+    });
+  }
+  return items;
+}
 
 function StepCheckIcon() {
   return (
@@ -105,6 +132,8 @@ export function LoadingScreen({ mode, initialized, map2dReady, onDone, onFallbac
   const reducedMotion = useReducedMotion();
   const [leaving, setLeaving] = useState(false);
   const [illustrationProgress, setIllustrationProgress] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [factIndex, setFactIndex] = useState(0);
   const mountedAt = useRef<number | null>(null);
   const finishing = useRef(false);
   const doneRef = useRef(onDone);
@@ -121,6 +150,15 @@ export function LoadingScreen({ mode, initialized, map2dReady, onDone, onFallbac
   const progress = total > 0 ? doneCount / total : 0;
   const currentIndex = completed.findIndex((done) => !done);
   const currentStep = currentIndex >= 0 ? steps[currentIndex] : null;
+  const facts = useMemo(() => buildMap3DFacts(), []);
+
+  useEffect(() => {
+    if (!is3D || reducedMotion || paused || facts.length <= 1) return;
+    const id = window.setInterval(() => {
+      setFactIndex((previous) => (previous + 1) % facts.length);
+    }, 6500);
+    return () => window.clearInterval(id);
+  }, [facts.length, is3D, paused, reducedMotion]);
 
   useEffect(() => {
     if (mountedAt.current === null) mountedAt.current = performance.now();
@@ -180,7 +218,8 @@ export function LoadingScreen({ mode, initialized, map2dReady, onDone, onFallbac
       ? 'Carta lista.'
       : currentStep
         ? `${currentStep.label}. ${doneCount} de ${total} pasos.`
-        : '';
+      : '';
+  const activeFact = is3D ? facts[factIndex % Math.max(1, facts.length)] ?? null : null;
 
   return (
     <section
@@ -229,6 +268,30 @@ export function LoadingScreen({ mode, initialized, map2dReady, onDone, onFallbac
             );
           })}
         </ul>
+
+        {activeFact && (
+          <div
+            className="ld-factbox"
+            onMouseEnter={() => setPaused(true)}
+            onMouseLeave={() => setPaused(false)}
+            onFocus={() => setPaused(true)}
+            onBlur={() => setPaused(false)}
+            tabIndex={0}
+          >
+            <span className="ld-eyebrow">Mientras tanto · Dato real</span>
+            <p>{activeFact.text}</p>
+            <p className="ld-src">
+              Fuente:{' '}
+              {activeFact.sourceUrl ? (
+                <a href={activeFact.sourceUrl} target="_blank" rel="noopener noreferrer">
+                  {activeFact.sourceLabel}
+                </a>
+              ) : (
+                activeFact.sourceLabel
+              )}
+            </p>
+          </div>
+        )}
 
         {snapshot.error && is3D && (
           <p className="ld-error" role="alert">

@@ -3,6 +3,7 @@ import {
   CHAPTERS,
   ORCADAS_FIRST_YEAR,
   ORCADAS_LAT,
+  ORCADAS_READING_LIMITS,
   READING_KINDS,
   TOLERANCE,
   beaufort,
@@ -17,6 +18,7 @@ import {
   linearTrend,
   midMonthDayOfYear,
   movingAverage,
+  normalizeReadingGuess,
   observationDone,
   observationFor,
   orcadasReducer as reduce,
@@ -167,6 +169,23 @@ describe('chapters and state', () => {
     expect(s2.panel).toBe(false);
     const s3 = reduce(s1, { type: 'closePanel' });
     expect(s3.panel).toBe(false);
+  });
+
+  it('normalizes readings at the shared limits before carrying them into another chapter', () => {
+    expect(normalizeReadingGuess('temp', 100)).toBe(ORCADAS_READING_LIMITS.temp.max);
+    expect(normalizeReadingGuess('temp', -100)).toBe(ORCADAS_READING_LIMITS.temp.min);
+    expect(normalizeReadingGuess('pressure', 2000)).toBe(ORCADAS_READING_LIMITS.pressure.max);
+    expect(normalizeReadingGuess('wind', -5)).toBe(ORCADAS_READING_LIMITS.wind.min);
+    expect(normalizeReadingGuess('clouds', 20)).toBe(ORCADAS_READING_LIMITS.clouds.max);
+
+    let state = reduce(initialOrcadas(2, 2025), { type: 'next' });
+    state = reduce(state, { type: 'guess', kind: 'temp', value: 100 });
+    expect(state.guesses.temp).toBe(10);
+    state = reduce(state, { type: 'goto', chapter: 'answer' });
+    expect(state.guesses.temp).toBe(10);
+
+    state = reduce(state, { type: 'guess', kind: 'temp', value: -100 });
+    expect(state.guesses.temp).toBe(-25);
   });
 });
 

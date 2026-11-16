@@ -105,7 +105,7 @@ function Picker({ onStart, onExit, onSource, preview, reduced }: {
     <>
     {/* Touching the map outside the sheet closes it, like the sheet of a point. */}
     <div className="scrim vscrim" onClick={onExit} />
-    <BottomSheet className="voyage" labelledBy="voyage-title" sheetRef={ref} onClose={onExit}>
+    <BottomSheet className="voyage voyage-picker" labelledBy="voyage-title" sheetRef={ref} onClose={onExit}>
       {/* No close button: the sheet is dragged down, and «Volver al mapa» is below. */}
       <h2 id="voyage-title">Desde Ushuaia</h2>
       <p className="place">Elegí cómo cruzar a la Antártida. Son los medios que usa la ciencia argentina.</p>
@@ -588,7 +588,7 @@ function TravelBar({ voyage, animated, onExit, onSource }: { voyage: VoyageContr
             aria-label="Mantené para retroceder"
             title="Mantené para retroceder, por si te perdiste algo"
           >
-            ◀
+            {'\u25C0\uFE0E'}
           </button>
         )}
         {animated && (

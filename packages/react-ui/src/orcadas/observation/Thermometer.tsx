@@ -9,6 +9,7 @@ const SHELTER = {
   deep: 'var(--deep, #1E3E5C)',
   pencil: 'var(--chart-muted, var(--pencil, #5E656C))',
   brass: 'var(--ocre, #C0862F)',
+  oxide: 'var(--oxide, #A4471F)',
   snow: '#E7F0F5',
   snowLine: 'var(--glacier, #7FA8C4)',
   woodLight: '#FAF5EA',
@@ -376,14 +377,14 @@ export function Thermometer({
               y={stemTopY}
               width="2.6"
               height={Math.max(2, 134 - stemTopY)}
-              fill="#A4471F"
+              fill={SHELTER.oxide}
             />
             {/* Mercury bulb */}
             <circle
               cx="86"
               cy="134"
               r="4.5"
-              fill="#A4471F"
+              fill={SHELTER.oxide}
               stroke={SHELTER.ink}
               strokeWidth="1.1"
             />
@@ -585,14 +586,26 @@ export function Thermometer({
                   strokeLinecap="round"
                 />
                 {isMajor && (
-                  <text
-                    x={lensCx - 39}
-                    y={y + 4.5}
-                    textAnchor="end"
-                    className="orc-obs-svg-scale-num"
-                  >
-                    {deg > 0 ? `+${deg}°` : `${deg}°`}
-                  </text>
+                  <>
+                    {/* The paper plate keeps the presented graduation clear of its major tick. */}
+                    <rect
+                      x={lensCx - 38}
+                      y={y - 9}
+                      width="30"
+                      height="14"
+                      rx="2"
+                      fill="var(--chart-paper)"
+                      fillOpacity="0.94"
+                    />
+                    <text
+                      x={lensCx - 8}
+                      y={y + 4.5}
+                      textAnchor="end"
+                      className="orc-obs-svg-scale-num"
+                    >
+                      {deg > 0 ? `+${deg}°` : `${deg}°`}
+                    </text>
+                  </>
                 )}
                 {isHalf && (
                   <text
@@ -625,7 +638,7 @@ export function Thermometer({
                 L ${lensCx - 4.5} ${meniscusY + 2.5}
                 Q ${lensCx + 1} ${meniscusY - 3}, ${lensCx + 6.5} ${meniscusY + 2.5}
                 L ${lensCx + 6.5} ${lensCy + lensR + 10} Z`}
-            fill="#A4471F"
+            fill={SHELTER.oxide}
           />
           {/* Exact horizontal tangent line at top of meniscus */}
           <line
@@ -633,14 +646,14 @@ export function Thermometer({
             y1={meniscusY}
             x2={lensCx + 24}
             y2={meniscusY}
-            stroke="#A4471F"
+            stroke={SHELTER.oxide}
             strokeWidth="1.5"
             strokeDasharray="2 2"
           />
           {/* Meniscus pointer triangle */}
           <polygon
             points={`${lensCx + 11},${meniscusY} ${lensCx + 19},${meniscusY - 4.5} ${lensCx + 19},${meniscusY + 4.5}`}
-            fill="#A4471F"
+            fill={SHELTER.oxide}
           />
 
           {/* User's movable reading guide cursor (draftC) */}
@@ -707,7 +720,7 @@ export function Thermometer({
           x={lensCx + 21}
           y={meniscusY + 3.5}
           className="orc-obs-svg-callout"
-          fill="var(--chart-ink)"
+          fill="var(--oxide)"
           stroke="var(--chart-paper)"
           strokeWidth="3"
           paintOrder="stroke"

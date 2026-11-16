@@ -1,7 +1,9 @@
 import {
   MONTH_NAMES,
+  ORCADAS_READING_LIMITS,
   TOLERANCE,
   checkGuess,
+  normalizeReadingGuess,
   prefersReducedMotion,
   truthFor,
   type Reading,
@@ -31,34 +33,26 @@ const FIELD_META: Record<ReadingKind, InstrumentMeta> = {
     label: 'Temperatura del abrigo',
     shortLabel: 'Termómetro',
     unit: '°C',
-    min: -25,
-    max: 10,
-    step: 0.1,
+    ...ORCADAS_READING_LIMITS.temp,
   },
   pressure: {
     label: 'Presión atmosférica',
     shortLabel: 'Barómetro',
     unit: 'hPa',
     // Same range as the barometer dial (950 to 1030 hPa).
-    min: 950,
-    max: 1030,
-    step: 0.1,
+    ...ORCADAS_READING_LIMITS.pressure,
   },
   wind: {
     label: 'Velocidad del viento',
     shortLabel: 'Viento',
     unit: 'km/h',
-    min: 0,
-    max: 120,
-    step: 1,
+    ...ORCADAS_READING_LIMITS.wind,
   },
   clouds: {
     label: 'Cobertura de nubes',
     shortLabel: 'Nubes',
     unit: 'octas',
-    min: 0,
-    max: 8,
-    step: 1,
+    ...ORCADAS_READING_LIMITS.clouds,
   },
 };
 
@@ -67,9 +61,8 @@ function roundToStep(val: number, step: number): number {
   return Object.is(r, -0) ? 0 : r;
 }
 
-function clampToMeta(val: number, meta: InstrumentMeta): number {
-  const clamped = Math.max(meta.min, Math.min(meta.max, val));
-  return roundToStep(clamped, meta.step);
+function clampToMeta(kind: ReadingKind, val: number): number {
+  return normalizeReadingGuess(kind, val);
 }
 
 /** Value for the number input, which needs a decimal point. */
@@ -87,10 +80,10 @@ function formatVal(kind: ReadingKind, val: number): string {
 function initialTempDraft(tempC: number): number {
   const centerDeg = Math.round(tempC);
   const candidate = tempC > centerDeg ? centerDeg - 0.9 : centerDeg + 0.9;
-  const clamped = clampToMeta(candidate, FIELD_META.temp);
+  const clamped = clampToMeta('temp', candidate);
   if (Math.abs(clamped - tempC) <= 0.6) {
     const alt = tempC > centerDeg ? centerDeg + 0.9 : centerDeg - 0.9;
-    return clampToMeta(alt, FIELD_META.temp);
+    return clampToMeta('temp', alt);
   }
   return clamped;
 }
@@ -251,7 +244,7 @@ function FineSliderRow({
           if (text !== '' && text !== '-' && text !== '.' && text !== '-.' && !text.endsWith('.')) {
             const parsed = Number(text);
             if (Number.isFinite(parsed)) {
-              const rounded = roundToStep(parsed, meta.step);
+              const rounded = normalizeReadingGuess(kind, parsed);
               onDraft(rounded);
               onTypeGuess(rounded);
             }
@@ -370,12 +363,12 @@ export function Observation({
   const monthName = MONTH_NAMES[(month - 1 + 12) % 12] ?? 'enero';
 
   const updateDraft = (kind: ReadingKind, nextVal: number) => {
-    const clean = clampToMeta(nextVal, FIELD_META[kind]);
+    const clean = clampToMeta(kind, nextVal);
     setDrafts((prev) => ({ ...prev, [kind]: clean }));
   };
 
   const confirmReading = (kind: ReadingKind, val: number) => {
-    const clean = roundToStep(val, FIELD_META[kind].step);
+    const clean = normalizeReadingGuess(kind, val);
     onGuess(kind, clean);
   };
 
@@ -390,10 +383,10 @@ export function Observation({
     if (nextText !== '-' && nextText !== '.' && nextText !== '-.' && !nextText.endsWith('.')) {
       const parsed = Number(nextText);
       if (Number.isFinite(parsed)) {
-        const rounded = roundToStep(parsed, FIELD_META[kind].step);
+        const rounded = normalizeReadingGuess(kind, parsed);
         setDrafts((prev) => ({
           ...prev,
-          [kind]: clampToMeta(rounded, FIELD_META[kind]),
+          [kind]: rounded,
         }));
         onGuess(kind, rounded);
       }

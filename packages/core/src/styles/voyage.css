@@ -53,7 +53,6 @@
 .vchip.read{border-color:var(--pencil);background:transparent;color:var(--pencil);font-weight:400}
 .vchip.read .vchipk{background:color-mix(in srgb,var(--pencil) 30%,var(--paper))}
 .vchip.ask{padding:4px 12px;border-style:dashed;background:transparent;color:var(--deep)}
-.vchip:hover,.vchip:focus-visible{border-color:var(--ocre)}
 .vask{width:100%;justify-content:flex-start}
 /* Touch target over the head of a pin passed: the pin is drawn under it, the ring shows on focus. */
 .vpin{width:44px;height:44px;padding:0;border:0;border-radius:50%;background:transparent;pointer-events:auto;cursor:pointer}
@@ -87,7 +86,7 @@
 .vpop{position:absolute;left:48px;bottom:48px;width:300px;padding:12px 14px;border:2px solid var(--chart-ink);border-radius:var(--chart-radius);pointer-events:auto;text-align:left;animation:fadein .2s ease both}
 /* A place can be held at the top edge of the screen: its card opens downwards. */
 .vpop.under{bottom:auto;top:48px;left:auto;right:48px}
-.vpop h3{margin:0 28px 0 0;font-family:'Fraunces',Georgia,serif;font-size:20px;line-height:1.1}
+.vpop h3{margin:0 44px 0 0;font-family:'Fraunces',Georgia,serif;font-size:20px;line-height:1.1}
 .vpop .vfacts{margin:6px 0}
 .vpopclose{position:absolute;top:4px;right:4px;width:44px;height:44px;border:0;background:none;font-size:22px;line-height:1;color:var(--chart-ink);cursor:pointer}
 .vsighting{display:flex;align-items:center;gap:10px}
@@ -103,10 +102,10 @@
 .vquiz .btn.right::after{content:' ✓';font-weight:700}
 .vquiz .btn.wrong{background:color-mix(in srgb,var(--oxide) 22%,var(--chart-paper));border-color:var(--oxide)}
 .vquiz .vsmall{margin:2px 0 0;min-height:1.2em}
-.vnotebook{margin:10px 0;padding:10px 12px;border:0;border-radius:0;}
+.vnotebook{margin:10px 0;padding:10px 12px;border:1.5px dashed var(--chart-muted);border-radius:var(--chart-radius)}
 .vnotebook p{margin:0 0 8px}
 .vnotebook ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
-.vnote{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:4px 10px;border-radius:2px;border:1.5px solid var(--chart-ink);background:var(--chart-wash);font-size:13px;font-weight:700;color:var(--chart-ink)}
+.vnote{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:4px 10px;border-radius:18px;border:1.5px solid var(--chart-ink);background:var(--chart-wash);font-size:13px;font-weight:700;color:var(--chart-ink)}
 .vnote svg{width:18px;height:18px;color:var(--deep)}
 .vnote.missed{border-style:dashed;border-color:var(--chart-muted);background:transparent;color:var(--chart-muted);font-weight:400}
 .vnote.missed svg{color:var(--chart-muted);opacity:.6}
@@ -121,6 +120,11 @@
   .stage.voyaging .zoom{display:none}
   /* A milestone card with a question is long: it scrolls inside the lower half, so the vehicle stays in view above it. */
   .sheet.voyage{max-height:54%}
+}
+/* At a short viewport, the picker keeps its expand handle but its action row
+   stays after the options instead of covering them. */
+@media (max-width:820px) and (max-height:400px){
+  .sheet.voyage-picker:not(.full) .vactions{position:static;margin:12px 0 0;padding:8px 0 24px;background:transparent;border-top:0}
 }
 
 /* Diorama of a stop of Poncho (#146): the scene at human scale on its own screen, the panel of the stop beside it. */

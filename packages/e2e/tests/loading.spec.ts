@@ -171,6 +171,70 @@ test.describe('Loading screen', () => {
     }
   });
 
+  test('map3d loader rotates sourced facts and pauses while the fact has focus', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.clock.install();
+    await installLoadingTimingObserver(page);
+    const terrain = deferred();
+    await page.route(terrainAsset, async (route) => {
+      await terrain.promise;
+      await route.continue();
+    });
+
+    try {
+      await page.goto('/', { waitUntil: 'domcontentloaded' });
+
+      const loader = page.locator('[data-loading-variant="map3d"]');
+      const fact = loader.locator('.ld-factbox');
+      await expect(fact).toBeVisible();
+      await expect(fact.locator('a')).toHaveAttribute('href', /^https?:\/\//);
+      const firstFact = await fact.locator(':scope > p').first().innerText();
+
+      await fact.focus();
+      await page.clock.fastForward(7_000);
+      await expect(fact.locator(':scope > p').first()).toHaveText(firstFact);
+
+      await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+      await page.clock.fastForward(6_500);
+      await expect.poll(() => fact.locator(':scope > p').first().innerText()).not.toBe(firstFact);
+    } finally {
+      terrain.release();
+    }
+  });
+
+  test('automatic WebGL fallback presents two 2D steps in two columns without a manual button', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.addInitScript(() => {
+      const original = HTMLCanvasElement.prototype.getContext;
+      HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, type: string, ...rest: unknown[]) {
+        return /webgl/.test(type) ? null : (original as (...args: unknown[]) => unknown).call(this, type, ...rest);
+      } as typeof original;
+    });
+    const paint = deferred();
+    await page.route(/map-paint-768\.webp/, async (route) => {
+      await paint.promise;
+      await route.continue();
+    });
+
+    try {
+      await page.goto('/', { waitUntil: 'domcontentloaded' });
+
+      const loader = page.locator('[data-loading-variant="map2d"]');
+      await expect(loader).toBeVisible();
+      await expect(loader.locator('.ld-step')).toHaveCount(2);
+      await expect(loader.getByRole('button', { name: 'Ver mapa 2D' })).toHaveCount(0);
+      const columns = await loader.locator('.ld-steps').evaluate((element) =>
+        getComputedStyle(element).gridTemplateColumns.trim().split(/\s+/).length,
+      );
+      expect(columns).toBe(2);
+    } finally {
+      paint.release();
+    }
+
+    await expect(page.locator('.ld')).toHaveCount(0, { timeout: 10_000 });
+    await expect(page.locator('.stage:not(.m3d)')).toBeVisible();
+  });
+
   test('a fast cache load survives F5 in the same browser context', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     await installLoadingTimingObserver(page);

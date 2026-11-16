@@ -1,0 +1,98 @@
+/* Shared interaction states (#202). Shapes, layout and semantic colors stay with
+   each component. Map markers, scene hotspots and scientific diagrams are excluded. */
+@media (hover: hover) and (pointer: fine) {
+  :is(
+    .btn, .iconbtn, .pill, .lt, .li, .opt, .tab,
+    :where(.view-toggle) .chip,
+    .vopt, .vchip, .vnote:where(button), .vpopclose,
+    .orc-scene-help-btn, .orc-step-btn, .orc-month-chip, .orc-month-btn,
+    .orc-source-card, .orc-panel-show, .orc-obs-tab, .orc-obs-step-btn,
+    .fossil-reset, .marine-reset, .fossil-note, .fossil-archive, .mar-archive,
+    :where(.fossil-habitats, .marine-web-picks) button,
+    .orc-obs-details > summary
+  ):where(button, a, summary):hover:not(:disabled):where(:not([aria-disabled="true"])) {
+    box-shadow: inset 0 0 0 1px var(--chart-control-ring);
+  }
+
+  /* A hover never impersonates a selected, checked or expanded control. Its
+     existing fill and text remain legible; the inset line still acknowledges it. */
+  :is(
+    .btn, .iconbtn, .pill, .lt, .li, .opt, .tab,
+    :where(.view-toggle) .chip,
+    .vopt, .vchip, .vnote:where(button), .vpopclose,
+    .orc-scene-help-btn, .orc-step-btn, .orc-month-chip, .orc-month-btn,
+    .orc-source-card, .orc-panel-show, .orc-obs-tab, .orc-obs-step-btn,
+    .fossil-reset, .marine-reset, .fossil-note, .fossil-archive, .mar-archive,
+    :where(.fossil-habitats, .marine-web-picks) button,
+    .orc-obs-details > summary
+  ):where(button, a, summary):hover:not(:disabled):where(:not(
+    [aria-disabled="true"], [aria-pressed="true"], [aria-expanded="true"],
+    [aria-selected="true"], [aria-checked="true"], [aria-current],
+    .is-current, .is-active, .sel, .read, .missed, .is-exact, .is-close
+  )) {
+    background: var(--chart-control-hover);
+    color: var(--chart-ink);
+  }
+
+  .btn.primary:hover:not(:disabled):where(:not(
+    [aria-disabled="true"], [aria-pressed="true"], [aria-expanded="true"]
+  )) {
+    background: var(--chart-control-hover-strong);
+  }
+
+  /* Continue uses the existing expedition ochre, distinct from navigation. */
+  .btn.resume:hover:not(:disabled):where(:not([aria-disabled="true"])) {
+    background: #EDBB55;
+    color: var(--chart-ink);
+  }
+
+  :is(
+    .sheet-sources-toggle, .vref, .orc-src-link, .orc-scene-sources-link,
+    .orc-month-summary-toggle, .orc-obs-retry-btn,
+    :where(.legend details, .fossil-more, .marine-more, .orc-more) > summary,
+    .orc-obs-details > summary
+  ):where(button, a, summary):hover:not(:disabled):where(:not([aria-disabled="true"])) {
+    background: var(--chart-control-hover);
+    color: var(--chart-ink);
+    text-decoration-line: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+  }
+}
+
+/* Press feedback works with touch as well as a mouse, without moving the target
+   or changing the fill that communicates selection. Disabled controls never react. */
+:is(
+  .btn, .iconbtn, .pill, .lt, .li, .opt, .tab,
+  :where(.view-toggle) .chip,
+  .vopt, .vchip, .vnote:where(button), .vpopclose,
+  .orc-scene-help-btn, .orc-step-btn, .orc-month-chip, .orc-month-btn,
+  .orc-source-card, .orc-panel-show, .orc-obs-tab, .orc-obs-step-btn,
+  .fossil-reset, .marine-reset, .fossil-note, .fossil-archive, .mar-archive,
+  :where(.fossil-habitats, .marine-web-picks) button
+):where(button, a, summary):active:not(:disabled):where(:not([aria-disabled="true"])) {
+  box-shadow: inset 0 0 0 2px var(--chart-control-ring);
+}
+
+:is(
+  .sheet-sources-toggle, .vref, .orc-src-link, .orc-scene-sources-link,
+  .orc-month-summary-toggle, .orc-obs-retry-btn,
+  :where(.legend details, .fossil-more, .marine-more, .orc-more) > summary
+):where(button, a, summary):active:not(:disabled):where(:not([aria-disabled="true"])) {
+  background: var(--chart-control-hover-strong);
+  color: var(--chart-ink);
+}
+
+/* In forced colors the browser can discard fills and shadows. Keep the selected
+   transport distinguishable from its siblings with a system-color inset ring;
+   aria-pressed remains the source of truth. */
+@media (forced-colors: active) {
+  .vopt[aria-pressed="true"] {
+    forced-color-adjust: none;
+    background: Canvas;
+    border-color: Highlight;
+    color: CanvasText;
+    outline: 3px solid Highlight;
+    outline-offset: -6px;
+  }
+}

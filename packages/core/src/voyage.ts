@@ -602,6 +602,20 @@ export function nextHeld(heldSeconds: number, dt: number, pressed: boolean): num
   return Math.max(0, heldSeconds - dt * VOYAGE_RAMP_UNWIND);
 }
 
+/**
+ * Camera distance at which the trip goes at its own pace: about the closest the camera gets over
+ * open sea (ICE_MIN_DISTANCE). The vehicle is drawn at a size that grows with the distance, so it
+ * looks the same however far the camera is; the trip moves the same number of ship lengths per
+ * second from up to VOYAGE_PACE_TOP times farther, and so looks as fast on the screen (#168).
+ */
+export const VOYAGE_PACE_DISTANCE = 25;
+export const VOYAGE_PACE_TOP = 4;
+
+/** Speed multiplier of the trip for a camera at `distance` from the vehicle: ×1 up close, faster from farther. */
+export function voyagePace(distance: number): number {
+  return Math.min(VOYAGE_PACE_TOP, Math.max(1, distance / VOYAGE_PACE_DISTANCE));
+}
+
 export interface VoyageState {
   transport: TransportId;
   kind: TransportKind;

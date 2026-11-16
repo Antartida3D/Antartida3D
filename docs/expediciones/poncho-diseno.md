@@ -67,3 +67,10 @@ Según `20-web.md`:
 
 - Los modelos y el relieve (los trabajan otros issues).
 - Aprobar la licencia del texto o las fotos (lo hace el equipo con la evidencia).
+
+## Diorama por etapas y fotos (#146)
+
+- **Un diorama por parada.** Cada una de las diez paradas abre una escena a escala humana, con una toma de cámara por frase del `essential`. Lo que se ve cambia con la frase: cada frase, desde la segunda, hace aparecer algo nuevo (personas, perros, trineos, el barco, el helicóptero, los paracaídas). Los datos están en `packages/core/src/poncho-scenes.ts`; una prueba exige que todas las paradas se cuenten en etapas.
+- **Todo es ilustración.** Las posturas, los lugares y los modelos son un dibujo del relato, no un registro; la pantalla lo avisa con «Reconstrucción ilustrada». El helicóptero, el rompehielos y el hotel son modelos genéricos, no un vehículo ni un edificio real identificado.
+- **Fotos.** Dos imágenes de las páginas de la Fundación Marambio se muestran cuando la historia llega a ellas (`packages/core/src/content/poncho-photos.ts`): la de «Poncho va al frente» desde la segunda frase y la de «La patrulla «Paralelo 82»» desde la primera. Las páginas no traen autor, fecha ni pie, y no se inventó ninguno. Fuentes y estado de los derechos: sección 4.3 de [poncho-fuentes.md](poncho-fuentes.md).
+- **Orden obligatorio.** El viaje de Poncho es una historia contada en orden: se detiene en cada hito y abre su tarjeta. Los viajes desde Ushuaia mantienen los hitos opcionales de #157 (ver [DEC-146](../decisiones/DEC-146-poncho-en-orden.md)).

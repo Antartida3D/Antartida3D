@@ -9,7 +9,6 @@ import {
   ICE_MIN_DISTANCE,
   MAX_POLAR_DEG,
   FUEGIA_LAND_MASK,
-  GEAR_TAP_MS,
   PONCHO_MILESTONES,
   PONCHO_TRANSPORT,
   IRIZAR_ARRIVAL_POSE,
@@ -33,7 +32,8 @@ import {
   SIGHTINGS,
   SIGHTING_WINDOW_BRIEF,
   TRANSPORTS,
-  VOYAGE_GEARS,
+  VOYAGE_RAMP_SECONDS,
+  VOYAGE_TOP_SPEED,
   VOYAGE_SECONDS,
   VOYAGE_SOURCES,
   VOYAGE_SOURCE_CODES,
@@ -49,7 +49,12 @@ import {
   irizarArrivalWorldPose,
   minCameraDistance,
   expeditionAt,
-  nextGear,
+  nextHeld,
+  voyagePace,
+  VOYAGE_PACE_DISTANCE,
+  VOYAGE_PACE_TOP,
+  vehicleSize,
+  rampSpeed,
   orcadasTravelAt,
   orcadasTravelLength,
   orcadasTravelMs,
@@ -651,16 +656,44 @@ describe('distance and time travelled', () => {
   });
 });
 
-describe('advance gears', () => {
-  it('shifts up on a quick second press and tops out', () => {
-    expect(nextGear(0, GEAR_TAP_MS)).toBe(1);
-    expect(nextGear(1, 100)).toBe(2);
-    expect(nextGear(VOYAGE_GEARS.length - 1, 100)).toBe(VOYAGE_GEARS.length - 1);
+describe('advance speed (#166)', () => {
+  it('sets off at ×1 and picks up speed little by little up to the top', () => {
+    expect(rampSpeed(0)).toBe(1);
+    let last = rampSpeed(0);
+    for (let s = 0.25; s <= VOYAGE_RAMP_SECONDS; s += 0.25) {
+      expect(rampSpeed(s)).toBeGreaterThan(last);
+      last = rampSpeed(s);
+    }
+    expect(rampSpeed(VOYAGE_RAMP_SECONDS)).toBe(VOYAGE_TOP_SPEED);
+    expect(rampSpeed(VOYAGE_RAMP_SECONDS * 5)).toBe(VOYAGE_TOP_SPEED);
   });
 
-  it('goes back to the first gear after a pause', () => {
-    expect(nextGear(2, GEAR_TAP_MS + 1)).toBe(0);
-    expect(VOYAGE_GEARS[0]).toBe(1);
+  it('eases in: the first half second barely changes the speed', () => {
+    expect(rampSpeed(0.5)).toBeLessThan(1.3);
+  });
+
+  it('counts the holding up to the top, and unwinds it faster when let go', () => {
+    let held = 0;
+    for (let i = 0; i < 100; i++) held = nextHeld(held, 0.1, true);
+    expect(held).toBe(VOYAGE_RAMP_SECONDS);
+    // A quick new press keeps most of the speed.
+    expect(rampSpeed(nextHeld(held, 0.3, false))).toBeGreaterThan(VOYAGE_TOP_SPEED * 0.8);
+    expect(nextHeld(held, VOYAGE_RAMP_SECONDS, false)).toBe(0);
+  });
+});
+
+describe('pace by camera distance (#168)', () => {
+  it('goes at its own pace up close and faster from farther, up to a top', () => {
+    expect(voyagePace(10)).toBe(1);
+    expect(voyagePace(VOYAGE_PACE_DISTANCE)).toBe(1);
+    expect(voyagePace(VOYAGE_PACE_DISTANCE * 2)).toBe(2);
+    expect(voyagePace(VOYAGE_PACE_DISTANCE * 100)).toBe(VOYAGE_PACE_TOP);
+  });
+
+  it('moves the same ship lengths per second from farther, where the ship is drawn bigger', () => {
+    const near = VOYAGE_PACE_DISTANCE;
+    const far = VOYAGE_PACE_DISTANCE * 3;
+    expect(voyagePace(far) / vehicleSize(far)).toBeCloseTo(voyagePace(near) / vehicleSize(near), 9);
   });
 });
 

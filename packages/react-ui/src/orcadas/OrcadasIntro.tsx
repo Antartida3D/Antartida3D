@@ -70,11 +70,11 @@ export function OrcadasIntro({
             <FactList facts={facts} fold={false} />
           </SourceContext.Provider>
           <div className="row vactions">
-            <button type="button" className="btn primary" onClick={() => onStart(arrival)}>
-              Comenzar expedición
-            </button>
             <button type="button" className="btn" onClick={onExit}>
               Volver al mapa
+            </button>
+            <button type="button" className="btn primary" onClick={() => onStart(arrival)}>
+              Comenzar expedición
             </button>
           </div>
         </BottomSheet>

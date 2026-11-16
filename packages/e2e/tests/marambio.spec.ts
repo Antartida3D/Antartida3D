@@ -1,6 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
 import { clearStorage } from '../storage.ts';
 import { MARAMBIO_SPOTS, marambioFacts } from '../../core/src/content/marambio.ts';
+import { ORCADAS_GUIDING_QUESTION } from '../../core/src/content/orcadas.ts';
+import { mockOpenMeteo } from './weather-helpers.ts';
 
 const log = (page: Page) => page.locator('.reg');
 const primary = (page: Page) => page.locator('.mar .ebar .btn.primary');
@@ -22,6 +24,7 @@ test.beforeEach(async ({ page }) => {
     if (m.type() === 'error') consoleErrors.push(m.text());
   });
   page.on('pageerror', (e) => consoleErrors.push(e.message));
+  await mockOpenMeteo(page);
 });
 
 test.afterEach(() => {
@@ -58,7 +61,7 @@ test.describe('with WebGL', () => {
     }
 
     // A source link under a fact opens the list of sources, and the list goes back to the base.
-    await section.locator('.orc-src-link').first().click();
+    await section.locator('.orc-panel .orc-src-link').first().click();
     await expect(heading(page, 'De dónde sale cada dato')).toBeFocused();
     await expect(section.locator('.mar-source.is-highlight')).toHaveCount(1);
     await expect(section.locator('.mar-sources')).toContainText('OpenStreetMap');
@@ -89,6 +92,54 @@ test.describe('with WebGL', () => {
     await section.getByRole('button', { name: 'Volver al mapa' }).click();
     await expect(log(page)).toContainText('0/3');
     await expect(page.locator('.toast')).toHaveCount(0);
+  });
+
+  test('the Irízar at sea offers the trip to Orcadas, and the trip opens Orcadas', async ({ page }) => {
+    await openMarambio(page);
+    const section = page.getByRole('region', { name: 'Expedición Base Marambio' });
+    const ship = section.getByRole('button', { name: 'El Irízar: viajar a la Estación Orcadas' });
+    await expect(ship).toBeVisible();
+
+    // Staying in Marambio closes the question and gives the focus back to the ship.
+    await ship.click();
+    const dialog = page.getByRole('dialog', { name: '¿Querés empezar el viaje a la Estación Orcadas?' });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Viajar a Orcadas' })).toBeFocused();
+    await expect(dialog).toContainText('Recorrido ilustrativo');
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+    await expect(ship).toBeFocused();
+    await ship.click();
+    await dialog.getByRole('button', { name: 'Seguir en Marambio' }).click();
+    await expect(dialog).toHaveCount(0);
+    await expect(heading(page, MARAMBIO_SPOTS[0].label)).toBeVisible();
+
+    // Sailing leaves Marambio, without marking it explored before its visit was done, and opens Orcadas.
+    await ship.click();
+    await dialog.getByRole('button', { name: 'Viajar a Orcadas' }).click();
+    await expect(page.getByRole('heading', { level: 2, name: ORCADAS_GUIDING_QUESTION })).toBeVisible({ timeout: 20_000 });
+    await page.waitForFunction(() => (window as unknown as { __orcadasReady?: boolean }).__orcadasReady === true);
+    await page.getByRole('button', { name: 'Volver al mapa' }).click();
+    await expect(log(page)).toContainText('0/3');
+  });
+
+  test('the strip of months shows the days of ventisca of each month with their source', async ({ page }) => {
+    await openMarambio(page);
+    const strip = page.getByRole('complementary', { name: 'Control estacional de la base' });
+    // A phone shows a chip that opens the strip; a wide screen shows the strip.
+    const chip = strip.getByRole('button', { name: /^Mes: .*Cambiar mes$/ });
+    if (await chip.isVisible()) await chip.click();
+    await strip.getByRole('group', { name: 'Mes en la base' }).getByRole('button', { name: 'julio' }).click();
+    if (await chip.isVisible()) await expect(chip).toHaveAccessibleName('Mes: julio. Cambiar mes');
+    if (await chip.isVisible()) await chip.click();
+    await strip.getByText('Saber más').click();
+    await expect(strip).toContainText('En julio: 12,2 días con ventisca alta y -14,9 °C de temperatura media (SMN, 1991-2020).');
+    for (const fact of marambioFacts('months')) await expect(strip).toContainText(fact.text);
+    // The scene keeps drawing in the month with most blizzards.
+    await expect(page.locator('.mar canvas')).toBeVisible();
+    // The source link of a month fact opens the list of sources on the SMN normals.
+    await strip.getByRole('button', { name: 'SMN, normales 1991-2020' }).first().click();
+    await expect(page.locator('.mar-source.is-highlight')).toContainText('Estadísticas Climatológicas Normales');
   });
 
   test.describe('the diorama moves with the same gestures as the map', () => {
@@ -173,6 +224,41 @@ test.describe('with WebGL', () => {
       await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
       await waitRest(page);
       expect((await cam(page)).d).toBeLessThan(panned.d * 0.8);
+    });
+
+    test('on a phone, a double tap comes closer and the second touch dragged down goes back out (#165)', async ({ page, isMobile }) => {
+      test.skip(!isMobile, 'touch gestures belong to the phone layout');
+      await openMarambio(page);
+      await waitRest(page);
+      const cdp = await page.context().newCDPSession(page);
+      const touch = (type: 'touchStart' | 'touchMove' | 'touchEnd', p?: { x: number; y: number }) =>
+        cdp.send('Input.dispatchTouchEvent', { type, touchPoints: p ? [p] : [] });
+      const tap = async (p: { x: number; y: number }) => {
+        await touch('touchStart', p);
+        await touch('touchEnd');
+      };
+
+      // Clear of the dots: tapping one opens its point.
+      const p = await freePoint(page, 80);
+      const before = await cam(page);
+      await tap(p);
+      await tap(p);
+      await waitRest(page);
+      const closer = await cam(page);
+      expect(closer.d).toBeLessThan(before.d * 0.8);
+      expect(closer.polar).toBeCloseTo(before.polar, 3);
+      expect(closer.az).toBeCloseTo(before.az, 3);
+
+      await page.waitForTimeout(400); // past the double tap time
+      await tap(p);
+      await touch('touchStart', p);
+      for (let i = 1; i <= 10; i++) await touch('touchMove', { x: p.x, y: p.y + 8 * i });
+      await touch('touchEnd');
+      await waitRest(page);
+      const out = await cam(page);
+      expect(out.d).toBeGreaterThan(closer.d * 1.2);
+      // Never past the diorama's own farthest view.
+      expect(out.d).toBeLessThanOrEqual(await page.evaluate(() => (window as any).__marambioCamera.maxDistance + 0.01));
     });
   });
 });

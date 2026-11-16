@@ -145,7 +145,7 @@ Las sombras y la oclusión se calculan una sola vez, al procesar los datos, y se
 La cámara es `CameraControls` de drei, con límites definidos en `packages/core/src/camera.ts`: inclinación máxima de 60° y un tope de alejamiento. Una prueba verifica que la cámara nunca vea más allá de las tierras dibujadas.
 
 - Computadora: arrastrar mueve el mapa, la rueda acerca, el botón derecho gira e inclina.
-- Celular: un dedo mueve; pellizcar acerca; girar dos dedos gira; subir dos dedos inclina. La regla de los gestos está en `core/src/gestures.ts`, con pruebas.
+- Celular: un dedo mueve; pellizcar acerca; girar dos dedos gira; subir dos dedos inclina. Tocar dos veces acerca un paso alrededor del punto tocado; tocar dos veces y arrastrar el segundo toque hacia arriba acerca y hacia abajo aleja, como en los mapas del celular (#165, [DEC-165](decisiones/DEC-165-zoom-con-un-dedo.md)). Vale en el mapa 2D, en el relieve 3D y en los dioramas de Orcadas y Marambio. La regla de los gestos está en `core/src/gestures.ts`, con pruebas.
 
 ## Modelos de bloques (voxel)
 

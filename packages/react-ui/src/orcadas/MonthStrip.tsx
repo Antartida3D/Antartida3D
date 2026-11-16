@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   MONTH_NAMES,
   ORCADAS_LAT,
@@ -6,6 +6,7 @@ import {
   factsFor,
   midMonthDayOfYear,
   seaIceAt,
+  type FactKind,
 } from '@antartida/core';
 import { useMediaQuery } from '../hooks.ts';
 import { FactList } from './FactList.tsx';
@@ -19,12 +20,35 @@ import {
 
 const POPOVER_ID = 'orc-month-popover';
 
+/**
+ * What the strip shows of a place, month by month: its daylight (from its latitude), a second
+ * stripe under each month with its legend and a line in «Saber más», and what else «Saber más»
+ * holds. The default is Estación Orcadas, with the sea ice of Bahía Scotia.
+ */
+export interface MonthStripSeason {
+  latitude: number;
+  /** How much of the stripe each month shows, 0..1. */
+  stripe: (month: number) => number;
+  /** Extra class of the stripe, for its colour. */
+  stripeClass?: string;
+  stripeLegend: string;
+  /** The line about the stripe in «Saber más», with what kind of datum it is. */
+  stripeLine: (month: number) => { kind: FactKind; text: string };
+  /** The rest of «Saber más», after the line. */
+  details: (month: number, monthName: string) => ReactNode;
+  /** Accessible names of the strip and of its whole control. */
+  groupLabel: string;
+  asideLabel: string;
+}
+
 function MonthBars({
   daylightPct,
-  seaIce,
+  stripe,
+  stripeClass,
 }: {
   daylightPct: number;
-  seaIce: number;
+  stripe: number;
+  stripeClass?: string;
 }) {
   return (
     <>
@@ -35,26 +59,52 @@ function MonthBars({
         />
       </span>
       <span
-        className="orc-month-ice-stripe"
-        style={{ opacity: 0.15 + seaIce * 0.85 }}
-        data-ice={seaIce > 0 ? 'yes' : 'no'}
+        className={`orc-month-ice-stripe${stripeClass ? ` ${stripeClass}` : ''}`}
+        style={{ opacity: 0.15 + stripe * 0.85 }}
+        data-ice={stripe > 0 ? 'yes' : 'no'}
         aria-hidden="true"
       />
     </>
   );
 }
 
+function OrcadasMonthDetails({ month, monthName, hour, onHour }: { month: number; monthName: string; hour: number; onHour: (h: number) => void }) {
+  const monthFacts = useMemo(() => factsFor('months'), []);
+  return (
+    <>
+      <SunArc month={month} hour={hour} monthName={monthName} onHour={onHour} />
+      <FactList facts={monthFacts} />
+    </>
+  );
+}
+
 export function MonthStrip({
   month,
-  hour,
+  hour = 12,
   onMonth,
   onHour,
+  season,
 }: {
   month: number;
-  hour: number;
+  hour?: number;
   onMonth: (m: number) => void;
-  onHour: (h: number) => void;
+  onHour?: (h: number) => void;
+  /** Another place than Orcadas (Base Marambio). */
+  season?: MonthStripSeason;
 }) {
+  const place = useMemo<MonthStripSeason>(
+    () =>
+      season ?? {
+        latitude: ORCADAS_LAT,
+        stripe: seaIceAt,
+        stripeLegend: 'Hielo en la bahía (simulación)',
+        stripeLine: (m) => ({ kind: 'sim', text: `Bahía Scotia: ${seaIceDescription(seaIceAt(m))}` }),
+        details: (m, name) => <OrcadasMonthDetails month={m} monthName={name} hour={hour} onHour={(h) => onHour?.(h)} />,
+        groupLabel: 'Mes en la estación',
+        asideLabel: 'Control estacional de la estación',
+      },
+    [season, hour, onHour]
+  );
   // The whole strip only where the scene has room for it: a phone, upright or on its side, gets the chip.
   const isDesktop = useMediaQuery('(min-width: 900px) and (min-height: 501px)');
   const [open, setOpen] = useState(false);
@@ -62,7 +112,6 @@ export function MonthStrip({
   const normMonth = (((month - 1) % 12) + 12) % 12 + 1;
   const monthName = MONTH_NAMES[normMonth - 1] ?? 'enero';
   const chipMonthLabel = monthName.charAt(0).toUpperCase() + monthName.slice(1);
-  const monthFacts = useMemo(() => factsFor('months'), []);
 
   const wrapRef = useRef<HTMLElement>(null);
   const chipRef = useRef<HTMLButtonElement>(null);
@@ -81,25 +130,23 @@ export function MonthStrip({
     };
   }, []);
 
-  const daylight = dayLengthHours(ORCADAS_LAT, midMonthDayOfYear(normMonth));
-  const ice = seaIceAt(normMonth);
-  const iceDesc = seaIceDescription(ice);
+  const daylight = dayLengthHours(place.latitude, midMonthDayOfYear(normMonth));
+  const stripeLine = place.stripeLine(normMonth);
 
   const monthsData = useMemo(() => {
     return Array.from({ length: 12 }, (_, i) => {
       const m = i + 1;
-      const d = dayLengthHours(ORCADAS_LAT, midMonthDayOfYear(m));
+      const d = dayLengthHours(place.latitude, midMonthDayOfYear(m));
       const daylightPct = Math.min(100, Math.max(0, (d / 24) * 100));
-      const seaIce = seaIceAt(m);
       return {
         m,
         shortName: MONTH_SHORT[i] ?? '',
         fullName: MONTH_NAMES[i] ?? '',
         daylightPct,
-        seaIce,
+        stripe: place.stripe(m),
       };
     });
-  }, []);
+  }, [place]);
 
   const currentMonthData = monthsData[normMonth - 1] ?? monthsData[0]!;
 
@@ -203,10 +250,10 @@ export function MonthStrip({
       <div
         className="orc-month-strip"
         role="group"
-        aria-label="Mes en la estación"
+        aria-label={place.groupLabel}
         onKeyDown={handleStripKeyDown}
       >
-        {monthsData.map(({ m, shortName, fullName, daylightPct, seaIce }, idx) => {
+        {monthsData.map(({ m, shortName, fullName, daylightPct, stripe }, idx) => {
           const isCurrent = m === normMonth;
           return (
             <button
@@ -222,7 +269,7 @@ export function MonthStrip({
               onClick={() => handleSelectMonth(m)}
             >
               <span className="orc-month-short">{shortName}</span>
-              <MonthBars daylightPct={daylightPct} seaIce={seaIce} />
+              <MonthBars daylightPct={daylightPct} stripe={stripe} stripeClass={place.stripeClass} />
             </button>
           );
         })}
@@ -230,7 +277,7 @@ export function MonthStrip({
 
       <p className="orc-month-legend" aria-hidden="true">
         <span className="orc-month-legend-sun" /> Horas de luz
-        <span className="orc-month-legend-ice" /> Hielo en la bahía (simulación)
+        <span className={`orc-month-legend-ice${place.stripeClass ? ` ${place.stripeClass}` : ''}`} /> {place.stripeLegend}
       </p>
 
       <details className="orc-month-details">
@@ -243,19 +290,12 @@ export function MonthStrip({
               Luz solar en {monthName}: {formatHoursMinutes(daylight)}
             </span>
             <span className="orc-month-ice-text">
-              <KindChip kind="sim" />
-              <span>Bahía Scotia: {iceDesc}</span>
+              <KindChip kind={stripeLine.kind} />
+              <span>{stripeLine.text}</span>
             </span>
           </div>
 
-          <SunArc
-            month={normMonth}
-            hour={hour}
-            monthName={monthName}
-            onHour={onHour}
-          />
-
-          <FactList facts={monthFacts} />
+          {place.details(normMonth, monthName)}
         </div>
       </details>
     </>
@@ -265,7 +305,7 @@ export function MonthStrip({
     <aside
       ref={wrapRef}
       className="orc-month-strip-wrap"
-      aria-label="Control estacional de la estación"
+      aria-label={place.asideLabel}
     >
       {isDesktop ? (
         stripBody
@@ -292,7 +332,8 @@ export function MonthStrip({
             <span className="orc-month-chip-bars" aria-hidden="true">
               <MonthBars
                 daylightPct={currentMonthData.daylightPct}
-                seaIce={currentMonthData.seaIce}
+                stripe={currentMonthData.stripe}
+                stripeClass={place.stripeClass}
               />
             </span>
             <span className="orc-month-chip-caret" aria-hidden="true">

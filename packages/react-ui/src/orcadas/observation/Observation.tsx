@@ -169,6 +169,7 @@ function FineSliderRow({
         aria-valuenow={draft}
         aria-valuetext={`${formatVal(kind, draft)} ${meta.unit}`}
         onKeyDown={(e) => {
+          if (e.ctrlKey || e.metaKey || e.altKey) return;
           if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
             e.preventDefault();
             onDraft(draft + meta.step * (e.shiftKey ? 10 : 1));
@@ -501,6 +502,7 @@ export function Observation({
                   className={`orc-obs-tab${isSelected ? ' is-active' : ''}${tabStatus ? ` is-${tabStatus}` : ''}`}
                   onClick={() => setActiveOptional(kind)}
                   onKeyDown={(e) => {
+                    if (e.ctrlKey || e.metaKey || e.altKey) return;
                     if (handleNumericTyping(kind, e.key)) {
                       e.preventDefault();
                     }

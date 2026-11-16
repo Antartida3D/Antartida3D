@@ -162,6 +162,22 @@ export function homeDistance3D(aspect: number): number {
 }
 
 /**
+ * Ground the shorter side of the screen spans at the farthest zoom during the trip from Ushuaia
+ * (#167), in map units (about 7.5 km each): some 600 km, a third of the route. Farther the vehicle
+ * is lost among the lands and the trip stops reading as a trip.
+ */
+export const VOYAGE_VIEW_SPAN = 80;
+
+/**
+ * Farthest camera distance while travelling: the same ground across the shorter side of the
+ * screen on a wide window and on a phone, and never farther than the overview.
+ */
+export function voyageMaxDistance3D(aspect: number): number {
+  const across = 2 * Math.tan((FOV * Math.PI) / 360) * Math.min(1, aspect);
+  return Math.min(homeDistance3D(aspect), VOYAGE_VIEW_SPAN / across);
+}
+
+/**
  * 3D zoom level as a 2D-style `k`: 1 at the overview, doubling each time the distance halves.
  * Lets clustering and the 2D/3D switch share one zoom scale with the orbit camera.
  */

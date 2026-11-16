@@ -5,6 +5,8 @@ import {
   FADE_MS,
   AVAILABLE_COUNT,
   EXPEDITION_POINT,
+  MARAMBIO_POINT,
+  ORCADAS_POINT,
   PONCHO_POINT,
   orcadasTravelMs,
   RETURN_MS,
@@ -22,7 +24,7 @@ import {
   type ArrivalId,
   type MapPoint,
 } from '@antartida/core';
-import { useReducedMotion, useTimers } from './hooks.ts';
+import { useBackLayer, useReducedMotion, useTimers } from './hooks.ts';
 import { LoadingScreen } from './loading/LoadingScreen.tsx';
 import { MapView, type Layer3DProps, type Phase, type ViewMode } from './map/MapView.tsx';
 import { Filters } from './ui.tsx';
@@ -163,13 +165,11 @@ export function AntarcticaApp() {
     enterApproach(activePoint.id);
   };
 
-  const start = (point: MapPoint, chosenArrival: ArrivalId = 'ship') => {
-    const id = point.id;
-    if (phase !== 'idle' || !isExpedition(id)) return;
+  /** Opens an expedition: on the 3D map (`can3D`) with its trip or camera approach, else with the dive. */
+  const begin = (point: MapPoint, id: ExpeditionId, chosenArrival: ArrivalId, can3D: boolean) => {
     setToast('');
     setActivePoint(point);
     void EXPEDITIONS[id]();
-    const can3D = !reduced && mode === '3d' && document.querySelector('.stage.m3d canvas') !== null;
     if (id === 'orcadas') {
       setArrival(chosenArrival);
       // Orcadas on the 3D map: animate the final Scotia Sea leg first, then zoom down to the island.
@@ -192,6 +192,29 @@ export function AntarcticaApp() {
       },
       reduced ? FADE_MS : DIVE_MS
     );
+  };
+
+  const start = (point: MapPoint, chosenArrival: ArrivalId = 'ship') => {
+    const id = point.id;
+    if (phase !== 'idle' || !isExpedition(id)) return;
+    begin(point, id, chosenArrival, !reduced && mode === '3d' && document.querySelector('.stage.m3d canvas') !== null);
+  };
+
+  /**
+   * From the Irízar in the Marambio diorama: back to the map, which shows the trip from Isla
+   * Marambio to Orcadas on the ship (#135), and then the Orcadas expedition. A visit that reached
+   * its last point counts as explored, without a toast that would cover the trip.
+   */
+  const travelFromMarambio = (done: boolean) => {
+    if (done && !explored.includes(MARAMBIO_POINT.id)) {
+      const ids = [...explored, MARAMBIO_POINT.id];
+      setExplored(ids);
+      saveExplored(ids);
+    }
+    setScreen('map');
+    setPhase('idle');
+    // The 3D map comes back with the screen, so the trip can be shown on it whenever it is the view in use.
+    begin(ORCADAS_POINT, 'orcadas', 'ship', !reduced && mode === '3d' && webglSupported === true);
   };
 
   /** Marks an expedition as explored and announces it. */
@@ -224,6 +247,9 @@ export function AntarcticaApp() {
     else setToast('');
     later('ret', () => setPhase('idle'), RETURN_MS);
   };
+
+  // Browser «back» inside an expedition returns to the map, like «Volver al mapa» (#185).
+  useBackLayer(screen !== 'map', () => leave(false));
 
   return (
     <div className="app">
@@ -264,7 +290,7 @@ export function AntarcticaApp() {
       ) : (
         <Suspense fallback={null}>
           {screen === 'marambio' ? (
-            <MarambioExpedition reduced={reduced} onLeave={leave} />
+            <MarambioExpedition reduced={reduced} onLeave={leave} onTravelToOrcadas={travelFromMarambio} />
           ) : (
             <OrcadasExpedition reduced={reduced} arrival={arrival} onLeave={leave} />
           )}

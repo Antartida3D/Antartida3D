@@ -28,6 +28,7 @@ import {
   vehicleAt,
   transferAt,
   vehicleSize,
+  voyagePace,
   voyageArrived,
   voyageAt,
   voyageHeading,
@@ -271,6 +272,8 @@ export function Voyage3D({ bus, reduced, overlay }: {
   const stops = kind ? voyageStops(kind) : [];
   const pins = useMemo(() => (kind ? voyageStops(kind).slice(1).map((stop) => stop.pin) : []), [kind]);
   const pinGroups = useRef<(Group | null)[]>([]);
+  // Off the 3D map (the 2D map draws no camera) the trip goes at its own pace.
+  useEffect(() => () => void (bus.pace = 1), [bus]);
   const pinGeometry = useMemo(buildPinGeometry, []);
   useEffect(() => () => Object.values(pinGeometry).forEach((g) => g.dispose()), [pinGeometry]);
 
@@ -384,6 +387,8 @@ export function Voyage3D({ bus, reduced, overlay }: {
 
     // The camera always stays on the vehicle: the user can orbit and zoom around it, not pan away.
     if (controls) {
+      // From farther the trip goes faster: the vehicle keeps its size on the screen, and so does its speed (#168).
+      bus.pace = voyagePace(controls.distance);
       // The controls apply a move on the next frame, and the canvas draws on demand: a move asks for
       // that frame, or a move without animation (reduced motion) is not drawn until something else redraws (#76).
       let moved = false;

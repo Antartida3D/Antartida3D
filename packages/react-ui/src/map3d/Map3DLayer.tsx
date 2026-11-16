@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react';
-import { Box3, Vector3 } from 'three';
+import { Box3, Spherical, Vector3 } from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { CameraControls, PerformanceMonitor } from '@react-three/drei';
 import { EffectComposer } from '@react-three/postprocessing';
@@ -16,6 +16,7 @@ import {
   generateSeaLifeInstances,
   groundTarget,
   homeDistance3D,
+  voyageMaxDistance3D,
   loadOceanDepth,
   poseFromView,
   viewFrom3D,
@@ -191,7 +192,7 @@ export type Map3DLayerProps = Layer3DProps;
 // (@antartida/core), lower only around Tierra del Fuego, the Drake and the points with a model
 // (minCameraDistance). The farthest view is the overview (homeDistance3D: ~800 on desktop and ~2250
 // on a phone), where the whole continent fits; farther the camera would see past the lands of the
-// rest of the world (WORLD_FADE_END).
+// rest of the world (WORLD_FADE_END). During the trip from Ushuaia it is voyageMaxDistance3D (#167).
 /** Angle from straight down of the close-up of a point with a model: the model is seen at a slant, on its ground. */
 const VISIT_POLAR = (52 * Math.PI) / 180;
 /** From this window width the point card is a side panel, not a bottom sheet (painted.css). */
@@ -247,6 +248,7 @@ function ControlsBridge({
     smoothTime: 0.25,
     boundary,
     invalidate,
+    normalizeCtrlWheel: true,
   });
 
   useLayoutEffect(() => {
@@ -333,6 +335,10 @@ function ControlsBridge({
     if (cmd.type === 'zoom') {
       endDistance = clampDistance(cc.distance / cmd.factor);
       cc.dollyTo(endDistance, smooth);
+    } else if (cmd.type === 'home' && voyaging) {
+      // The camera stays on the vehicle: the overview of the trip is as far as it may go.
+      endDistance = cc.maxDistance;
+      cc.dollyTo(endDistance, smooth);
     } else if (cmd.type === 'home') {
       const home = homePose3D(aspect);
       endDistance = homeDistance3D(aspect);
@@ -383,6 +389,7 @@ function ControlsBridge({
 
   const target = useRef(new Vector3());
   const eye = useRef(new Vector3());
+  const sphere = useRef(new Spherical());
   useFrame(({ camera }) => {
     const cc = controlsRef.current;
     if (!cc) return;
@@ -394,10 +401,13 @@ function ControlsBridge({
     }
     const at = fromWorld(cc.getTarget(target.current));
     cc.minDistance = minCameraDistance(at.x, at.y);
+    // Measured where the camera is heading, not where it is: a move passing by on its way (the trip
+    // from the overview down to the ship at departure) would be cut short at the limit (#181).
+    const heading = cc.getSpherical(sphere.current, true).radius;
     // Panning out of Tierra del Fuego while close: back off before reaching the ice plateau.
-    if (cc.distance < cc.minDistance - 0.01) void cc.dollyTo(cc.minDistance, !reduced);
+    if (heading < cc.minDistance - 0.01) void cc.dollyTo(cc.minDistance, !reduced);
     // A narrower window has a farther overview: come back in when the window gets wider.
-    if (cc.distance > cc.maxDistance + 0.01) void cc.dollyTo(cc.maxDistance, !reduced);
+    if (heading > cc.maxDistance + 0.01) void cc.dollyTo(cc.maxDistance, !reduced);
     const near = cc.distance < NEAR_FROM ? NEAR_CLOSE : NEAR;
     if (camera.near !== near) {
       camera.near = near;
@@ -414,7 +424,8 @@ function ControlsBridge({
       // The zoom into an expedition drives the camera on every frame: gestures would fight it.
       enabled={phase !== 'approach' && phase !== 'dive' && phase !== 'travel'}
       minDistance={ICE_MIN_DISTANCE}
-      maxDistance={homeDistance3D(size.vw / size.vh)}
+      // Travelling, the camera stays near the vehicle: farther it gets lost among the lands (#167).
+      maxDistance={voyaging ? voyageMaxDistance3D(size.vw / size.vh) : homeDistance3D(size.vw / size.vh)}
     />
   );
 }

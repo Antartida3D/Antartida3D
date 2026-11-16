@@ -14,7 +14,6 @@ import {
   PLACES_COUNT,
   sightingNote,
   TRANSPORTS,
-  VOYAGE_GEARS,
   VOYAGE_SOURCES,
   VOYAGE_SOURCES_CONSULTED,
   VOYAGE_SOURCE_CODES,
@@ -128,10 +127,10 @@ function Picker({ onStart, onExit, onSource, preview, reduced }: {
         <Fact fact={VOYAGE_TOURISM_NOTE} onSource={onSource} />
       </ul>
       <div className="row vactions">
+        <button type="button" className="btn" onClick={onExit}>Volver al mapa</button>
         <button type="button" className="btn primary" onClick={() => onStart(picked)}>
           {transport.kind === 'plane' ? 'Despegar' : 'Zarpar'}
         </button>
-        <button type="button" className="btn" onClick={onExit}>Volver al mapa</button>
       </div>
     </BottomSheet>
     </>
@@ -378,6 +377,9 @@ function MilestoneCard({ voyage, animated, onExit, onSource, tour }: {
             {more ? 'Ver menos' : 'Saber más'}
           </button>
         )}
+        <button type="button" className="btn primary" onClick={next}>
+          {beforeHop ? 'Continuar' : last ? 'Terminar el viaje' : arrived ? 'Volver a la llegada' : 'Seguir viaje'}
+        </button>
       </div>
     </>
   );
@@ -425,12 +427,6 @@ function TransferBar({ onSource }: { onSource: OpenSources }) {
   );
 }
 
-/** Holding "advance" this long without a faster gear shows the tip about the gears, and how long it stays. */
-const SPEED_HINT_HOLD_MS = 4000;
-const SPEED_HINT_SHOWN_MS = 9000;
-/** Shown once per visit: a tip repeated on every leg is noise. */
-let speedHintShown = false;
-
 const WHOLE = new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 });
 
 /** Hours for the trip line: with minutes while they still matter (the flight), whole hours after that (the ships). */
@@ -466,6 +462,7 @@ function TravelBar({ voyage, animated, onExit, onSource }: { voyage: VoyageContr
   const state = voyage.state!;
   const bar = useRef<HTMLElement>(null);
   const trip = useRef<HTMLParagraphElement>(null);
+  const gear = useRef<HTMLSpanElement>(null);
   const { bus } = voyage;
   const [atStart, setAtStart] = useState(state.t <= 0);
   const [log, setLog] = useState<VoyageFact | null>(() => routeLogLine(state, animated));
@@ -481,6 +478,15 @@ function TravelBar({ voyage, animated, onExit, onSource }: { voyage: VoyageContr
         const text = tripLine(bus.state);
         if (trip.current.textContent !== text) trip.current.textContent = text;
       }
+      if (gear.current) {
+        // How fast "advance" is going while held, by half steps: it picks up little by little (#166).
+        const speed = Math.round(bus.speed * 2) / 2;
+        const text = speed >= 1.5 ? `×${String(speed).replace('.', ',')}` : '';
+        if (gear.current.textContent !== text) {
+          gear.current.textContent = text;
+          gear.current.hidden = !text;
+        }
+      }
       if (bus.state) {
         // Re-render only when they change.
         setAtStart(bus.state.t <= 0);
@@ -493,19 +499,6 @@ function TravelBar({ voyage, animated, onExit, onSource }: { voyage: VoyageContr
     return () => void bus.listeners.delete(paint);
   }, [bus, animated]);
 
-  const [hint, setHint] = useState(false);
-  const hintTimer = useRef(0);
-  const gear = useRef(voyage.gear);
-  gear.current = voyage.gear;
-  useEffect(() => () => window.clearTimeout(hintTimer.current), []);
-  // The tip goes away once it is followed, or after a while.
-  useEffect(() => {
-    if (!hint) return;
-    if (voyage.gear > 0) return setHint(false);
-    const timer = window.setTimeout(() => setHint(false), SPEED_HINT_SHOWN_MS);
-    return () => window.clearTimeout(timer);
-  }, [hint, voyage.gear]);
-
   const next = voyageStops(state.kind)[state.reached].milestone;
   // The trip of Poncho opens every milestone by itself: there is none to offer.
   const stop = here >= 0 && !storyInOrder(state.kind) ? voyageStops(state.kind)[here].milestone : null;
@@ -513,22 +506,8 @@ function TravelBar({ voyage, animated, onExit, onSource }: { voyage: VoyageContr
   const read = stop ? voyage.opened.includes(stop.id) : false;
   /** Handlers of a press-and-hold button that moves the trip forward or back. */
   const holdProps = (back: boolean) => {
-    const press = () => {
-      voyage.hold(true, back);
-      // Someone who keeps "advance" held for a while does not know the faster gears: tell them once.
-      window.clearTimeout(hintTimer.current);
-      if (!back && !speedHintShown) {
-        hintTimer.current = window.setTimeout(() => {
-          if (gear.current > 0) return;
-          speedHintShown = true;
-          setHint(true);
-        }, SPEED_HINT_HOLD_MS);
-      }
-    };
-    const release = () => {
-      window.clearTimeout(hintTimer.current);
-      voyage.hold(false, back);
-    };
+    const press = () => voyage.hold(true, back);
+    const release = () => voyage.hold(false, back);
     const key = (on: boolean) => (e: KeyboardEvent) => {
       if (e.key !== ' ' && e.key !== 'Enter') return;
       e.preventDefault();
@@ -549,9 +528,6 @@ function TravelBar({ voyage, animated, onExit, onSource }: { voyage: VoyageContr
   };
   return (
     <div className="vbar" role="group" aria-label="Controles del viaje">
-      <p className="vhint" role="status">
-        {hint && <><strong>¿Sabías?</strong> Tocá el botón dos veces seguidas y mantenelo apretado para ir más rápido.</>}
-      </p>
       {/* The route log: a line of the book while the team travels between stops. Where the path is not animated, one per step. */}
       {state.kind === 'dogs' && (
         <ul className="vfacts vlog" aria-live="polite" aria-label="Diario de ruta">
@@ -592,8 +568,11 @@ function TravelBar({ voyage, animated, onExit, onSource }: { voyage: VoyageContr
           )}
         </div>
       )}
-      {/* One row, with the main button at the same corner as "Seguir viaje" in the milestone card: the pointer stays put. */}
+      {/* One row, with the main button at the same corner as "Seguir viaje" in the milestone card: the pointer stays put.
+          It is the last one, on the right, where the thumb reaches on a phone (#177). */}
       <div className="row">
+        <button type="button" className="btn ghost vexit" onClick={onExit} aria-label="Salir del viaje" title="Salir del viaje">✕</button>
+        <button type="button" className={'btn' + (animated ? '' : ' primary')} onClick={() => voyage.skip(animated)}>Próximo hito</button>
         {animated && (
           <button
             type="button"
@@ -612,15 +591,13 @@ function TravelBar({ voyage, animated, onExit, onSource }: { voyage: VoyageContr
             className="btn primary vhold"
             {...holdProps(false)}
             aria-label="Mantené para avanzar"
-            title="Tocá dos o tres veces seguidas y mantené para ir más rápido"
+            title="Mantené apretado: va tomando velocidad"
           >
             <span className="vwide">Mantené para avanzar</span>
             <span className="vnarrow">Avanzar ▶</span>
-            {voyage.gear > 0 && <span className="vgear">×{String(VOYAGE_GEARS[voyage.gear]).replace('.', ',')}</span>}
+            <span className="vgear" ref={gear} aria-hidden="true" hidden />
           </button>
         )}
-        <button type="button" className={'btn' + (animated ? '' : ' primary')} onClick={() => voyage.skip(animated)}>Próximo hito</button>
-        <button type="button" className="btn ghost vexit" onClick={onExit} aria-label="Salir del viaje" title="Salir del viaje">✕</button>
       </div>
     </div>
   );

@@ -4,7 +4,7 @@ html,body{overscroll-behavior:none}
 body{margin:0;background:#F3EBDD}
 a{color:#1E3E5C}a:hover{color:#A4471F}
 *{box-sizing:border-box}
-.app{position:relative;width:100%;height:100vh;height:100dvh;min-height:600px;overflow:hidden;background:var(--paper);color:var(--ink);font-family:'Atkinson Hyperlegible',system-ui,sans-serif;font-size:16px;line-height:1.45}
+.app{position:relative;width:100%;height:100vh;height:100dvh;overflow:hidden;background:var(--paper);color:var(--ink);font-family:'Atkinson Hyperlegible',system-ui,sans-serif;font-size:16px;line-height:1.45}
 .serif{font-family:'Fraunces',Georgia,serif}
 .hand{font-family:'Caveat',cursive}
 button{font:inherit;color:inherit;cursor:pointer}
@@ -117,6 +117,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid #1E3E5C;outline-
 .webgl-note .wn-title{font-weight:700;font-size:15px}
 .webgl-note ol{margin:0 0 6px;padding-left:20px}
 .webgl-note .btn{min-height:40px;font-size:14px;padding:0 14px}
+.m3d .legend{max-height:min(420px,max(48px,calc(100dvh - 260px)));overflow-y:auto;overscroll-behavior:contain}
 .m3d .legend ul{max-height:min(250px,30dvh);overflow-y:auto;overscroll-behavior:contain}
 .claims-actions{display:flex;align-items:center;gap:6px}
 .claims-switch{width:26px;height:16px;border:1.5px solid var(--ink);border-radius:10px;background:var(--paper);position:relative;flex:none}
@@ -183,6 +184,8 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid #1E3E5C;outline-
 .sheet-handle:active span{background:rgba(31,42,54,.6)}
 .sheet h2{margin:6px 0 2px;font-family:'Fraunces',Georgia,serif;font-size:26px;line-height:1.1}
 .sheet .place{margin:0 0 14px;color:#3B4651}
+.sheet-temp{margin:-8px 0 4px;font-size:13px;line-height:1.35;min-height:2.7em;color:#3B4651}
+.sheet-temp-attr{margin:0 0 12px}
 .sheet-desc{margin:0;font-size:15px;line-height:1.45;color:var(--ink)}
 .sheet-sources{margin:12px 0 0;padding-top:10px;border-top:1px dashed rgba(31,42,54,.3)}
 .sheet-sources h3{font-family:'Fraunces',Georgia,serif;font-size:15px;margin:0}
@@ -204,6 +207,8 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid #1E3E5C;outline-
 .tag.tc{background:transparent;color:#4C535A;border:1.5px dashed #5E656C}
 .tag.tsea{background:#D6E5EF;color:#1E3E5C;border:1.5px solid #1E3E5C}
 .row{display:flex;gap:10px;flex-wrap:wrap}
+/* A row whose main button stands alone: it goes on the right, where the thumb reaches on a phone (#177). */
+.row.end{justify-content:flex-end}
 .anno{font-family:'Caveat',cursive;font-size:19px;color:#1E3E5C;line-height:1.1}
 
 /* .vp is not a stacking context, so map markers (20 when shown) compete with the list: stay above them and the bars (#48). */
@@ -355,6 +360,9 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid #1E3E5C;outline-
   .mcard{border-radius:18px;margin-bottom:24px}
   .bigq h2{font-size:46px}
   .dig{bottom:84px}
+}
+@media (max-height:500px){
+  .m3d .legend ul{max-height:none;overflow:visible}
 }
 @media (prefers-reduced-motion: reduce){
   .mk.ta .pulse,.cloud{animation:none}

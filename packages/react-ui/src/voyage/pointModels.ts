@@ -46,10 +46,6 @@ const GENERATOR_BLUE = 0x1f5aa6;
 const ICE_CORE = 0xcfe6f2;
 // Emperor colony: guano stains on the sea ice, seen from space (NASA Earth Observatory).
 const GUANO = 0x8a6450;
-// Weddell seal: dark grey back with silver spots, paler belly (AAD).
-const SEAL_DARK = 0x3a4048;
-const SEAL_SPOT = 0x8e979f;
-const SEAL_BELLY = 0xb7bec4;
 // Flags of the South Pole ring: generic flag colours, not the flags of real countries.
 const FLAG_BLUE = 0x2c4a8c;
 const FLAG_GREEN = 0x2f7d4a;
@@ -813,28 +809,6 @@ export const EMPEROR_HUDDLE: readonly Tri[] = Array.from({ length: 19 }, (_, i) 
 }).flat();
 
 // ---------------------------------------------------------------------------------------------
-// Weddell seal (the Weddell Sea point has only a card)
-// ---------------------------------------------------------------------------------------------
-
-/** A Weddell seal lying on a floe: a spindle body, spotted back, paler belly, small head and flippers. */
-const WEDDELL: Tri[] = (() => {
-  const rng = createSeededRng(1903);
-  // The body is turned round the y axis, then laid along x with the head to +x.
-  const body = lathe(0, 0, [[-0.42, 0], [-0.36, 0.05], [-0.2, 0.11], [0.05, 0.13], [0.25, 0.11], [0.36, 0.075], [0.44, 0.05], [0.5, 0]], 8, (s) => (s === 7 || s === 0 ? SEAL_BELLY : rng() > 0.7 ? SEAL_SPOT : SEAL_DARK));
-  const lay = ([x, y, z]: Vec3): Vec3 => [y, 0.142 - x, z];
-  return [
-    ...groundField(12, 9, 0.09, 1904, (u, v, noise) => (Math.hypot(u, v) + (noise - 0.5) * 0.2 > 1 ? null : 0.01 + noise * 0.006), (_u, _v, _h, steep, noise) => (steep > 0.3 ? ICE_SHADE : noise > 0.85 ? ICE : WHITE), 0.03),
-    ...body.map(([a, b, c, col]): Tri => [lay(a), lay(b), lay(c), col]),
-    ...chunk(0.12, 0.03, 0.13, 0.1, 0.02, 0.05, 1905, SEAL_DARK),
-    ...chunk(0.12, 0.03, -0.13, 0.1, 0.02, 0.05, 1906, SEAL_DARK),
-    ...chunk(-0.44, 0.04, 0.05, 0.1, 0.015, 0.07, 1907, SEAL_DARK),
-    ...chunk(-0.44, 0.04, -0.05, 0.1, 0.015, 0.07, 1908, SEAL_DARK),
-    ...block(0.46, 0.18, 0.035, 0.012, 0.012, 0.012, BLACK),
-    ...block(0.46, 0.18, -0.035, 0.012, 0.012, 0.012, BLACK),
-  ];
-})();
-
-// ---------------------------------------------------------------------------------------------
 
 /**
  * Low-poly model of a map point that has no expedition yet (tier B and C in points.ts). Every
@@ -907,8 +881,6 @@ export const POINT_MODELS: Readonly<Record<string, PointModel>> = {
     width: 0.6,
     pad: 0.48,
   },
-  // The Weddell Sea point is sea: its life is already drawn by SeaLife, so only a card.
-  oceano: { preview: { tris: card(WEDDELL, 0), motion: 'still', lift: 0.04, sea: true } },
 };
 
 // ---------------------------------------------------------------------------------------------

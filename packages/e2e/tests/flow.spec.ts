@@ -68,30 +68,28 @@ test('dialogs close with Escape and return focus to their trigger', async ({ pag
 
   await page.keyboard.press('Enter');
   await expectFocused(page, 'Ver mapa');
-  await tabTo(page, /^Océano/);
+  // With Océano (#8), Poncho (#9) and Fósiles (#7) all expeditions, a point of interest opens the sheet.
+  await tabTo(page, /^Volcán en el hielo/);
   await page.keyboard.press('Enter');
-  const sheet = page.getByRole('dialog', { name: 'Océano' });
-  await expect(sheet.getByRole('heading', { name: 'Fuentes verificadas' })).toBeVisible();
-  await expect(sheet).not.toContainText('[Contenido provisional]');
+  const sheet = page.getByRole('dialog', { name: 'Volcán en el hielo' });
+  await expect(sheet.getByRole('button', { name: /^Fuentes verificadas/ })).toBeVisible();
   // No close button (#148): the title takes the focus; a tap outside, a drag down, Escape and «Volver al mapa» close it.
-  await expectFocused(page, 'Océano');
+  await expectFocused(page, 'Volcán en el hielo');
   await expect(sheet.getByRole('button', { name: 'Cerrar ficha' })).toHaveCount(0);
   await page.keyboard.press('Escape');
   await expect(sheet).toHaveCount(0);
   await expectFocused(page, 'Ver como lista');
 });
 
-test('Océano is displayed as Ampliación prevista and opens its point sheet', async ({ page }) => {
+test('Océano is available and opens its own expedition', async ({ page }) => {
   await tabTo(page, /^Ver como lista$/);
   await page.keyboard.press('Enter');
   const oceanoBtn = page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Océano/ });
   await expect(oceanoBtn).toBeVisible();
   await oceanoBtn.click();
-  const sheet = page.getByRole('dialog', { name: 'Océano' });
-  await expect(sheet).toBeVisible();
-  await expect(sheet.locator('.tag.tb')).toHaveText('Ampliación prevista');
-  await page.keyboard.press('Escape');
-  await expect(sheet).toHaveCount(0);
+  await expect(page.getByRole('region', { name: 'Expedición Océano' })).toBeVisible();
+  await page.getByRole('button', { name: 'Volver al mapa' }).click();
+  await expect(page.getByRole('region', { name: 'Expedición Océano' })).toHaveCount(0);
 });
 
 test('Fósiles is available and opens its own expedition', async ({ page }) => {

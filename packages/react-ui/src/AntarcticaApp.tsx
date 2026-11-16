@@ -40,15 +40,18 @@ const MarambioExpedition = lazy(() => loadMarambio().then((m) => ({ default: m.M
 const loadFossils = () => import('./fossils/FossilExpedition.tsx');
 const FossilExpedition = lazy(() => loadFossils().then((m) => ({ default: m.FossilExpedition })));
 
+const loadMarine = () => import('./marine/MarineExpedition.tsx');
+const MarineExpedition = lazy(() => loadMarine().then((m) => ({ default: m.MarineExpedition })));
+
 /** Expeditions with a screen of their own, by the id of their point on the map. */
-const EXPEDITIONS = { orcadas: loadOrcadas, marambio: loadMarambio, fosiles: loadFossils } as const;
+const EXPEDITIONS = { orcadas: loadOrcadas, marambio: loadMarambio, fosiles: loadFossils, oceano: loadMarine } as const;
 type ExpeditionId = keyof typeof EXPEDITIONS;
 const isExpedition = (id: string): id is ExpeditionId => id in EXPEDITIONS;
-/** `?expedicion=fosiles` opens Fósiles directly, to share it or review it. */
+/** `?expedicion=fosiles` or `?expedicion=oceano` opens that expedition directly, to share it or review it. */
 const directScreen = (): 'map' | ExpeditionId => {
   if (typeof window === 'undefined') return 'map';
   const id = new URLSearchParams(window.location.search).get('expedicion');
-  return id === 'fosiles' ? id : 'map';
+  return id === 'fosiles' || id === 'oceano' ? id : 'map';
 };
 
 const loadMap3D = () =>
@@ -304,6 +307,8 @@ export function AntarcticaApp() {
             <MarambioExpedition reduced={reduced} onLeave={leave} onTravelToOrcadas={travelFromMarambio} />
           ) : screen === 'fosiles' ? (
             <FossilExpedition reduced={reduced} webgl={webglSupported === true} onLeave={leave} />
+          ) : screen === 'oceano' ? (
+            <MarineExpedition reduced={reduced} webgl={webglSupported === true} onLeave={leave} />
           ) : (
             <OrcadasExpedition reduced={reduced} arrival={arrival} onLeave={leave} />
           )}

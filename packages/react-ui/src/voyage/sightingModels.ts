@@ -5,6 +5,7 @@ import { HELICOPTER_BOXES, HELICOPTER_ROTOR_BOXES, HELICOPTER_ROTOR_ORIGIN, offs
 import { MALVINAS_FLAG_BOXES } from '../map3d/malvinasFlagModel.ts';
 import { CLAIM_FLAG_MODELS } from '../map3d/claimFlagModels.ts';
 import { PONCHO_MODELS } from './ponchoModels.ts';
+import { MARINE_MODELS } from '../marine/models.ts';
 
 // Approximate colors. The models are illustrations, not portraits: one unit is about the length of the model.
 export const BLACK = 0x1f2a36;
@@ -380,7 +381,11 @@ const TOWN: Box[] = [
 
 export const buildTownGeometry = () => buildBoxGeometry(TOWN);
 
-/** Antarctic minke whale: slimmer than the humpback, pointed head, small fin far back, white band on the flipper. */
+/**
+ * Antarctic minke whale: slimmer than the humpback, pointed head, small fin far back. Its flippers are
+ * grey with only a white leading edge: the conspicuous white band belongs to the other minkes
+ * (NOAA Fisheries, «Minke Whale», consulted 2026-11-14).
+ */
 const MINKE: Box[] = [
   [0.02, 0, 0, 0.4, 0.17, 0.17, 0x3d4852],
   [0.28, -0.01, 0, 0.16, 0.15, 0.15, 0x3d4852],
@@ -394,8 +399,8 @@ const MINKE: Box[] = [
   [-0.22, 0.1, 0, 0.07, 0.06, 0.03, 0x3d4852],
   [0.18, -0.06, 0.12, 0.1, 0.025, 0.1, 0x3d4852],
   [0.18, -0.06, -0.12, 0.1, 0.025, 0.1, 0x3d4852],
-  [0.18, -0.06, 0.15, 0.05, 0.027, 0.04, WHITE],
-  [0.18, -0.06, -0.15, 0.05, 0.027, 0.04, WHITE],
+  [0.226, -0.06, 0.12, 0.012, 0.027, 0.1, WHITE],
+  [0.226, -0.06, -0.12, 0.012, 0.027, 0.1, WHITE],
   [0.16, -0.085, 0, 0.56, 0.03, 0.14, WHITE],
   [0.43, 0.005, 0.062, 0.03, 0.03, 0.01, BLACK],
   [0.43, 0.005, -0.062, 0.03, 0.03, 0.01, BLACK],
@@ -518,6 +523,7 @@ export const SCENE_MODELS: Readonly<Record<string, readonly Box[]>> = {
   ...Object.fromEntries(Object.entries(CLAIM_FLAG_MODELS).map(([country, boxes]) => [`claimFlag:${country}`, boxes])),
   malvinasFlag: MALVINAS_FLAG_BOXES,
   ...PONCHO_MODELS,
+  ...MARINE_MODELS,
   ...Object.fromEntries(Object.entries(MODELS).map(([id, m]) => [id, [...m.body, ...(m.wing ?? []), ...(m.wing ?? [])]])),
   ...Object.fromEntries(Object.entries(SEA_MODELS).map(([id, boxes]) => [`sea:${id}`, boxes])),
   ushuaia: TOWN,

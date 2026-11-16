@@ -1,5 +1,6 @@
 import { DRAKE_STORM } from '../storm.ts';
 import { VOYAGE_SOURCES, VOYAGE_SOURCES_CONSULTED, type VoyageSourceCode } from './ushuaia.ts';
+import { MARINE_SOURCES, type MarineSourceId } from './marine.ts';
 
 export interface Source {
   label: string;
@@ -30,6 +31,12 @@ export interface SeaPoint {
 const voyageSource = (code: VoyageSourceCode): Source => {
   const source: { org: string; title: string; url: string; consulted?: string } = VOYAGE_SOURCES[code];
   return { label: source.title, url: source.url, org: source.org, consulted: source.consulted ?? VOYAGE_SOURCES_CONSULTED };
+};
+
+/** A source of Océano (#8), as a source of a sea point. */
+const marineSource = (id: MarineSourceId): Source => {
+  const source = MARINE_SOURCES[id];
+  return { label: source.title, url: source.url, org: source.org, consulted: source.date };
 };
 
 export const SEA_POINTS: readonly SeaPoint[] = [
@@ -141,16 +148,17 @@ export const SEA_POINTS: readonly SeaPoint[] = [
       },
     ],
   },
-  // Same text and source as the sighting of the trip from Ushuaia (SIGHTINGS in ushuaia.ts).
+  // Starts from the sighting of the trip from Ushuaia (SIGHTINGS in ushuaia.ts, source I16) and adds
+  // the rest of its diet from the sources of Océano (#8): it does not only eat penguins.
   {
     id: 'sea-leopardo',
     title: 'Foca leopardo',
     place: 'Hielo marino antártico',
-    desc: 'Caza pingüinos y los sacude para sacarles la piel. Las hembras superan los 3,5 m y los 500 kg.',
+    desc: 'Tiene una de las dietas más variadas entre las focas del hielo: come krill, peces, pingüinos y otras focas. Caza pingüinos y los sacude para sacarles la piel, y con los dientes de atrás también filtra krill del agua. Las hembras superan los 3,5 m y los 500 kg.',
     targetSpecies: 'seal',
     fallbackX: 140,
     fallbackY: 550,
-    sources: [voyageSource('I16')],
+    sources: [voyageSource('I16'), marineSource('L13'), marineSource('P05'), marineSource('P04')],
   },
   // Last, on purpose: it is hidden in the home view, and the first sea marker has to be one that shows there.
   {

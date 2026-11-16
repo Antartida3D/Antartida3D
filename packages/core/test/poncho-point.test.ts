@@ -11,9 +11,9 @@ describe('expedition points', () => {
     expect(Math.hypot(start.x - PONCHO_POINT.x, start.y - PONCHO_POINT.y)).toBeLessThan(1);
   });
 
-  it('counts Orcadas, Ushuaia, Marambio, Poncho and Fósiles as the available expeditions', () => {
-    expect(PTS.filter((p) => p.tier === 'A').map((p) => p.id).sort()).toEqual(['campana', 'fosiles', 'marambio', 'orcadas', 'poncho']);
-    expect(AVAILABLE_COUNT).toBe(5);
+  it('counts Orcadas, Ushuaia, Marambio, Poncho, Fósiles and Océano as the available expeditions', () => {
+    expect(PTS.filter((p) => p.tier === 'A').map((p) => p.id).sort()).toEqual(['campana', 'fosiles', 'marambio', 'oceano', 'orcadas', 'poncho']);
+    expect(AVAILABLE_COUNT).toBe(6);
   });
 
   it('lists the points whose expedition is a trip over the map', () => {

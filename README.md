@@ -157,6 +157,9 @@ Cada PR declara su impacto documental y registra las decisiones nuevas o reempla
 - **Tipografías:** Fraunces, Atkinson Hyperlegible, Caveat, DM Sans y Libre Caslon Display (todas bajo licencia SIL Open Font License 1.1 vía `@fontsource`).
 - **Contenido científico:** provisional y en proceso de validación por el equipo (`[Contenido provisional]`, `[Fuente a definir]`).
 
+- **Expedición Océano (#8):** textos propios y breves, con la fuente de cada parada y de cada flecha de la red alimentaria. Catálogo completo, alcance de cada estudio y qué se leyó completo o solo en su resumen en [`docs/expediciones/oceano-fuentes.md`](docs/expediciones/oceano-fuentes.md). No se copian figuras ni imágenes de las publicaciones; todos los animales son modelos voxel propios.
+  - Fecha de consulta: 14 de noviembre de 2026.
+
 ## Declaración de uso de IA
 
 En cumplimiento con las bases de la hackatón, se declara el uso de herramientas de inteligencia artificial en el desarrollo de los prototipos:
@@ -232,3 +235,5 @@ En cumplimiento con las bases de la hackatón, se declara el uso de herramientas
   > Relevamiento, implementación, pruebas y capturas en celular y escritorio con Claude Code (modelo Claude Opus 5.5), con revisión del equipo. No se agregaron datos ni fuentes.
 - **Expedición Fósiles: pulido, línea de tiempo, nota del hallazgo y migración a low-poly (#7):**
   > Planificación, implementación, pruebas y verificación con capturas con Claude Code (modelo Claude Opus 5.5), a partir de los pedidos de quien lleva el issue. La línea de tiempo usa las edades de la Tabla Cronoestratigráfica Internacional v2026/06 (ICS) y ubica cada hallazgo solo en el período que dan sus fuentes. La nota «El desvío de 1986» resume la entrevista de Infobae y cita textualmente a Eduardo Olivero; cada cita se cotejó con la nota. Los modelos low-poly son ilustraciones: formas y colores interpretados.
+- **Expedición Océano (#8):**
+  > Lectura y verificación de fuentes, plan, implementación, pruebas y revisión con capturas con Claude Code (modelo Claude Opus 5.5), a partir de la investigación y el encargo preparados por quien lleva el issue. Cada frase y cada flecha de la red cita su fuente con el lugar del estudio; la escena, los tamaños, las profundidades y los tiempos son ilustrativos y la interfaz lo dice. No se agregaron porcentajes de dieta ni simulaciones de población.

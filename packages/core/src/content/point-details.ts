@@ -66,13 +66,4 @@ export const POINT_DETAILS: Readonly<Record<string, { desc: string; sources: rea
       { label: 'Four unreported emperor penguin colonies discovered by satellite', org: 'Antarctic Science (Cambridge University Press)', url: 'https://www.cambridge.org/core/journals/antarctic-science/article/four-unreported-emperor-penguin-colonies-discovered-by-satellite/20956FD3E80F3604C21D0E2AA80FEF9B', consulted: '2026-11-13' },
     ],
   },
-  oceano: {
-    desc: 'Bajo el hielo marino viven microalgas que alimentan al krill en invierno y primavera, y casi todos los animales grandes de la Antártida dependen del krill. En el Mar de Weddell, el agua muy fría y salada se hunde hasta el fondo: es el Agua de Fondo Antártica, que ayuda a mover la circulación de todo el océano. Esa agua lleva oxígeno a las profundidades y guarda carbono lejos de la atmósfera durante siglos. Bajo el hielo fijo vive la foca de Weddell, que mantiene abiertos sus respiraderos raspando el hielo con los dientes.',
-    sources: [
-      { label: 'Sea ice algae put spring in krill growth', org: 'Australian Antarctic Division (AAD)', url: 'https://www.antarctica.gov.au/news/2008/sea-ice-algae-put-spring-in-krill-growth/', consulted: '2026-11-13' },
-      { label: 'Antarctic krill', org: 'Australian Antarctic Division (AAD)', url: 'https://www.antarctica.gov.au/about-antarctica/animals/krill/', consulted: '2026-11-13' },
-      { label: 'Antarctic Bottom Water: How it Contributes to the Global Ocean Circulation', org: 'SCAR · Antarctic Environments Portal', url: 'https://environments.aq/resources/antarctic-bottom-water-how-it-contributes-to-the-global-ocean-circulation/', consulted: '2026-11-13' },
-      { label: 'Weddell seal', org: 'Australian Antarctic Division (AAD)', url: 'https://www.antarctica.gov.au/about-antarctica/animals/seals/weddell-seal/', consulted: '2026-11-13' },
-    ],
-  },
 };

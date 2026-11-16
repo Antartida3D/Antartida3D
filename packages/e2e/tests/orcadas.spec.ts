@@ -247,12 +247,12 @@ test('opens Orcadas from the 2D map, completes it, and updates the log', async (
   );
   await expect(page.locator('.stage.ret')).toHaveCount(0);
 
-  // An "Ampliación prevista" point opens a sheet rather than an expedition
+  // A point of interest opens a sheet rather than an expedition (Océano, #8, is now an expedition).
   await page.getByRole('button', { name: 'Ver como lista' }).click();
-  const oceanoBtn = page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Océano/ });
-  await expect(oceanoBtn).toBeVisible();
-  await oceanoBtn.click();
-  await expect(page.getByRole('dialog').getByRole('heading', { name: 'Océano' })).toBeVisible();
+  const erebusBtn = page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Volcán en el hielo/ });
+  await expect(erebusBtn).toBeVisible();
+  await erebusBtn.click();
+  await expect(page.getByRole('dialog').getByRole('heading', { name: 'Volcán en el hielo' })).toBeVisible();
 });
 
 test('from the 3D map with motion allowed, the camera zooms down to the island before the station opens', async ({

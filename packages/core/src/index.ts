@@ -32,6 +32,7 @@ export * from './clustering.ts';
 export * from './labels.ts';
 export * from './viewport.ts';
 export * from './markers.ts';
+export * from './expedition-order.ts';
 export * from './orcadas.ts';
 export * from './orcadas-arrival.ts';
 export * from './orcadas-weather.ts';

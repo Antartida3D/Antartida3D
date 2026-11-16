@@ -90,7 +90,7 @@ test('opens Océano from the map, does every observation and completes it', asyn
 
   await expect(expedition(page)).toHaveCount(0);
   await expect(log(page)).toContainText(`1/${AVAILABLE_COUNT}`);
-  await expect(page.locator('.toast')).toHaveText(`Océano quedó explorado. Registro de exploración: 1/${AVAILABLE_COUNT}`);
+  await expect(page.locator('.next-card .next-done')).toHaveText(`Océano quedó explorado. Registro de exploración: 1/${AVAILABLE_COUNT}`);
 });
 
 test('the keyboard alone walks every stop, and the sources open and close with Escape', async ({ page }) => {

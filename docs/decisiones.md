@@ -273,7 +273,12 @@ Pedido de quien lleva el issue: quien entra por primera vez se queda perdido y n
 - **Cambio de 2D a 3D durante la bienvenida:** la vista inicial puede cambiar después del primer dibujo, porque `useReducedMotion` lee la preferencia en un efecto: con movimiento reducido la app elige 3D y enseguida pasa a 2D. Mientras dura la bienvenida, si el modo cambia (por eso o porque la persona toca el botón), el mapa se vuelve a acercar a Ushuaia en el modo nuevo.
 - **Movimiento reducido:** sin animación de cámara en 3D; en 2D, el mismo acercamiento que usan los botones de zoom.
 - **Pruebas e2e:** como cada prueba arranca con el almacenamiento vacío, todas verían la bienvenida y empezarían con el mapa cerca de Ushuaia. `playwright.config.ts` les da la bienvenida ya vista (`storageState`), y las siete specs que limpiaban `localStorage` usan `clearStorage(page)`, que limpia y la deja vista (`packages/e2e/storage.ts`). Solo `welcome.spec.ts` arranca vacía. La clave se importa de `@antartida/core/storage` (subruta nueva: el índice del core no se puede cargar fuera de Vite).
-- **Queda afuera:** el orden completo de las expediciones (#75), y el botón «Ver todo el continente», que en el celular en 3D vuelve a dejar a Ushuaia fuera de la pantalla.
+- **Orden completo (#75):** ya no queda afuera, ver [DEC-75](decisiones/DEC-75-orden-sugerido.md).
+- **Queda afuera:** el botón «Ver todo el continente», que en el celular en 3D vuelve a dejar a Ushuaia fuera de la pantalla.
+
+### Orden sugerido de expediciones (#75, 16-11-2026)
+
+El mapa señala una expedición sugerida (marcador, botón «Siguiente: X», lista numerada) y una tarjeta al volver de cada expedición ofrece la siguiente, sin bloquear nada. Detalle en [DEC-75](decisiones/DEC-75-orden-sugerido.md). El selector «Puntos en este lugar» pasa a hoja inferior: [DEC-75-2](decisiones/DEC-75-2-selector-de-grupo-como-hoja.md), que no reemplaza a [DEC-7](decisiones/DEC-7-pin-y-grupos-para-elegir.md).
 
 ### Pulido general: «Desde Ushuaia» y toques en el celular (#190, 16-11-2026)
 

@@ -114,8 +114,8 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
   background:var(--deep);
   color:var(--chart-paper);}
 /* Resume an unfinished expedition (#186): keep the expedition marker color distinct. */
-.btn.resume{background:var(--ocre);color:var(--chart-ink)}
-.btn.resume:hover:not(:disabled){background:#E0A93C;color:var(--chart-ink)}
+.btn.resume{background:#E0A93C;color:var(--chart-ink)}
+.btn.resume:hover:not(:disabled){background:#EDBB55;color:var(--chart-ink)}
 .btn[disabled]{opacity:.55;cursor:not-allowed;box-shadow:none}
 .btn.ghost{background:transparent;box-shadow:none;border-color:color-mix(in srgb, var(--chart-ink) 50%, transparent);
   border:1px solid var(--chart-ink);
@@ -142,7 +142,6 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
 .sw .sea svg{width:10px;height:10px;display:block}
 .hint{position:absolute;left:50%;top:128px;transform:translateX(-50%);font-family:'Caveat',cursive;font-size:19px;color:var(--chart-ink);background:color-mix(in srgb, var(--chart-paper) 92%, transparent);padding:2px 12px;border-radius:12px;white-space:nowrap;pointer-events:none;transition:opacity .5s;z-index:9}
 
-.toast{position:absolute;left:50%;top:92px;transform:translateX(-50%);background:var(--chart-ink);color:#F7FAFB;padding:10px 16px;border-radius:var(--chart-radius);font-weight:700;box-shadow:0 6px 18px color-mix(in srgb, var(--chart-ink) 25%, transparent);animation:fadein .4s ease both;max-width:calc(100% - 32px);text-align:center;z-index:15}
 
 /* sheets */
 .scrim{position:absolute;inset:0;background:color-mix(in srgb, var(--chart-ink) 28%, transparent);animation:fadein .25s ease both;z-index:19}
@@ -191,12 +190,6 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
 .listview{position:absolute;inset:0;overflow:auto;animation:fadein .25s ease both;z-index:21}
 .listview .inner{max-width:860px;margin:0 auto;
   padding:24px 24px 48px;}
-/* The points of a group that zooming cannot separate: a small window over the map, not a whole screen. */
-.listview.pick{inset:auto;left:50%;top:50%;transform:translate(-50%,-50%);width:min(460px,calc(100% - 32px));max-height:calc(100% - 32px);border:2px solid var(--chart-ink);border-radius:var(--chart-radius);box-shadow:0 10px 30px color-mix(in srgb, var(--chart-ink) 20%, transparent)}
-.listview.pick .inner{padding:16px 18px 20px}
-.listview.pick .gdesc{display:none}
-.listview.pick .listhead h2{font-size:22px}
-.listview.pick .listhead .btn{white-space:nowrap}
 .listhead{position:sticky;top:0;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 0 18px;background:var(--chart-paper);z-index:1;
   border-bottom:3px double var(--chart-ink);}
 .listhead h2{margin:0;font-family:'Fraunces',Georgia,serif;
@@ -351,7 +344,6 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
   border-radius:0;
   background:var(--chart-paper);}
   .hint{top:120px;border-radius:12px;}
-  .toast{top:120px}
   .etop{padding:16px 28px 26px}
   .ebody{top:132px;bottom:92px}
   .cards{overflow:visible;display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -365,7 +357,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
 @media (prefers-reduced-motion: reduce){
   .mk.ta .pulse,.cloud{animation:none}
   .pl{transition:none}
-  .sheet,.kp,.mcard,.toast{animation:fadein .2s ease both}
+  .sheet,.kp,.mcard{animation:fadein .2s ease both}
   .sheet.grows{transition:none}
   .stage.ret{animation:fadein .4s ease both}
 }
@@ -430,7 +422,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
 .sheet-sources small{display:block;color:var(--chart-muted)}
 
 @media (min-width:820px){
-  .sheet.claims-sheet{right:88px}
+  .sheet.claims-sheet,.sheet.next-sheet{right:88px}
 }
 @media (max-height:500px){
   .m3d .legend{max-height:min(420px,max(48px,calc(100dvh - 262px)));}
@@ -444,4 +436,52 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
 }
 @media (prefers-reduced-motion:reduce){
   .legend,.legend summary::before{transition:none}
+}
+
+/* Suggested next expedition (#75): tag over its marker, the card on returning, and its live text. */
+.mnext{position:absolute;left:50%;bottom:calc(50% + 16px);transform:translateX(-50%);white-space:nowrap;background:var(--chart-ink);color:var(--chart-paper);font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;line-height:1;padding:3px 6px;border-radius:var(--chart-radius);pointer-events:none}
+.mk.cluster .mnext{bottom:calc(50% + 22px)}
+.next-live{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.next-card{font-size:14px;line-height:1.35}
+.next-card .next-done{font-size:15px;margin:6px 0 10px;font-family:inherit;font-weight:700}
+.next-card p{margin:4px 0}
+.next-kicker{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--chart-muted)}
+.next-name strong{display:block;font-family:'Fraunces',Georgia,serif;font-size:22px;line-height:1.1}
+.next-name .place{display:block;color:var(--chart-muted)}
+.next-q{font-style:italic}
+.next-actions{margin-top:12px;display:grid;grid-template-columns:1fr;gap:8px;align-items:stretch}
+.next-actions .btn{width:100%;min-height:44px;margin:0;white-space:normal;text-align:center;line-height:1.15}
+/* Two buttons fit side by side on a wide card; three or a phone stack, all the same size, main one last (#177). */
+@media (min-width:421px){.next-actions.n2{grid-template-columns:1fr 1fr}}
+@media (max-height:500px){
+  .next-card .next-q,.next-card .next-kicker{display:none}
+  .next-card .next-done{margin:2px 0 4px;font-size:13px}
+  .next-name strong{display:inline;font-size:17px}
+  .next-name .place{display:inline;margin-left:6px}
+  .next-actions{margin-top:6px;grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:1fr}
+  .next-actions .btn{min-height:40px;padding-inline:6px;font-size:14px}
+  .sheet.next-sheet{max-height:50%;padding-bottom:12px}
+}
+
+/* Suggested order in the list (#75) and the group picker as a bottom sheet (DEC-75-2). */
+.sheet.pick-sheet .inner{padding:0}
+.sheet.pick-sheet .gdesc{display:none}
+.sheet.pick-sheet .listhead{position:static;padding:4px 0 10px}
+.sheet.pick-sheet .listhead h2{font-size:22px}
+.sheet.pick-sheet .listhead .btn{white-space:nowrap}
+.listview ol,.sheet ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.li .num{flex:none;width:26px;height:26px;border-radius:50%;border:1.5px solid var(--chart-ink);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
+.li .go.next{background:var(--ocre);color:var(--chart-ink);padding:2px 6px;border-radius:var(--chart-radius)}
+/* On a short landscape screen the marker's own «Siguiente» tag is enough: the extra button would cover markers. */
+@media (max-height:500px){.btn.next-btn{display:none}}
+/* The suggestion is lighter than «Continuar»: on a phone it shows only the name (the marker's tag already says «Siguiente»). */
+.btn.next-btn{max-width:none;white-space:nowrap;text-align:left;line-height:1.15}
+@media (max-width:819.98px){
+  .btn.next-btn{max-width:200px;white-space:normal;min-height:40px;padding-block:6px;font-size:14px}
+  .btn.next-btn .lbl{display:none}
+}
+/* On a phone «Continuar» is one short line: the step (chapter, point) is left out, its full text stays in the accessible name. */
+@media (max-width:819.98px){
+  .btn.resume:not(.next-btn){white-space:nowrap;min-height:40px;padding-block:6px;font-size:14px}
+  .btn.resume .rdetail{display:none}
 }

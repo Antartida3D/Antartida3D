@@ -12,7 +12,6 @@ import {
   RETURN_MS,
   VOYAGE_POINT,
   returnToast,
-  TOAST_MS,
   loadExplored,
   saveExplored,
   loadViewMode,
@@ -101,7 +100,8 @@ export function AntarcticaApp() {
   // The point whose trip is on the map: Ushuaia (the traveller picks a vehicle) or Poncho (one team, no picking).
   const [voyagePoint, setVoyagePoint] = useState<MapPoint>(VOYAGE_POINT);
   const [activePoint, setActivePoint] = useState<MapPoint>(() => PTS.find((p) => p.id === directScreen()) ?? EXPEDITION_POINT);
-  const [toast, setToast] = useState('');
+  // Expedition just finished: the map offers the next one in a card (#75).
+  const [finished, setFinished] = useState<{ id: string; line: string } | null>(null);
   // On a phone the legend starts closed: open, it covers much of the map (#114).
   const [legend, setLegend] = useState(() => typeof window === 'undefined' || window.innerWidth >= NARROW_PX);
   const [returned, setReturned] = useState(false);
@@ -196,7 +196,7 @@ export function AntarcticaApp() {
 
   /** Opens an expedition: on the 3D map (`can3D`) with its trip or camera approach, else with the dive. */
   const begin = (point: MapPoint, id: ExpeditionId, chosenArrival: ArrivalId, can3D: boolean, isResuming = false) => {
-    setToast('');
+    setFinished(null);
     setActivePoint(point);
     setResuming(isResuming);
     if (!isResuming || lastExpedition?.id !== id) {
@@ -269,13 +269,12 @@ export function AntarcticaApp() {
     setLastExpedition(null);
     saveLastExpedition(null);
     setResuming(false);
-    setToast(returnToast(point.title, ids.length, AVAILABLE_COUNT));
-    later('toast', () => setToast(''), TOAST_MS);
+    setFinished({ id: point.id, line: returnToast(point.title, ids.length, AVAILABLE_COUNT) });
   };
 
   // The trips happen on the 3D map; without WebGL they advance step by step on the 2D one.
   const startVoyage = (point: MapPoint, resumePoint?: ResumePoint) => {
-    setToast('');
+    setFinished(null);
     setVoyagePoint(point);
     const isResuming = !!resumePoint && resumePoint.id === point.id;
     setResuming(isResuming);
@@ -303,7 +302,7 @@ export function AntarcticaApp() {
     setReturned(true);
     setResuming(false);
     if (done) complete(activePoint);
-    else setToast('');
+    else setFinished(null);
     later('ret', () => setPhase('idle'), RETURN_MS);
   };
 
@@ -333,7 +332,9 @@ export function AntarcticaApp() {
             voyageTransport={voyagePoint.id === PONCHO_POINT.id ? 'poncho' : undefined}
             voyageResume={activeVoyageResume}
             diveTarget={activePoint}
-            toast={toast}
+            finished={finished}
+            onDismissFinished={() => setFinished(null)}
+            onTravelIrizar={() => travelFromMarambio(false)}
             legend={legend}
             focusExpedition={returned}
             // The loading screen covers the map while the shared loader settles; the welcome waits for it to close (#190).

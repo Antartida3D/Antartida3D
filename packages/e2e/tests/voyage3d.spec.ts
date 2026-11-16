@@ -53,7 +53,7 @@ for (const [name, kind, start] of [['Hércules C-130', 'plane', 'Despegar'], ['A
     await page.getByRole('group', { name: 'Modo de vista' }).getByRole('button', { name: 'Relieve 3D' }).click();
     await page.waitForFunction(() => (window as any).__cameraControls);
     await page.getByRole('button', { name: 'Ver como lista' }).click();
-    await page.getByRole('button', { name: /Desde Ushuaia.*Empezar expedición/ }).click();
+    await page.getByRole('button', { name: /Desde Ushuaia.*(Empezar expedición|Siguiente sugerida · empezar)/ }).click();
     await page.getByRole('group', { name: 'Medio de transporte' }).getByRole('button', { name: new RegExp(name) }).click();
     await page.getByRole('button', { name: start }).click();
 
@@ -98,7 +98,7 @@ test('opening «Desde Ushuaia» on the 3D map brings the camera down to Ushuaia,
   await page.getByRole('group', { name: 'Modo de vista' }).getByRole('button', { name: 'Relieve 3D' }).click();
   await page.waitForFunction(() => (window as any).__cameraControls);
   await page.getByRole('button', { name: 'Ver como lista' }).click();
-  await page.getByRole('button', { name: /Desde Ushuaia.*Empezar expedición/ }).click();
+  await page.getByRole('button', { name: /Desde Ushuaia.*(Empezar expedición|Siguiente sugerida · empezar)/ }).click();
   await expect(page.getByRole('group', { name: 'Medio de transporte' })).toBeVisible();
 
   // Where the Irízar leaves from (voyageAt('ship', 0)), in world units.
@@ -132,7 +132,7 @@ test('a milestone near the vehicle shows its name over its pin, and a pin ahead 
   await page.getByRole('group', { name: 'Modo de vista' }).getByRole('button', { name: 'Relieve 3D' }).click();
   await page.waitForFunction(() => (window as any).__cameraControls);
   await page.getByRole('button', { name: 'Ver como lista' }).click();
-  await page.getByRole('button', { name: /Desde Ushuaia.*Empezar expedición/ }).click();
+  await page.getByRole('button', { name: /Desde Ushuaia.*(Empezar expedición|Siguiente sugerida · empezar)/ }).click();
   await page.getByRole('group', { name: 'Medio de transporte' }).getByRole('button', { name: /ARA Almirante Irízar/ }).click();
   await page.getByRole('button', { name: 'Zarpar' }).click();
 
@@ -182,7 +182,7 @@ test('on a trip the title and the exploration log give way, «Salir» is at the 
   await expect(log).toBeInViewport();
 
   await page.getByRole('button', { name: 'Ver como lista' }).click();
-  await page.getByRole('button', { name: /Desde Ushuaia.*Empezar expedición/ }).click();
+  await page.getByRole('button', { name: /Desde Ushuaia.*(Empezar expedición|Siguiente sugerida · empezar)/ }).click();
   await page.getByRole('group', { name: 'Medio de transporte' }).getByRole('button', { name: /ARA Almirante Irízar/ }).click();
   await page.getByRole('button', { name: 'Zarpar' }).click();
 

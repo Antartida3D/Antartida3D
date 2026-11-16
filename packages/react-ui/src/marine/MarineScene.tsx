@@ -11,12 +11,15 @@ import {
 } from '@antartida/core';
 import { InkEffect } from '../map3d/InkEffect.ts';
 import { stationSkyFragmentShader, stationSkyVertexShader } from '../orcadas/stationSky.glsl.ts';
-import { SEA_MODELS, emperorAt } from '../voyage/sightingModels.ts';
+import { SEA_MODELS } from '../voyage/sightingModels.ts';
 import { buildBoxGeometry, vehicleMaterial, type Box } from '../voyage/vehicles.ts';
+import { boxShade, buildPolyGeometry, emperor, type Tri } from '../voyage/lowPoly.ts';
+import { POLY_ICEBERGS } from '../voyage/icebergs.ts';
+import { SEA_POLY_MODELS, assembleWeddellSeal } from '../voyage/seaPolyModels.ts';
 import {
   BALEEN_DETAIL, DIATOM_CHAIN, DIATOM_DISC, EMPEROR_FLIPPER, EMPEROR_SHOULDER, EMPEROR_SWIM, HUMPBACK_BODY, HUMPBACK_HINGE,
   HUMPBACK_JAW, HUMPBACK_THROAT, KRILL, LEOPARD_BODY, LEOPARD_HINGE, LEOPARD_JAW, MINKE_FEED_BODY, MINKE_HINGE, MINKE_JAW,
-  MINKE_THROAT, SILVERFISH, SQUID, TEETH_DETAIL, WEDDELL, EMPEROR_BILL_TIP,
+  MINKE_THROAT, SILVERFISH, SQUID, TEETH_DETAIL, EMPEROR_BILL_TIP,
 } from './models.ts';
 import {
   DIVE_BOTTOM, EDGE_Z, FILTER_STILL, HOLE, ICE_TOP, LEAD, LEOPARD_LOOP, LEOPARD_PREY, MINKE_KRILL_PATCHES, MINKE_LOOP,
@@ -34,6 +37,18 @@ function partGeometry(key: string, boxes: () => readonly Box[]): BufferGeometry 
   let g = parts.get(key);
   if (!g) { g = buildBoxGeometry(boxes()); parts.set(key, g); }
   return g;
+}
+
+/** Geometry of a low-poly part, built once: faces shaded like the boxes still in the scene (#116). */
+function polyGeometry(key: string, tris: () => readonly Tri[]): BufferGeometry {
+  let g = parts.get(key);
+  if (!g) { g = buildPolyGeometry(tris(), boxShade); parts.set(key, g); }
+  return g;
+}
+function PolyProp({ id, tris, position, scale = 1, rotation = [0, 0, 0] }: {
+  id: string; tris: readonly Tri[]; position: Vec3; scale?: number; rotation?: Vec3;
+}) {
+  return <mesh geometry={polyGeometry(id, () => tris)} material={vehicleMaterial} position={[...position]} scale={scale} rotation={[...rotation]} />;
 }
 
 function Prop({ id, boxes, position, scale = 1, rotation = [0, 0, 0] }: {
@@ -369,9 +384,9 @@ function SwimmingEmperor({ pose, reduced, still, holding }: {
   );
 }
 
-/** Emperors standing on the floe by the hole. */
-const STANDING: readonly Box[] = [
-  ...emperorAt(0, 0, 1), ...emperorAt(0.5, -0.45, 0.95), ...emperorAt(-0.4, 0.5, 1.05), ...emperorAt(0.7, 0.55, 0.9),
+/** Emperors standing on the floe by the hole, the low-poly emperor of the map. */
+const STANDING: readonly Tri[] = [
+  ...emperor(0, 0, 1), ...emperor(0.5, -0.45, 0.95, 0.4), ...emperor(-0.4, 0.5, 1.05, -0.3), ...emperor(0.7, 0.55, 0.9, 0.8),
 ];
 
 const LEOPARD_STILL: Pose = { x: 0.6, y: -2.2, z: 0.2, yaw: 0, pitch: 0 };
@@ -475,12 +490,12 @@ function OrcaWave({ reduced }: { reduced: boolean }) {
   }, reduced, WAVE_PERIOD * 0.68);
   return <>
     {[0, 1, 2].map((i) => (
-      <group key={i} ref={(n) => void (orcas.current[i] = n)} scale={2.2}><mesh geometry={partGeometry('orca', () => SEA_MODELS.orca)} material={vehicleMaterial} /></group>
+      <group key={i} ref={(n) => void (orcas.current[i] = n)} scale={2.2}><mesh geometry={polyGeometry('orca', () => SEA_POLY_MODELS.orca)} material={vehicleMaterial} /></group>
     ))}
     <group ref={floe} position={[WAVE_FLOE.x, 0, WAVE_FLOE.z]}>
       <mesh geometry={partGeometry('wave-floe', () => WAVE_FLOE_BOXES)} material={vehicleMaterial} />
       <group ref={seal} position={[WAVE_SEAL_START, 0.2, 0]} scale={1.3}>
-        <mesh geometry={partGeometry('weddell', () => WEDDELL)} material={vehicleMaterial} />
+        <mesh geometry={polyGeometry('weddell', () => assembleWeddellSeal())} material={vehicleMaterial} />
       </group>
     </group>
     {/* The wave: a stepped swell with foam on its crest, as wide as the group of orcas. An effect. */}
@@ -498,7 +513,7 @@ function OrcaPod({ reduced }: { reduced: boolean }) {
   const refs = useRef<(Group | null)[]>([]);
   usePose((t) => ORCA_POD.forEach((_, i) => place(refs.current[i], orcaPose(t, i))), reduced);
   return <>{ORCA_POD.map((m, i) => (
-    <group key={i} ref={(n) => void (refs.current[i] = n)} scale={m.scale}><mesh geometry={partGeometry('orca', () => SEA_MODELS.orca)} material={vehicleMaterial} /></group>
+    <group key={i} ref={(n) => void (refs.current[i] = n)} scale={m.scale}><mesh geometry={polyGeometry('orca', () => SEA_POLY_MODELS.orca)} material={vehicleMaterial} /></group>
   ))}</>;
 }
 
@@ -641,9 +656,9 @@ function AboveIce({ view, reduced }: { view: MarineView; reduced: boolean }) {
     <fog attach="fog" args={['#DCE8EC', 30, 90]} />
     <SeaSurface under={false} />
     <Ice />
-    <Prop id="standing-emperors" boxes={STANDING} position={[HOLE.x + 1.6, ICE_TOP + 0.12, HOLE.z - 0.4]} scale={0.9} rotation={[0, -0.75, 0]} />
-    <Prop id="iceberg" boxes={SEA_MODELS['iceberg-lg']} position={[-14, -0.05, -22]} scale={9} rotation={[0, 0.4, 0]} />
-    <Prop id="iceberg-sm" boxes={SEA_MODELS['iceberg-sm']} position={[16, -0.05, 12]} scale={6} rotation={[0, -0.8, 0]} />
+    <PolyProp id="standing-emperors" tris={STANDING} position={[HOLE.x + 1.6, ICE_TOP + 0.12, HOLE.z - 0.4]} scale={0.9} rotation={[0, -0.75, 0]} />
+    <PolyProp id="iceberg" tris={POLY_ICEBERGS['iceberg-lg']} position={[-14, -0.05, -22]} scale={9} rotation={[0, 0.4, 0]} />
+    <PolyProp id="iceberg-sm" tris={POLY_ICEBERGS['iceberg-sm']} position={[16, -0.05, 12]} scale={6} rotation={[0, -0.8, 0]} />
     {view === 'emperor' && <SwimmingEmperor pose={() => ({ ...emperorDive(0), stroke: 0 })} reduced />}
     <Minke reduced={reduced} showBlow />
     {(closing || view === 'ceiling') && <OrcaPod reduced={reduced} />}

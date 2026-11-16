@@ -14,8 +14,6 @@ export const MARINE_PALETTE = {
   whale: 0x55606b, whaleKnob: 0x47515b, pleat: 0xd9dee2, pleatLine: 0x9aa5ae, baleen: 0x3b3530, fringe: 0xb9a98f,
   // Leopard seal: dark grey back, pale spotted throat and belly.
   leopard: 0x5f6b75, leopardPale: 0xbfc8ce, leopardSpot: 0x3a434b, tooth: 0xf1ead8, gum: 0xb7707a,
-  // Weddell seal: dark grey with silver spots on the flanks, pale belly and throat.
-  weddell: 0x4f5a63, weddellDark: 0x3d4852, weddellSnout: 0x5d6973, weddellBelly: 0x9aa6ae, weddellSpot: 0xc9d0d4,
   // Emperor penguin, as in sightingModels.ts.
   emperorYellow: 0xf2c14e, emperorChest: 0xf6e7a8, emperorBill: 0xe59a6b,
   // Antarctic krill: almost transparent with red pigment spots, big black eyes, green gut.
@@ -272,40 +270,6 @@ export const TEETH_DETAIL: readonly Box[] = [
   [0.47, 0.17, 0, 0.06, 0.3, 0.07, C.tooth],
 ];
 
-/**
- * Weddell seal lying on a floe, in one piece. It is the block seal Orcadas used before it moved to
- * low-poly (#116): Océano keeps it so that its whole scene stays in blocks. Head, flippers and tail
- * sit where they join the body (the old assembly shifted them twice and left them apart).
- */
-export const WEDDELL: readonly Box[] = [
-  // Torso, tapering front and rear, with a darker back.
-  [0, 0.14, 0, 0.46, 0.2, 0.28, C.weddell],
-  [0.22, 0.16, 0, 0.2, 0.21, 0.24, C.weddell],
-  [-0.24, 0.12, 0, 0.2, 0.16, 0.22, C.weddell],
-  [-0.38, 0.09, 0, 0.14, 0.11, 0.15, C.weddell],
-  [0.02, 0.245, 0, 0.36, 0.03, 0.2, C.weddellDark],
-  // Pale belly and throat.
-  [0.06, 0.06, 0, 0.48, 0.07, 0.24, C.weddellBelly],
-  [0.25, 0.11, 0, 0.18, 0.1, 0.2, C.weddellSpot],
-  [-0.18, 0.055, 0, 0.22, 0.05, 0.18, C.weddellBelly],
-  // Silver spots on the flanks, the mark of the species.
-  ...both([
-    [0.08, 0.14, 0.142, 0.07, 0.05, 0.012, C.weddellSpot],
-    [-0.06, 0.12, 0.142, 0.08, 0.045, 0.012, C.weddellSpot],
-    [-0.18, 0.11, 0.112, 0.06, 0.04, 0.012, C.weddellSpot],
-  ]),
-  // Head: round, short snout, nose and eyes.
-  [0.33, 0.25, 0, 0.15, 0.15, 0.17, C.weddell],
-  [0.42, 0.24, 0, 0.09, 0.09, 0.11, C.weddellSnout],
-  [0.47, 0.245, 0, 0.025, 0.038, 0.048, C.black],
-  [0.43, 0.21, 0, 0.07, 0.03, 0.09, C.weddellSpot],
-  ...both([[0.37, 0.285, 0.086, 0.028, 0.028, 0.01, C.black]]),
-  // Front flippers and tail.
-  ...both([[0.18, 0.05, 0.17, 0.14, 0.035, 0.11, C.weddellDark]]),
-  [-0.48, 0.06, 0.07, 0.15, 0.035, 0.1, C.weddellDark],
-  [-0.48, 0.06, -0.07, 0.15, 0.035, 0.1, C.weddellDark],
-];
-
 /** Every model of Océano, joined with its moving parts, for the test of least detail. */
 export const MARINE_MODELS: Readonly<Record<string, readonly Box[]>> = {
   'marine:humpback': [...HUMPBACK_BODY, ...HUMPBACK_JAW, ...HUMPBACK_THROAT],
@@ -319,5 +283,4 @@ export const MARINE_MODELS: Readonly<Record<string, readonly Box[]>> = {
   'marine:squid': SQUID,
   'marine:baleen': BALEEN_DETAIL,
   'marine:teeth': TEETH_DETAIL,
-  'marine:weddell': WEDDELL,
 };

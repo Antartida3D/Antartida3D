@@ -1,34 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { SCENE_MODELS, SEA_MODELS } from '../src/voyage/sightingModels.ts';
-import { MARINE_MODELS, WEDDELL } from '../src/marine/models.ts';
-import type { Box } from '../src/voyage/vehicles.ts';
+import { MARINE_MODELS } from '../src/marine/models.ts';
 import {
   DIVE_PERIOD, EDGE_Z, FILTER_PERIOD, HOLE, ICE_BOTTOM, LEAD, LEOPARD_LOOP, MINKE_FOOTPRINT, MINKE_KRILL_PATCHES, MINKE_LOOP,
   MINKE_SCALE, ORCA_POD, SUCTION_PERIOD, WATER_Y, WAVE_FLOE, WAVE_PERIOD, WAVE_SEAL_START, EMPEROR_HUNT_LOOP, EMPEROR_HUNT_STILL, emperorDive, emperorHunt, humpbackFilter, iceAt, inOpenWater,
   krillAt, leopardPose, minkePose, orcaPose, orcaWave, suction,
 } from '../src/marine/marinePoses.ts';
-
-/** True when two boxes overlap or touch (a small tolerance for faces that only meet). */
-const touch = (a: Box, b: Box, eps = 1e-3) =>
-  [0, 1, 2].every((k) => Math.abs(a[k] - b[k]) <= (a[k + 3] + b[k + 3]) / 2 + eps);
-
-/** Boxes not joined, through other boxes, to the first one. */
-function loose(boxes: readonly Box[]): Box[] {
-  const reached = new Set([0]);
-  for (let grew = true; grew;) {
-    grew = false;
-    boxes.forEach((b, i) => {
-      if (!reached.has(i) && [...reached].some((j) => touch(b, boxes[j]))) { reached.add(i); grew = true; }
-    });
-  }
-  return boxes.filter((_, i) => !reached.has(i));
-}
-
-describe('Océano: models in one piece', () => {
-  it('the Weddell seal has its head, flippers and tail joined to the body', () => {
-    expect(loose(WEDDELL)).toEqual([]);
-  });
-});
 
 const samples = (period: number, step = 0.05) => Array.from({ length: Math.ceil(period / step) }, (_, i) => i * step);
 

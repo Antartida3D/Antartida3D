@@ -277,7 +277,8 @@ export function AntarcticaApp() {
             toast={toast}
             legend={legend}
             focusExpedition={returned}
-            welcome={welcome}
+            // The 3D loading screen covers the map: the welcome waits for it to close (#190).
+            welcome={welcome && (mode !== '3d' || map3dLoaderDismissed)}
             onWelcomeShown={welcomeShown}
             mode={mode}
             showToggle={webglSupported !== null}

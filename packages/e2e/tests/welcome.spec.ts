@@ -53,6 +53,34 @@ test('the welcome also comes close to Ushuaia on the 3D map, where a phone overv
   await expectWelcome(page);
 });
 
+test('the welcome waits for the 3D loading screen to close, which would cover it (#190)', async ({ page }) => {
+  // The loading screen paces its steps and stays long enough to check only without reduced motion.
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.addInitScript((key) => localStorage.setItem(key, '3d'), VIEW_MODE_KEY);
+  // Longer than SETTLE_MAX_MS: the page settles while the loading screen is still up.
+  await page.route(/terrain-mesh-.*\.bin/, async (route) => {
+    await new Promise((r) => setTimeout(r, 6000));
+    await route.continue();
+  });
+  await page.goto('/');
+  const loader = page.locator('[data-loading-variant="map3d"]');
+  await expect(loader).toBeVisible();
+  // Checked in the page, on every frame: the welcome must never be on while the loading screen is.
+  await page.evaluate((text) => {
+    const w = window as unknown as { __covered?: boolean };
+    w.__covered = false;
+    const watch = () => {
+      const loading = document.querySelector('[data-loading-variant="map3d"]');
+      if (loading && document.querySelector('.hint')?.textContent === text) w.__covered = true;
+      if (loading) requestAnimationFrame(watch);
+    };
+    watch();
+  }, WELCOME);
+  await expect(loader).toBeHidden({ timeout: 30_000 });
+  expect(await page.evaluate(() => (window as unknown as { __covered?: boolean }).__covered)).toBe(false);
+  await expectWelcome(page);
+});
+
 test('the welcome shows once: the next visit starts from the overview (#115)', async ({ page }) => {
   await page.goto('/');
   await expect(hint(page)).toHaveText(WELCOME, { timeout: SETTLE_WAIT });

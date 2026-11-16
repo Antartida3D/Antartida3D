@@ -182,8 +182,8 @@ export const PONCHO_SCENES: Readonly<Record<string, SceneDef>> = {
     setting: 'coast',
     radius: 4,
     elements: [
-      // The base: orange huts on bare rock over the shore, with its masts and dish (one prop; it stands behind where people walk, so it takes no room on the ground).
-      prop('baseEsperanza', 0, 3.1, 0, 1, { radius: 0.01 }),
+      // The base: orange huts spread over a terrace of bare rock over the shore, with its masts, dish and flag (one prop; it stands behind where people walk, so it takes no room on the ground).
+      prop('baseEsperanza', 0, 2.8, 0, 1, { radius: 0.01 }),
       // The dogs of the base rest by the huts all the time, and a man looks after them while the first sentence is told.
       dog('pack', 3.3, 0.2, 0.4, { curled: true }),
       dog('pack', 3.9, -0.4, 2.6, { curled: true }),
@@ -214,7 +214,7 @@ export const PONCHO_SCENES: Readonly<Record<string, SceneDef>> = {
     ],
     camera: { distanceFactor: 1.05, elevationDeg: 42, azimuthDeg: -112 },
     shots: [
-      shot(0, [-0.2, 1.1, 1.5], 14, 16, -92),
+      shot(0, [0, 0.9, 1.7], 10.5, 18, -92),
       shot(1, [-0.3, 0.3, -0.5], 9, 26, -96),
       shot(2, [-0.5, 0.5, 0], 11, 24, -100),
     ],

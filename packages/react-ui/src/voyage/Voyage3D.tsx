@@ -26,6 +26,7 @@ import {
   shipDeckPose,
   shipWaterY,
   sightingsInView,
+  storyInOrder,
   stormAt,
   vehicleAt,
   transferAt,
@@ -37,6 +38,7 @@ import {
   voyageLength,
   voyageSightings,
   voyageStops,
+  voyageStopsNear,
   worldHeight,
   type TransportId,
   type TransportKind,
@@ -44,6 +46,7 @@ import {
 } from '@antartida/core';
 import { HELICOPTER_BOXES, HELICOPTER_ROTOR_BOXES, HELICOPTER_ROTOR_ORIGIN } from '../orcadas/stationModels.ts';
 import { PIN_HEAD_Y, buildPinGeometry, pinMaterial } from './pins.ts';
+import { heldOnScreen } from './screenEdge.ts';
 import { buildBoxGeometry, buildVehicleGeometry, vehicleMaterial, vehicleModel } from './vehicles.ts';
 import { Sighting3D } from './Sighting3D.tsx';
 import { sceneLookAt } from './ponchoSceneFocus.ts';
@@ -57,6 +60,12 @@ export const MIN_SIZE = VEHICLE_MIN_SIZE;
 const PIN_PER_DISTANCE = 0.042;
 const MIN_PIN = 0.2;
 const ROUTE_SAMPLES = 240;
+/**
+ * The pin of a place off the path (Cabo de Hornos) may be out of view when the vehicle comes near
+ * its milestone: its name is then held at the edge of the screen, with room for its width, the
+ * title and the trip panel, in px.
+ */
+const labelOnScreen = heldOnScreen({ side: 110, top: 150, bottom: 230 });
 /** Fraction of the screen height the picture moves up on a phone. */
 const PANEL_SHIFT = 0.14;
 /** Camera offset from the vehicle at departure: close and low, to see the Beagle Channel. */
@@ -215,8 +224,10 @@ export function Voyage3D({ bus, picker, reduced, overlay }: {
   const storm = useRef({ inside: false });
   // Ids of the animals in view and of the ones already spotted, joined: React re-renders only when they change.
   const [inView, setInView] = useState('||');
-  // Milestones passed: their pins open their cards (#157).
+  // Milestones passed, 0 while the pins open nothing (no trip yet, the helicopter flying).
   const [passed, setPassed] = useState(0);
+  // Indexes of the unread milestones near the vehicle, joined: their names show over their pins (#190).
+  const [near, setNear] = useState('');
 
   useEffect(() => {
     const onChange = () => {
@@ -230,6 +241,11 @@ export function Voyage3D({ bus, picker, reduced, overlay }: {
       setInView(`${visible.join(',')}|${bus.seen.join(',')}|${bus.beside ?? ''}`);
       // Not while the helicopter flies to the base: its pin gives way to it.
       setPassed(s && bus.transfer === null ? s.reached : 0);
+      // Not with a card open, nor in a story told in order, whose cards open by themselves.
+      const names = s && bus.transfer === null && s.card < 0 && !storyInOrder(s.kind)
+        ? voyageStopsNear(s.kind, s.t).filter((i) => !bus.opened.includes(voyageStops(s.kind)[i].milestone.id))
+        : [];
+      setNear(names.join(','));
       invalidate();
     };
     bus.listeners.add(onChange);
@@ -295,6 +311,8 @@ export function Voyage3D({ bus, picker, reduced, overlay }: {
   const stops = kind ? voyageStops(kind) : [];
   const pins = useMemo(() => (kind ? voyageStops(kind).slice(1).map((stop) => stop.pin) : []), [kind]);
   const pinGroups = useRef<(Group | null)[]>([]);
+  const story = kind !== null && storyInOrder(kind);
+  const labels = near ? near.split(',').map(Number) : [];
   // Off the 3D map (the 2D map draws no camera) the trip goes at its own pace.
   useEffect(() => () => void (bus.pace = 1), [bus]);
   const pinGeometry = useMemo(buildPinGeometry, []);
@@ -544,9 +562,17 @@ export function Voyage3D({ bus, picker, reduced, overlay }: {
           <mesh geometry={pinGeometry.fill} material={pinMaterial.unread} renderOrder={1001} />
           <mesh geometry={pinGeometry.line} material={pinMaterial.line} renderOrder={1000} />
           <mesh geometry={pinGeometry.dot} material={pinMaterial.dot} renderOrder={1002} />
-          {/* A pin passed opens its milestone: the trip does not stop at it (#157). A real button, over its head. */}
-          {i + 1 < passed && i + 1 < pins.length && (
-            <Html position={[0, PIN_HEAD_Y, 0]} center portal={overlay as RefObject<HTMLElement>} zIndexRange={[3, 3]}>
+          {/* A pin opens its milestone, passed or still ahead: the trip does not stop at it (#157), and whoever
+              wants to read about a place need not get there first (#190). A real button, over its head. In a
+              story told in order only the ones passed. Never the arrival: its card opens by itself. */}
+          {(story ? i + 1 < passed : passed > 0) && i + 1 < pins.length && (
+            <Html
+              position={[0, PIN_HEAD_Y, 0]}
+              center
+              calculatePosition={labels.includes(i + 1) && stops[i + 1].milestone.place ? labelOnScreen : undefined}
+              portal={overlay as RefObject<HTMLElement>}
+              zIndexRange={[3, 3]}
+            >
               <button
                 type="button"
                 className="vpin"
@@ -554,6 +580,13 @@ export function Voyage3D({ bus, picker, reduced, overlay }: {
                 aria-label={`Hito: ${stops[i + 1].milestone.title}. Tocá para leerlo.`}
                 title={stops[i + 1].milestone.title}
               />
+              {/* Near the vehicle and unread, its name shows by itself, so it is not gone by unnoticed (#190).
+                  The same action as the pin, which is the one the keyboard and screen readers reach. */}
+              {labels.includes(i + 1) && (
+                <button type="button" className="vpinlabel" tabIndex={-1} aria-hidden="true" onClick={() => bus.openStop(i + 1)}>
+                  {stops[i + 1].milestone.title}
+                </button>
+              )}
             </Html>
           )}
         </group>

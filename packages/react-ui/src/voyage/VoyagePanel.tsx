@@ -301,7 +301,9 @@ function MilestoneCard({ voyage, animated, onExit, onSource, tour }: {
         ) : (
           <Fact fact={milestone.essential} onSource={onSource} />
         )}
-        {more && (!tour || tour.view.showsMore) && milestone.more.map((f) => <Fact key={f.text} fact={f} onSource={onSource} />)}
+        {/* Whoever opened the card asked to know about the place: all of it at once, with no «Saber más» (#190).
+            Told a sentence at a time (the diorama), the rest still waits for the last one and for its button. */}
+        {(tour ? more && tour.view.showsMore : !beforeHop) && milestone.more.map((f) => <Fact key={f.text} fact={f} onSource={onSource} />)}
       </ul>
       {notes.length > 0 && (
         <div className="vexp" role="group" aria-label="Cómo funciona la expedición">
@@ -363,7 +365,7 @@ function MilestoneCard({ voyage, animated, onExit, onSource, tour }: {
       {milestone.hook && (!tour || tour.view.showsHook) && <p className="vhook">{milestone.hook}</p>}
       <div className="row vactions">
         {tour && <button type="button" className="btn" disabled={tour.view.first} onClick={tour.onBack}>Atrás</button>}
-        {!beforeHop && (!tour || tour.view.showsMore) && (
+        {tour?.view.showsMore && (
           <button type="button" className="btn ghost" aria-expanded={more} onClick={() => setMore((m) => !m)}>
             {more ? 'Ver menos' : 'Saber más'}
           </button>

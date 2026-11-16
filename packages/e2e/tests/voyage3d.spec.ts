@@ -123,3 +123,48 @@ test('opening «Desde Ushuaia» on the 3D map brings the camera down to Ushuaia,
     expect(Math.abs(screenX - 0.5)).toBeLessThan(0.05);
   }
 });
+
+// The trip does not stop at the milestones (#157), so they are easy to go by: the name of an unread
+// one shows over its pin while the vehicle is near, and any pin opens its card, passed or not (#190).
+test('a milestone near the vehicle shows its name over its pin, and a pin ahead opens its card', async ({ page }) => {
+  test.setTimeout(60_000);
+  await page.goto('/');
+  await page.getByRole('group', { name: 'Modo de vista' }).getByRole('button', { name: 'Relieve 3D' }).click();
+  await page.waitForFunction(() => (window as any).__cameraControls);
+  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('button', { name: /Desde Ushuaia.*Empezar expedición/ }).click();
+  await page.getByRole('group', { name: 'Medio de transporte' }).getByRole('button', { name: /ARA Almirante Irízar/ }).click();
+  await page.getByRole('button', { name: 'Zarpar' }).click();
+
+  // Every milestone between the departure and the arrival has a pin that is a button, from the start.
+  const pins = page.locator('.vpin');
+  await expect(pins.first()).toBeAttached();
+  const titles = await pins.evaluateAll((els) => els.map((el) => el.getAttribute('title')!));
+  expect(titles.length).toBeGreaterThan(3);
+  const labels = page.locator('.vpinlabel');
+  const far = titles[titles.length - 1];
+  // Far from the vehicle a milestone shows no name.
+  await expect(labels.filter({ hasText: far })).toHaveCount(0);
+
+  // A pin still ahead opens its card, though it may be off the screen: the trip stays where it is.
+  await pins.last().evaluate((el: HTMLElement) => el.click());
+  const ahead = page.getByRole('dialog', { name: far });
+  await expect(ahead).toBeVisible();
+  // The card tells all it has at once.
+  await expect(ahead.locator('.vactions').getByRole('button')).toHaveText(['Seguir viaje']);
+  await ahead.getByRole('button', { name: 'Seguir viaje' }).click();
+  await expect(ahead).toHaveCount(0);
+
+  // At the next milestone, unread: its name is over its pin, and opens its card.
+  const next = (await page.locator('.vnext strong').textContent())!;
+  await page.getByRole('button', { name: 'Próximo hito' }).click();
+  const label = labels.filter({ hasText: next });
+  await expect(label).toBeVisible();
+  await expect(label).toBeInViewport();
+  await label.click();
+  const card = page.getByRole('dialog', { name: next });
+  await expect(card).toBeVisible();
+  await card.getByRole('button', { name: 'Seguir viaje' }).click();
+  // Read, it is a name no more: its grey pin stays.
+  await expect(label).toHaveCount(0);
+});

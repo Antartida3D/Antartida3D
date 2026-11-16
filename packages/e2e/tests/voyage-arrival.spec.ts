@@ -159,8 +159,8 @@ test.describe('optional milestones on the trip from Ushuaia (#157)', () => {
     await offer.getByRole('button', { name: 'Leer el hito: Ushuaia y el Canal Beagle' }).click();
     const card = page.getByRole('dialog', { name: 'Ushuaia y el Canal Beagle' });
     await expect(card.getByRole('button', { name: 'Responder una pregunta' })).toBeVisible();
-    // One way on, last on the right: the card had two «Seguir viaje» (#190).
-    await expect(card.locator('.vactions').getByRole('button')).toHaveText(['Saber más', 'Seguir viaje']);
+    // One way on: the card had two «Seguir viaje», and it tells all it has at once, with no «Saber más» (#190).
+    await expect(card.locator('.vactions').getByRole('button')).toHaveText(['Seguir viaje']);
     await card.getByRole('button', { name: 'Seguir viaje' }).click();
     await expect(card).toHaveCount(0);
     // Read once, it says so, and it can be read again.

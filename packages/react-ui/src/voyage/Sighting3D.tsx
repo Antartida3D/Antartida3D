@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
-import { Vector3, type Camera, type Group, type Object3D } from 'three';
+import type { Group } from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import { fuegiaWorldHeight, heightAt, inFuegia, loadFuegiaMesh, sightingNote, worldHeight, type SightingSpot } from '@antartida/core';
 import { Fact } from './Fact.tsx';
+import { heldOnScreen } from './screenEdge.ts';
 import { SightingIcon } from './SightingIcon.tsx';
 import { WING_ROOT, buildSightingGeometry, moveSighting } from './sightingModels.ts';
 import type { VoyageBus } from './useVoyage.ts';
@@ -17,24 +18,11 @@ const OPEN_PLACE_SCALE = 1.5;
 /** Height of the center of the button over the base of the model, in model units. */
 const RING_HEIGHT = 0.4;
 
-/** Room kept for the title and the trip panel when a far place is held at the edge of the screen, in px. */
-const EDGE = { side: 44, top: 130, bottom: 210 };
-const projected = new Vector3();
-
 /**
- * Screen position of a place. One that is out of view, like a lighthouse far from the route, stays
- * at the edge of the screen in its direction, so it can still be found and opened.
+ * A place out of view stays at the edge of the screen in its direction, so it can still be found
+ * and opened: room kept for the title and the trip panel, in px.
  */
-function placeOnScreen(el: Object3D, camera: Camera, size: { width: number; height: number }): number[] {
-  camera.updateMatrixWorld();
-  projected.setFromMatrixPosition(el.matrixWorld).project(camera);
-  const x = ((projected.x + 1) / 2) * size.width;
-  const y = ((1 - projected.y) / 2) * size.height;
-  return [
-    Math.min(size.width - EDGE.side, Math.max(EDGE.side, x)),
-    Math.min(size.height - EDGE.bottom, Math.max(EDGE.top, y)),
-  ];
-}
+const placeOnScreen = heldOnScreen({ side: 44, top: 130, bottom: 210 });
 
 /**
  * An animal or a place on the map: its model, and over it a real button (reachable by keyboard)

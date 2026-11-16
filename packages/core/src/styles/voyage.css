@@ -54,6 +54,9 @@
 /* Touch target over the head of a pin passed: the pin is drawn under it, the ring shows on focus. */
 .vpin{width:44px;height:44px;padding:0;border:0;border-radius:50%;background:transparent;pointer-events:auto;cursor:pointer}
 .vpin:hover,.vpin:focus-visible{outline:3px solid var(--ocre);outline-offset:-6px}
+/* Name of an unread milestone near the vehicle, over its pin: light, only the title. Touching it opens the card (#190). */
+.vpinlabel{position:absolute;left:50%;bottom:calc(100% - 2px);transform:translateX(-50%);padding:3px 10px;border:1.5px solid var(--ink);border-radius:10px 14px 11px 13px;background:color-mix(in srgb,var(--paper) 92%,transparent);box-shadow:1px 2px 0 rgba(31,42,54,.2);font-family:'Fraunces',Georgia,serif;font-size:15px;line-height:1.2;color:var(--ink);white-space:nowrap;pointer-events:auto;cursor:pointer;animation:fadein .2s ease both}
+.vpinlabel:hover{border-color:var(--ocre)}
 /* A compact single row: on a phone the panel must leave the map and the vehicle in view. */
 /* «Salir» on the left and the main button on the right, where the thumb reaches (#177). */
 .vbar .row{margin-top:8px;flex-wrap:nowrap;gap:8px;justify-content:space-between}

@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { clearStorage } from '../storage.ts';
 import { MARAMBIO_SPOTS, marambioFacts } from '../../core/src/content/marambio.ts';
 import { ORCADAS_GUIDING_QUESTION } from '../../core/src/content/orcadas.ts';
+import { mockOpenMeteo } from './weather-helpers.ts';
 
 const log = (page: Page) => page.locator('.reg');
 const primary = (page: Page) => page.locator('.mar .ebar .btn.primary');
@@ -23,6 +24,7 @@ test.beforeEach(async ({ page }) => {
     if (m.type() === 'error') consoleErrors.push(m.text());
   });
   page.on('pageerror', (e) => consoleErrors.push(e.message));
+  await mockOpenMeteo(page);
 });
 
 test.afterEach(() => {

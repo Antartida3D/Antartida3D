@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { EXPLORED_KEY, VIEW_MODE_KEY } from '@antartida/core/storage';
+import { mockOpenMeteo } from './weather-helpers.ts';
 
 // A real first visit: no saved state, unlike every other spec (see playwright.config.ts).
 test.use({ storageState: { cookies: [], origins: [] } });
@@ -12,6 +13,7 @@ test.beforeEach(async ({ page }) => {
     if (m.type() === 'error') consoleErrors.push(m.text());
   });
   page.on('pageerror', (e) => consoleErrors.push(e.message));
+  await mockOpenMeteo(page);
 });
 
 test.afterEach(() => {

@@ -1,5 +1,6 @@
 import { expect, test, type CDPSession, type Locator, type Page } from '@playwright/test';
 import { clearStorage } from '../storage.ts';
+import { mockOpenMeteo } from './weather-helpers.ts';
 
 const log = (page: Page) => page.locator('.reg');
 
@@ -44,6 +45,7 @@ test.beforeEach(async ({ page }) => {
     if (m.type() === 'error') consoleErrors.push(m.text());
   });
   page.on('pageerror', (e) => consoleErrors.push(e.message));
+  await mockOpenMeteo(page);
   await page.goto('/');
   await clearStorage(page);
   await page.reload();

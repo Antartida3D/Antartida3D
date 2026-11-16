@@ -11,8 +11,8 @@ import {
 } from '@antartida/core';
 import { InkEffect } from '../map3d/InkEffect.ts';
 import { stationSkyFragmentShader, stationSkyVertexShader } from '../orcadas/stationSky.glsl.ts';
-import { buildBoxGeometry, vehicleMaterial, type Box } from '../voyage/vehicles.ts';
-import { boxShade, buildPolyGeometry, emperor, type Tri } from '../voyage/lowPoly.ts';
+import { vehicleMaterial } from '../voyage/vehicles.ts';
+import { boxShade, buildPolyGeometry, chamferRect, emperor, prism, type Tri } from '../voyage/lowPoly.ts';
 import { POLY_ICEBERGS } from '../voyage/icebergs.ts';
 import { SEA_POLY_MODELS, assembleWeddellSeal } from '../voyage/seaPolyModels.ts';
 import {
@@ -23,7 +23,7 @@ import {
 } from './lowPolyMarine.ts';
 import {
   DIVE_BOTTOM, EDGE_Z, FILTER_STILL, HOLE, ICE_TOP, LEAD, LEOPARD_LOOP, LEOPARD_PREY, MINKE_KRILL_PATCHES, MINKE_LOOP,
-  MINKE_SCALE, ORCA_LOOP, ORCA_POD, STILL_TIME, SUCTION_PERIOD, WATER_Y, WAVE_FLOE, WAVE_PERIOD, WAVE_SEAL_START, buildIceBoxes, emperorDive, EMPEROR_HUNT_STILL, EMPEROR_SWIM_SCALE, emperorHunt,
+  MINKE_SCALE, ORCA_LOOP, ORCA_POD, STILL_TIME, SUCTION_PERIOD, WATER_Y, WAVE_FLOE, WAVE_PERIOD, WAVE_SEAL_START, buildIceTris, emperorDive, EMPEROR_HUNT_STILL, EMPEROR_SWIM_SCALE, emperorHunt,
   humpbackFilter, krillAt, leopardPose, minkePose, onLoop, orcaPose, orcaWave, suction, type Loop, type Pose,
 } from './marinePoses.ts';
 
@@ -32,14 +32,8 @@ type Vec3 = readonly [number, number, number];
 // --- Shared pieces --------------------------------------------------------------------------
 
 const parts = new Map<string, BufferGeometry>();
-/** Geometries of repeated parts, built once and shared. */
-function partGeometry(key: string, boxes: () => readonly Box[]): BufferGeometry {
-  let g = parts.get(key);
-  if (!g) { g = buildBoxGeometry(boxes()); parts.set(key, g); }
-  return g;
-}
 
-/** Geometry of a low-poly part, built once: faces shaded like the boxes still in the scene (#116). */
+/** Geometry of a low-poly part, built once, with the fixed per-face light of the other dioramas (#116). */
 function polyGeometry(key: string, tris: () => readonly Tri[]): BufferGeometry {
   let g = parts.get(key);
   if (!g) { g = buildPolyGeometry(tris(), boxShade); parts.set(key, g); }
@@ -111,7 +105,7 @@ function SeaSurface({ under }: { under: boolean }) {
 }
 
 function Ice() {
-  const geometry = useMemo(() => buildBoxGeometry(buildIceBoxes()), []);
+  const geometry = useMemo(() => buildPolyGeometry(buildIceTris(), boxShade), []);
   useEffect(() => () => geometry.dispose(), [geometry]);
   return <mesh geometry={geometry} material={vehicleMaterial} />;
 }
@@ -453,9 +447,9 @@ function SuctionFlow({ reduced }: { reduced: boolean }) {
 }
 
 /** A small floe with a Weddell seal, for the documented example of the orcas' wave. */
-const WAVE_FLOE_BOXES: readonly Box[] = [
-  [0, 0.06, 0, WAVE_FLOE.half * 2, 0.24, WAVE_FLOE.half * 1.6, 0xb4d5ea],
-  [0, 0.19, 0, WAVE_FLOE.half * 1.9, 0.03, WAVE_FLOE.half * 1.5, 0xf7fafb],
+const WAVE_FLOE_TRIS: readonly Tri[] = [
+  ...prism(chamferRect(0, 0, WAVE_FLOE.half * 2, WAVE_FLOE.half * 1.6, 0.18), -0.06, 0.175, 0xb4d5ea, 0xb4d5ea, true),
+  ...prism(chamferRect(0.02, 0, WAVE_FLOE.half * 1.9, WAVE_FLOE.half * 1.5, 0.16), 0.175, 0.2, 0xf7fafb),
 ];
 
 /**
@@ -487,7 +481,7 @@ function OrcaWave({ reduced }: { reduced: boolean }) {
       <group key={i} ref={(n) => void (orcas.current[i] = n)} scale={2.2}><mesh geometry={polyGeometry('orca', () => SEA_POLY_MODELS.orca)} material={vehicleMaterial} /></group>
     ))}
     <group ref={floe} position={[WAVE_FLOE.x, 0, WAVE_FLOE.z]}>
-      <mesh geometry={partGeometry('wave-floe', () => WAVE_FLOE_BOXES)} material={vehicleMaterial} />
+      <mesh geometry={polyGeometry('wave-floe', () => WAVE_FLOE_TRIS)} material={vehicleMaterial} />
       <group ref={seal} position={[WAVE_SEAL_START, 0.2, 0]} scale={1.3}>
         <mesh geometry={polyGeometry('weddell', () => assembleWeddellSeal())} material={vehicleMaterial} />
       </group>

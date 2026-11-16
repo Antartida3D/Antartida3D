@@ -1,4 +1,4 @@
-import type { Box } from '../voyage/vehicles.ts';
+import type { Tri, Vec3 } from '../voyage/lowPoly.ts';
 import { MARINE_PALETTE } from './models.ts';
 import { EMPEROR_BILL_TIP } from './lowPolyMarine.ts';
 
@@ -35,26 +35,52 @@ export function iceAt(x: number, z: number): boolean {
   return hash(Math.floor(x / CELL), Math.floor(z / CELL)) > 0.13;
 }
 
-/** Floes as columns of ice: snow on top, bluish walls and a green-brown film of algae underneath. */
-export function buildIceBoxes(): Box[] {
+/**
+ * The pack ice in low-poly: one sheet of faces over a grid of corners, its top snowy and a little
+ * uneven, its underside with patches of the green-brown film of algae, and walls only where a floe
+ * meets the water (the edge, the lead, the hole and the gaps). The corners are jittered, so the
+ * edges are ragged rather than square; the underside never hangs below ICE_BOTTOM.
+ */
+export function buildIceTris(): Tri[] {
   const C = MARINE_PALETTE;
-  const boxes: Box[] = [];
-  for (let i = -26; i < 26; i++) {
-    for (let j = -28; j < 6; j++) {
-      const x = (i + 0.5) * CELL, z = (j + 0.5) * CELL;
-      if (!iceAt(x, z)) continue;
-      const lift = Math.floor(hash(i, j) * 3) * 0.05;
-      const top = ICE_TOP + lift;
-      boxes.push(
-        [x, (top + ICE_BOTTOM) / 2, z, CELL, top - ICE_BOTTOM, CELL, ICE_WALL],
-        [x, top + 0.01, z, CELL, 0.02, CELL, hash(i * 3, j) > 0.7 ? ICE_SNOW_BLUE : C.white],
-        [x, ICE_BOTTOM - 0.01, z, CELL, 0.02, CELL, hash(j, i) > 0.72 ? ICE_ALGAE : ICE_UNDER],
-      );
-      // Drifts of snow on some floes.
-      if (hash(j * 5, i) > 0.82) boxes.push([x + 0.1, top + 0.06, z - 0.1, CELL * 0.55, 0.08, CELL * 0.45, C.white]);
+  const I0 = -26, I1 = 26, J0 = -28, J1 = 6;
+  const ice = (i: number, j: number) => i >= I0 && i < I1 && j >= J0 && j < J1 && iceAt((i + 0.5) * CELL, (j + 0.5) * CELL);
+  const corner = (i: number, j: number): [number, number] => [
+    i * CELL + (hash(i * 7.1, j * 3.3) - 0.5) * CELL * 0.55,
+    j * CELL + (hash(i * 2.7, j * 9.1) - 0.5) * CELL * 0.55,
+  ];
+  const top = (i: number, j: number): Vec3 => { const [x, z] = corner(i, j); return [x, ICE_TOP + hash(i * 1.3, j * 5.7) * 0.07, z]; };
+  const under = (i: number, j: number): Vec3 => { const [x, z] = corner(i, j); return [x, ICE_BOTTOM + hash(i * 4.9, j * 1.1) * 0.03, z]; };
+  const tris: Tri[] = [];
+  /** A face, wound to look away from `inside`. */
+  const face = (a: Vec3, b: Vec3, c: Vec3, color: number, inside: Vec3) => {
+    const u: Vec3 = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], v: Vec3 = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
+    const n: Vec3 = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+    const m: Vec3 = [(a[0] + b[0] + c[0]) / 3, (a[1] + b[1] + c[1]) / 3, (a[2] + b[2] + c[2]) / 3];
+    const out = n[0] * (m[0] - inside[0]) + n[1] * (m[1] - inside[1]) + n[2] * (m[2] - inside[2]);
+    tris.push(out >= 0 ? [a, b, c, color] : [a, c, b, color]);
+  };
+  for (let i = I0; i < I1; i++) {
+    for (let j = J0; j < J1; j++) {
+      if (!ice(i, j)) continue;
+      const [cx, cz] = [(i + 0.5) * CELL, (j + 0.5) * CELL];
+      const mid: Vec3 = [cx, (ICE_TOP + ICE_BOTTOM) / 2, cz];
+      // Patches several floes wide, not cell by cell, so the ice does not read as tiles.
+      const snow = hash(Math.floor(i / 3) * 3, Math.floor(j / 3)) > 0.6 ? ICE_SNOW_BLUE : C.white;
+      const algae = hash(Math.floor(j / 2), Math.floor(i / 2)) > 0.62 ? ICE_ALGAE : ICE_UNDER;
+      const [t00, t10, t11, t01] = [top(i, j), top(i + 1, j), top(i + 1, j + 1), top(i, j + 1)];
+      const [u00, u10, u11, u01] = [under(i, j), under(i + 1, j), under(i + 1, j + 1), under(i, j + 1)];
+      face(t00, t10, t11, snow, mid); face(t00, t11, t01, snow, mid);
+      face(u00, u10, u11, algae, mid); face(u00, u11, u01, algae, mid);
+      // Walls where this cell meets the water.
+      const walls: [boolean, Vec3, Vec3, Vec3, Vec3][] = [
+        [!ice(i - 1, j), t00, t01, u01, u00], [!ice(i + 1, j), t10, t11, u11, u10],
+        [!ice(i, j - 1), t00, t10, u10, u00], [!ice(i, j + 1), t01, t11, u11, u01],
+      ];
+      for (const [open, a, b, c, d] of walls) if (open) { face(a, b, c, ICE_WALL, mid); face(a, c, d, ICE_WALL, mid); }
     }
   }
-  return boxes;
+  return tris;
 }
 /** Wall of a floe, the pale underside, and the film of ice algae on it (AAD, «Krill»). */
 const ICE_WALL = 0xb4d5ea;

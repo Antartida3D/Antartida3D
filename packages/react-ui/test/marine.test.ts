@@ -6,7 +6,7 @@ import { POLY_MIN_COLORS, POLY_MIN_TRIS, normalOf, type Tri } from '../src/voyag
 import {
   DIVE_PERIOD, EDGE_Z, FILTER_PERIOD, HOLE, ICE_BOTTOM, LEAD, LEOPARD_LOOP, MINKE_FOOTPRINT, MINKE_KRILL_PATCHES, MINKE_LOOP,
   MINKE_SCALE, ORCA_POD, SUCTION_PERIOD, WATER_Y, WAVE_FLOE, WAVE_PERIOD, WAVE_SEAL_START, EMPEROR_HUNT_LOOP, EMPEROR_HUNT_STILL, emperorDive, emperorHunt, humpbackFilter, iceAt, inOpenWater,
-  krillAt, leopardPose, minkePose, orcaPose, orcaWave, suction,
+  krillAt, leopardPose, minkePose, orcaPose, orcaWave, suction, buildIceTris, ICE_TOP,
 } from '../src/marine/marinePoses.ts';
 
 const samples = (period: number, step = 0.05) => Array.from({ length: Math.ceil(period / step) }, (_, i) => i * step);
@@ -176,6 +176,26 @@ describe('Océano: the humpback gulp', () => {
       expect(f.throat).toBeGreaterThanOrEqual(1);
     }
     expect(order).toEqual(['approach', 'open', 'engulf', 'close', 'expel']);
+  });
+});
+
+describe('Océano: the ice in low-poly', () => {
+  const ice = buildIceTris();
+  const ys = ice.flatMap((t) => [t[0][1], t[1][1], t[2][1]]);
+
+  it('stays between its top and its underside, so no animal swims through it', () => {
+    expect(Math.min(...ys)).toBeGreaterThanOrEqual(ICE_BOTTOM);
+    expect(Math.max(...ys)).toBeLessThan(ICE_TOP + 0.08);
+    expect(ice.length).toBeGreaterThan(2000);
+    expect(ice.length).toBeLessThan(12000);
+  });
+
+  it('has walls where it meets the water and none in the middle of a floe', () => {
+    const walls = ice.filter((t) => Math.abs(normalOf(t)[1]) < 0.3);
+    expect(walls.length).toBeGreaterThan(100);
+    // A wall stands beside open water: the hole of the emperors is ringed by them.
+    const nearHole = walls.filter((t) => Math.abs(Math.hypot(t[0][0] - HOLE.x, t[0][2] - HOLE.z) - HOLE.r) < 0.9);
+    expect(nearHole.length).toBeGreaterThan(6);
   });
 });
 

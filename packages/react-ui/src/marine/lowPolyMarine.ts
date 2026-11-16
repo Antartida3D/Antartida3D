@@ -115,8 +115,8 @@ export const LEOPARD_BODY_TRIS: readonly Tri[] = [
     [0.2, 0.0, 0.068, 0.072], [0.28, 0.01, 0.058, 0.07],
   ], (band, seg) => {
     const pale = Math.sin(((seg + 0.5) / 10) * Math.PI * 2) < -0.3;
-    // A few dark spots on the pale throat and belly, fewer on the back.
-    return pale ? ((band * 3 + seg) % 7 === 0 ? C.leopardSpot : C.leopardPale) : (band * 5 + seg) % 13 === 0 ? C.leopardSpot : C.leopard;
+    // Dark spots on the pale throat and belly; the back is plain.
+    return pale ? ((band * 3 + seg) % 7 === 0 ? C.leopardSpot : C.leopardPale) : C.leopard;
   }, [C.leopard, C.leopard], 10),
   // The head: wide and long, nearly reptilian; eyes, nostrils and a canine of the upper jaw.
   ...loftBody([[0.27, 0.015, 0.05, 0.068], [0.36, 0.02, 0.048, 0.075], [0.46, 0.015, 0.03, 0.05], [0.52, 0.01, 0.014, 0.025]],

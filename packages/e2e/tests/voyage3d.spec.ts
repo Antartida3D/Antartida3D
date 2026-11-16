@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { mockOpenMeteo } from './weather-helpers.ts';
 
 let consoleErrors: string[] = [];
 
@@ -8,6 +9,7 @@ test.beforeEach(async ({ page }) => {
     if (m.type() === 'error') consoleErrors.push(m.text());
   });
   page.on('pageerror', (e) => consoleErrors.push(e.message));
+  await mockOpenMeteo(page);
 });
 
 test.afterEach(() => {

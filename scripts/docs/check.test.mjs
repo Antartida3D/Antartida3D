@@ -143,9 +143,17 @@ test('resuelve rutas relativas, espacios, imágenes y enlaces de referencia', ()
 
 function fixture(t) {
   const directory = mkdtempSync(path.join(os.tmpdir(), 'antartida-docs-test-'));
-  t.after(() => rmSync(directory, { recursive: true, force: true }));
-  const env = { ...process.env, GIT_CONFIG_GLOBAL: os.devNull, GIT_CONFIG_NOSYSTEM: '1' };
-  const git = (...args) => execFileSync('git', ['-c', 'user.name=Pruebas', '-c', 'user.email=pruebas@example.invalid', '-c', 'commit.gpgsign=false', '-c', `core.hooksPath=${os.devNull}`, ...args], { cwd: directory, env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+  // An empty global config and hooks folder of its own: on Windows git cannot use os.devNull as a path.
+  const settings = mkdtempSync(path.join(os.tmpdir(), 'antartida-docs-git-'));
+  t.after(() => {
+    rmSync(directory, { recursive: true, force: true });
+    rmSync(settings, { recursive: true, force: true });
+  });
+  const globalConfig = path.join(settings, 'gitconfig');
+  writeFileSync(globalConfig, '');
+  const hooks = path.join(settings, 'hooks');
+  const env = { ...process.env, GIT_CONFIG_GLOBAL: globalConfig, GIT_CONFIG_NOSYSTEM: '1' };
+  const git = (...args) => execFileSync('git', ['-c', 'user.name=Pruebas', '-c', 'user.email=pruebas@example.invalid', '-c', 'commit.gpgsign=false', '-c', `core.hooksPath=${hooks}`, ...args], { cwd: directory, env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
   const write = (file, content) => { mkdirSync(path.dirname(path.join(directory, file)), { recursive: true }); writeFileSync(path.join(directory, file), content); };
   git('init', '--initial-branch=main');
   write('README.md', '# Inicio\n');

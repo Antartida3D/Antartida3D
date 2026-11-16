@@ -1,6 +1,10 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import {
   MARAMBIO_GUIDING_QUESTION,
+  MARAMBIO_LAT,
+  MONTH_NAMES,
+  marambioBlizzard,
+  marambioClimate,
   MARAMBIO_OSM_SOURCE_ID,
   MARAMBIO_SOURCES,
   MARAMBIO_SPOTS,
@@ -11,11 +15,12 @@ import {
   type MarambioSpotId,
 } from '@antartida/core';
 import { BottomSheet, type OpenSheetSize } from '../BottomSheet.tsx';
-import { useIsDesktop } from '../hooks.ts';
+import { useFocusReturn, useIsDesktop } from '../hooks.ts';
 import { KindChip } from '../orcadas/KindChip.tsx';
+import { MonthStrip, type MonthStripSeason } from '../orcadas/MonthStrip.tsx';
 import { Icon } from '../ui.tsx';
 import { MarambioScene } from './MarambioScene.tsx';
-import { SPOT_VIEWS } from './spots.ts';
+import { IRIZAR_DOT, SPOT_VIEWS } from './spots.ts';
 
 const sourceAnchor = (id: string) => `mar-source-${id}`;
 
@@ -39,6 +44,38 @@ function FactCard({ fact, onOpenSource }: { fact: MarambioFact; onOpenSource: (i
       )}
     </article>
   );
+}
+
+const decimal = (n: number) => n.toLocaleString('es-AR', { maximumFractionDigits: 1 });
+
+/**
+ * The strip of months of Marambio: daylight at its latitude and, under each month, its days with
+ * «ventisca alta» (SMN normals 1991-2020). The details hold the month facts with their sources.
+ */
+function marambioSeason(onOpenSource: (id: string) => void): MonthStripSeason {
+  return {
+    latitude: MARAMBIO_LAT,
+    stripe: marambioBlizzard,
+    stripeClass: 'is-blizzard',
+    stripeLegend: 'Días con ventisca (SMN)',
+    stripeLine: (m) => {
+      const c = marambioClimate(m);
+      const name = MONTH_NAMES[m - 1] ?? '';
+      return {
+        kind: 'real',
+        text: `En ${name}: ${decimal(c.blizzardHighDays)} días con ventisca alta y ${decimal(c.tempMeanC)} °C de temperatura media (SMN, 1991-2020).`,
+      };
+    },
+    details: () => (
+      <div className="orc-facts-list">
+        {marambioFacts('months').map((fact) => (
+          <FactCard key={fact.id} fact={fact} onOpenSource={onOpenSource} />
+        ))}
+      </div>
+    ),
+    groupLabel: 'Mes en la base',
+    asideLabel: 'Control estacional de la base',
+  };
 }
 
 /** Always-visible label of the scene: it is an illustrated reconstruction, and what that means. */
@@ -90,7 +127,68 @@ function SceneBadge({ onOpenSource }: { onOpenSource: (id: string) => void }) {
  * Base Marambio: a diorama of the base to walk round, one point of interest at a time. First
  * delivery of the expedition (#74): no chapters yet, the visit ends at the last point.
  */
-export function MarambioExpedition({ reduced, onLeave }: { reduced: boolean; onLeave: (done: boolean) => void }) {
+/** Asks whether to sail to Orcadas on the Irízar. A dialog: Escape or «Seguir en Marambio» close it. */
+function TripDialog({ onTravel, onClose }: { onTravel: () => void; onClose: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  // Focus goes to the trip button, and back to whatever opened the dialog when it closes.
+  useFocusReturn(true, ref, '.btn.primary');
+  return (
+    <div className="mar-trip-scrim" onClick={onClose}>
+      <div
+        ref={ref}
+        className="mar-trip"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="mar-trip-title"
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') {
+            e.stopPropagation();
+            onClose();
+          }
+          // Tab stays inside the dialog.
+          if (e.key === 'Tab') {
+            const buttons = [...(ref.current?.querySelectorAll<HTMLElement>('button') ?? [])];
+            const i = buttons.indexOf(document.activeElement as HTMLElement);
+            const next = e.shiftKey ? (i <= 0 ? buttons.length - 1 : i - 1) : (i + 1) % buttons.length;
+            e.preventDefault();
+            buttons[next]?.focus();
+          }
+        }}
+      >
+        <span className="orc-kicker hand">El Irízar</span>
+        <h2 id="mar-trip-title">¿Querés empezar el viaje a la Estación Orcadas?</h2>
+        <p>El rompehielos ARA Almirante Irízar espera frente a la base. Si subís, salís de Marambio y navegás hasta las Islas Orcadas del Sur.</p>
+        <p className="mar-trip-note">
+          <KindChip kind="recon" label="Recorrido ilustrativo" /> El camino del barco en el mapa es un dibujo: no hay una fuente pública de su derrota.
+        </p>
+        <div className="mar-trip-bar">
+          <button type="button" className="btn ghost" onClick={onClose}>
+            Seguir en Marambio
+          </button>
+          <button type="button" className="btn primary" onClick={onTravel}>
+            Viajar a Orcadas
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function MarambioExpedition({
+  reduced,
+  onLeave,
+  onTravelToOrcadas,
+}: {
+  reduced: boolean;
+  onLeave: (done: boolean) => void;
+  /** Leaves Marambio on the Irízar towards Orcadas. `done`: the visit reached its last point. */
+  onTravelToOrcadas: (done: boolean) => void;
+}) {
+  const [trip, setTrip] = useState(false);
+  // The month the visit starts in is today's: the blizzard of the season the visitor is in.
+  const [month, setMonth] = useState(() => new Date().getMonth() + 1);
+  const reachedEnd = useRef(false);
   const isDesktop = useIsDesktop(900);
   const [index, setIndex] = useState(0);
   const [showSources, setShowSources] = useState(false);
@@ -103,6 +201,7 @@ export function MarambioExpedition({ reduced, onLeave }: { reduced: boolean; onL
 
   const spot = MARAMBIO_SPOTS[index];
   const last = index === MARAMBIO_SPOTS.length - 1;
+  if (last) reachedEnd.current = true;
   const facts = marambioFacts(spot.id);
 
   // After a change of point or of view, the heading takes the focus so a screen reader reads on from it.
@@ -136,6 +235,10 @@ export function MarambioExpedition({ reduced, onLeave }: { reduced: boolean; onL
     setHighlight(null);
     setSheetSize((size) => (size === 'peek' ? 'small' : size));
   };
+  // One season for the whole visit: its source links reach the latest openSources through a ref.
+  const openSourcesRef = useRef(openSources);
+  openSourcesRef.current = openSources;
+  const season = useMemo(() => marambioSeason((id) => openSourcesRef.current(id)), []);
 
   const panelBody = (
     <>
@@ -205,7 +308,17 @@ export function MarambioExpedition({ reduced, onLeave }: { reduced: boolean; onL
         if (e.key === 'Escape' && showSources) closeSources();
       }}
     >
-      <MarambioScene focus={spot.id} reduced={reduced} sheetTall={!isDesktop && sheetSize === 'tall'} sidePanel={isDesktop} overlayRef={overlayRef} />
+      <MarambioScene
+        focus={spot.id}
+        reduced={reduced}
+        sheetTall={!isDesktop && sheetSize === 'tall'}
+        sidePanel={isDesktop}
+        overlayRef={overlayRef}
+        onIrizar={() => setTrip(true)}
+        month={month}
+      />
+
+      <MonthStrip month={month} onMonth={setMonth} season={season} />
 
       <SceneBadge onOpenSource={openSources} />
 
@@ -231,6 +344,18 @@ export function MarambioExpedition({ reduced, onLeave }: { reduced: boolean; onL
             </button>
           );
         })}
+        <button
+          type="button"
+          data-hotspot={IRIZAR_DOT.id}
+          className="orc-hs mar-hs-ship"
+          style={{ '--fx': IRIZAR_DOT.fallbackPct[0], '--fy': IRIZAR_DOT.fallbackPct[1] } as CSSProperties}
+          aria-label="El Irízar: viajar a la Estación Orcadas"
+          aria-haspopup="dialog"
+          onClick={() => setTrip(true)}
+        >
+          <span className="orc-hs-dot" aria-hidden="true" />
+          <span className="orc-hs-lbl">Irízar · viajar a Orcadas</span>
+        </button>
       </div>
 
       <header className="orc-top">
@@ -258,6 +383,8 @@ export function MarambioExpedition({ reduced, onLeave }: { reduced: boolean; onL
           {panelBody}
         </BottomSheet>
       )}
+
+      {trip && <TripDialog onClose={() => setTrip(false)} onTravel={() => onTravelToOrcadas(reachedEnd.current)} />}
     </section>
   );
 }

@@ -582,15 +582,24 @@ export function quizScore(transport: TransportId, answers: Readonly<Record<strin
 export const VOYAGE_SECONDS: Record<TransportKind, number> = { ship: 48, plane: 30 };
 
 /**
- * Speed multipliers of "advance". Pressing again right after the previous press shifts up one
- * gear, for whoever is in a hurry; a slower press goes back to the first.
+ * Holding "advance" the trip picks up speed little by little (#166): it sets off at ×1 and in
+ * VOYAGE_RAMP_SECONDS of holding reaches VOYAGE_TOP_SPEED times as fast, then stays there.
  */
-export const VOYAGE_GEARS = [1, 2, 3.5] as const;
-export const GEAR_TAP_MS = 450;
+export const VOYAGE_TOP_SPEED = 4;
+export const VOYAGE_RAMP_SECONDS = 3;
+/** Letting go, the speed gained unwinds this many times faster than it built up: a quick new press keeps most of it. */
+export const VOYAGE_RAMP_UNWIND = 2;
 
-/** Gear (index into VOYAGE_GEARS) for a press that comes `msSincePress` after the previous one. */
-export function nextGear(gear: number, msSincePress: number): number {
-  return msSincePress <= GEAR_TAP_MS ? Math.min(VOYAGE_GEARS.length - 1, gear + 1) : 0;
+/** Speed multiplier of "advance" after holding it `heldSeconds`: from ×1 up to VOYAGE_TOP_SPEED, easing in and out. */
+export function rampSpeed(heldSeconds: number): number {
+  const u = Math.min(1, Math.max(0, heldSeconds / VOYAGE_RAMP_SECONDS));
+  return 1 + (VOYAGE_TOP_SPEED - 1) * u * u * (3 - 2 * u);
+}
+
+/** Seconds of holding that count for the speed after `dt` more seconds, held or let go. */
+export function nextHeld(heldSeconds: number, dt: number, pressed: boolean): number {
+  if (pressed) return Math.min(VOYAGE_RAMP_SECONDS, heldSeconds + dt);
+  return Math.max(0, heldSeconds - dt * VOYAGE_RAMP_UNWIND);
 }
 
 export interface VoyageState {

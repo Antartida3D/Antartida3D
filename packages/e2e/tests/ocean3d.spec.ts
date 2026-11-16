@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { mockOpenMeteo } from './weather-helpers.ts';
 
 const frames = (page: Page) => page.evaluate(() => (window as unknown as { __frames?: number }).__frames ?? 0);
 
@@ -24,6 +25,7 @@ test.beforeEach(async ({ page }) => {
     if (m.type() === 'error') consoleErrors.push(m.text());
   });
   page.on('pageerror', (e) => consoleErrors.push(e.message));
+  await mockOpenMeteo(page);
 });
 
 test.afterEach(() => {

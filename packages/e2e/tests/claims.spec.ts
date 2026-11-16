@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { mockOpenMeteo } from './weather-helpers.ts';
 
 /**
  * Hides the claims details (#148). On a phone they are a sheet over the bottom half, over their own
@@ -15,6 +16,10 @@ async function hideDetails(page: Page, isMobile: boolean) {
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   await expect(panel).toHaveCount(0);
 }
+
+test.beforeEach(async ({ page }) => {
+  await mockOpenMeteo(page);
+});
 
 /** The claims layer has no control in the map menu while off: it opens from the South Pole sheet (#128). */
 async function openFromPole(page: Page, key = false, beforeAction?: () => Promise<void>) {

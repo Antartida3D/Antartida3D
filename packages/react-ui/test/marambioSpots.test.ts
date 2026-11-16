@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MARAMBIO_SPOTS, marambioPlateauDistance, type MarambioSpotId } from '@antartida/core';
-import { poseForSpot, SPOT_VIEWS, VIEW_BOUNDARY, VIEW_ELEVATION_DEG, VIEW_MAX_DISTANCE, VIEW_MIN_DISTANCE } from '../src/marambio/spots.ts';
+import { IRIZAR_DOT, IRIZAR_SHIP, poseForSpot, SCENE_DOTS, SPOT_VIEWS, VIEW_BOUNDARY, VIEW_ELEVATION_DEG, VIEW_MAX_DISTANCE, VIEW_MIN_DISTANCE } from '../src/marambio/spots.ts';
+import { marambioSun } from '../src/marambio/MarambioWeather.tsx';
 
 const spots: (MarambioSpotId | null)[] = [null, ...MARAMBIO_SPOTS.map((s) => s.id)];
 /** Layouts the screen can have: [portrait, sheetTall, sidePanel]. The sheet is tall only without the side card. */
@@ -72,5 +73,29 @@ describe('Marambio camera poses', () => {
       // Right of the camera: forward turned a quarter clockwise seen from above.
       expect(-forward[1] * moved[0] + forward[0] * moved[1]).toBeGreaterThan(0);
     }
+  });
+});
+
+describe('Irízar off Marambio', () => {
+  it('waits at sea, well off the plateau, and has its dot among the scene dots', () => {
+    const [x, , z] = IRIZAR_SHIP.position;
+    expect(marambioPlateauDistance(x, z)).toBeLessThan(-30);
+    expect(IRIZAR_SHIP.position[1]).toBe(0);
+    expect(SCENE_DOTS.map((d) => d.id)).toEqual([...MARAMBIO_SPOTS.map((s) => s.id), IRIZAR_DOT.id]);
+    expect(IRIZAR_DOT.worldPos[0]).toBe(x);
+    expect(IRIZAR_DOT.worldPos[2]).toBe(z);
+  });
+});
+
+describe('Sun of the months at Marambio', () => {
+  it('stands high in January and grazes the horizon in June, always from the north side', () => {
+    const jan = marambioSun(1);
+    const jun = marambioSun(6);
+    expect(jan.elevationDeg).toBeGreaterThan(35);
+    expect(jun.elevationDeg).toBeLessThan(5);
+    expect(jan.dir.length()).toBeCloseTo(1, 6);
+    // North, on the stage, is against the base's south-east side and the runway's north-east axis.
+    const north = [Math.cos(((0 - 64.7) * Math.PI) / 180), Math.sin(((0 - 64.7) * Math.PI) / 180)];
+    for (const { dir } of [jan, jun]) expect(dir.x * north[0] + dir.z * north[1]).toBeGreaterThan(0);
   });
 });

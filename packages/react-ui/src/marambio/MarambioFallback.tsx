@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
+import { createSeededRng, marambioBlizzard } from '@antartida/core';
 
 // Tones of the diorama, for the drawing shown when WebGL is not available.
 const SKY_TOP = '#BFD6E4';
@@ -40,7 +41,24 @@ function Module({ x, y, w, h }: { x: number; y: number; w: number; h: number }) 
  * Drawing of the base for devices without WebGL: the same view as the diorama (runway in front,
  * the C-130 on the apron, the hangar behind it, the tower and the row of buildings), flat.
  */
-export function MarambioFallback() {
+/** Streaks of blowing snow over the drawing, as many as the month's blizzard (a simulation). */
+function BlizzardStreaks({ month }: { month: number }) {
+  const streaks = useMemo(() => {
+    const rng = createSeededRng(160);
+    const n = Math.round(90 * marambioBlizzard(month));
+    return Array.from({ length: n }, () => [rng() * 980 - 20, 130 + rng() * 420, 18 + rng() * 34] as const);
+  }, [month]);
+  return (
+    <g stroke={SNOW} strokeWidth="2" strokeLinecap="round" opacity="0.85">
+      <rect width="960" height="540" fill={SNOW} opacity={0.35 * marambioBlizzard(month)} stroke="none" />
+      {streaks.map(([x, y, l], i) => (
+        <line key={i} x1={x} y1={y} x2={x + l} y2={y - l * 0.18} />
+      ))}
+    </g>
+  );
+}
+
+export function MarambioFallback({ month }: { month: number }) {
   useEffect(() => {
     (window as unknown as { __marambioReady?: boolean }).__marambioReady = true;
   }, []);
@@ -57,6 +75,14 @@ export function MarambioFallback() {
         <rect y="150" width="960" height="390" fill={SEA} />
         <polygon points="760,150 800,128 842,134 880,150" fill={ICE} stroke={INK} strokeWidth="1.5" strokeLinejoin="round" />
         <polygon points="70,160 96,142 150,146 172,160" fill={ICE} stroke={INK} strokeWidth="1.5" strokeLinejoin="round" />
+
+        {/* The Irízar at anchor, far off the base */}
+        <g stroke={INK} strokeWidth="1.5" strokeLinejoin="round">
+          <polygon points="792,174 864,174 872,164 786,164" fill={ORANGE_DARK} />
+          <rect x="826" y="152" width="22" height="12" fill={SNOW} />
+          <rect x="832" y="145" width="12" height="7" fill={SNOW} />
+          <rect x="800" y="158" width="20" height="6" fill={ORANGE_DARK} />
+        </g>
 
         {/* Plateau with its scarp */}
         <polygon points="40,540 60,250 150,186 800,176 905,240 930,540" fill={SCARP} stroke={INK} strokeWidth="2" strokeLinejoin="round" />
@@ -124,6 +150,7 @@ export function MarambioFallback() {
         {[80, 200, 330, 460, 600, 740, 880].map((x, i) => (
           <rect key={x} x={x} y={488 - i * 4.4} width="11" height="7" fill={MARKER} stroke={INK} strokeWidth="1" />
         ))}
+        <BlizzardStreaks month={month} />
       </svg>
     </div>
   );

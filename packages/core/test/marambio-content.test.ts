@@ -13,7 +13,8 @@ import { MARAMBIO_POINT } from '../src/content/points.ts';
 import { VOYAGE_SOURCES } from '../src/content/ushuaia.ts';
 
 /** Words by which a fact that is not a datum says so itself. */
-const NOT_DATA = /reconstrucci[oó]n|ilustra|fotos? de referencia/;
+// A simulation says so too (the blizzard of the months, #160).
+const NOT_DATA = /reconstrucci[oó]n|ilustra|fotos? de referencia|simulaci[oó]n/;
 
 describe('Base Marambio content and sources (docs/expediciones/base-marambio.md)', () => {
   it('has unique ids in sources, facts and spots', () => {
@@ -98,7 +99,8 @@ describe('Base Marambio content and sources (docs/expediciones/base-marambio.md)
       expect(s.label.length).toBeGreaterThan(0);
       expect(s.shortLabel.length).toBeGreaterThan(0);
     }
-    expect(MARAMBIO_FACTS.length).toBe(MARAMBIO_SPOTS.reduce((n, s) => n + marambioFacts(s.id).length, marambioFacts('scene').length));
+    // Besides the points: the scene label and the strip of months (#160).
+    expect(MARAMBIO_FACTS.length).toBe(MARAMBIO_SPOTS.reduce((n, s) => n + marambioFacts(s.id).length, marambioFacts('scene').length + marambioFacts('months').length));
   });
 
   it('keeps the facts short and without exclamation marks', () => {

@@ -16,6 +16,7 @@ import {
   generateSeaLifeInstances,
   groundTarget,
   homeDistance3D,
+  voyageMaxDistance3D,
   loadOceanDepth,
   poseFromView,
   viewFrom3D,
@@ -191,7 +192,7 @@ export type Map3DLayerProps = Layer3DProps;
 // (@antartida/core), lower only around Tierra del Fuego, the Drake and the points with a model
 // (minCameraDistance). The farthest view is the overview (homeDistance3D: ~800 on desktop and ~2250
 // on a phone), where the whole continent fits; farther the camera would see past the lands of the
-// rest of the world (WORLD_FADE_END).
+// rest of the world (WORLD_FADE_END). During the trip from Ushuaia it is voyageMaxDistance3D (#167).
 /** Angle from straight down of the close-up of a point with a model: the model is seen at a slant, on its ground. */
 const VISIT_POLAR = (52 * Math.PI) / 180;
 /** From this window width the point card is a side panel, not a bottom sheet (painted.css). */
@@ -333,6 +334,10 @@ function ControlsBridge({
     if (cmd.type === 'zoom') {
       endDistance = clampDistance(cc.distance / cmd.factor);
       cc.dollyTo(endDistance, smooth);
+    } else if (cmd.type === 'home' && voyaging) {
+      // The camera stays on the vehicle: the overview of the trip is as far as it may go.
+      endDistance = cc.maxDistance;
+      cc.dollyTo(endDistance, smooth);
     } else if (cmd.type === 'home') {
       const home = homePose3D(aspect);
       endDistance = homeDistance3D(aspect);
@@ -414,7 +419,8 @@ function ControlsBridge({
       // The zoom into an expedition drives the camera on every frame: gestures would fight it.
       enabled={phase !== 'approach' && phase !== 'dive' && phase !== 'travel'}
       minDistance={ICE_MIN_DISTANCE}
-      maxDistance={homeDistance3D(size.vw / size.vh)}
+      // Travelling, the camera stays near the vehicle: farther it gets lost among the lands (#167).
+      maxDistance={voyaging ? voyageMaxDistance3D(size.vw / size.vh) : homeDistance3D(size.vw / size.vh)}
     />
   );
 }

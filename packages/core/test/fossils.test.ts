@@ -9,7 +9,7 @@ describe('fossil expedition', () => {
     expect(state.stop).toBe(FOSSIL_STOPS.length - 1);
     expect(state.visited).toHaveLength(FOSSIL_STOPS.length);
     expect(state.cleaned).toBe(0);
-    expect(state.column || state.tooth || state.reconstructed || state.measured).toBe(false);
+    expect(state.column || state.tooth || state.measured).toBe(false);
     expect(fossilsReducer(state, { type: 'next' })).toEqual(state);
     expect(fossilsReducer(INITIAL_FOSSILS, { type: 'prev' })).toEqual(INITIAL_FOSSILS);
   });
@@ -28,13 +28,25 @@ describe('fossil expedition', () => {
     expect(state.visited).toEqual(visited);
   });
 
+  it('shows the dinosaur reconstructed on arriving at its stop, like the other animals, and again on each return', () => {
+    const animal = FOSSIL_STOPS.findIndex((s) => s.view === 'dinosaur');
+    let state = INITIAL_FOSSILS;
+    while (state.stop < animal - 1) state = fossilsReducer(state, { type: 'next' });
+    expect(state.reconstructed).toBe(false);
+    state = fossilsReducer(state, { type: 'next' });
+    expect(state.reconstructed).toBe(true);
+    // Back to the remains to compare; leaving and coming back shows the animal again.
+    state = fossilsReducer(state, { type: 'reconstruct' });
+    expect(state.reconstructed).toBe(false);
+    state = fossilsReducer(fossilsReducer(state, { type: 'next' }), { type: 'prev' });
+    expect(state.reconstructed).toBe(true);
+    expect(fossilsReducer(INITIAL_FOSSILS, { type: 'chapter', chapter: 'dinosaur' }).reconstructed).toBe(false);
+  });
+
   it('lets the user compare evidence and reconstruction and switch the three habitats', () => {
     const reconstructed = fossilsReducer(INITIAL_FOSSILS, { type: 'reconstruct' });
     expect(reconstructed.reconstructed).toBe(true);
     expect(fossilsReducer(reconstructed, { type: 'reconstruct' }).reconstructed).toBe(false);
-    // Going back to the remains still counts the reconstruction as seen.
-    expect(fossilsReducer(reconstructed, { type: 'reconstruct' }).imagined).toBe(true);
-    expect(INITIAL_FOSSILS.imagined).toBe(false);
     for (const { id } of FOSSIL_HABITATS) expect(fossilsReducer(reconstructed, { type: 'habitat', habitat: id }).habitat).toBe(id);
   });
 

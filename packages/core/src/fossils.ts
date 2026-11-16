@@ -6,10 +6,11 @@ export interface FossilState {
   /** Plesiosaur: the visitor followed the vertebral column. */
   column: boolean;
   tooth: boolean;
-  /** Dinosaur: the reconstruction is showing (the button switches between it and the remains). */
+  /**
+   * Dinosaur: the reconstruction is showing. Arriving at its stop shows it, as the other animals are
+   * shown on theirs; the button switches back to the remains to compare.
+   */
   reconstructed: boolean;
-  /** Dinosaur: the visitor saw the reconstruction at least once, even after going back to the remains. */
-  imagined: boolean;
   /** Stars: the visitor measured a sea star against the scale. */
   measured: boolean;
   habitat: FossilHabitat;
@@ -23,14 +24,16 @@ export type FossilAction =
 export const FOSSIL_CLEAN_STEPS = 3;
 
 export const INITIAL_FOSSILS: FossilState = {
-  stop: 0, cleaned: 0, column: false, tooth: false, reconstructed: false, imagined: false, measured: false,
+  stop: 0, cleaned: 0, column: false, tooth: false, reconstructed: false, measured: false,
   habitat: 'sea', visited: ['arrival'],
 };
 export function fossilsReducer(state: FossilState, action: FossilAction): FossilState {
   const go = (stop: number): FossilState => {
     const index = Math.max(0, Math.min(FOSSIL_STOPS.length - 1, stop));
     const id = FOSSIL_STOPS[index].id;
-    return { ...state, stop: index, visited: state.visited.includes(id) ? state.visited : [...state.visited, id] };
+    // Arriving at the dinosaur, the bones gather into the animal, as each animal shows on its stop.
+    const arriving = index !== state.stop && FOSSIL_STOPS[index].view === 'dinosaur';
+    return { ...state, stop: index, reconstructed: arriving || state.reconstructed, visited: state.visited.includes(id) ? state.visited : [...state.visited, id] };
   };
   switch (action.type) {
     case 'next': return go(state.stop + 1);
@@ -42,7 +45,7 @@ export function fossilsReducer(state: FossilState, action: FossilAction): Fossil
     case 'clean': return { ...state, cleaned: Math.min(FOSSIL_CLEAN_STEPS, state.cleaned + 1) };
     case 'column': return { ...state, column: true };
     case 'tooth': return { ...state, tooth: true };
-    case 'reconstruct': return { ...state, reconstructed: !state.reconstructed, imagined: true };
+    case 'reconstruct': return { ...state, reconstructed: !state.reconstructed };
     case 'measure': return { ...state, measured: true };
     case 'habitat': return { ...state, habitat: action.habitat };
   }

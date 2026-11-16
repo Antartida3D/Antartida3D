@@ -121,7 +121,7 @@ export function FossilExpedition({ reduced, webgl, onLeave }: {
       </div>}
 
       {stop.id === 'animal' && <div className="fossil-interaction">
-        <button className="btn fossil-action" aria-pressed={state.reconstructed} onClick={() => dispatch({ type: 'reconstruct' })}>{state.reconstructed ? 'Volver a los restos' : 'Imaginar el animal completo'}</button>
+        <button className="btn fossil-action" aria-pressed={state.reconstructed} onClick={() => dispatch({ type: 'reconstruct' })}>{state.reconstructed ? 'Ver los restos' : 'Ver el animal completo'}</button>
         <small>{state.reconstructed ? 'Reconstrucción artística · forma, color y movimiento ilustrativos.' : 'Los fragmentos son la evidencia; la figura completa es una interpretación.'}</small>
       </div>}
 
@@ -141,7 +141,6 @@ export function FossilExpedition({ reduced, webgl, onLeave }: {
         <li><span>{state.cleaned === FOSSIL_CLEAN_STEPS ? '✓' : '○'}</span>{state.cleaned === FOSSIL_CLEAN_STEPS ? 'Descubriste la espiral del amonite' : 'Limpieza del amonite: opcional'}</li>
         <li><span>{state.column ? '✓' : '○'}</span>{state.column ? 'Seguiste la columna del plesiosaurio' : 'Columna del plesiosaurio: opcional'}</li>
         <li><span>{state.tooth ? '✓' : '○'}</span>{state.tooth ? 'Observaste el diente de cerca' : 'Observación del diente: opcional'}</li>
-        <li><span>{state.imagined ? '✓' : '○'}</span>{state.imagined ? 'Imaginaste el dinosaurio completo' : 'Imaginar el animal completo: opcional'}</li>
         <li><span>{state.measured ? '✓' : '○'}</span>{state.measured ? 'Mediste una estrella de mar' : 'Medición de la estrella: opcional'}</li>
         <li><span>✓</span>Recorriste {state.visited.length} de {FOSSIL_STOPS.length} paradas</li>
       </ul>}

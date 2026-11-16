@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
 import {
   dioramaOpacity,
   dioramaRemaining,
@@ -13,7 +13,9 @@ import {
   type SceneDef,
 } from '@antartida/core';
 import type { OpenSheetSize } from '../BottomSheet.tsx';
+import { useIsDesktop } from '../hooks.ts';
 import { KindChip } from '../orcadas/KindChip.tsx';
+import { useSceneFrame } from '../sceneFrame.tsx';
 import { Icon } from '../ui.tsx';
 
 // Its own chunk: it needs three.js and WebGL, which the common card does not.
@@ -31,6 +33,8 @@ export interface DioramaTour {
   /** The sheet of a phone: peek, small or tall (the scene is framed over it). */
   readonly size: OpenSheetSize;
   readonly onSize: (size: OpenSheetSize) => void;
+  /** The panel (side panel or sheet): the scene is framed in what it leaves free. */
+  readonly panelRef: RefObject<HTMLElement | null>;
 }
 
 /**
@@ -65,6 +69,10 @@ export function PonchoDiorama({ scene, essential, reduced, entry, hasBefore, onN
   const sentences = useMemo(() => essentialSentences(essential), [essential]);
   const [step, setStep] = useState(() => entryStep(entry, sentences.length));
   const [size, setSize] = useState<OpenSheetSize>('small');
+  const desktop = useIsDesktop();
+  // The scene fills the screen behind the panel, as in Fósiles; its centre moves to the part the panel leaves free.
+  const panelRef = useRef<HTMLElement>(null);
+  const top = useRef<HTMLDivElement>(null);
   const [flow, setFlow] = useState(() => openDiorama(performance.now()));
   const root = useRef<HTMLDivElement>(null);
   const done = useRef(onDone);
@@ -78,7 +86,9 @@ export function PonchoDiorama({ scene, essential, reduced, entry, hasBefore, onN
     else leave();
   };
   const onBack = view.first ? (hasBefore ? onBeforeStop : null) : () => setStep(view.step - 1);
-  const tour: DioramaTour = { view, sentences, onNext, onBack, size, onSize: setSize };
+  const tour: DioramaTour = { view, sentences, onNext, onBack, size, onSize: setSize, panelRef };
+
+  const shift = useSceneFrame(root, top, panelRef, desktop);
 
   // A new sentence opens the sheet at its small size, as the stops of Fósiles do.
   useEffect(() => setSize('small'), [view.step]);
@@ -127,9 +137,11 @@ export function PonchoDiorama({ scene, essential, reduced, entry, hasBefore, onN
       tabIndex={-1}
       onKeyDown={onKeyDown}
     >
+      {/* No bar on top of this screen: a bar without height is what the frame measures from. */}
+      <div ref={top} className="pdio-top" aria-hidden="true" />
       <div className="pdio-stage" aria-hidden="true">
         <Suspense fallback={null}>
-          <PonchoDioramaCanvas scene={scene} step={view.step} reduced={reduced} onLost={onLost} />
+          <PonchoDioramaCanvas scene={scene} step={view.step} reduced={reduced} shift={shift} onLost={onLost} />
         </Suspense>
       </div>
       <button type="button" className="btn pdio-map" onClick={onMap}>

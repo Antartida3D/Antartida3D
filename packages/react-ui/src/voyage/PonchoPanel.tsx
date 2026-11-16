@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import { ponchoActOpeningAt, ponchoPhotoAt, previousVoyageCard, nextVoyageCard, voyageStops, type PonchoPhoto } from '@antartida/core';
 import ponchoPageUrl from '@antartida/core/assets/poncho/poncho-pagina.jpg';
 import sledTeamUrl from '@antartida/core/assets/poncho/perros-trineo.jpg';
@@ -74,13 +74,14 @@ function PhotoDialog({ photo, onClose }: { photo: PonchoPhoto; onClose: () => vo
 
 /**
  * The panel of a stop of Poncho (issue #211), with the layout of the stops of Fósiles: a side panel on a wide screen and
- * a sheet that opens upwards on a phone; the act and the stop, its title, one sentence at a time with its source,
- * «Saber más» that unfolds in place, and «‹» «›» below. The scene beside it shows something new at each sentence.
+ * a sheet that opens upwards on a phone, over the scene that fills the screen. It shows the act and the stop, its title and the
+ * story of the stop, which grows a sentence at each «Siguiente» while the scene shows something new; at the last one come
+ * «Saber más» (it unfolds in place) and the photograph. «Atrás» goes back a sentence, or into the stop before.
  */
 export function PonchoPanel({ voyage, tour, onSource }: { voyage: VoyageController; tour: DioramaTour; onSource: OpenSources }) {
   const state = voyage.state!;
   const desktop = useIsDesktop();
-  const panel = useRef<HTMLElement>(null);
+  const panel = tour.panelRef;
   const scroll = useRef<HTMLDivElement>(null);
   const title = useRef<HTMLHeadingElement>(null);
   const [photoOpen, setPhotoOpen] = useState(false);
@@ -90,7 +91,8 @@ export function PonchoPanel({ voyage, tour, onSource }: { voyage: VoyageControll
   const act = ponchoActOpeningAt(milestone.id);
   const photo = ponchoPhotoAt(milestone.id);
   const { view } = tour;
-  const sentence = tour.sentences[view.step] ?? milestone.essential.text;
+  // The sentences told so far: each «Siguiente» adds one. The source of the book goes with the last one told.
+  const told = tour.sentences.slice(0, view.step + 1);
 
   // A new stop or sentence starts at the top of the panel, and the title takes the focus (as the stops of Fósiles do).
   useEffect(() => {
@@ -108,19 +110,20 @@ export function PonchoPanel({ voyage, tour, onSource }: { voyage: VoyageControll
             <h2 id="poncho-title" className="orc-chapter-h2" ref={title} tabIndex={-1}>{milestone.title}</h2>
           </div>
         </div>
-        <p className="poncho-eyebrow">{view.step + 1} de {view.count}</p>
-        {/* One sentence at a time, with its source: the scene beside it shows it. */}
         <ul className="vfacts poncho-line" aria-live="polite">
-          <Fact key={sentence} fact={{ ...milestone.essential, text: sentence }} onSource={onSource} />
+          {told.map((text, i) => (
+            <Fact key={text} fact={{ ...milestone.essential, text, sources: i === told.length - 1 ? milestone.essential.sources : [] }} onSource={onSource} />
+          ))}
         </ul>
         {view.showsHook && milestone.hook && <p className="vhook">{milestone.hook}</p>}
-        {photo && (
+        {/* The rest waits for the end of the story of the stop. */}
+        {view.last && photo && (
           <button type="button" className="poncho-archive" onClick={() => setPhotoOpen(true)} aria-label="Abrir fotografía del archivo">
             <img src={PONCHO_PHOTO_URL[photo.file]} alt="" loading="lazy" />
             <span><small>Archivo fotográfico</small><b>{photo.caption}</b><span>Ver fotografía ↗</span></span>
           </button>
         )}
-        {milestone.more.length > 0 && (
+        {view.last && milestone.more.length > 0 && (
           <details className="poncho-more" key={milestone.id}>
             <summary>Saber más</summary>
             <ul className="vfacts">{milestone.more.map((f) => <Fact key={f.text} fact={f} onSource={onSource} />)}</ul>
@@ -129,22 +132,20 @@ export function PonchoPanel({ voyage, tour, onSource }: { voyage: VoyageControll
       </div>
       <div className="orc-bar ebar">
         {tour.onBack && (
-          <button type="button" className="btn ghost poncho-prev" aria-label="Atrás" onClick={tour.onBack}>{Icon.back}</button>
+          <button type="button" className="btn ghost poncho-prev" onClick={tour.onBack}>
+            <span className="poncho-prev-arrow" aria-hidden="true">{Icon.back}</span>Atrás
+          </button>
         )}
-        <button
-          type="button"
-          className="btn primary poncho-next"
-          aria-label={leaves ? (last ? 'Terminar el viaje' : 'Seguir con Poncho') : 'Siguiente'}
-          onClick={tour.onNext}
-        >
-          {leaves ? <>{last ? 'Terminar el viaje' : 'Seguir con Poncho'}<span aria-hidden="true"> →</span></> : <span className="poncho-arrow" aria-hidden="true">{Icon.back}</span>}
+        <button type="button" className="btn primary poncho-next" onClick={tour.onNext}>
+          {leaves ? (last ? 'Terminar el viaje' : 'Seguir con Poncho') : 'Siguiente'}
+          <span className="poncho-arrow" aria-hidden="true">{Icon.back}</span>
         </button>
       </div>
       {photo && photoOpen && <PhotoDialog photo={photo} onClose={() => setPhotoOpen(false)} />}
     </>
   );
   return desktop ? (
-    <section className="orc-panel poncho-panel" ref={panel} aria-labelledby="poncho-title">{content}</section>
+    <section className="orc-panel poncho-panel" ref={panel as RefObject<HTMLElement>} aria-labelledby="poncho-title">{content}</section>
   ) : (
     <BottomSheet className="orc-panel poncho-panel" labelledBy="poncho-title" sheetRef={panel} floor="peek" size={tour.size} onSize={tour.onSize}>{content}</BottomSheet>
   );

@@ -127,8 +127,9 @@
    (`.orc-panel`, shared with Orcadas, Fósiles and Océano): a side panel on a wide screen, a sheet that opens upwards on a phone. */
 .pdio{position:absolute;inset:0;z-index:12;opacity:0;background:var(--paper);outline:none;overflow:hidden;font-family:'Atkinson Hyperlegible',sans-serif}
 .pdio-leaving{pointer-events:none}
-/* The canvas fills what the panel leaves free. */
-.pdio-stage{position:absolute;inset:0 0 var(--orc-sheet) 0}
+/* The scene fills the screen and the panel floats over it, as in Fósiles. On a phone the sheet takes its part of the screen. */
+.pdio-stage{position:absolute;inset:0 0 var(--scene-sheet,0px) 0}
+.pdio-top{position:absolute;left:0;right:0;top:0;height:0}
 .pdio-canvas{display:block;touch-action:none}
 /* The sources page opens over the diorama. */
 .pdio ~ .listview.vsources{z-index:22}
@@ -137,26 +138,24 @@
 .pdio-badge{position:absolute;left:12px;top:60px;max-width:min(360px,calc(100% - 24px));display:flex;flex-direction:column;align-items:flex-start;gap:6px;z-index:7;pointer-events:none}
 .pdio-badge p{margin:0;padding:6px 10px;border-radius:8px 14px 10px 12px;background:rgba(243,235,221,.9);font-size:12px;line-height:1.3;color:var(--ink)}
 @media (min-width:900px){
-  .pdio-stage{inset:0 504px 0 0}
   .pdio .orc-panel{top:24px}
 }
 @media ((orientation:landscape) and (max-height:500px)){
-  .pdio-stage{inset:0 46% 0 0}
   .pdio .orc-panel{top:8px}
 }
 .poncho-panel button{cursor:pointer}
 .poncho-panel button:focus-visible,.poncho-panel summary:focus-visible,.poncho-panel a:focus-visible,.poncho-dialog button:focus-visible{outline:3px solid var(--deep);outline-offset:4px}
 .poncho-panel .orc-bar .btn{border-radius:var(--chart-button-radius)}
-.poncho-eyebrow{font-size:12px;color:var(--pencil);margin:0 0 8px;line-height:1.5}
 .poncho-line{margin:0 0 16px;font-size:16px;line-height:1.55}
-.poncho-line .vfact{list-style:none}
+.poncho-line .vfact{list-style:none;margin:0 0 10px}
 .poncho-more{margin-top:17px;border-bottom:1px solid color-mix(in srgb,var(--ink) 18%,transparent);padding-bottom:18px}
 .poncho-more summary{cursor:pointer;font-size:14px}
 .poncho-more .vfacts{margin:14px 0 0;font-size:14px;line-height:1.6}
 /* The arrows of the bar: «‹» goes back, «›» goes forward (the same arrow, turned). */
-.poncho-next .ico,.poncho-prev .ico{width:22px;height:22px}
+.poncho-next .ico,.poncho-prev .ico{width:18px;height:18px}
+.poncho-next,.poncho-prev{display:inline-flex;align-items:center;justify-content:center;gap:6px}
 .poncho-arrow{display:inline-flex;transform:rotate(180deg)}
-.poncho-prev{min-width:56px}
+.poncho-prev-arrow{display:inline-flex}
 .poncho-archive{margin:20px 0 0;display:flex;gap:15px;align-items:center;width:100%;text-align:left;padding:0;border:0;background:transparent;color:var(--ink);font:inherit}
 .poncho-archive img{width:78px;height:88px;object-fit:cover;filter:saturate(.65);border:4px solid color-mix(in srgb,var(--ice) 60%,var(--paper));box-shadow:0 1px 4px color-mix(in srgb,var(--ink) 22%,transparent);transform:rotate(-3deg);flex-shrink:0}
 .poncho-archive>span{display:flex;flex-direction:column;gap:5px}

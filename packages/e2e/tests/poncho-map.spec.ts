@@ -68,9 +68,10 @@ test('the arrows go back into the stop before, at its last sentence, and forward
   await expect(panel.getByRole('heading', { name: second.title })).toBeVisible();
   await panel.getByRole('button', { name: 'Atrás' }).click();
   await expect(panel.getByRole('heading', { name: first.title })).toBeVisible();
-  await expect(panel.locator('.poncho-eyebrow')).toHaveText('3 de 3');
+  await expect(panel.locator('.poncho-line')).toContainText('los hombres instruyen a los perros');
+  await expect(panel.locator('details.poncho-more')).toBeVisible();
   // From its last sentence the arrow goes forward into the second stop, which was already read: at its first sentence.
   await panel.getByRole('button', { name: 'Siguiente' }).click();
   await expect(panel.getByRole('heading', { name: second.title })).toBeVisible();
-  await expect(panel.locator('.poncho-eyebrow')).toHaveText(/^1 de /);
+  await expect(panel.locator('.poncho-line .vfact')).toHaveCount(1);
 });

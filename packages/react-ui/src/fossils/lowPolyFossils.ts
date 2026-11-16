@@ -57,7 +57,7 @@ const backBelly = (back: number, belly: number, n = 8) => (_: number, seg: numbe
 };
 
 /** A four-sided spike from a base center, pointing along `dir`: an armor plate or a tooth. */
-function spike(base: Vec3, dir: Vec3, r: number, color: number): Tri[] {
+export function spike(base: Vec3, dir: Vec3, r: number, color: number): Tri[] {
   const tip = add(base, dir);
   const up: Vec3 = Math.abs(dir[1]) > 0.9 * Math.hypot(...dir) ? [1, 0, 0] : [0, 1, 0];
   const l = Math.hypot(...dir);

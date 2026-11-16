@@ -31,16 +31,6 @@ export const FOSSIL_PALETTE = {
 } as const;
 const C = FOSSIL_PALETTE;
 
-/** A pivot and the boxes that turn around it, in the pivot's own frame. */
-export interface Part { pivot: readonly [number, number, number]; boxes: readonly Box[] }
-
-/** Offsets a part's boxes by its pivot: the model as it looks at rest. */
-export function partAtRest(part: Part): Box[] {
-  const [px, py, pz] = part.pivot;
-  return part.boxes.map(([x, y, z, sx, sy, sz, c]) => [x + px, y + py, z + pz, sx, sy, sz, c]);
-}
-
-
 // --- Dinosaur jaw ---------------------------------------------------------------------------
 
 export const JAW_BOXES: readonly Box[] = [
@@ -148,84 +138,8 @@ export const MAST_BOXES: readonly Box[] = [
   [0.17, 0.9, 0, 0.05, 0.03, 0.01, C.tentDark],
   [0, 1.0, 0, 0.015, 0.06, 0.015, C.ink],
 ];
-// --- Sea floor: Cretaceous and Eocene -------------------------------------------------------
-
-export const BRYOZOAN_BOXES: readonly Box[] = [
-  [0, 0.04, 0, 0.12, 0.08, 0.12, C.bryozoanRed],
-  ...Array.from({ length: 12 }, (_, i): Box => {
-    const a = i * 2.1;
-    const h = 0.12 + (i % 4) * 0.08;
-    return [Math.cos(a) * (0.04 + h * 0.3), h, Math.sin(a) * (0.04 + h * 0.3), 0.04, 0.12, 0.04, i % 3 ? C.bryozoan : C.bryozoanRed];
-  }),
-];
-export const BRACHIOPOD_BOXES: readonly Box[] = [
-  [0, 0.04, 0, 0.26, 0.08, 0.22, C.brachiopod],
-  [0.0, 0.09, 0, 0.22, 0.03, 0.18, C.light],
-  [-0.12, 0.06, 0, 0.05, 0.06, 0.08, C.shellStripe],
-  ...Array.from({ length: 5 }, (_, i): Box => [0.02, 0.107, -0.08 + i * 0.04, 0.2, 0.006, 0.012, C.shellStripe]),
-  [0.13, 0.04, 0, 0.012, 0.03, 0.18, C.dark],
-  [-0.15, 0.03, 0, 0.04, 0.03, 0.04, C.dark],
-  [0.05, 0.02, 0.105, 0.14, 0.02, 0.01, C.dark],
-  [0.05, 0.02, -0.105, 0.14, 0.02, 0.01, C.dark],
-];
-export const URCHIN_BOXES: readonly Box[] = [
-  [0, 0.07, 0, 0.26, 0.12, 0.26, C.urchin],
-  [0, 0.14, 0, 0.18, 0.04, 0.18, C.urchin],
-  ...Array.from({ length: 10 }, (_, i): Box => {
-    const a = (i / 10) * Math.PI * 2;
-    return [Math.cos(a) * 0.16, 0.08 + (i % 2) * 0.05, Math.sin(a) * 0.16, 0.08, 0.02, 0.02, C.urchinSpine];
-  }),
-  [0, 0.18, 0, 0.04, 0.04, 0.04, C.urchinSpine],
-];
-/** Sea lily: a jointed stalk and a crown of arms; the crown sways as one part. */
-export const CRINOID_STALK: readonly Box[] = [
-  [0, 0.02, 0, 0.12, 0.04, 0.12, C.crinoid],
-  ...Array.from({ length: 10 }, (_, i): Box => [0, 0.06 + i * 0.07, 0, 0.035, 0.065, 0.035, i % 2 ? C.crinoid : C.crinoidLight]),
-];
-export const CRINOID_TOP: readonly [number, number, number] = [0, 0.76, 0];
-export const CRINOID_CROWN: readonly Box[] = [
-  [0, 0.03, 0, 0.08, 0.06, 0.08, C.crinoid],
-  ...Array.from({ length: 10 }, (_, i): Box => {
-    const a = (i / 10) * Math.PI * 2;
-    return [Math.cos(a) * 0.09, 0.1 + (i % 2) * 0.03, Math.sin(a) * 0.09, 0.03, 0.16, 0.03, i % 2 ? C.crinoidLight : C.crinoid];
-  }),
-];
-/** Chiton: eight articulated valves on an oval girdle. */
-export const CHITON_BOXES: readonly Box[] = [
-  [0, 0.02, 0, 0.5, 0.04, 0.24, C.chiton],
-  ...Array.from({ length: 8 }, (_, i): Box => [-0.21 + i * 0.06, 0.06, 0, 0.055, 0.05 - (i === 0 || i === 7 ? 0.015 : 0), 0.18, i % 2 ? C.chitonLight : C.chiton]),
-  [0.24, 0.03, 0.04, 0.02, 0.015, 0.015, C.ink],
-  [0.24, 0.03, -0.04, 0.02, 0.015, 0.015, C.ink],
-  [0, 0.045, 0, 0.44, 0.006, 0.02, C.dark],
-];
-/** Giant inoceramid bivalve of the Cretaceous sea floor. */
-export const INOCERAMUS_BOXES: readonly Box[] = [
-  [0, 0.05, 0, 0.9, 0.1, 0.7, C.inoceramus],
-  [0, 0.12, 0, 0.8, 0.04, 0.6, C.light],
-  ...Array.from({ length: 6 }, (_, i): Box => [0.05, 0.145, -0.25 + i * 0.1, 0.7 - Math.abs(i - 2.5) * 0.08, 0.012, 0.02, C.shellStripe]),
-  [-0.46, 0.08, 0, 0.06, 0.08, 0.3, C.dark],
-  [0.45, 0.04, 0, 0.02, 0.06, 0.5, C.dark],
-  [0.2, 0.02, 0.36, 0.3, 0.03, 0.02, C.dark],
-  [0.2, 0.02, -0.36, 0.3, 0.03, 0.02, C.dark],
-];
-
-/** Rock slab with two small sea stars and a printed scale, as in the Bill Hill photograph. */
-export const STAR_SLAB_BOXES: readonly Box[] = [
-  [0, 0.06, 0, 1.4, 0.12, 0.9, C.seaFloorDark],
-  [0.02, 0.125, 0, 1.3, 0.02, 0.82, C.sand],
-  // Printed scale bar: alternating centimeter blocks
-  ...Array.from({ length: 6 }, (_, i): Box => [-0.55 + i * 0.1, 0.14, 0.34, 0.1, 0.012, 0.06, i % 2 ? C.ink : C.canvas]),
-  // Fragments of the associated fauna
-  [0.42, 0.15, -0.25, 0.14, 0.03, 0.1, C.brachiopod], [0.5, 0.15, 0.12, 0.08, 0.03, 0.08, C.bryozoan],
-  [-0.4, 0.15, -0.28, 0.12, 0.03, 0.07, C.shellStripe], [-0.52, 0.15, 0.05, 0.1, 0.035, 0.1, C.urchin],
-];
-
 export const FOSSIL_MODELS: Readonly<Record<string, readonly Box[]>> = {
   'fossil-jaw': JAW_BOXES, 'antarctopelta-bones': DINO_BONES,
   'plesiosaur-skeleton': PLESIO_SKELETON,
   'field-tent': TENT_BOXES, 'field-crate': CRATE_BOXES, 'field-sled': SLED_BOXES, 'field-mast': MAST_BOXES,
-  'inoceramid-bivalve': INOCERAMUS_BOXES,
-  'eocene-bryozoan': BRYOZOAN_BOXES, 'eocene-brachiopod': BRACHIOPOD_BOXES,
-  'eocene-urchin': URCHIN_BOXES, 'eocene-crinoid': [...CRINOID_STALK, ...partAtRest({ pivot: CRINOID_TOP, boxes: CRINOID_CROWN })],
-  'eocene-chiton': CHITON_BOXES, 'star-slab': STAR_SLAB_BOXES,
 };

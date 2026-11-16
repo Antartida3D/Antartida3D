@@ -20,11 +20,8 @@ import {
   fieldHeight, forestHeight, scatter, seaFloorHeight,
 } from './fossilTerrain.ts';
 import {
-  BRACHIOPOD_BOXES, BRYOZOAN_BOXES,
-  CHITON_BOXES, CRATE_BOXES, CRINOID_CROWN, CRINOID_STALK, CRINOID_TOP,
-  DINO_BONES, FOSSIL_PALETTE as C,
-  INOCERAMUS_BOXES, JAW_BOXES, JAW_TOOTH_CENTER,
-  MAST_BOXES, PLESIO_BONES, PLESIO_VERTEBRAE, SLED_BOXES, STAR_SLAB_BOXES, TENT_BOXES, URCHIN_BOXES,
+  CRATE_BOXES, DINO_BONES, FOSSIL_PALETTE as C, JAW_BOXES, JAW_TOOTH_CENTER,
+  MAST_BOXES, PLESIO_BONES, PLESIO_VERTEBRAE, SLED_BOXES, TENT_BOXES,
   plesioVertebra, type Parka,
 } from './models.ts';
 import {
@@ -33,7 +30,10 @@ import {
   PLESIO_FLIPPERS, PLESIO_NECK, PLESIO_NECK_LENGTH, PLESIO_NECK_SEGMENTS, STAR_TRIS, ammoniteArm, dinosaurParts,
   plesiosaurParts,
 } from './lowPolyFossils.ts';
-import { BROADLEAF_TRIS, CONIFER_TRIS, CYCAD_TRIS, FERN_TRIS, LOG_TRIS } from './lowPolyScenery.ts';
+import {
+  BRACHIOPOD_TRIS, BROADLEAF_TRIS, BRYOZOAN_TRIS, CHITON_TRIS, CONIFER_TRIS, CRINOID_CROWN_TRIS, CRINOID_STALK_TRIS, CRINOID_TOP,
+  CYCAD_TRIS, FERN_TRIS, INOCERAMUS_TRIS, LOG_TRIS, STAR_SLAB_TRIS, URCHIN_TRIS,
+} from './lowPolyScenery.ts';
 
 type Vec3 = readonly [number, number, number];
 type World = 'field' | 'forest' | 'cretaceous-sea' | 'eocene-sea';
@@ -383,8 +383,8 @@ function Crinoid({ position, scale, seed, reduced }: { position: Vec3; scale: nu
   });
   return (
     <group position={[...position]} scale={scale}>
-      <Prop id="crinoid-stalk" boxes={CRINOID_STALK} position={[0, 0, 0]} />
-      <group ref={crown} position={[...CRINOID_TOP]}><Prop id="crinoid-crown" boxes={CRINOID_CROWN} position={[0, 0, 0]} /></group>
+      <PolyProp id="crinoid-stalk" tris={CRINOID_STALK_TRIS} position={[0, 0, 0]} />
+      <group ref={crown} position={[...CRINOID_TOP]}><PolyProp id="crinoid-crown" tris={CRINOID_CROWN_TRIS} position={[0, 0, 0]} /></group>
     </group>
   );
 }
@@ -639,7 +639,7 @@ function FieldWorld({ view, state, reduced }: { view: FossilView; state: FossilS
 
       {/* Slab of the Eocene sea stars, with its printed scale */}
       <group position={at(sx, sz)} scale={1.4}>
-        <Prop id="star-slab" boxes={STAR_SLAB_BOXES} position={[0, 0, 0]} />
+        <PolyProp id="star-slab" tris={STAR_SLAB_TRIS} position={[0, 0, 0]} />
         <PolyProp id="star" tris={STAR_TRIS} position={[0.08, 0.135, -0.08]} scale={0.34} rotation={[0, 0.3, 0]} />
         <PolyProp id="star" tris={STAR_TRIS} position={[-0.22, 0.135, 0.12]} scale={0.3} rotation={[0, 1.1, 0]} />
         <group position={[0.08, 0.2, -0.08]}><StarRuler active={state.measured && view === 'star-slab'} reduced={reduced} length={0.16} /></group>
@@ -683,9 +683,9 @@ function SeaWorld({ eocene, view, reduced }: { eocene: boolean; view: FossilView
           const pos: Vec3 = [x, floorY(x, z), z];
           switch (i % 6) {
             case 0: return <CrawlingStar key={i} position={pos} scale={0.55 * s} seed={seed} reduced={reduced} />;
-            case 1: return <Prop key={i} id="bryozoan" boxes={BRYOZOAN_BOXES} position={pos} scale={1.4 * s} rotation={[0, seed, 0]} />;
-            case 2: return <Prop key={i} id="brachiopod" boxes={BRACHIOPOD_BOXES} position={pos} scale={1.2 * s} rotation={[0, seed, 0]} />;
-            case 3: return <Prop key={i} id="urchin" boxes={URCHIN_BOXES} position={pos} scale={1.1 * s} rotation={[0, seed, 0]} />;
+            case 1: return <PolyProp key={i} id="bryozoan" tris={BRYOZOAN_TRIS} position={pos} scale={1.4 * s} rotation={[0, seed, 0]} />;
+            case 2: return <PolyProp key={i} id="brachiopod" tris={BRACHIOPOD_TRIS} position={pos} scale={1.2 * s} rotation={[0, seed, 0]} />;
+            case 3: return <PolyProp key={i} id="urchin" tris={URCHIN_TRIS} position={pos} scale={1.1 * s} rotation={[0, seed, 0]} />;
             case 4: return <Crinoid key={i} position={pos} scale={1.6 * s} seed={seed} reduced={reduced} />;
             default: return <CrawlingStar key={i} position={pos} scale={0.45 * s} seed={seed + 1} reduced={reduced} />;
           }
@@ -694,18 +694,18 @@ function SeaWorld({ eocene, view, reduced }: { eocene: boolean; view: FossilView
         {[-3, -1.2, 0.8, 2.6, 4.2].map((x, i) => {
           const z = -4.6 - (i % 2) * 0.6;
           return <group key={x}>
-            <Prop id="bryozoan" boxes={BRYOZOAN_BOXES} position={[x, floorY(x, z), z]} scale={1.8} rotation={[0, i, 0]} />
-            <Prop id="brachiopod" boxes={BRACHIOPOD_BOXES} position={[x + 0.6, floorY(x + 0.6, z + 0.4), z + 0.4]} scale={1.3} rotation={[0, i * 2, 0]} />
+            <PolyProp id="bryozoan" tris={BRYOZOAN_TRIS} position={[x, floorY(x, z), z]} scale={1.8} rotation={[0, i, 0]} />
+            <PolyProp id="brachiopod" tris={BRACHIOPOD_TRIS} position={[x + 0.6, floorY(x + 0.6, z + 0.4), z + 0.4]} scale={1.3} rotation={[0, i * 2, 0]} />
           </group>;
         })}
-        <Prop id="chiton" boxes={CHITON_BOXES} position={[0.6, floorY(0.6, 0.6), 0.6]} scale={0.9} rotation={[0, 0.4, 0]} />
+        <PolyProp id="chiton" tris={CHITON_TRIS} position={[0.6, floorY(0.6, 0.6), 0.6]} scale={0.9} rotation={[0, 0.4, 0]} />
         <CrawlingStar position={[-0.6, floorY(-0.6, 0.2), 0.2]} scale={0.9} seed={0.4} reduced={reduced} />
         <CrawlingStar position={[1.3, floorY(1.3, -0.6), -0.6]} scale={0.75} seed={2.2} reduced={reduced} />
       </> : <>
         {dwellers.map(([x, z, s, seed], i) => {
           const pos: Vec3 = [x, floorY(x, z), z];
-          if (i % 3 === 0) return <Prop key={i} id="inoceramus" boxes={INOCERAMUS_BOXES} position={pos} scale={1.4 * s} rotation={[0, seed, 0]} />;
-          if (i % 3 === 1) return <Prop key={i} id="urchin" boxes={URCHIN_BOXES} position={pos} scale={1.0 * s} rotation={[0, seed, 0]} />;
+          if (i % 3 === 0) return <PolyProp key={i} id="inoceramus" tris={INOCERAMUS_TRIS} position={pos} scale={1.4 * s} rotation={[0, seed, 0]} />;
+          if (i % 3 === 1) return <PolyProp key={i} id="urchin" tris={URCHIN_TRIS} position={pos} scale={1.0 * s} rotation={[0, seed, 0]} />;
           return <Crinoid key={i} position={pos} scale={1.8 * s} seed={seed} reduced={reduced} />;
         })}
         <LivingAmmonite position={focusPlesio ? [-3.5, 2.2, -2] : [0, 1.1, 0]} scale={focusPlesio ? 1.4 : 2.4} seed={0} reduced={reduced} />

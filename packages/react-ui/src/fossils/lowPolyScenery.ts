@@ -1,5 +1,5 @@
-import { chunk, type Tri, type Vec3 } from '../voyage/lowPoly.ts';
-import { body, column } from './lowPolyFossils.ts';
+import { block, chamferRect, chunk, prism, strut, type Tri, type Vec3 } from '../voyage/lowPoly.ts';
+import { body, column, spike } from './lowPolyFossils.ts';
 import { FOSSIL_PALETTE as C } from './models.ts';
 
 /**
@@ -83,8 +83,92 @@ export const LOG_TRIS: readonly Tri[] = body(
   [C.light, C.light], 8,
 );
 
+// --- Sea floors: Cretaceous and Eocene ------------------------------------------------------
+
+/** Bryozoan colony: a reddish base and stiff branching twigs, pale with red tips. */
+export const BRYOZOAN_TRIS: readonly Tri[] = [
+  ...chunk(0, 0.04, 0, 0.16, 0.08, 0.16, 501, C.bryozoanRed),
+  ...Array.from({ length: 9 }, (_, i) => {
+    const a = i * 2.1;
+    const h = 0.2 + (i % 4) * 0.07;
+    const mid: Vec3 = [Math.cos(a) * 0.05, h * 0.55, Math.sin(a) * 0.05];
+    const tip: Vec3 = [Math.cos(a) * (0.06 + h * 0.3), h, Math.sin(a) * (0.06 + h * 0.3)];
+    return [...strut([0, 0.05, 0], mid, 0.016, C.bryozoan), ...strut(mid, tip, 0.013, i % 3 ? C.bryozoan : C.bryozoanRed)];
+  }).flat(),
+];
+
+/** Brachiopod: a lens of two valves with radial ribs, the hinge and its stalk opening at the back. */
+export const BRACHIOPOD_TRIS: readonly Tri[] = [
+  ...body([[-0.13, 0.04, 0.01, 0.03], [-0.08, 0.06, 0.05, 0.09], [0.02, 0.06, 0.06, 0.11], [0.1, 0.05, 0.045, 0.09], [0.13, 0.04, 0.01, 0.03]],
+    (_, seg) => (seg % 2 ? C.brachiopod : seg < 5 ? C.light : C.shellStripe), [C.dark, C.brachiopod], 10),
+  ...block(-0.15, 0.03, 0, 0.04, 0.03, 0.04, C.dark),
+];
+
+/** Sea urchin: a low dome with its spines all round and one on top. */
+export const URCHIN_TRIS: readonly Tri[] = [
+  ...column(0, 0, [[0, 0.11, 0.11], [0.06, 0.13, 0.13], [0.13, 0.1, 0.1], [0.17, 0.05, 0.05]], 10, (band, seg) => (band === 1 && seg % 2 ? C.urchinSpine : C.urchin)),
+  ...Array.from({ length: 10 }, (_, i) => {
+    const a = (i / 10) * Math.PI * 2;
+    const y = 0.07 + (i % 2) * 0.05;
+    return spike([Math.cos(a) * 0.12, y, Math.sin(a) * 0.12], [Math.cos(a) * 0.09, 0.03, Math.sin(a) * 0.09], 0.01, C.urchinSpine);
+  }).flat(),
+  ...spike([0, 0.16, 0], [0, 0.06, 0], 0.012, C.urchinSpine),
+];
+
+/** Sea lily: a jointed stalk; the crown of arms sways from CRINOID_TOP as one part. */
+export const CRINOID_STALK_TRIS: readonly Tri[] = [
+  ...column(0, 0, [[0, 0.07, 0.07], [0.04, 0.04, 0.04]], 7, C.crinoid),
+  ...column(0, 0, Array.from({ length: 11 }, (_, i): [number, number, number] => [0.03 + i * 0.07, i % 2 ? 0.02 : 0.024, i % 2 ? 0.02 : 0.024]), 6, (band) => (band % 2 ? C.crinoid : C.crinoidLight)),
+];
+export const CRINOID_TOP: Vec3 = [0, 0.76, 0];
+export const CRINOID_CROWN_TRIS: readonly Tri[] = [
+  ...column(0, 0, [[0, 0.03, 0.03], [0.05, 0.06, 0.06], [0.07, 0.05, 0.05]], 7, C.crinoid),
+  ...Array.from({ length: 10 }, (_, i) => {
+    const a = (i / 10) * Math.PI * 2;
+    const out = 0.08 + (i % 2) * 0.03;
+    const mid: Vec3 = [Math.cos(a) * out, 0.14, Math.sin(a) * out];
+    const tip: Vec3 = [Math.cos(a) * (out + 0.06), 0.22 + (i % 2) * 0.03, Math.sin(a) * (out + 0.06)];
+    return [...strut([Math.cos(a) * 0.04, 0.06, Math.sin(a) * 0.04], mid, 0.012, i % 2 ? C.crinoidLight : C.crinoid), ...strut(mid, tip, 0.009, C.crinoidLight)];
+  }).flat(),
+];
+
+/** Chiton: eight overlapping valves on an oval girdle, two dark eyes in front. */
+export const CHITON_TRIS: readonly Tri[] = [
+  ...column(0, 0, [[0, 0.25, 0.12], [0.035, 0.24, 0.115], [0.04, 0.2, 0.09]], 12, C.chiton),
+  ...Array.from({ length: 8 }, (_, i) => {
+    const x = -0.21 + i * 0.06;
+    const end = i === 0 || i === 7;
+    return body([[x - 0.034, 0.04, 0.005, 0.07], [x, 0.04, end ? 0.025 : 0.035, end ? 0.07 : 0.085], [x + 0.034, 0.04, 0.005, 0.07]],
+      () => (i % 2 ? C.chitonLight : C.chiton), [C.chiton, C.chiton], 8);
+  }).flat(),
+  ...block(0.245, 0.03, 0.035, 0.02, 0.015, 0.015, C.ink),
+  ...block(0.245, 0.03, -0.035, 0.02, 0.015, 0.015, C.ink),
+];
+
+/** Giant inoceramid bivalve of the Cretaceous sea floor: a broad low shell with growth rings. */
+export const INOCERAMUS_TRIS: readonly Tri[] = [
+  ...column(0, 0, [[0, 0.45, 0.35], [0.06, 0.44, 0.34], [0.1, 0.38, 0.29], [0.13, 0.3, 0.23], [0.15, 0.2, 0.15], [0.16, 0.08, 0.06]], 14,
+    (band) => (band % 2 ? C.light : band === 0 ? C.inoceramus : C.shellStripe)),
+  ...block(-0.44, 0.06, 0, 0.06, 0.08, 0.3, C.dark),
+];
+
+/** Rock slab with two small sea stars and a printed scale, as in the Bill Hill photograph (stars apart). */
+export const STAR_SLAB_TRIS: readonly Tri[] = [
+  ...prism(chamferRect(0, 0, 1.4, 0.9, 0.08), 0, 0.12, C.seaFloorDark, C.seaFloorDark, true),
+  ...prism(chamferRect(0.02, 0, 1.3, 0.82, 0.06), 0.12, 0.13, C.sand, C.sand),
+  // Printed scale bar: alternating centimeter blocks
+  ...Array.from({ length: 6 }, (_, i) => block(-0.55 + i * 0.1, 0.136, 0.34, 0.1, 0.012, 0.06, i % 2 ? C.ink : C.canvas)).flat(),
+  // Fragments of the associated fauna
+  ...chunk(0.42, 0.15, -0.25, 0.14, 0.04, 0.1, 511, C.brachiopod), ...chunk(0.5, 0.15, 0.12, 0.08, 0.04, 0.08, 512, C.bryozoan),
+  ...chunk(-0.4, 0.15, -0.28, 0.12, 0.04, 0.07, 513, C.shellStripe), ...chunk(-0.52, 0.15, 0.05, 0.1, 0.05, 0.1, 514, C.urchin),
+];
+
 /** Every model of this file, for the test of least detail. */
 export const FOSSIL_SCENERY_MODELS: Readonly<Record<string, readonly Tri[]>> = {
   'cretaceous-conifer': CONIFER_TRIS, 'cretaceous-cycad': CYCAD_TRIS, 'cretaceous-fern': FERN_TRIS,
   'cretaceous-broadleaf': BROADLEAF_TRIS, 'fossil-log': LOG_TRIS,
+  'eocene-bryozoan': BRYOZOAN_TRIS, 'eocene-brachiopod': BRACHIOPOD_TRIS, 'eocene-urchin': URCHIN_TRIS,
+  'eocene-crinoid': [...CRINOID_STALK_TRIS, ...CRINOID_CROWN_TRIS.map(([a, b, c, col]): Tri => [
+    [a[0], a[1] + CRINOID_TOP[1], a[2]], [b[0], b[1] + CRINOID_TOP[1], b[2]], [c[0], c[1] + CRINOID_TOP[1], c[2]], col])],
+  'eocene-chiton': CHITON_TRIS, 'inoceramid-bivalve': INOCERAMUS_TRIS, 'star-slab': STAR_SLAB_TRIS,
 };

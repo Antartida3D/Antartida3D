@@ -210,6 +210,8 @@ test('on a trip the title and the exploration log give way, «Salir» is at the 
   expect(back!.x).toBeCloseTo(whole!.x, 0);
   expect(hold!.x).toBeGreaterThan(back!.x + back!.width);
   expect(hold!.x + hold!.width).toBeCloseTo(whole!.x + whole!.width, 0);
+  // With the room it has, it says what to do with it, on a phone too.
+  await expect(page.getByRole('button', { name: 'Mantené para avanzar' })).toHaveText('Mantené para avanzar');
 
   // Leaving brings the title and the log back.
   await leave.click();

@@ -598,8 +598,7 @@ function TravelBar({ voyage, animated, onExit, onSource }: { voyage: VoyageContr
             aria-label="Mantené para avanzar"
             title="Mantené apretado: va tomando velocidad"
           >
-            <span className="vwide">Mantené para avanzar</span>
-            <span className="vnarrow">Avanzar ▶</span>
+            Mantené para avanzar
             <span className="vgear" ref={gear} aria-hidden="true" hidden />
           </button>
         )}

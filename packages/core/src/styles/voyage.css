@@ -67,7 +67,6 @@
 .stage.voyaging .top{right:auto;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;background:none}
 /* «Salir» of the trip, in the corner the exploration log leaves free. */
 .vleave{position:absolute;top:14px;right:16px;z-index:5}
-.vwide{display:none}
 .vhold{position:relative;touch-action:none;user-select:none;-webkit-user-select:none}
 /* Speed badge on the corner, while "advance" is held: it must not change the button size, or the row reflows under the pointer. */
 .vgear{position:absolute;top:-12px;right:-8px;padding:2px 8px;border-radius:12px;border:2px solid var(--ink);background:var(--ocre);color:var(--ink);font-size:13px;line-height:1.2;pointer-events:none}
@@ -113,8 +112,6 @@
 /* Wide screens: every panel of the trip sits on the same corner, beside the zoom buttons, so the pointer does not cross the map. */
 @media (min-width:821px){
   .vbar,.sheet.voyage{left:auto;right:88px;bottom:24px;width:480px}
-  .vwide{display:inline}
-  .vnarrow{display:none}
   .vbar{padding:12px 20px 24px}
 }
 /* Phones: the zoom buttons give way to the trip panel; pinching still zooms. */

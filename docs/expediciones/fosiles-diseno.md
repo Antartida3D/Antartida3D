@@ -36,7 +36,7 @@ Las interacciones se animan: el sedimento sale volando en cada pasada, una luz r
 
 El terreno (`fossilTerrain.ts`) es una columna de bloques por celda; donde un vecino es más bajo, el costado se parte en estratos para que los acantilados muestren sus capas. Es un paisaje ilustrativo, no un relevamiento de ningún sitio.
 
-Se reutilizan el BottomSheet persistente con peek, los tokens, la tipografía, el registro y la transición del mapa. En escritorio el panel es lateral; en celular se arrastra. Los rótulos de lugar y de reconstrucción llevan fondo de papel, como las etiquetas de Orcadas, para leerse sobre la grava oscura.
+La interfaz es la misma de Orcadas y Marambio (#209): cabecera flotante con «Mapa», la pregunta y «Fuentes»; capítulos numerados; panel flotante en escritorio y BottomSheet con peek en el celular; pie con «Atrás» y «Siguiente», y el rótulo «Reconstrucción ilustrativa» con `KindChip`. En escritorio la escena ocupa toda la pantalla y la vista se corre a la parte libre a la izquierda del panel (`sceneFrame.tsx`); en el celular queda entre la cabecera y la hoja. El rótulo de lugar lleva fondo de papel para leerse sobre la grava oscura.
 
 Los fósiles se muestran como modelos de bloques y no como reproducciones anatómicas exactas. El dinosaurio no incorpora un arma caudal específica; el plesiosaurio es una interpretación genérica de cuello largo. Su aspecto deberá revisarse con material científico actualizado y con Eduardo.
 

@@ -1,41 +1,46 @@
-.marine-expedition {
-  position: absolute; inset: 0; height: 100dvh; overflow: hidden;
-  background: var(--paper); color: var(--ink); display: flex; flex-direction: column;
-  font-family: 'Atkinson Hyperlegible', sans-serif; --marine-panel-h: 350px;
+/* Océano (#8) uses the shared expedition layout of Orcadas and Marambio (.orc, #209): top bar,
+   numbered chapters (sized in fossils.css), chapter panel and its bar. Only what is its own goes here. */
+.marine-expedition { font-family: 'Atkinson Hyperlegible', sans-serif; }
+/* The scene fills the screen behind a side panel (sceneFrame.tsx moves the view into the free part);
+   on a portrait phone it sits between the top bar and the bottom sheet. */
+.marine-stage { position: absolute; inset: 0; z-index: 0; background: color-mix(in srgb, var(--paper) 80%, var(--glacier)); overflow: hidden; }
+.marine-stage canvas { touch-action: none; }
+.marine-location { position: absolute; z-index: 4; top: calc(var(--scene-top, 0px) + 14px); left: 24px; display: flex; align-items: flex-start; gap: 10px; pointer-events: none; font-size: 12px; padding: 8px 12px; background: color-mix(in srgb, var(--paper) 92%, transparent); border: 1.5px solid var(--ink); border-radius: var(--chart-radius); }
+.marine-location small { display: block; font-size: 10px; color: var(--pencil); margin-top: 4px; }
+.marine-location-dot { width: 7px; height: 7px; border: 2px solid var(--oxide); border-radius: 50%; margin-top: 2px; }
+.marine-reset { position: absolute; z-index: 4; top: calc(var(--scene-top, 0px) + 14px); right: calc(var(--scene-side, 0px) + 16px); width: 44px; height: 44px; border: 1.5px solid var(--chart-ink); border-radius: 50%; background: var(--chart-paper); color: var(--chart-ink); padding: 10px; }
+.marine-reset svg { width: 100%; height: 100%; }
+.marine-scene-note { gap: 4px; }
+.marine-scene-note small { padding: 2px 6px; font-size: 11px; color: var(--chart-ink); background: color-mix(in srgb, var(--chart-paper) 88%, transparent); border-radius: 4px; }
+.marine-found { position: absolute; z-index: 4; bottom: calc(var(--scene-sheet, 0px) + 80px); left: calc((100% - var(--scene-side, 0px)) / 2); transform: translateX(-50%) rotate(-2deg); padding: 10px 16px; font: 22px 'Caveat', cursive; background: var(--paper); white-space: nowrap; box-shadow: 1px 2px 0 color-mix(in srgb, var(--ink) 20%, transparent); pointer-events: none; }
+.marine-found small { display: block; font: 10px 'Atkinson Hyperlegible', sans-serif; margin-top: 4px; }
+.marine-panel .orc-bar .btn { border-radius: var(--chart-button-radius); }
+.marine-eyebrow { font-size: 12px; color: var(--pencil); margin: 0 0 8px; line-height: 1.5; }
+.marine-line { font-size: 16px; line-height: 1.55; margin: 0 0 20px; }
+@media (max-width: 899px) and (min-height: 501px) {
+  .marine-stage { top: var(--scene-top, 0px); bottom: var(--scene-sheet, 45dvh); }
+  .marine-location { top: calc(var(--scene-top, 0px) + 10px); left: 12px; font-size: 10px; padding: 6px 9px; }
+  .marine-location small { font-size: 9px; }
+  .marine-reset { top: calc(var(--scene-top, 0px) + 10px); right: 12px; }
+  .marine-scene-note small { display: none; }
+  .marine-found { bottom: calc(var(--scene-sheet, 0px) + 50px); font-size: 18px; max-width: calc(100% - 50px); white-space: normal; text-align: center; }
+  .marine-fallback figcaption { bottom: 40px; font-size: 10px; }
+  .marine-line { font-size: 15px; line-height: 1.5; margin-bottom: 16px; }
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  .marine-location { top: calc(var(--scene-top, 0px) + 8px); left: 8px; }
+  .marine-reset { top: calc(var(--scene-top, 0px) + 8px); }
+  .marine-scene-note small { display: none; }
+  .marine-line { font-size: 14px; }
 }
 .marine-expedition button, .marine-dialog button { cursor: pointer; }
 .marine-expedition button:focus-visible, .marine-dialog button:focus-visible, .marine-expedition summary:focus-visible, .marine-expedition a:focus-visible { outline: 3px solid var(--deep); outline-offset: 4px; }
-.marine-header { display: flex; align-items: center; justify-content: space-between; min-height: 76px; padding: 0 30px; border-bottom: 1px solid color-mix(in srgb, var(--ink) 20%, transparent); gap: 20px; }
-.marine-map, .marine-sources-button { display: inline-flex; align-items: center; gap: 6px; padding: 10px 0; border: 0; background: transparent; color: var(--ink); font: inherit; font-size: 14px; }
-.marine-map svg { width: 20px; height: 20px; }
-.marine-brand { display: flex; align-items: baseline; gap: 18px; }
-.marine-brand b { font: 500 28px 'Fraunces', serif; }
-.marine-brand > span { font-size: 13px; color: var(--pencil); }
-.marine-sources-button { text-decoration: underline; text-underline-offset: 4px; }
-.marine-chapters { display: flex; justify-content: center; gap: 40px; flex-shrink: 0; border-bottom: 1px solid color-mix(in srgb, var(--ink) 20%, transparent); }
-.marine-chapters button { display: flex; align-items: center; gap: 10px; min-height: 57px; border: 0; border-bottom: 3px solid transparent; padding: 0 4px; color: var(--pencil); background: transparent; font: inherit; font-size: 14px; }
-.marine-chapters button > span { font-size: 11px; opacity: .75; }
-.marine-chapters button[aria-current] { color: var(--ink); border-bottom-color: var(--oxide); }
-.marine-workspace { position: relative; flex: 1; min-height: 0; }
-.marine-stage { position: absolute; inset: 0 405px 0 0; background: color-mix(in srgb, var(--paper) 80%, var(--glacier)); overflow: hidden; }
-.marine-stage canvas { touch-action: none; }
-.marine-panel { position: absolute; inset: 0 0 0 auto; width: 405px; display: flex; flex-direction: column; border-left: 1px solid color-mix(in srgb, var(--ink) 20%, transparent); border-radius: var(--chart-radius) 0 0 var(--chart-radius); background: var(--paper); box-sizing: border-box; }
-.marine-panel-content { flex: 1; overflow-y: auto; min-height: 0; padding: 27px 30px 20px; scrollbar-width: thin; }
-.marine-section-line { display: flex; justify-content: space-between; gap: 12px; padding-bottom: 16px; margin-bottom: 28px; border-bottom: 1px solid color-mix(in srgb, var(--ink) 18%, transparent); font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: var(--pencil); }
-.marine-eyebrow { font-size: 12px; color: var(--pencil); margin: 0 0 10px; line-height: 1.5; }
-.marine-panel h2 { font: 500 38px/1.12 'Fraunces', serif; letter-spacing: -.035em; margin: 0 0 20px; outline: none; }
-.marine-line { font-size: 17px; line-height: 1.6; margin: 0 0 23px; }
 .marine-source-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 5px 10px; font-size: 11px; color: var(--pencil); line-height: 1.6; }
 .marine-source-line > span:first-child { text-transform: uppercase; font-size: 10px; letter-spacing: .08em; }
 .marine-source-line a, .marine-dialog a { color: var(--deep); text-underline-offset: 3px; }
 .marine-more { margin-top: 17px; border-bottom: 1px solid color-mix(in srgb, var(--ink) 18%, transparent); padding-bottom: 18px; }
 .marine-more summary { cursor: pointer; font-size: 14px; }
 .marine-more p { font-size: 14px; line-height: 1.6; margin: 14px 0 0; }
-.marine-panel-footer { padding: 18px 24px 24px; display: flex; flex-shrink: 0; gap: 10px; border-top: 1px solid color-mix(in srgb, var(--ink) 15%, transparent); background: var(--paper); }
-.marine-panel-footer .btn { min-height: 48px; border-radius: var(--chart-button-radius); }
-.marine-prev { width: 48px; flex-shrink: 0; display: grid; place-items: center; }
-.marine-prev svg { width: 18px; height: 18px; }
-.marine-next { flex: 1; display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 14px; }
 .marine-expedition button:disabled { cursor: default; opacity: .48; }
 .marine-interaction { border-left: 2px solid var(--ocre); padding: 3px 0 3px 15px; margin: 0 0 22px; }
 .marine-interaction .marine-action { display: block; border-radius: var(--chart-button-radius); font-size: 13px; margin: 8px 0; padding: 10px 13px; }
@@ -44,16 +49,6 @@
 .marine-checklist { list-style: none; padding: 0; margin: 0 0 24px; display: flex; flex-direction: column; gap: 13px; font-size: 13px; line-height: 1.4; }
 .marine-checklist li { display: flex; gap: 10px; }
 .marine-checklist li span { color: var(--deep); }
-.marine-location { position: absolute; top: 20px; left: 22px; display: flex; align-items: flex-start; gap: 10px; pointer-events: none; font-size: 12px; padding: 8px 12px; background: color-mix(in srgb, var(--paper) 92%, transparent); border: 1.5px solid var(--ink); border-radius: var(--chart-radius); box-shadow: 2px 3px 0 color-mix(in srgb, var(--ink) 18%, transparent); }
-.marine-location small { display: block; font-size: 10px; color: var(--pencil); margin-top: 4px; }
-.marine-location-dot { width: 7px; height: 7px; border: 2px solid var(--oxide); border-radius: 50%; margin-top: 2px; }
-.marine-reset { position: absolute; top: 20px; right: 23px; width: 38px; height: 38px; border: 1px solid color-mix(in srgb, var(--ink) 30%, transparent); border-radius: 50%; background: var(--paper); padding: 8px; }
-.marine-reset svg { width: 100%; height: 100%; }
-.marine-scene-note { position: absolute; bottom: 20px; left: 22px; pointer-events: none; display: flex; flex-direction: column; gap: 4px; padding: 7px 11px; background: color-mix(in srgb, var(--paper) 92%, transparent); border: 1.5px dashed color-mix(in srgb, var(--ink) 70%, transparent); border-radius: var(--chart-radius); }
-.marine-scene-note > span { font-size: 11px; }
-.marine-scene-note small { color: var(--pencil); font-size: 10px; }
-.marine-found { position: absolute; bottom: 75px; left: 50%; transform: translateX(-50%) rotate(-2deg); padding: 10px 16px; font: 22px 'Caveat', cursive; background: var(--paper); white-space: nowrap; box-shadow: 1px 2px 0 color-mix(in srgb, var(--ink) 20%, transparent); pointer-events: none; }
-.marine-found small { display: block; font: 10px 'Atkinson Hyperlegible', sans-serif; margin-top: 4px; }
 .marine-loading { display: grid; place-items: center; height: 100%; font: 24px 'Caveat', cursive; }
 .marine-dialog { width: min(650px, calc(100vw - 32px)); max-height: calc(100dvh - 40px); padding: 25px; border: 1px solid var(--ink); border-radius: var(--chart-radius); background: var(--paper); color: var(--ink); box-sizing: border-box; }
 .marine-dialog::backdrop { background: color-mix(in srgb, var(--ink) 55%, transparent); }
@@ -68,51 +63,6 @@
 .marine-fallback > p { margin: 0; padding: 70px 34px 0; max-width: 560px; font: 26px/1.35 "Caveat", cursive; }
 .marine-fallback figcaption { position: absolute; bottom: 70px; left: 20px; right: 20px; padding: 12px; background: var(--paper); font-size: 11px; line-height: 1.5; border: 1px dashed color-mix(in srgb, var(--ink) 50%, transparent); }
 .marine-fallback figcaption span { display: block; margin-top: 7px; }
-@media (max-width: 899px) and (min-height: 501px) {
-  .marine-header { min-height: 61px; padding: 0 16px; gap: 12px; }
-  .marine-brand b { font-size: 23px; }
-  .marine-brand > span { display: none; }
-  .marine-map, .marine-sources-button { font-size: 12px; }
-  .marine-chapters { gap: 0; justify-content: space-around; }
-  .marine-chapters button { gap: 4px; min-height: 50px; font-size: 10.5px; min-width: 0; flex-direction: column; justify-content: center; padding: 6px 5px; }
-  .marine-chapters button > span { font-size: 9px; }
-  .marine-stage { inset: 0 0 var(--marine-panel-h) 0; }
-  .marine-panel.sheet.grows { inset: auto 0 0; width: 100%; max-width: none; max-height: 45dvh; padding: 0; border: 0; border-top: 1px solid color-mix(in srgb, var(--ink) 25%, transparent); border-radius: var(--chart-radius) var(--chart-radius) 0 0; box-shadow: none; overflow: hidden; }
-  .marine-panel.sheet.grows.full { max-height: 78dvh; }
-  .marine-panel .sheet-handle { flex-shrink: 0; }
-  .marine-panel-content { padding: 0 23px 18px; }
-  .marine-section-line { margin-bottom: 15px; padding-bottom: 10px; font-size: 9px; }
-  .marine-panel h2 { font-size: 29px; margin-bottom: 12px; }
-  .marine-eyebrow { font-size: 10px; margin-bottom: 7px; }
-  .marine-line { font-size: 15px; line-height: 1.5; margin-bottom: 17px; }
-  .marine-panel-footer { padding: 12px 20px max(14px, env(safe-area-inset-bottom)); }
-  .marine-panel-footer .btn { min-height: 44px; }
-  .marine-panel.peek .marine-panel-content { flex: none; padding-bottom: 0; }
-  .marine-panel.peek .marine-panel-content > :not(h2) { display: none; }
-  .marine-panel.peek h2 { font-size: 20px; margin: 0 0 10px; }
-  .marine-panel.peek .marine-panel-footer { border: 0; padding-top: 0; }
-  .marine-location { top: 12px; left: 12px; font-size: 10px; padding: 6px 9px; }
-  .marine-location small { font-size: 9px; }
-  .marine-reset { right: 15px; top: 14px; width: 32px; height: 32px; padding: 6px; }
-  .marine-scene-note { left: 12px; bottom: 12px; padding: 5px 8px; }
-  .marine-scene-note > span { font-size: 9px; }
-  .marine-scene-note small { display: none; }
-  .marine-found { bottom: 40px; font-size: 18px; max-width: calc(100% - 50px); white-space: normal; text-align: center; }
-  .marine-fallback figcaption { bottom: 40px; font-size: 10px; }
-}
-@media (orientation: landscape) and (max-height: 500px) {
-  .marine-header { min-height: 44px; padding: 0 18px; }
-  .marine-brand b { font-size: 23px; }
-  .marine-chapters { gap: 25px; }
-  .marine-chapters button { min-height: 37px; font-size: 12px; }
-  .marine-stage { right: 44%; }
-  .marine-panel { width: 44%; }
-  .marine-panel-content { padding: 14px 20px; }
-  .marine-section-line { margin-bottom: 13px; }
-  .marine-panel h2 { font-size: 27px; }
-  .marine-line { font-size: 14px; }
-  .marine-panel-footer { padding: 10px 15px; }
-}
 @media (prefers-reduced-motion: reduce) { .marine-expedition *, .marine-dialog * { scroll-behavior: auto; transition: none !important; animation: none !important; } }
 /* Océano (#8): pieces of its own. The stage turns from paper to deep water when the scene is under the ice. */
 .marine-stage.is-under { background: color-mix(in srgb, var(--deep) 70%, var(--glacier)); }
@@ -140,4 +90,3 @@
 .marine-diagram text { font-size: 2.6px; text-anchor: middle; fill: var(--ink); }
 .marine-diagram text.is-on { font-weight: 700; fill: var(--oxide); }
 .marine-source-entry h3 > span:first-child { font-size: 11px; color: var(--pencil); margin-right: 4px; }
-.marine-panel h2:focus-visible { outline: none; box-shadow: none; }

@@ -242,6 +242,8 @@ En cumplimiento con las bases de la hackatón, se declara el uso de herramientas
   > Relevamiento, implementación, pruebas y capturas en celular y escritorio con Claude Code (modelo Claude Opus 5.5), con revisión del equipo. No se agregaron datos ni fuentes.
 - **Expedición Fósiles: pulido, línea de tiempo, nota del hallazgo y migración a low-poly (#7):**
   > Planificación, implementación, pruebas y verificación con capturas con Claude Code (modelo Claude Opus 5.5), a partir de los pedidos de quien lleva el issue. La línea de tiempo usa las edades de la Tabla Cronoestratigráfica Internacional v2026/06 (ICS) y ubica cada hallazgo solo en el período que dan sus fuentes. La nota «El desvío de 1986» resume la entrevista de Infobae y cita textualmente a Eduardo Olivero; cada cita se cotejó con la nota. Los modelos low-poly son ilustraciones: formas y colores interpretados.
+- **Fósiles y Océano con la interfaz de las demás expediciones (#209):**
+  > Comparación con Orcadas y Marambio, implementación, pruebas y capturas con Claude Code (modelo Claude Opus 5.5), a pedido de quien lleva el issue. Solo cambia la interfaz; no se agregaron datos ni fuentes.
 - **Base Marambio: archivo fotográfico (#207):**
   > Selección de fotos, transcripción de carteles, textos alternativos, implementación y pruebas con Claude Code (modelo Claude Opus 5.5), a partir del archivo y las confirmaciones de la familia. Los epígrafes describen solo lo que se ve; el lugar de las fotos sin dato queda pendiente.
 - **Expedición Océano (#8):**

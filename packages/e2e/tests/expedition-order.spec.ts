@@ -283,7 +283,7 @@ test('list view shows expeditions ordered 1 to 6 and labels the next suggested o
     await expect(items.nth(i).locator('strong')).toHaveText(expectedTitles[i]);
   }
   await expect(items.nth(0).locator('.go')).toHaveText('Explorado · volver a entrar');
-  await expect(items.nth(1).locator('.go.next')).toHaveText('Siguiente sugerida · empezar');
+  await expect(items.nth(1).locator('.go.next')).toHaveText('Siguiente sugerida');
   await expect(items.nth(2).locator('.go')).toHaveText('Empezar expedición');
 });
 

@@ -19,7 +19,7 @@ import { OBSERVER_HIP_Y, OBSERVER_HIP_Z, OBSERVER_SHOULDER_Y, OBSERVER_SHOULDER_
 import { VOXEL_PALETTE } from '../orcadas/stationModels.ts';
 import { boxShade, buildPolyGeometry, resolveRelief, type Vec3 } from './lowPoly.ts';
 import { buildBeltTris, ponchoPersonParts, ponchoPoseLift, ponchoWaistAt, type PersonPose, type PersonVariant } from './ponchoPeople.ts';
-import { ponchoDogTris } from './ponchoDog.ts';
+import { DOG_LEGS, DOG_LEG_PIVOT, dogLegSwing, ponchoDogParts, type DogLeg } from './ponchoDog.ts';
 import { PONCHO_PALETTE, type DogPalette } from './ponchoModels.ts';
 import { PONCHO_PROPS } from './ponchoProps.ts';
 import { DOG_SCALE, elementStaticTris, pathFootprints, type Ground } from './ponchoSceneBuild.ts';
@@ -55,11 +55,11 @@ const PACK_DARKEN = 0.62;
 /** A dog of the team that lies curled: how much it is squashed, and how far it sinks into its drift. */
 const CURLED_HEIGHT = 0.55;
 const CURLED_SINK = 0.03;
-/** Sway of a dog standing (radians), its trot bob (scene units) and their speeds (radians per second). */
+/** Sway of a dog standing (radians) and its speed (radians per second). A dog that goes does not bob: its legs trot. */
 const DOG_SWAY = 0.04;
-const DOG_BOB = 0.035;
 const DOG_SWAY_RATE = 1.3;
-const DOG_BOB_RATE = 13;
+/** Distance a dog covers in one whole stride of its legs, in scene units. */
+const DOG_STRIDE = 0.45;
 /** The sled leans with the ground over this length (scene units). */
 const SLED_SPAN = 0.55;
 /** Where the line is tied on a dog (its model frame: x ahead, y up): the back, over the hips. */
@@ -80,9 +80,21 @@ const darkened = (p: DogPalette, k: number): DogPalette => ({
   tail: darken(p.tail, k),
 });
 
+/** A dog's body and each of its legs (around its pivot, which the leg mesh sits at). */
+interface DogGeometry {
+  body: BufferGeometry;
+  legs: Record<DogLeg, BufferGeometry>;
+}
+function dogGeometry(p: DogPalette): DogGeometry {
+  const parts = ponchoDogParts(p);
+  const legs = {} as Record<DogLeg, BufferGeometry>;
+  for (const leg of DOG_LEGS) legs[leg] = buildPolyGeometry(parts.legs[leg], boxShade);
+  return { body: buildPolyGeometry(parts.body, boxShade), legs };
+}
+
 /** Geometries shared by every scene, built on first use. */
 interface Shared {
-  dogs: Record<string, BufferGeometry>;
+  dogs: Record<string, DogGeometry>;
   sled: BufferGeometry;
   woodBar: BufferGeometry;
   metalBar: BufferGeometry;
@@ -92,7 +104,7 @@ interface Shared {
 let shared: Shared | null = null;
 function sharedGeometry(): Shared {
   return (shared ??= {
-    dogs: { poncho: buildPolyGeometry(ponchoDogTris(), boxShade), pack: buildPolyGeometry(ponchoDogTris(darkened(PONCHO_PALETTE, PACK_DARKEN)), boxShade) },
+    dogs: { poncho: dogGeometry(PONCHO_PALETTE), pack: dogGeometry(darkened(PONCHO_PALETTE, PACK_DARKEN)) },
     // The ground faces of the prop (colored as the relief) would drag along with a moving sled: left out.
     sled: buildPolyGeometry(PONCHO_PROPS.nansenSled.tris.filter((t) => t[3] >= 0)),
     woodBar: buildBoxGeometry([[0, 0, 0, 1, 1, 1, WOOD_LIGHT]]),
@@ -227,7 +239,9 @@ const stanceOf = (e: SceneElement, spot: Spot, t: number, reduced: boolean): Sta
   // A walker walks while it goes along its path, then stands; with reduced motion it stands.
   if (e.path && e.action === 'walk') {
     const walking = spot.moving && !reduced;
-    return { ...spot, moving: walking, action: walking ? 'walk' : 'stand', phase: walking ? (spot.travel * Math.PI) / SCENE_STRIDE + (e.phaseOffset ?? 0) : 0 };
+    // Once its walk is over it waits, breathing and shifting (never frozen); with reduced motion it stands still.
+    const waiting = reduced ? 0 : scenePersonPhase(t, e.phaseOffset ?? 0);
+    return { ...spot, moving: walking, action: walking ? 'walk' : 'stand', phase: walking ? (spot.travel * Math.PI) / SCENE_STRIDE + (e.phaseOffset ?? 0) : waiting };
   }
   const offset = e.phaseOffset ?? 0;
   return { ...spot, action: e.action ?? 'stand', phase: reduced ? offset : scenePersonPhase(t, offset) };
@@ -283,6 +297,7 @@ export function DioramaActors({ scene, step, ground, reduced }: { scene: SceneDe
   const printsMesh = useRef<Mesh>(null);
   const rigs = useRef<(PersonRig | null)[]>([]);
   const nodes = useRef<(Group | null)[]>([]);
+  const dogLegs = useRef<Record<number, Partial<Record<DogLeg, Group | null>>>>({});
   const ropeMeshes = useRef<(Mesh | null)[]>([]);
   const stills = useRef<(Group | null)[]>([]);
   const stepRef = useRef(step);
@@ -365,14 +380,16 @@ export function DioramaActors({ scene, step, ground, reduced }: { scene: SceneDe
         node.scale.setScalar(k);
         return;
       }
-      // A dog sways a little where it stands, and bobs while it trots with the team.
+      // A dog sways a little where it stands, and its legs trot while it goes with the team.
       const moving = spot.moving && !reduced;
       const sway = reduced || e.curled ? 0 : Math.sin(t * DOG_SWAY_RATE + i) * DOG_SWAY;
-      const bob = !moving ? 0 : Math.abs(Math.sin(t * DOG_BOB_RATE + i)) * DOG_BOB;
-      node.position.set(spot.x, gy + (e.lift ?? 0) + bob - (e.curled ? CURLED_SINK : 0), spot.z);
+      const swing = dogLegSwing((spot.travel * Math.PI * 2) / DOG_STRIDE + i, moving);
+      const legs = dogLegs.current[i];
+      if (legs) for (const leg of DOG_LEGS) legs[leg]?.rotation.set(0, 0, swing[leg]);
+      node.position.set(spot.x, gy + (e.lift ?? 0) - (e.curled ? CURLED_SINK : 0), spot.z);
       node.rotation.set(sway, spot.yaw, 0, 'YZX');
       node.scale.set(DOG_SCALE * k, DOG_SCALE * k * (e.curled ? CURLED_HEIGHT : 1), DOG_SCALE * k);
-      harnesses.set(i, placed(DOG_HARNESS, spot.x, gy + bob, spot.z, spot.yaw, DOG_SCALE * k));
+      harnesses.set(i, placed(DOG_HARNESS, spot.x, gy, spot.z, spot.yaw, DOG_SCALE * k));
     });
 
     // The lines: from the waist to the harness, slack when the two are close and tight when they are far.
@@ -426,12 +443,27 @@ export function DioramaActors({ scene, step, ground, reduced }: { scene: SceneDe
           );
         }
         if (e.kind === 'prop') return stillNode;
-        const geometry = e.kind === 'sled' ? sharedGeometry().sled : sharedGeometry().dogs[e.id];
+        if (e.kind === 'sled') {
+          return (
+            <group key={i}>
+              {stillNode}
+              <group ref={(n) => void (nodes.current[i] = n)}>
+                <mesh geometry={sharedGeometry().sled} material={vehicleMaterial} />
+              </group>
+            </group>
+          );
+        }
+        const dog = sharedGeometry().dogs[e.id];
         return (
           <group key={i}>
             {stillNode}
             <group ref={(n) => void (nodes.current[i] = n)}>
-              <mesh geometry={geometry} material={vehicleMaterial} />
+              <mesh geometry={dog.body} material={vehicleMaterial} />
+              {DOG_LEGS.map((leg) => (
+                <group key={leg} position={DOG_LEG_PIVOT[leg] as [number, number, number]} ref={(n) => void ((dogLegs.current[i] ??= {})[leg] = n)}>
+                  <mesh geometry={dog.legs[leg]} material={vehicleMaterial} />
+                </group>
+              ))}
             </group>
           </group>
         );

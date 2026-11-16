@@ -291,18 +291,22 @@ export const PONCHO_SCENES: Readonly<Record<string, SceneDef>> = {
       prop('icebreakerHull', 0, 3.4, Math.PI, 1, { radius: 0.01 }),
       prop('loadingRamp', -0.8, 1.0, Math.PI, 1, { radius: 0.5 }),
       prop('cargoCrates', 1.3, 1.1, Math.PI, 1, { radius: 0.9 }),
-      person(NAVY, -2.4, -0.4, yawToward(-2.4, -0.4, 0, 3), 'stand', 0, { until: 2 }),
+      person(NAVY, -2.9, 0.5, yawToward(-2.9, 0.5, 0, 3), 'stand', 0, { until: 2 }),
       dog('poncho', -1.5, 0.3, yawToward(-1.5, 0.3, 0, 3), { until: 2 }),
-      dog('pack', -3.4, -1.7, 0, { appearAt: 1, path: 'file' }),
-      dog('pack', -3.4, -1.7, 0, { appearAt: 1, path: 'file', lag: 0.9 }),
-      dog('pack', -3.4, -1.7, 0, { appearAt: 1, path: 'file', lag: 1.8 }),
-      dog('pack', -3.4, -1.7, 0, { appearAt: 1, path: 'file', lag: 2.7 }),
+      // 1: a man leads a file of dogs to the ramp. Each holds its place in the file (a dog's length and a half apart, a little
+      // off the line), so they walk and stop one behind the other and not piled up.
+      person(ORANGE, -3.6, -1.4, 0, 'walk', 0, { appearAt: 1, path: 'file' }),
+      dog('pack', -3.6, -1.4, 0, { appearAt: 1, path: 'file', lag: 1.5 }),
+      dog('pack', -3.6, -1.4, 0, { appearAt: 1, path: 'file', lag: 3 }),
+      dog('pack', -3.6, -1.4, 0, { appearAt: 1, path: 'file', lag: 4.5 }),
+      dog('pack', -3.6, -1.4, 0, { appearAt: 1, path: 'file', lag: 6 }),
       sled(2.2, -1.2, 0.2, { appearAt: 2, radius: 0.8 }),
       sled(1.2, -2.4, -0.1, { appearAt: 2, radius: 0.8 }),
       person(ORANGE, 2.9, -0.2, -Math.PI / 2, 'tend', 0, { appearAt: 2 }),
       person(RED, 0.4, -1.8, yawToward(0.4, -1.8, 1.2, -2.4), 'haul', 2.2, { appearAt: 2 }),
     ],
-    paths: [{ id: 'file', from: [-3.4, -1.7], via: [[-2.6, -1.1]], to: [-1.0, -1.4], delay: 0.3, duration: 6 }],
+    // A winding trail (S bends), so the file follows a curve and not a ruler.
+    paths: [{ id: 'file', from: [-3.6, -1.4], via: [[-2.7, -2.0], [-1.8, -1.3], [-1.0, -1.8]], to: [-0.4, -0.9], delay: 0.3, duration: 9 }],
     camera: { distanceFactor: 1.1, elevationDeg: 42, azimuthDeg: -112 },
     shots: [
       shot(0, [-1.4, 0.7, 0.4], 8, 20, -90),
@@ -569,10 +573,23 @@ export function walkPosition(path: ScenePath, u: number): { x: number; z: number
  * of the legs goes on). A walk that is not a loop ends and stays at its end.
  */
 export function sceneWalk(path: ScenePath, t: number, lag = 0): { x: number; z: number; yaw: number; moving: boolean; travel: number } {
-  const laps = Math.max(0, (t - path.delay - lag) / path.duration);
-  const u = path.loop ? laps % 1 : Math.min(1, laps);
   const length = scenePathLength(path);
-  return { ...walkPosition(path, u), moving: laps > 0 && (!!path.loop || laps < 1), travel: (path.loop ? laps : Math.min(1, laps)) * length };
+  if (lag > 0) {
+    // Someone behind the head of a file is not piled on the start waiting for their turn: they stand (or walk in)
+    // behind it, along the line of the first segment, so a file shows as many from the very first frame.
+    const u = (Math.max(0, t - path.delay) - lag) / path.duration;
+    if (u < 0) {
+      const head = walkPosition(path, 0);
+      const back = -u * length;
+      return { x: head.x - Math.cos(head.yaw) * back, z: head.z + Math.sin(head.yaw) * back, yaw: head.yaw, moving: t > path.delay, travel: u * length };
+    }
+  }
+  const laps = Math.max(0, (t - path.delay - lag) / path.duration);
+  // On a walk that ends, someone behind the head of the file stops where the head was `lag` s before it stopped,
+  // along the path: the file stays a file (spaced, on the same curve) and does not pile up on the end.
+  const last = path.loop || lag <= 0 ? 1 : Math.max(0, 1 - lag / path.duration);
+  const u = path.loop ? laps % 1 : Math.min(last, laps);
+  return { ...walkPosition(path, u), moving: laps > 0 && (!!path.loop || laps < last), travel: (path.loop ? laps : u) * length };
 }
 
 /** Phase of the walk at fraction `u` of the path: one pose cycle every two prints, so the feet do not slide. */

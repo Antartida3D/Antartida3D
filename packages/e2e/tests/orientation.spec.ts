@@ -112,7 +112,7 @@ test.describe('resume last expedition', () => {
     const nextBtn = section.locator('.fossil-next');
     await nextBtn.click();
     await nextBtn.click();
-    await expect(section).toContainText(`03 / ${FOSSIL_STOPS.length}`);
+    await expect(section).toContainText(`parada 3 de ${FOSSIL_STOPS.length}`);
 
     await section.getByRole('button', { name: 'Volver al mapa' }).click();
     const resumeBtn = page.getByRole('button', {
@@ -125,7 +125,7 @@ test.describe('resume last expedition', () => {
     await resumeBtn.click();
 
     await expect(section).toBeVisible();
-    await expect(section).toContainText(`03 / ${FOSSIL_STOPS.length}`);
+    await expect(section).toContainText(`parada 3 de ${FOSSIL_STOPS.length}`);
   });
 
   test('resumes Orcadas at exact chapter after reload', async ({ page }) => {
@@ -166,7 +166,7 @@ test.describe('resume last expedition', () => {
     const nextBtn = section.locator('.marine-next');
     await nextBtn.click();
     await nextBtn.click();
-    await expect(section).toContainText(`03 / ${MARINE_STOPS.length}`);
+    await expect(section).toContainText(`parada 3 de ${MARINE_STOPS.length}`);
 
     await section.getByRole('button', { name: 'Volver al mapa' }).click();
     const resumeBtn = page.getByRole('button', {
@@ -179,7 +179,7 @@ test.describe('resume last expedition', () => {
     await resumeBtn.click();
 
     await expect(section).toBeVisible();
-    await expect(section).toContainText(`03 / ${MARINE_STOPS.length}`);
+    await expect(section).toContainText(`parada 3 de ${MARINE_STOPS.length}`);
     await expect(section.getByRole('heading', { level: 2, name: MARINE_STOPS[2].title })).toBeVisible();
   });
 

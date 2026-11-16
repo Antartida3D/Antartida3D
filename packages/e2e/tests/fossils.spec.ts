@@ -26,7 +26,7 @@ test('explores the four fossils and three habitats, opens sources and records co
   await chapters.getByRole('button', { name: /Amonites/ }).click();
   for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'Limpiar el sedimento' }).click();
   await expect(page.getByRole('button', { name: 'Ya se ve la espiral' })).toBeDisabled();
-  await page.getByRole('button', { name: /Seguir explorando/ }).click();
+  await page.getByRole('button', { name: 'Siguiente', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Amonites gigantes', exact: true })).toBeVisible();
   await page.getByRole('button', { name: /Abrir fotografía: Corte pulido/ }).click();
   const dialog = page.getByRole('dialog');
@@ -62,21 +62,21 @@ test('explores the four fossils and three habitats, opens sources and records co
   await expect(page.getByRole('heading', { name: 'Una pista muy pequeña' })).toBeVisible();
   await page.getByRole('button', { name: 'Examinar el diente' }).click();
   await expect(page.getByRole('button', { name: 'El diente, más cerca' })).toHaveAttribute('aria-pressed', 'true');
-  for (let i = 0; i < 2; i++) await page.getByRole('button', { name: /Seguir explorando/ }).click();
+  for (let i = 0; i < 2; i++) await page.getByRole('button', { name: 'Siguiente', exact: true }).click();
   // Arriving, the animal is already shown, as on the other animals' stops; the button compares with the remains.
   await expect(page.getByRole('heading', { name: 'De los restos al animal' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Ver los restos' })).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: 'Ver los restos' }).click();
   await expect(page.getByRole('button', { name: 'Ver el animal completo' })).toHaveAttribute('aria-pressed', 'false');
 
-  await page.getByRole('button', { name: /Seguir a Estrellas/ }).click();
+  await page.getByRole('button', { name: 'Siguiente', exact: true }).click();
   await expect(timeline).toContainText('4 de 4 hallazgos');
   await expect(timeline).toContainText('Estrellas de mar: Eoceno medio tardío, encontrado');
   await page.getByRole('button', { name: 'Medir una estrella' }).click();
   await expect(page.getByRole('button', { name: 'Estrella medida' })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByRole('status').filter({ hasText: '17 mm' })).toBeVisible();
-  await page.getByRole('button', { name: /Seguir explorando/ }).click();
-  await page.getByRole('button', { name: /Seguir a El pasado/ }).click();
+  await page.getByRole('button', { name: 'Siguiente', exact: true }).click();
+  await page.getByRole('button', { name: 'Siguiente', exact: true }).click();
   for (const habitat of [/La tierra del dinosaurio/, /El fondo de las estrellas/, /El mar de los amonites/]) {
     await page.getByRole('button', { name: habitat }).click();
     await expect(page.getByRole('button', { name: habitat })).toHaveAttribute('aria-pressed', 'true');
@@ -91,7 +91,7 @@ test('explores the four fossils and three habitats, opens sources and records co
   await expect(dialog).toContainText('Raffi');
   await page.keyboard.press('Escape');
   await expect(page.getByRole('button', { name: 'Fuentes', exact: true })).toBeFocused();
-  await page.getByRole('button', { name: /Seguir explorando/ }).click();
+  await page.getByRole('button', { name: 'Siguiente', exact: true }).click();
   const log = page.getByRole('list', { name: 'Tu registro de la expedición' });
   await expect(log).toContainText('Seguiste la columna');
   await expect(log).toContainText('Observaste el diente');

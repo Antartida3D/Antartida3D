@@ -5,6 +5,8 @@ import {
 } from '@antartida/core';
 import { BottomSheet, type OpenSheetSize } from '../BottomSheet.tsx';
 import { useIsDesktop } from '../hooks.ts';
+import { KindChip } from '../orcadas/KindChip.tsx';
+import { useSceneFrame } from '../sceneFrame.tsx';
 import { Icon } from '../ui.tsx';
 import { FoodWebPanel, WebDiagram } from './FoodWeb.tsx';
 
@@ -40,6 +42,7 @@ export function MarineExpedition({ reduced, webgl, resume, onProgress, onLeave }
   const [graphicsLost, setGraphicsLost] = useState(false);
   const root = useRef<HTMLElement>(null);
   const panel = useRef<HTMLElement>(null);
+  const top = useRef<HTMLElement>(null);
   const title = useRef<HTMLHeadingElement>(null);
   const scroll = useRef<HTMLDivElement>(null);
   const dialog = useRef<HTMLDialogElement>(null);
@@ -56,15 +59,8 @@ export function MarineExpedition({ reduced, webgl, resume, onProgress, onLeave }
     setSheetSize('small');
   }, [state.stop]);
 
-  useEffect(() => {
-    const el = panel.current;
-    if (!el) return;
-    const measure = () => root.current?.style.setProperty('--marine-panel-h', `${el.getBoundingClientRect().height}px`);
-    const observer = new ResizeObserver(measure);
-    observer.observe(el);
-    measure();
-    return () => observer.disconnect();
-  }, [desktop]);
+  const shift = useSceneFrame(root, top, panel, desktop);
+  const visitedChapters = new Set(state.visited.map((id) => MARINE_STOPS.find((s) => s.id === id)?.chapter));
 
   useEffect(() => {
     const el = root.current;
@@ -85,10 +81,12 @@ export function MarineExpedition({ reduced, webgl, resume, onProgress, onLeave }
   </div>;
 
   const content = <>
-    <div className="marine-panel-content" ref={scroll}>
-      <div className="marine-section-line"><span>Cuaderno bajo el hielo</span><span>{String(state.stop + 1).padStart(2, '0')} / {MARINE_STOPS.length}</span></div>
+    <div className="orc-panel-scroll marine-panel-content" ref={scroll}>
+      <div className="orc-panel-head"><div className="orc-panel-head-title">
+        <span className="orc-kicker">{MARINE_CHAPTERS[chapter].label} · parada {state.stop + 1} de {MARINE_STOPS.length}</span>
+        <h2 id="marine-title" className="orc-chapter-h2" ref={title} tabIndex={-1}>{stop.title}</h2>
+      </div></div>
       <p className="marine-eyebrow">{stop.eyebrow}</p>
-      <h2 id="marine-title" ref={title} tabIndex={-1}>{stop.title}</h2>
       <p className="marine-line" aria-live="polite">{stop.line}</p>
 
       {(stop.id === 'ceiling' || stop.id === 'emperor-hunt') && toggle(state.under, 'Volver a la superficie', stop.id === 'ceiling' ? 'Mirar bajo el hielo' : 'Mirar bajo el agua', () => dispatch({ type: 'surface' }))}
@@ -157,49 +155,58 @@ export function MarineExpedition({ reduced, webgl, resume, onProgress, onLeave }
       <div className="marine-source-line"><span>Fuente</span>{stop.sources.map((id) => <SourceLink key={id} id={id} />)}</div>
       <details className="marine-more" key={stop.id}><summary>Saber más</summary><p>{stop.more}</p></details>
     </div>
-    <div className="marine-panel-footer">
-      <button className="btn marine-prev" aria-label="Parada anterior" disabled={state.stop === 0} onClick={() => dispatch({ type: 'prev' })}>{Icon.back}</button>
-      <button className="btn primary marine-next" onClick={() => last ? onLeave(true) : dispatch({ type: 'next' })}>
-        {last ? 'Terminar expedición' : chapter !== MARINE_CHAPTERS.findIndex((c) => c.id === MARINE_STOPS[state.stop + 1].chapter) ? `Seguir a ${MARINE_CHAPTERS[chapter + 1].label}` : 'Seguir explorando'}
-        <span aria-hidden="true">{last ? '✓' : '→'}</span>
-      </button>
+    <div className="orc-bar ebar">
+      {state.stop > 0 && <button type="button" className="btn ghost marine-prev" onClick={() => dispatch({ type: 'prev' })}>Atrás</button>}
+      <button type="button" className="btn primary marine-next" onClick={() => last ? onLeave(true) : dispatch({ type: 'next' })}>{last ? 'Terminar expedición' : 'Siguiente'}</button>
     </div>
   </>;
 
-  return <section className="marine-expedition" ref={root} aria-label="Expedición Océano">
-    <header className="marine-header">
-      <button className="marine-map" aria-label="Volver al mapa" onClick={() => onLeave(false)}>{Icon.back}<span>Mapa</span></button>
-      <div className="marine-brand"><b>Océano</b><span>Bajo el hielo marino</span></div>
-      <button className="marine-sources-button" onClick={() => setSourcesOpen(true)}>Fuentes</button>
-    </header>
-    <nav className="marine-chapters" aria-label="Capítulos de Océano">
-      {MARINE_CHAPTERS.map((c, i) => <button key={c.id} aria-current={c.id === stop.chapter ? 'step' : undefined} onClick={() => dispatch({ type: 'chapter', chapter: c.id })}><span>{String(i + 1).padStart(2, '0')}</span>{c.label}</button>)}
-    </nav>
-    <div className="marine-workspace">
-      <div className={`marine-stage${under ? ' is-under' : ''}`}>
-        {use3D
-          ? <Suspense fallback={<div className="marine-loading" role="status">Bajando bajo el hielo…</div>}><Scene view={stop.view} state={state} reduced={reduced} reset={reset} /></Suspense>
-          : <figure className="marine-fallback">
-            {stop.view === 'web' ? <WebDiagram selected={state.selected} /> : <p>{MARINE_VIEW_TEXT[stop.view]}</p>}
-            <figcaption>Recorrido en texto · todas las paradas e interacciones siguen disponibles.</figcaption>
-          </figure>}
-        <div className="marine-location"><span className="marine-location-dot" /><span>Mar de Weddell · escena ilustrativa<small>{under ? 'Bajo el hielo marino' : 'Sobre el hielo marino'}</small></span></div>
-        {use3D && <button className="marine-reset" aria-label="Restablecer vista de la escena" onClick={() => setReset((v) => v + 1)}>{Icon.reset}</button>}
-        <div className="marine-scene-note"><span>{use3D ? 'Ilustración' : 'Descripción de la escena'}</span><small>{use3D ? 'Arrastrá para mirar alrededor · tamaños y tiempos exagerados' : 'Sin gráficos 3D en este navegador'}</small></div>
-        {stop.id === 'tiny' && state.magnified && <div className="marine-found">Aumento esquemático<small>En la realidad no se ven a simple vista</small></div>}
-        {stop.id === 'humpback' && state.filtered && <div className="marine-found">Filtra con barbas</div>}
-        {stop.id === 'emperor-dive' && state.dived && <div className="marine-found">Atrapa presas de a una</div>}
-        {stop.id === 'teeth' && (state.compared
-          ? <div className="marine-found">Barbas · dientes<small>Ballena a la izquierda · foca leopardo a la derecha</small></div>
-          : <div className="marine-found">Filtra con dientes<small>Entra el krill · sale el agua por los costados</small></div>)}
-        {stop.id === 'orcas' && <div className="marine-found">{state.example ? 'Una ola hecha en grupo' : 'Una familia que caza junta'}{state.example && <small>Orcas tipo B · oeste de la Península · ilustración</small>}</div>}
-        {stop.id === 'minke' && <div className="marine-found">Embestidas cortas<small>Boca abierta en el krill, bajo el hielo</small></div>}
-        {stop.id === 'leopard' && <div className="marine-found">Morder y chupar</div>}
-      </div>
-      {desktop
-        ? <section className="marine-panel" ref={panel} aria-labelledby="marine-title">{content}</section>
-        : <BottomSheet className="marine-panel" labelledBy="marine-title" sheetRef={panel} floor="peek" size={sheetSize} onSize={setSheetSize}>{content}</BottomSheet>}
+  return <section className={`orc marine-expedition${!desktop && sheetSize === 'tall' ? ' is-panel-expanded' : ''}${!desktop && sheetSize === 'peek' ? ' is-panel-peek' : ''}`} ref={root} aria-label="Expedición Océano">
+    <div className={`marine-stage${under ? ' is-under' : ''}`}>
+      {use3D
+        ? <Suspense fallback={<div className="marine-loading" role="status">Bajando bajo el hielo…</div>}><Scene view={stop.view} state={state} reduced={reduced} reset={reset} shift={shift} /></Suspense>
+        : <figure className="marine-fallback">
+          {stop.view === 'web' ? <WebDiagram selected={state.selected} /> : <p>{MARINE_VIEW_TEXT[stop.view]}</p>}
+          <figcaption>Recorrido en texto · todas las paradas e interacciones siguen disponibles.</figcaption>
+        </figure>}
     </div>
+    <div className="marine-location"><span className="marine-location-dot" /><span>Mar de Weddell · escena ilustrativa<small>{under ? 'Bajo el hielo marino' : 'Sobre el hielo marino'}</small></span></div>
+    {use3D && <button type="button" className="marine-reset" aria-label="Restablecer vista de la escena" onClick={() => setReset((v) => v + 1)}>{Icon.reset}</button>}
+    <div className="orc-scene-badge marine-scene-note">
+      <div className="orc-scene-badge-row"><KindChip kind="recon" label={use3D ? 'Ilustración' : 'Descripción de la escena'} /></div>
+      <small>{use3D ? 'Arrastrá para mirar alrededor · tamaños y tiempos exagerados' : 'Sin gráficos 3D en este navegador'}</small>
+    </div>
+    {stop.id === 'tiny' && state.magnified && <div className="marine-found">Aumento esquemático<small>En la realidad no se ven a simple vista</small></div>}
+    {stop.id === 'humpback' && state.filtered && <div className="marine-found">Filtra con barbas</div>}
+    {stop.id === 'emperor-dive' && state.dived && <div className="marine-found">Atrapa presas de a una</div>}
+    {stop.id === 'teeth' && (state.compared
+      ? <div className="marine-found">Barbas · dientes<small>Ballena a la izquierda · foca leopardo a la derecha</small></div>
+      : <div className="marine-found">Filtra con dientes<small>Entra el krill · sale el agua por los costados</small></div>)}
+    {stop.id === 'orcas' && <div className="marine-found">{state.example ? 'Una ola hecha en grupo' : 'Una familia que caza junta'}{state.example && <small>Orcas tipo B · oeste de la Península · ilustración</small>}</div>}
+    {stop.id === 'minke' && <div className="marine-found">Embestidas cortas<small>Boca abierta en el krill, bajo el hielo</small></div>}
+    {stop.id === 'leopard' && <div className="marine-found">Morder y chupar</div>}
+    <header className="orc-top" ref={top}>
+      <div className="orc-top-r1">
+        <button type="button" className="pill orc-top-btn" aria-label="Volver al mapa" onClick={() => onLeave(false)}>{Icon.back}<span>Mapa</span></button>
+        <div className="orc-top-title"><strong>Océano</strong><span>{MARINE_QUESTION}</span></div>
+        <button type="button" className="pill orc-top-btn" aria-haspopup="dialog" onClick={() => setSourcesOpen(true)}>Fuentes</button>
+      </div>
+      <nav className="orc-steps-nav" aria-label="Capítulos de Océano">
+        <ol className="orc-steps">
+          {MARINE_CHAPTERS.map((c, i) => {
+            const current = c.id === stop.chapter;
+            return <li key={c.id} className="orc-step-item">
+              <button type="button" className={`orc-step-btn${current ? ' is-current' : visitedChapters.has(c.id) ? ' is-visited' : ''}`} aria-current={current ? 'step' : undefined} aria-label={`${i + 1} ${c.label}`} onClick={() => dispatch({ type: 'chapter', chapter: c.id })}>
+                <span className="orc-step-num" aria-hidden="true">{i + 1}</span><span className="orc-step-name">{c.label}</span>
+              </button>
+            </li>;
+          })}
+        </ol>
+      </nav>
+    </header>
+    {desktop
+      ? <section className="orc-panel marine-panel" ref={panel} aria-labelledby="marine-title">{content}</section>
+      : <BottomSheet className="orc-panel marine-panel" labelledBy="marine-title" sheetRef={panel} floor="peek" size={sheetSize} onSize={setSheetSize}>{content}</BottomSheet>}
     <dialog className="marine-dialog" ref={dialog} aria-labelledby="marine-dialog-title" onClose={() => setSourcesOpen(false)} onClick={(e) => { if (e.target === e.currentTarget) setSourcesOpen(false); }}>
       <div className="marine-dialog-heading"><h2 id="marine-dialog-title">Fuentes del recorrido</h2><button className="iconbtn" aria-label="Cerrar fuentes" onClick={() => setSourcesOpen(false)}>{Icon.close}</button></div>
       <p>{MARINE_QUESTION}</p>

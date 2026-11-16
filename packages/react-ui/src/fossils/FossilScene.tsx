@@ -8,6 +8,7 @@ import {
 } from 'three';
 import { shouldTick, type FossilState, type FossilView } from '@antartida/core';
 import { InkEffect } from '../map3d/InkEffect.ts';
+import { ViewShift, type ViewShiftPx } from '../sceneFrame.tsx';
 import { stationSkyFragmentShader, stationSkyVertexShader } from '../orcadas/stationSky.glsl.ts';
 import { buildBoxGeometry, vehicleMaterial, type Box } from '../voyage/vehicles.ts';
 import { block, boxShade, buildPolyGeometry, chamferRect, chunk, mirrorZ, prism, strut, type Tri } from '../voyage/lowPoly.ts';
@@ -825,8 +826,10 @@ function Settle({ state }: { state: FossilState }) {
   return null;
 }
 
-export function FossilScene({ view, state, reduced, reset }: {
+export function FossilScene({ view, state, reduced, reset, shift }: {
   view: FossilView; state: FossilState; reduced: boolean; reset: number;
+  /** Moves the view into the part of the screen the side panel leaves free. */
+  shift: ViewShiftPx;
 }) {
   const [lowQuality, setLowQuality] = useState(false);
   const [ink, setInk] = useState(false);
@@ -841,6 +844,7 @@ export function FossilScene({ view, state, reduced, reset }: {
           onIncline={() => { setLowQuality(false); setInk(true); }} onDecline={() => { setLowQuality(true); setInk(false); }} />
       )}
       <SceneCamera view={view} state={state} reduced={reduced} reset={reset} />
+      <ViewShift shift={shift} />
       {world === 'field' && <FieldWorld view={view} state={state} reduced={reduced} />}
       {world === 'forest' && <ForestWorld view={view} reduced={reduced} />}
       {(world === 'cretaceous-sea' || world === 'eocene-sea') && <SeaWorld eocene={world === 'eocene-sea'} view={view} reduced={reduced} />}

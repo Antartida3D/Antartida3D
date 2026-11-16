@@ -202,7 +202,9 @@ En la ejecución más amplia previa se registraron 236 pruebas de core aprobadas
 
 ### Resultados actuales de esta migración
 
-La evidencia automatizada de esta entrega registra `pnpm test` con 1.356 pruebas (19 documentales, 650 de `core` y 687 de `react-ui`), `pnpm typecheck` y `pnpm build` sin errores. La E2E global final registró 366 casos: 322 aprobados, 44 omitidos y ningún fallo. Los 1.349 tests y los 14 casos E2E GPU de la revisión preintegración quedan como contexto histórico y no se atribuyen a esta tanda.
+La evidencia automatizada de esta entrega registra `pnpm test` con 1.356 pruebas (19 documentales, 650 de `core` y 687 de `react-ui`), `pnpm typecheck` y `pnpm build` sin errores. La E2E global final registró 366 casos: 322 aprobados, 44 omitidos y ningún fallo. Las omisiones se distribuyeron por perfil según el reporte de Playwright: `desktop` 23, `mobile` 7, `mobile-compact` 5 y `mobile-landscape` 9; son casos omitidos, no fallos. Los 1.349 tests y los 14 casos E2E GPU de la revisión preintegración quedan como contexto histórico y no se atribuyen a esta tanda.
+
+El commit `2484804` ajusta la leyenda compacta para que la variante con «Continuar» pueda desplazarse bajo la cabecera en pantallas cortas y actualiza el flujo E2E de Poncho para esperar el loader compartido y comprobar sus fuentes de procedencia. Root revisó las capturas de escritorio, móvil y landscape en 844 × 390 y 844 × 360 px.
 
 La revisión runtime de hover cubrió cinco controles en escritorio a 1440 × 900: botón de lista, cierre y acción del pie de la ficha «Océano», vuelta del selector de viaje y ghost real «Ocultar panel» de Orcadas. Los estilos permanecieron estables, sin cambios de caja ni radio; la ayuda manuscrita quedó restaurada con Caveat, fondo al 92 %, radio 12 px y posición desktop `top:120px`. No se reprodujo un bug del cierre: ya tenía hover en el BEFORE; tampoco hubo un estado ghost real comparable en el BEFORE. No se observó un control deshabilitado, así que esa variante queda sin cobertura.
 

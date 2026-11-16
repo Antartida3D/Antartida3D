@@ -223,6 +223,10 @@ La captura y los informes de esa revisión previa están fuera de este checkout 
 
 ### Integración contra `main`
 
+La integración actual parte de `main` en `36c31ca` y queda consolidada en `a9f2c64`. Sobre esta base, la validación actual registra `pnpm test` con 1.344 pruebas (19 documentales, 650 de `core` y 675 de `react-ui`), `pnpm typecheck` y `pnpm build` sin errores, además de 50/50 casos E2E focalizados aprobados. La corrida E2E global previa de 366 casos (322 aprobados, 44 omitidos y ningún fallo) se conserva como contexto histórico y no se atribuye a esta integración.
+
+#### Integración anterior (antes de #204)
+
 La integración se realizó en la rama `202-ui-pergamino-claro`, comparando con `origin/main` en `dbd80932873e38ede0c81451d828030c662e5388`. El commit de código integrado es `3a27b73`; el árbol conserva la lógica y las reglas nuevas de `main` y aplica la decoración Pergamino claro compatible. El comportamiento de «Continuar» de #186 ya forma parte de la base integrada y se preserva en esta revisión; no se atribuye como funcionalidad nueva de este PR.
 
 En el árbol integrado, `pnpm test` registra 19 pruebas documentales, 650 de `core` y 687 de `react-ui` (1.356 en total); `pnpm typecheck` y `pnpm build` también pasan. La corrida E2E global final registró 366 casos: 322 aprobados, 44 omitidos y ningún fallo.

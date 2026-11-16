@@ -10,6 +10,7 @@ export * from './content/orcadas-layout.ts';
 export * from './content/orcadas-site.ts';
 export * from './content/marambio-site.ts';
 export * from './content/marambio-layout.ts';
+export * from './content/marambio-climate.ts';
 export * from './content/marambio.ts';
 export * from './projection.ts';
 export * from './route.ts';

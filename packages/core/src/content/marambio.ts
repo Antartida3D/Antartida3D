@@ -22,7 +22,7 @@ export interface MarambioSource {
 export interface MarambioFact {
   id: string;
   /** The point of interest it belongs to, or the scene label («Reconstrucción ilustrada»). */
-  spot: MarambioSpotId | 'scene';
+  spot: MarambioSpotId | 'scene' | 'months';
   kind: FactKind;
   text: string;
   sourceIds: readonly string[];
@@ -73,6 +73,22 @@ export const MARAMBIO_SOURCES: readonly MarambioSource[] = [
     url: 'https://www.openstreetmap.org/#map=16/-64.2400/-56.6300',
     consulted: CONSULTED,
     license: 'ODbL 1.0 (© colaboradores de OpenStreetMap)',
+  },
+  {
+    id: 'smn-normales',
+    label: 'Estadísticas Climatológicas Normales: República Argentina, período 1991-2020 (Base Marambio, pp. 792-799)',
+    short: 'SMN, normales 1991-2020',
+    org: 'Servicio Meteorológico Nacional',
+    url: 'https://repositorio.smn.gob.ar/bitstream/handle/20.500.12160/2506/estad%C3%ADsticas_climatol%C3%B3gicas_normales_1991-2020.pdf?sequence=4&isAllowed=y',
+    consulted: '15 de noviembre de 2026',
+  },
+  {
+    id: 'smn-clima',
+    label: 'Clima en Argentina: Base Marambio (copia del Internet Archive del 4 de septiembre de 2017)',
+    short: 'SMN, clima de Marambio',
+    org: 'Servicio Meteorológico Nacional',
+    url: 'https://web.archive.org/web/20170904145118/http://www.smn.gov.ar/serviciosclimaticos/?mod=elclima&id=69',
+    consulted: '15 de noviembre de 2026',
   },
 ];
 
@@ -244,6 +260,36 @@ export const MARAMBIO_FACTS: readonly MarambioFact[] = [
     text: 'El diorama muestra una selección de edificios. El color naranja es el que les da OpenStreetMap; las alturas y los techos son ilustrativos, tomados de fotos de referencia.',
     sourceIds: [MARAMBIO_OSM_SOURCE_ID],
   },
+
+  // months: the strip of months and the blizzard of the scene
+  {
+    id: 'months-ventisca',
+    spot: 'months',
+    kind: 'real',
+    text: 'El Servicio Meteorológico Nacional cuenta los días con ventisca en Marambio. En julio hay en promedio 12 días con ventisca alta; en enero, 2 (promedio de 1991 a 2020).',
+    sourceIds: ['smn-normales'],
+  },
+  {
+    id: 'months-clima',
+    spot: 'months',
+    kind: 'real',
+    text: 'El Servicio Meteorológico Nacional describe un clima riguroso, con temperaturas medias que rara vez superan los 0 °C y fuertes vientos.',
+    sourceIds: ['smn-clima'],
+  },
+  {
+    id: 'months-temperatura',
+    spot: 'months',
+    kind: 'real',
+    text: 'La temperatura media va de -0,8 °C en enero a -14,9 °C en junio y en julio (promedio de 1991 a 2020).',
+    sourceIds: ['smn-normales'],
+  },
+  {
+    id: 'months-simulacion',
+    spot: 'months',
+    kind: 'sim',
+    text: 'La nieve que vuela en la escena es una simulación: es más intensa en los meses con más días de ventisca alta según el Servicio Meteorológico Nacional. No muestra la fuerza real del viento.',
+    sourceIds: ['smn-normales'],
+  },
 ];
 
 /** In tour order. */
@@ -256,7 +302,7 @@ export const MARAMBIO_SPOTS: readonly MarambioSpot[] = [
   { id: 'buildings', label: 'Los edificios', shortLabel: 'Edificios', subtitle: 'Donde se vive y se trabaja' },
 ];
 
-export function marambioFacts(spot: MarambioSpotId | 'scene'): readonly MarambioFact[] {
+export function marambioFacts(spot: MarambioSpotId | 'scene' | 'months'): readonly MarambioFact[] {
   return MARAMBIO_FACTS.filter((fact) => fact.spot === spot);
 }
 

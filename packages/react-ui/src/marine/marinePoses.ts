@@ -1,5 +1,6 @@
 import type { Box } from '../voyage/vehicles.ts';
-import { EMPEROR_BILL_TIP, MARINE_PALETTE } from './models.ts';
+import { MARINE_PALETTE } from './models.ts';
+import { EMPEROR_BILL_TIP } from './lowPolyMarine.ts';
 
 /**
  * Layout of the illustrative sea of Océano and the poses of its animals, as pure functions of time

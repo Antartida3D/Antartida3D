@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { SCENE_MODELS, SEA_MODELS } from '../src/voyage/sightingModels.ts';
-import { MARINE_MODELS } from '../src/marine/models.ts';
+import { MARINE_PALETTE as C } from '../src/marine/models.ts';
+import { MARINE_POLY_MODELS, MINKE_FEED_BODY_TRIS } from '../src/marine/lowPolyMarine.ts';
+import { POLY_MIN_COLORS, POLY_MIN_TRIS, normalOf, type Tri } from '../src/voyage/lowPoly.ts';
 import {
   DIVE_PERIOD, EDGE_Z, FILTER_PERIOD, HOLE, ICE_BOTTOM, LEAD, LEOPARD_LOOP, MINKE_FOOTPRINT, MINKE_KRILL_PATCHES, MINKE_LOOP,
   MINKE_SCALE, ORCA_POD, SUCTION_PERIOD, WATER_Y, WAVE_FLOE, WAVE_PERIOD, WAVE_SEAL_START, EMPEROR_HUNT_LOOP, EMPEROR_HUNT_STILL, emperorDive, emperorHunt, humpbackFilter, iceAt, inOpenWater,
@@ -178,8 +180,28 @@ describe('Océano: the humpback gulp', () => {
 });
 
 describe('Océano: models', () => {
-  it('registers every model of the expedition for the test of least detail', () => {
-    for (const id of Object.keys(MARINE_MODELS)) expect(SCENE_MODELS[id]).toBe(MARINE_MODELS[id]);
+  for (const [id, tris] of Object.entries(MARINE_POLY_MODELS)) {
+    it(`${id} is low-poly with the least detail and no broken faces`, () => {
+      expect(tris.length).toBeGreaterThanOrEqual(POLY_MIN_TRIS);
+      expect(new Set(tris.map((t) => t[3])).size).toBeGreaterThanOrEqual(POLY_MIN_COLORS);
+      expect(tris.filter((t) => Math.hypot(...normalOf(t)) === 0)).toEqual([]);
+      // Block models are checked through SCENE_MODELS; Océano has none left.
+      expect(SCENE_MODELS[id]).toBeUndefined();
+    });
+  }
+
+  it('keeps the marks of each animal', () => {
+    const has = (tris: readonly Tri[], color: number) => tris.some((t) => t[3] === color);
+    expect(has(MARINE_POLY_MODELS['marine:humpback'], C.whaleKnob)).toBe(true);
+    expect(has(MARINE_POLY_MODELS['marine:humpback'], C.baleen)).toBe(true);
+    expect(has(MARINE_POLY_MODELS['marine:leopard'], C.tooth)).toBe(true);
+    expect(has(MARINE_POLY_MODELS['marine:emperor-swim'], C.emperorYellow)).toBe(true);
+    for (const c of [C.krillRed, C.krillGut, C.black]) expect(has(MARINE_POLY_MODELS['marine:krill'], c)).toBe(true);
+    // The Antarctic minke's flipper is grey with only a thin white leading edge.
+    // Faces wholly out of the body (it is 0.088 wide each side): the flippers, not the white belly.
+    const edge = MINKE_FEED_BODY_TRIS.filter((t) => t[3] === C.white && [t[0], t[1], t[2]].every((v) => Math.abs(v[2]) > 0.095)).flatMap((t) => [t[0], t[1], t[2]]);
+    expect(edge.length).toBeGreaterThan(0);
+    expect(Math.max(...edge.map((v) => v[0])) - Math.min(...edge.map((v) => v[0]))).toBeLessThan(0.1);
   });
 
   it('draws the Antarctic minke without the white flipper band of the other minkes', () => {

@@ -11,16 +11,16 @@ import {
 } from '@antartida/core';
 import { InkEffect } from '../map3d/InkEffect.ts';
 import { stationSkyFragmentShader, stationSkyVertexShader } from '../orcadas/stationSky.glsl.ts';
-import { SEA_MODELS } from '../voyage/sightingModels.ts';
 import { buildBoxGeometry, vehicleMaterial, type Box } from '../voyage/vehicles.ts';
 import { boxShade, buildPolyGeometry, emperor, type Tri } from '../voyage/lowPoly.ts';
 import { POLY_ICEBERGS } from '../voyage/icebergs.ts';
 import { SEA_POLY_MODELS, assembleWeddellSeal } from '../voyage/seaPolyModels.ts';
 import {
-  BALEEN_DETAIL, DIATOM_CHAIN, DIATOM_DISC, EMPEROR_FLIPPER, EMPEROR_SHOULDER, EMPEROR_SWIM, HUMPBACK_BODY, HUMPBACK_HINGE,
-  HUMPBACK_JAW, HUMPBACK_THROAT, KRILL, LEOPARD_BODY, LEOPARD_HINGE, LEOPARD_JAW, MINKE_FEED_BODY, MINKE_HINGE, MINKE_JAW,
-  MINKE_THROAT, SILVERFISH, SQUID, TEETH_DETAIL, EMPEROR_BILL_TIP,
-} from './models.ts';
+  BALEEN_DETAIL_TRIS, DIATOM_CHAIN_TRIS, DIATOM_DISC_TRIS, EMPEROR_BILL_TIP, EMPEROR_FLIPPER_TRIS, EMPEROR_SHOULDER,
+  EMPEROR_SWIM_TRIS, HUMPBACK_BODY_TRIS, HUMPBACK_HINGE, HUMPBACK_TRIS, LEOPARD_TRIS, HUMPBACK_JAW_TRIS, HUMPBACK_THROAT_TRIS, KRILL_TRIS,
+  LEOPARD_BODY_TRIS, LEOPARD_HINGE, LEOPARD_JAW_TRIS, MINKE_FEED_BODY_TRIS, MINKE_HINGE, MINKE_JAW_TRIS,
+  MINKE_THROAT_TRIS, SILVERFISH_TRIS, SQUID_TRIS, TEETH_DETAIL_TRIS,
+} from './lowPolyMarine.ts';
 import {
   DIVE_BOTTOM, EDGE_Z, FILTER_STILL, HOLE, ICE_TOP, LEAD, LEOPARD_LOOP, LEOPARD_PREY, MINKE_KRILL_PATCHES, MINKE_LOOP,
   MINKE_SCALE, ORCA_LOOP, ORCA_POD, STILL_TIME, SUCTION_PERIOD, WATER_Y, WAVE_FLOE, WAVE_PERIOD, WAVE_SEAL_START, buildIceBoxes, emperorDive, EMPEROR_HUNT_STILL, EMPEROR_SWIM_SCALE, emperorHunt,
@@ -49,12 +49,6 @@ function PolyProp({ id, tris, position, scale = 1, rotation = [0, 0, 0] }: {
   id: string; tris: readonly Tri[]; position: Vec3; scale?: number; rotation?: Vec3;
 }) {
   return <mesh geometry={polyGeometry(id, () => tris)} material={vehicleMaterial} position={[...position]} scale={scale} rotation={[...rotation]} />;
-}
-
-function Prop({ id, boxes, position, scale = 1, rotation = [0, 0, 0] }: {
-  id: string; boxes: readonly Box[]; position: Vec3; scale?: number; rotation?: Vec3;
-}) {
-  return <mesh geometry={partGeometry(id, () => boxes)} material={vehicleMaterial} position={[...position]} scale={scale} rotation={[...rotation]} />;
 }
 
 /** Applies a pose every frame, or once at STILL_TIME when motion is reduced. */
@@ -183,7 +177,7 @@ function Particles({ kind, reduced }: { kind: 'snow' | 'specks'; reduced: boolea
 /** A swarm of krill drawn with one instanced mesh. */
 function KrillSwarm({ center, count, spread, scale, reduced }: { center: Vec3; count: number; spread: number; scale: number; reduced: boolean }) {
   const mesh = useRef<InstancedMesh>(null);
-  const geometry = partGeometry('krill', () => KRILL);
+  const geometry = polyGeometry('krill', () => KRILL_TRIS);
   const dummy = useMemo(() => new Object3D(), []);
   usePose((t) => {
     const m = mesh.current;
@@ -204,7 +198,7 @@ function KrillSwarm({ center, count, spread, scale, reduced }: { center: Vec3; c
 /** A school of Antarctic silverfish swimming round together. */
 function FishSchool({ loop, count, scale, reduced }: { loop: Loop; count: number; scale: number; reduced: boolean }) {
   const mesh = useRef<InstancedMesh>(null);
-  const geometry = partGeometry('silverfish', () => SILVERFISH);
+  const geometry = polyGeometry('silverfish', () => SILVERFISH_TRIS);
   const dummy = useMemo(() => new Object3D(), []);
   const m4 = useMemo(() => new Matrix4(), []);
   usePose((t) => {
@@ -232,7 +226,7 @@ function Squids({ reduced }: { reduced: boolean }) {
   ];
   usePose((t) => loops.forEach((l, i) => place(refs.current[i], onLoop(l, t, i))), reduced);
   return <>{loops.map((_, i) => (
-    <group key={i} ref={(n) => void (refs.current[i] = n)} scale={0.6}><mesh geometry={partGeometry('squid', () => SQUID)} material={vehicleMaterial} /></group>
+    <group key={i} ref={(n) => void (refs.current[i] = n)} scale={0.6}><mesh geometry={polyGeometry('squid', () => SQUID_TRIS)} material={vehicleMaterial} /></group>
   ))}</>;
 }
 
@@ -253,7 +247,7 @@ function Diatoms({ magnified, reduced }: { magnified: boolean; reduced: boolean 
     });
   });
   return <group ref={group}>{cells.map((c, i) => (
-    <mesh key={i} geometry={partGeometry(c.disc ? 'diatom-disc' : 'diatom-chain', () => (c.disc ? DIATOM_DISC : DIATOM_CHAIN))} material={vehicleMaterial}
+    <mesh key={i} geometry={polyGeometry(c.disc ? 'diatom-disc' : 'diatom-chain', () => (c.disc ? DIATOM_DISC_TRIS : DIATOM_CHAIN_TRIS))} material={vehicleMaterial}
       position={[c.x, c.y, c.z]} rotation={[c.disc ? 0.9 : 0.2, c.spin, c.disc ? 0.3 : 0.5]} scale={magnified ? 0.7 : 0.04} />
   ))}</group>;
 }
@@ -282,10 +276,10 @@ function Humpback({ filtering, reduced }: { filtering: boolean; reduced: boolean
   }, reduced, filtering ? FILTER_STILL : STILL_TIME);
   return (
     <group ref={root} scale={HUMPBACK_SCALE}>
-      <mesh geometry={partGeometry('humpback-body', () => HUMPBACK_BODY)} material={vehicleMaterial} />
+      <mesh geometry={polyGeometry('humpback-body', () => HUMPBACK_BODY_TRIS)} material={vehicleMaterial} />
       <group ref={jaw} position={[...HUMPBACK_HINGE]}>
-        <mesh geometry={partGeometry('humpback-jaw', () => HUMPBACK_JAW)} material={vehicleMaterial} />
-        <group ref={throat} position={[0, -0.03, 0]}><mesh geometry={partGeometry('humpback-throat', () => HUMPBACK_THROAT)} material={vehicleMaterial} /></group>
+        <mesh geometry={polyGeometry('humpback-jaw', () => HUMPBACK_JAW_TRIS)} material={vehicleMaterial} />
+        <group ref={throat} position={[0, -0.03, 0]}><mesh geometry={polyGeometry('humpback-throat', () => HUMPBACK_THROAT_TRIS)} material={vehicleMaterial} /></group>
       </group>
       {/* Water pushed out through the baleen while the krill stays inside: an effect, not a model. */}
       <group ref={water} visible={false}>
@@ -314,10 +308,10 @@ function Minke({ reduced, showBlow }: { reduced: boolean; showBlow: boolean }) {
   }, reduced, MINKE_LOOP.period / 2);
   return <>
     <group ref={root} scale={MINKE_SCALE}>
-      <mesh geometry={partGeometry('minke-feed', () => MINKE_FEED_BODY)} material={vehicleMaterial} />
+      <mesh geometry={polyGeometry('minke-feed', () => MINKE_FEED_BODY_TRIS)} material={vehicleMaterial} />
       <group ref={jaw} position={[...MINKE_HINGE]}>
-        <mesh geometry={partGeometry('minke-jaw', () => MINKE_JAW)} material={vehicleMaterial} />
-        <group ref={throat} position={[0, -0.02, 0]}><mesh geometry={partGeometry('minke-throat', () => MINKE_THROAT)} material={vehicleMaterial} /></group>
+        <mesh geometry={polyGeometry('minke-jaw', () => MINKE_JAW_TRIS)} material={vehicleMaterial} />
+        <group ref={throat} position={[0, -0.02, 0]}><mesh geometry={polyGeometry('minke-throat', () => MINKE_THROAT_TRIS)} material={vehicleMaterial} /></group>
       </group>
     </group>
     <group ref={blow} visible={false}>
@@ -349,7 +343,7 @@ function EmperorPrey({ reduced }: { reduced: boolean }) {
     ref.current.visible = prey.state === 'free';
     ref.current.scale.setScalar(0.5 * Math.max(0.01, prey.size));
   }, reduced, EMPEROR_HUNT_STILL);
-  return <group ref={ref}><mesh geometry={partGeometry('silverfish', () => SILVERFISH)} material={vehicleMaterial} /></group>;
+  return <group ref={ref}><mesh geometry={polyGeometry('silverfish', () => SILVERFISH_TRIS)} material={vehicleMaterial} /></group>;
 }
 
 /** `holding`, when given, says when a fish is in its bill (crosswise, as penguins carry prey). */
@@ -369,15 +363,15 @@ function SwimmingEmperor({ pose, reduced, still, holding }: {
     if (fish.current) fish.current.visible = !!holding?.(t);
   }, reduced, still);
   const [sx, sy, sz] = EMPEROR_SHOULDER;
-  const flipper = partGeometry('emperor-flipper', () => EMPEROR_FLIPPER);
+  const flipper = polyGeometry('emperor-flipper', () => EMPEROR_FLIPPER_TRIS);
   return (
     <group ref={root} scale={EMPEROR_SWIM_SCALE}>
-      <mesh geometry={partGeometry('emperor-swim', () => EMPEROR_SWIM)} material={vehicleMaterial} />
+      <mesh geometry={polyGeometry('emperor-swim', () => EMPEROR_SWIM_TRIS)} material={vehicleMaterial} />
       <group ref={right} position={[sx, sy, sz - 0.1]}><mesh geometry={flipper} material={vehicleMaterial} /></group>
       <group ref={left} position={[sx, sy, -sz + 0.1]} scale={[1, 1, -1]}><mesh geometry={flipper} material={vehicleMaterial} /></group>
       {holding && (
         <group ref={fish} position={[EMPEROR_BILL_TIP, 0, 0]} rotation={[0, Math.PI / 2, 0]} scale={0.5 / EMPEROR_SWIM_SCALE} visible={false}>
-          <mesh geometry={partGeometry('silverfish', () => SILVERFISH)} material={vehicleMaterial} />
+          <mesh geometry={polyGeometry('silverfish', () => SILVERFISH_TRIS)} material={vehicleMaterial} />
         </group>
       )}
     </group>
@@ -411,8 +405,8 @@ function LeopardSeal({ swimming, reduced }: { swimming: boolean; reduced: boolea
   }, reduced, swimming ? LEOPARD_LOOP.period / 4 : SUCTION_PERIOD * 0.2);
   return (
     <group ref={root} scale={LEOPARD_SCALE}>
-      <mesh geometry={partGeometry('leopard-body', () => LEOPARD_BODY)} material={vehicleMaterial} />
-      <group ref={jaw} position={[...LEOPARD_HINGE]}><mesh geometry={partGeometry('leopard-jaw', () => LEOPARD_JAW)} material={vehicleMaterial} /></group>
+      <mesh geometry={polyGeometry('leopard-body', () => LEOPARD_BODY_TRIS)} material={vehicleMaterial} />
+      <group ref={jaw} position={[...LEOPARD_HINGE]}><mesh geometry={polyGeometry('leopard-jaw', () => LEOPARD_JAW_TRIS)} material={vehicleMaterial} /></group>
     </group>
   );
 }
@@ -451,7 +445,7 @@ function SuctionFlow({ reduced }: { reduced: boolean }) {
     }
   }, reduced, SUCTION_PERIOD * 0.2);
   return <>
-    <instancedMesh ref={krill} args={[partGeometry('krill', () => KRILL), vehicleMaterial, starts.length]} frustumCulled={false} />
+    <instancedMesh ref={krill} args={[polyGeometry('krill', () => KRILL_TRIS), vehicleMaterial, starts.length]} frustumCulled={false} />
     <group ref={water} visible={false}>
       {Array.from({ length: 8 }, (_, i) => <mesh key={i}><boxGeometry args={[0.05, 0.05, 0.05]} /><meshBasicMaterial color="#E9F6F6" transparent opacity={0.75} /></mesh>)}
     </group>
@@ -525,17 +519,17 @@ export const WEB_LAYOUT: Readonly<Record<MarineOrganism, Vec3>> = {
   krill: [-1.9, -5.2, -1], fish: [0.5, -5.2, -1], squid: [2.4, -5.2, -1], 'penguins-seals': [4.3, -5.2, -1],
   humpback: [-4.6, -2.9, -1], minke: [-2.3, -2.9, -1], emperor: [0, -2.9, -1], leopard: [2.2, -2.9, -1], orca: [4.5, -2.9, -1],
 };
-const WEB_MODEL: Readonly<Record<MarineOrganism, { boxes: readonly Box[]; scale: number }>> = {
-  producers: { boxes: DIATOM_DISC, scale: 0.9 },
-  krill: { boxes: KRILL, scale: 0.9 },
-  fish: { boxes: SILVERFISH, scale: 1 },
-  squid: { boxes: SQUID, scale: 1 },
-  'penguins-seals': { boxes: SEA_MODELS.seal, scale: 1.1 },
-  humpback: { boxes: HUMPBACK_BODY, scale: 1.6 },
-  minke: { boxes: SEA_MODELS.minke, scale: 1.4 },
-  emperor: { boxes: EMPEROR_SWIM, scale: 1.3 },
-  leopard: { boxes: LEOPARD_BODY, scale: 1.4 },
-  orca: { boxes: SEA_MODELS.orca, scale: 1.3 },
+const WEB_MODEL: Readonly<Record<MarineOrganism, { tris: readonly Tri[]; scale: number }>> = {
+  producers: { tris: DIATOM_DISC_TRIS, scale: 0.9 },
+  krill: { tris: KRILL_TRIS, scale: 0.9 },
+  fish: { tris: SILVERFISH_TRIS, scale: 1 },
+  squid: { tris: SQUID_TRIS, scale: 1 },
+  'penguins-seals': { tris: SEA_POLY_MODELS.seal, scale: 1.1 },
+  humpback: { tris: HUMPBACK_TRIS, scale: 1.6 },
+  minke: { tris: SEA_POLY_MODELS.minke, scale: 1.4 },
+  emperor: { tris: EMPEROR_SWIM_TRIS, scale: 1.3 },
+  leopard: { tris: LEOPARD_TRIS, scale: 1.4 },
+  orca: { tris: SEA_POLY_MODELS.orca, scale: 1.3 },
 };
 
 const UP = new Vector3(0, 1, 0);
@@ -575,7 +569,7 @@ function FoodWeb3D({ selected, reduced }: { selected: MarineOrganism | null; red
         const m = WEB_MODEL[o];
         const dim = selected && selected !== o && !linksOf(selected).some((l) => l.from === o || l.to === o);
         return <group key={o} position={[...WEB_LAYOUT[o]]} rotation={[0, 0.6, 0]} scale={dim ? m.scale * 0.75 : m.scale}>
-          <mesh geometry={partGeometry(`web-${o}`, () => m.boxes)} material={vehicleMaterial} />
+          <mesh geometry={polyGeometry(`web-${o}`, () => m.tris)} material={vehicleMaterial} />
         </group>;
       })}
     </group>
@@ -633,8 +627,8 @@ function Underwater({ view, state, reduced }: { view: MarineView; state: MarineS
       <SuctionFlow reduced={reduced} />
       <KrillSwarm center={[LEOPARD_MOUTH[0] + 1.6, LEOPARD_MOUTH[1], LEOPARD_MOUTH[2]]} count={40} spread={0.8} scale={0.12} reduced={reduced} />
       {state.compared && <>
-        <Prop id="baleen" boxes={BALEEN_DETAIL} position={[-0.2, -1.15, 1.4]} scale={0.75} rotation={[0, 0.25, 0]} />
-        <Prop id="teeth" boxes={TEETH_DETAIL} position={[1.9, -1.15, 1.4]} scale={0.75} rotation={[0, -0.25, 0]} />
+        <PolyProp id="baleen" tris={BALEEN_DETAIL_TRIS} position={[-0.2, -1.15, 1.4]} scale={0.75} rotation={[0, 0.25, 0]} />
+        <PolyProp id="teeth" tris={TEETH_DETAIL_TRIS} position={[1.9, -1.15, 1.4]} scale={0.75} rotation={[0, -0.25, 0]} />
       </>}
     </>}
     {view === 'orcas' && <OrcaPod reduced={reduced} />}

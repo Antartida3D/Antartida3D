@@ -645,6 +645,7 @@ export function VoyagePanel({ voyage, transport, animated, webgl, reduced, onExi
         essential={milestone.essential.text}
         reduced={reduced}
         onDone={() => (voyageArrived(at) ? onExit(true) : voyage.closeCard())}
+        onMap={() => onExit(false)}
         onLost={() => setLost((l) => [...l, milestone.id])}
       >
         {card}

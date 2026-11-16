@@ -13,6 +13,7 @@ import {
   type SceneDef,
 } from '@antartida/core';
 import { KindChip } from '../orcadas/KindChip.tsx';
+import { Icon } from '../ui.tsx';
 
 // Its own chunk: it needs three.js and WebGL, which the common card does not.
 const PonchoDioramaCanvas = lazy(() => import('./PonchoDioramaCanvas.tsx').then((m) => ({ default: m.PonchoDioramaCanvas })));
@@ -36,13 +37,15 @@ export interface DioramaTour {
  * with reduced motion it cuts. The clock of the fade is the browser's, the rules are in
  * @antartida/core (poncho-diorama.ts).
  */
-export function PonchoDiorama({ scene, essential, reduced, onDone, onLost, children }: {
+export function PonchoDiorama({ scene, essential, reduced, onDone, onMap, onLost, children }: {
   scene: SceneDef;
   /** Text of the stop, whose sentences the tour tells. */
   essential: string;
   reduced: boolean;
   /** The screen faded out: close the card. */
   onDone: () => void;
+  /** «Volver al mapa»: leave the trip for the map, keeping where it was (it can be resumed from the map). */
+  onMap: () => void;
   /** The WebGL context was lost for good: the common card takes over. */
   onLost: () => void;
   children: (tour: DioramaTour) => ReactNode;
@@ -112,6 +115,10 @@ export function PonchoDiorama({ scene, essential, reduced, onDone, onLost, child
           <PonchoDioramaCanvas scene={scene} step={view.step} reduced={reduced} onLost={onLost} />
         </Suspense>
       </div>
+      <button type="button" className="btn pdio-map" onClick={onMap}>
+        {Icon.back}
+        <span>Volver al mapa</span>
+      </button>
       {/* One single notice that this is an illustration. */}
       <div className="pdio-badge">
         <KindChip kind="recon" label="Reconstrucción ilustrada" />

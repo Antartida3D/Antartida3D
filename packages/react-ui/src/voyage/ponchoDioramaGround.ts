@@ -198,7 +198,8 @@ function distanceToSegment(x: number, z: number, a: readonly [number, number], b
 
 /** True when a detail of `size` at (x, z) would sit on an element of the scene or on one of its paths, or in the sea. */
 export function dioramaBlocked(scene: SceneDef, x: number, z: number, size = 0): boolean {
-  if (!dioramaOnLand(scene, x, z)) return true;
+  // The whole detail must stay on land, not just its middle.
+  if (!dioramaOnLand(scene, x, z + size)) return true;
   return (
     scene.elements.some((e) => Math.hypot(e.x - x, e.z - z) < sceneBodyRadius(e) + DIORAMA_CLEAR_MARGIN + size) ||
     scene.paths.some((p) => {

@@ -369,7 +369,7 @@ export function DioramaActors({ scene, step, ground, reduced }: { scene: SceneDe
       const moving = spot.moving && !reduced;
       const sway = reduced || e.curled ? 0 : Math.sin(t * DOG_SWAY_RATE + i) * DOG_SWAY;
       const bob = !moving ? 0 : Math.abs(Math.sin(t * DOG_BOB_RATE + i)) * DOG_BOB;
-      node.position.set(spot.x, gy + bob - (e.curled ? CURLED_SINK : 0), spot.z);
+      node.position.set(spot.x, gy + (e.lift ?? 0) + bob - (e.curled ? CURLED_SINK : 0), spot.z);
       node.rotation.set(sway, spot.yaw, 0, 'YZX');
       node.scale.set(DOG_SCALE * k, DOG_SCALE * k * (e.curled ? CURLED_HEIGHT : 1), DOG_SCALE * k);
       harnesses.set(i, placed(DOG_HARNESS, spot.x, gy + bob, spot.z, spot.yaw, DOG_SCALE * k));

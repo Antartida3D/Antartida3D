@@ -1,7 +1,8 @@
 import { printCount, printPlace, type ScenePath, type SceneDef, type SceneElement } from '@antartida/core';
 import { resolveRelief, type Tri, type Vec3 } from './lowPoly.ts';
 import { ponchoPrint } from './ponchoPeople.ts';
-import { HAMMER_STAKE_AT, PONCHO_PROPS, type PonchoPropId } from './ponchoProps.ts';
+import { HAMMER_STAKE_AT, PONCHO_PROP_IDS, PONCHO_PROPS, type PonchoPropId } from './ponchoProps.ts';
+import { buildRescueRotor, PONCHO_PROP2_IDS, PONCHO_PROPS2, RESCUE_ROTOR_AT, type PonchoProp2Id } from './ponchoProps2.ts';
 import { snowMound } from './ponchoShapes.ts';
 
 /**
@@ -20,13 +21,13 @@ const DRIFT: readonly [number, number, number] = [0.42, 0.34, 0.1];
 export const DOG_SCALE = 0.55;
 
 /** The faces placed at (x, z) turned by `yaw` and scaled, each vertex raised to the ground under it. */
-export function seatAt(tris: readonly Tri[], x: number, z: number, yaw: number, scale: number, ground: Ground): Tri[] {
+export function seatAt(tris: readonly Tri[], x: number, z: number, yaw: number, scale: number, ground: Ground, lift = 0): Tri[] {
   const c = Math.cos(yaw);
   const s = Math.sin(yaw);
   const place = ([px, py, pz]: Vec3): Vec3 => {
     const lx = x + (px * c + pz * s) * scale;
     const lz = z + (-px * s + pz * c) * scale;
-    return [lx, py * scale + ground(lx, lz) - (py <= 0.0005 ? FOUNDATION : 0), lz];
+    return [lx, py * scale + ground(lx, lz) + lift - (py <= 0.0005 && lift === 0 ? FOUNDATION : 0), lz];
   };
   return tris.map(([a, b, d, col]) => [place(a), place(b), place(d), col]);
 }
@@ -39,9 +40,21 @@ function atPerson(e: SceneElement, offset: readonly [number, number]): [number, 
   return [e.x + (offset[0] * c + offset[1] * s) * k, e.z + (-offset[0] * s + offset[1] * c) * k];
 }
 
+/** Every prop a scene may name: those of ponchoProps.ts and of ponchoProps2.ts. */
+export const SCENE_PROP_IDS: readonly string[] = [...PONCHO_PROP_IDS, ...PONCHO_PROP2_IDS];
+
+/** The faces of a prop by id. The parked helicopter takes its rotor, at rest. */
+export function scenePropTris(id: string): readonly Tri[] {
+  if (id in PONCHO_PROPS) return PONCHO_PROPS[id as PonchoPropId].tris;
+  const prop = PONCHO_PROPS2[id as PonchoProp2Id];
+  if (id !== 'rescueHelicopter') return prop.tris;
+  const [rx, ry, rz] = RESCUE_ROTOR_AT;
+  return [...prop.tris, ...buildRescueRotor().map(([a, b, c, color]): Tri => [[a[0] + rx, a[1] + ry, a[2] + rz], [b[0] + rx, b[1] + ry, b[2] + rz], [c[0] + rx, c[1] + ry, c[2] + rz], color])];
+}
+
 /** The still faces of one element, seated on the ground (relief colors not resolved): its prop, the stake it drives or the drift it sleeps in. Empty for the ones that move. */
 export function elementStaticTris(e: SceneElement, i: number, ground: Ground): Tri[] {
-  if (e.kind === 'prop') return seatAt(PONCHO_PROPS[e.id as PonchoPropId].tris, e.x, e.z, e.yaw, e.scale ?? 1, ground);
+  if (e.kind === 'prop') return seatAt(scenePropTris(e.id), e.x, e.z, e.yaw, e.scale ?? 1, ground, e.lift ?? 0);
   if (e.kind === 'person' && e.action === 'hammer') {
     const [sx, sz] = atPerson(e, HAMMER_STAKE_AT);
     return seatAt(PONCHO_PROPS.stakeAndPick.tris, sx, sz, e.yaw, e.scale ?? 1, ground);

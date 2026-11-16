@@ -171,6 +171,16 @@ describe('scenes of Poncho: data', () => {
     });
   }
 
+  it('tells every stop of the trip in stages: each sentence after the first brings something new into the scene', () => {
+    for (const { milestone } of voyageStops('dogs')) {
+      const scene = PONCHO_SCENES[milestone.id];
+      expect(scene, milestone.id).toBeDefined();
+      for (let step = 1; step < sceneStepCount(scene); step++) {
+        expect(scene.elements.some((e) => (e.appearAt ?? 0) === step), `${milestone.id}, step ${step}`).toBe(true);
+      }
+    }
+  });
+
   it('has the paths that walk with prints with several prints', () => {
     const walker = PONCHO_SCENES.nacimiento.paths.find((p) => p.prints)!;
     expect(printCount(walker)).toBeGreaterThan(4);

@@ -234,12 +234,11 @@ function MilestoneCard({ voyage, animated, onExit, onSource, tour }: {
       <small className="vstep">Hito {state.card + 1} de {voyageStops(state.kind).length}</small>
       {act && <small className="vact">Acto {act.number} · {act.act.title}</small>}
       <h2 id="voyage-title" tabIndex={tour ? -1 : undefined}>{milestone.title}</h2>
-      {photo && (
+      {photo && (!tour || tour.view.step >= photo.fromStep) && (
         <figure className="vphoto">
           <img src={PONCHO_PHOTO_URL[photo.file]} alt={photo.alt} loading="lazy" />
           <figcaption>
-            {photo.caption} Fuente: <a href={photo.source.url} target="_blank" rel="noreferrer">{photo.source.publisher}</a>, consultada el {photo.source.accessed}. <strong>Derechos pendientes de confirmar.</strong>
-          </figcaption>
+            {photo.caption} Fuente: <a href={photo.source.url} target="_blank" rel="noreferrer">{photo.source.publisher}</a>, consultada el {photo.source.accessed}.          </figcaption>
         </figure>
       )}
       {tour && (

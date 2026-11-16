@@ -84,6 +84,8 @@ export interface SceneElement {
   readonly rope?: { readonly to: number; readonly length: number };
   /** Radius of the space it takes on the ground, when it is not the one of its kind (see `sceneBodyRadius`). */
   readonly radius?: number;
+  /** prop, dog: height over the ground it hangs at, in scene units (a dog under its parachute, and the parachute). */
+  readonly lift?: number;
 }
 
 /** How the camera looks at a scene when its card opens. */
@@ -170,8 +172,7 @@ const RED = 'red';
 const NAVY = 'orangeNavy';
 
 /**
- * The scenes, by milestone id (content/poncho.ts). Stops without one (`rumbo-a-belgrano`,
- * `patrulla-paralelo-82`, `paracaidas`, `adios-a-la-antartida`, `ushuaia`) keep the plain camera.
+ * The scenes, by milestone id (content/poncho.ts): every stop of the trip has one, told in three stages (one per sentence).
  */
 export const PONCHO_SCENES: Readonly<Record<string, SceneDef>> = {
   // «Nace Poncho» (book p. 5 and 9), told in three stages, one per sentence of the stop (see `appearAt` / `until`):
@@ -215,89 +216,282 @@ export const PONCHO_SCENES: Readonly<Record<string, SceneDef>> = {
       shot(2, [-0.7, 0.5, 0], 10.5, 24, -100),
     ],
   },
-  // Probing for crevasses (book p. 12): they sink poles and stakes into the snow; Poncho sniffs ahead, the sled waits behind.
+  // Probing for crevasses (book p. 12), in three stages: 0 the team of the great winter expedition arrives; 1 Poncho goes ahead
+  // sniffing, slowly; 2 he stops and looks at the driver, and the men sink poles and stakes until they find the crevasse.
   'expedicion-invernal-1962': {
     setting: 'plain',
-    radius: 3.6,
+    radius: 4,
     elements: [
-      prop('crevasseBridge', 0, 0.3),
-      person(ORANGE, -0.8, -0.9, -Math.PI / 2, 'probe'),
-      person(RED, 0.9, -0.9, -Math.PI / 2, 'hammer', 1.9),
-      person(NAVY, 2.0, -0.4, yawToward(2.0, -0.4, 1.0, 0.3), 'probe', 3.7),
-      dog('poncho', 0.5, 1.5, 0),
-      sled(-2.6, 0.6, 0),
-      dog('pack', -1.6, 0.35, 0),
-      dog('pack', -1.6, 0.85, 0),
+      sled(-3.4, -1.5, 0, { path: 'march', radius: 0.8 }),
+      dog('pack', -3.4, -1.5, 0, { path: 'march', lead: 1.1, side: 0.28 }),
+      dog('pack', -3.4, -1.5, 0, { path: 'march', lead: 1.1, side: -0.28 }),
+      person(ORANGE, -3.4, -1.5, 0, 'walk', 0, { path: 'march', lead: -1.6 }),
+      dog('poncho', -1, 0.6, 0, { appearAt: 1, until: 2, path: 'sniff' }),
+      dog('poncho', 1.2, 0.9, yawToward(1.2, 0.9, -1.2, -1.5), { appearAt: 2 }),
+      prop('crevasseBridge', 2.9, 0.4, 0.2, 1, { appearAt: 2, radius: 0.9 }),
+      person(ORANGE, 2.3, -0.3, yawToward(2.3, -0.3, 2.9, 0.4), 'probe', 0, { appearAt: 2 }),
+      person(RED, 3.2, -0.7, yawToward(3.2, -0.7, 2.9, 0.4), 'hammer', 1.9, { appearAt: 2 }),
+      person(NAVY, 2.5, 1.5, yawToward(2.5, 1.5, 2.9, 0.4), 'probe', 3.7, { appearAt: 2 }),
     ],
-    paths: [],
+    paths: [
+      { id: 'march', from: [-3.4, -1.5], to: [-1, -1.5], delay: 0.2, duration: 6 },
+      { id: 'sniff', from: [-1, 0.6], via: [[0.3, 1.2], [1.1, 0.5]], to: [1.8, 1.4], delay: 0.3, duration: 16 },
+    ],
     camera: { distanceFactor: 1.05, elevationDeg: 44, azimuthDeg: -100 },
     shots: [
-      shot(0, [0, 0.5, 0], 9, 30, 70),
-      shot(1, [0.5, 0.35, 1.5], 3.2, 18, 20),
-      shot(2, [0.4, 0.5, -0.2], 5.5, 30, 80),
+      shot(0, [-1.6, 0.4, -1.5], 6.5, 26, -95),
+      shot(1, [-0.6, 0.3, -0.2], 7.5, 24, -85),
+      shot(2, [2.2, 0.4, 0.5], 5.8, 30, -100),
     ],
   },
-  // Winter camp (book p. 10): the dogs stay under one or two meters of snow and the men dig them out.
+  // The post of number one (book p. 10 and 11): 0 the instructor gives Poncho the lead of the team; 1 he follows the trail of the
+  // other sled with efficiency; 2 when the sled stops he lies down and turns to the driver.
   'poncho-perro-guia': {
     setting: 'plain',
-    radius: 3.4,
+    radius: 4.2,
     elements: [
-      prop('tent', -0.8, 0.6, Math.PI),
-      dog('pack', 1.4, -0.2, 0.4, { curled: true }),
-      dog('poncho', 2.0, 0.5, -2.2, { curled: true }),
-      dog('pack', 1.2, 1.1, 2.4, { curled: true }),
-      dog('pack', 2.3, 1.5, 0.9, { curled: true }),
-      person(ORANGE, 1.2, -1.5, -Math.PI / 2, 'shovel'),
-      prop('shovel', 2.5, -0.9, 0.3),
+      person(ORANGE, 1.6, -0.9, yawToward(1.6, -0.9, 0.4, 0.2), 'stand', 0, { until: 1 }),
+      sled(-2.3, 0, 0, { until: 1, radius: 0.8 }),
+      dog('pack', -0.7, -0.3, 0, { until: 1 }),
+      dog('pack', -0.7, 0.35, 0, { until: 1 }),
+      dog('poncho', -0.7, 1.0, 0, { until: 1, path: 'promoted' }),
+      // 1: the team follows the other sled along the trail, Poncho in front.
+      sled(-3.2, 0.9, 0, { appearAt: 1, until: 2, path: 'follow', radius: 0.8 }),
+      dog('pack', -3.2, 0.9, 0, { appearAt: 1, until: 2, path: 'follow', lead: 1.1, side: 0.28 }),
+      dog('pack', -3.2, 0.9, 0, { appearAt: 1, until: 2, path: 'follow', lead: 1.1, side: -0.28 }),
+      dog('poncho', -3.2, 0.9, 0, { appearAt: 1, until: 2, path: 'follow', lead: 2.1 }),
+      sled(0.2, -2.1, 0, { appearAt: 1, until: 2, path: 'other', radius: 0.8 }),
+      dog('pack', 0.2, -2.1, 0, { appearAt: 1, until: 2, path: 'other', lead: 1.1 }),
+      person(RED, 0.2, -2.1, 0, 'walk', 0, { appearAt: 1, until: 2, path: 'other', lead: -1.5 }),
+      // 2: the sled stands; Poncho lies in front of the driver and looks round at him.
+      sled(-2.2, 0.2, 0, { appearAt: 2, radius: 0.8 }),
+      dog('pack', -0.5, -0.1, 0, { appearAt: 2 }),
+      dog('pack', -0.5, 0.5, 0, { appearAt: 2 }),
+      dog('poncho', 0.7, 0.2, yawToward(0.7, 0.2, -2.3, -1.2), { appearAt: 2, curled: true }),
+      person(ORANGE, -2.4, -1.2, yawToward(-2.4, -1.2, 0.7, 0.2), 'stand', 0, { appearAt: 2 }),
     ],
-    paths: [],
+    paths: [
+      { id: 'promoted', from: [-0.7, 1.0], via: [[0.2, 1.1]], to: [0.9, 0.1], delay: 1, duration: 4 },
+      { id: 'follow', from: [-3.2, 0.9], to: [1.2, 0.9], delay: 0.2, duration: 8 },
+      { id: 'other', from: [0.2, -2.1], to: [3.2, -2.1], delay: 0.2, duration: 10 },
+    ],
     camera: { distanceFactor: 1.05, elevationDeg: 42, azimuthDeg: -125 },
     shots: [
-      shot(0, [1, 0.4, 0.4], 8, 30, -110),
-      shot(1, [2, 0.25, 0.5], 2.8, 24, -60),
-      shot(2, [1.2, 0.7, -1.5], 4, 22, 80),
+      shot(0, [-0.3, 0.4, 0], 8.5, 28, -100),
+      shot(1, [0, 0.3, 0], 8, 30, -95),
+      shot(2, [-0.8, 0.4, 0.1], 5.5, 22, -80),
     ],
   },
-  // The little plane that came down (book p. 17-18): the men jump for joy and hug Poncho; the sled arrives.
+  // The ship takes the dogs to the south (book p. 14): the icebreaker at the edge of the ice with its ramp and cargo;
+  // 0 Poncho and a man look at it; 1 many other dogs go to board; 2 the sleds and cargo of the march to the Pole are made ready.
+  'rumbo-a-belgrano': {
+    setting: 'coast',
+    radius: 4.2,
+    elements: [
+      prop('icebreakerHull', 0, 3.4, Math.PI, 1, { radius: 0.01 }),
+      prop('loadingRamp', -0.8, 1.0, Math.PI, 1, { radius: 0.5 }),
+      prop('cargoCrates', 1.3, 1.1, Math.PI, 1, { radius: 0.9 }),
+      person(NAVY, -2.4, -0.4, yawToward(-2.4, -0.4, 0, 3), 'stand', 0, { until: 2 }),
+      dog('poncho', -1.5, 0.3, yawToward(-1.5, 0.3, 0, 3), { until: 2 }),
+      dog('pack', -3.4, -1.7, 0, { appearAt: 1, path: 'file' }),
+      dog('pack', -3.4, -1.7, 0, { appearAt: 1, path: 'file', lag: 0.9 }),
+      dog('pack', -3.4, -1.7, 0, { appearAt: 1, path: 'file', lag: 1.8 }),
+      dog('pack', -3.4, -1.7, 0, { appearAt: 1, path: 'file', lag: 2.7 }),
+      sled(2.2, -1.2, 0.2, { appearAt: 2, radius: 0.8 }),
+      sled(1.2, -2.4, -0.1, { appearAt: 2, radius: 0.8 }),
+      person(ORANGE, 2.9, -0.2, -Math.PI / 2, 'tend', 0, { appearAt: 2 }),
+      person(RED, 0.4, -1.8, yawToward(0.4, -1.8, 1.2, -2.4), 'haul', 2.2, { appearAt: 2 }),
+    ],
+    paths: [{ id: 'file', from: [-3.4, -1.7], via: [[-2.6, -1.1]], to: [-1.0, -1.4], delay: 0.3, duration: 6 }],
+    camera: { distanceFactor: 1.1, elevationDeg: 42, azimuthDeg: -112 },
+    shots: [
+      shot(0, [-1.4, 0.7, 0.4], 8, 20, -90),
+      shot(1, [-2.2, 0.3, -1.2], 6.5, 25, -85),
+      shot(2, [1.4, 0.4, -1.2], 7, 28, -105),
+    ],
+  },
+  // The little plane that came down (book p. 17-18): 0 it lies on the ice and a man and Poncho look at it; 1 the patrol
+  // sets out, Poncho at the front; 2 he smells the plane and quickens his pace, the team behind him.
   'rescate-ae-205': {
     setting: 'plain',
     radius: 4.5,
     elements: [
-      prop('crashedPlane', 0.5, 1.6, 0.5, 0.85),
-      person(ORANGE, -1.6, -0.2, yawToward(-1.6, -0.2, -0.7, -0.2), 'cheer', 0),
-      person(RED, -0.6, -1.1, yawToward(-0.6, -1.1, -0.7, -0.2), 'cheer', 2.2),
-      person(NAVY, 0.2, -0.3, yawToward(0.2, -0.3, -0.7, -0.2), 'cheer', 4.1),
-      dog('poncho', -0.7, -0.2, yawToward(-0.7, -0.2, -1.6, -0.2)),
-      sled(-3.6, -2.4, 0.07, { path: 'arrival' }),
-      dog('pack', -3.6, -2.4, 0.07, { path: 'arrival', lead: 1.1, side: 0.28 }),
-      dog('pack', -3.6, -2.4, 0.07, { path: 'arrival', lead: 1.1, side: -0.28 }),
+      prop('crashedPlane', 2.8, 1.6, 0.5, 0.85, { radius: 1.4 }),
+      person(NAVY, -1.8, -0.6, yawToward(-1.8, -0.6, 2.8, 1.6), 'stand', 0, { until: 1 }),
+      dog('poncho', -1.2, -0.9, yawToward(-1.2, -0.9, 2.8, 1.6), { until: 1 }),
+      sled(-3.8, -2.4, 0.3, { appearAt: 1, until: 2, path: 'patrol', radius: 0.8 }),
+      dog('pack', -3.8, -2.4, 0, { appearAt: 1, until: 2, path: 'patrol', lead: 1.0, side: 0.28 }),
+      dog('pack', -3.8, -2.4, 0, { appearAt: 1, until: 2, path: 'patrol', lead: 1.0, side: -0.28 }),
+      dog('pack', -3.8, -2.4, 0, { appearAt: 1, until: 2, path: 'patrol', lead: 1.6, side: 0.28 }),
+      dog('pack', -3.8, -2.4, 0, { appearAt: 1, until: 2, path: 'patrol', lead: 1.6, side: -0.28 }),
+      dog('poncho', -3.8, -2.4, 0, { appearAt: 1, until: 2, path: 'patrol', lead: 2.2 }),
+      person(ORANGE, -3.8, -2.4, 0, 'walk', 0, { appearAt: 1, until: 2, path: 'patrol', lead: -1.5 }),
+      person(RED, -3.8, -2.4, 0, 'walk', 1.5, { appearAt: 1, until: 2, path: 'patrol', lead: -2.5 }),
+      dog('poncho', -1.0, 0.0, 0, { appearAt: 2, path: 'dash' }),
+      sled(-3.6, -1.0, 0, { appearAt: 2, path: 'late', radius: 0.8 }),
+      person(ORANGE, -3.6, -1.0, 0, 'walk', 0, { appearAt: 2, path: 'late', lead: -1.6 }),
     ],
-    paths: [{ id: 'arrival', from: [-3.6, -2.4], to: [-1.0, -2.2], delay: 0.2, duration: 5 }],
+    paths: [
+      { id: 'patrol', from: [-3.8, -2.4], via: [[-2.2, -1.6]], to: [-1.2, -2.0], delay: 0.2, duration: 9 },
+      { id: 'dash', from: [-1.0, 0.0], to: [1.0, 0.9], delay: 0.5, duration: 2.5 },
+      { id: 'late', from: [-3.6, -1.0], to: [-0.6, -1.4], delay: 0.5, duration: 8 },
+    ],
     camera: { distanceFactor: 1.1, elevationDeg: 40, azimuthDeg: -115 },
     shots: [
-      shot(0, [0.5, 0.6, 1.6], 6.5, 28, -80),
-      shot(1, [-2.3, 0.4, -2.3], 5.5, 25, 60),
-      shot(2, [-0.7, 0.4, -0.2], 3.4, 18, 235),
+      shot(0, [0.6, 0.6, 0.5], 8.5, 28, -95),
+      shot(1, [-2.4, 0.4, -1.8], 7, 26, -85),
+      shot(2, [0.2, 0.4, 0.5], 7, 24, -100),
     ],
   },
-  // Lost compass (book p. 20): three canes with streamers in the snow; a man looks at Poncho.
-  'brujula-perdida': {
+  // The march that goes on (book p. 15-16): 0 two sleds of dogs go on, Poncho guiding them; 1 he goes ahead, over a snow
+  // bridge and past canes, to find the dangers; 2 the patrol goes through the peaks of the Santa Fe mountains.
+  'patrulla-paralelo-82': {
     setting: 'plain',
-    radius: 3.2,
+    radius: 4.2,
     elements: [
-      prop('flaggedCanes', 0.6, 0.5, 0, 1.4),
-      sled(-2.2, -0.5, 0.1),
-      dog('pack', -1.2, -0.7, 0.1),
-      dog('pack', -1.2, -0.2, 0.1),
-      dog('poncho', -0.1, 0.5, 0.1),
-      person(NAVY, -0.3, -1.1, yawToward(-0.3, -1.1, -0.1, 0.5), 'stand'),
+      sled(-3.6, -1.4, 0, { until: 1, path: 'march', radius: 0.8 }),
+      dog('pack', -3.6, -1.4, 0, { until: 1, path: 'march', lead: 1.1, side: 0.28 }),
+      dog('pack', -3.6, -1.4, 0, { until: 1, path: 'march', lead: 1.1, side: -0.28 }),
+      dog('poncho', -3.6, -1.4, 0, { until: 1, path: 'march', lead: 1.9 }),
+      person(ORANGE, -3.6, -1.4, 0, 'walk', 0, { until: 1, path: 'march', lead: -1.6 }),
+      prop('crevasseBridge', 2.0, 1.4, 0.15, 1, { appearAt: 1, until: 2, radius: 0.9 }),
+      prop('flaggedCanes', 0.6, -0.9, 0, 1, { appearAt: 1, until: 2, radius: 0.3 }),
+      dog('poncho', -2.4, 0.4, 0, { appearAt: 1, until: 2, path: 'scout' }),
+      prop('nunataks', 0.8, 2.6, 0, 1, { appearAt: 2, radius: 1.4 }),
+      sled(-3.6, -0.7, 0, { appearAt: 2, path: 'pass', radius: 0.8 }),
+      dog('pack', -3.6, -0.7, 0, { appearAt: 2, path: 'pass', lead: 1.1, side: 0.28 }),
+      dog('pack', -3.6, -0.7, 0, { appearAt: 2, path: 'pass', lead: 1.1, side: -0.28 }),
+      dog('poncho', -3.6, -0.7, 0, { appearAt: 2, path: 'pass', lead: 1.9 }),
+      person(ORANGE, -3.6, -0.7, 0, 'walk', 0, { appearAt: 2, path: 'pass', lead: -1.6 }),
+    ],
+    paths: [
+      { id: 'march', from: [-3.6, -1.4], to: [-0.4, -1.4], delay: 0.2, duration: 8 },
+      { id: 'scout', from: [-2.4, 0.4], via: [[-0.6, -0.1]], to: [1.0, 0.1], delay: 0.3, duration: 9 },
+      { id: 'pass', from: [-3.6, -0.7], via: [[-1.6, -0.2]], to: [1.0, -0.3], delay: 0.2, duration: 10 },
+    ],
+    camera: { distanceFactor: 1.1, elevationDeg: 42, azimuthDeg: -110 },
+    shots: [
+      shot(0, [-1.6, 0.5, -1.4], 8, 26, -95),
+      shot(1, [0.2, 0.4, 0.4], 7, 28, -80),
+      shot(2, [-0.8, 0.8, 0.2], 9, 22, -100),
+    ],
+  },
+  // From the air (book p. 18-19): 0 the helicopter on the ice with its door open; 1 the dogs come down on parachutes, paddling
+  // their legs; 2 they land and Poncho is already at the front of the sled.
+  paracaidas: {
+    setting: 'plain',
+    radius: 4.2,
+    elements: [
+      prop('rescueHelicopter', -2.3, 1.0, -0.4, 1, { until: 2, radius: 1.6 }),
+      person(ORANGE, 0.9, -0.5, yawToward(0.9, -0.5, -2.3, 1.0), 'stand', 0, { until: 1 }),
+      dog('poncho', 1.5, 0.4, yawToward(1.5, 0.4, -2.3, 1.0), { until: 1 }),
+      prop('dogParachute', 1.8, 1.8, 0, 1, { appearAt: 1, until: 2, lift: 1.0, radius: 0.3 }),
+      dog('pack', 1.8, 1.8, 0.6, { appearAt: 1, until: 2, lift: 0.96 }),
+      prop('dogParachute', 2.8, -0.2, 0, 1, { appearAt: 1, until: 2, lift: 0.6, radius: 0.3 }),
+      dog('poncho', 2.8, -0.2, 0, { appearAt: 1, until: 2, lift: 0.56 }),
+      prop('dogParachute', 0.6, -1.9, 0, 1, { appearAt: 1, until: 2, lift: 1.3, radius: 0.3 }),
+      dog('pack', 0.6, -1.9, -0.5, { appearAt: 1, until: 2, lift: 1.26 }),
+      sled(-1.6, -1.0, 0, { appearAt: 2, radius: 0.8 }),
+      dog('pack', -0.4, -0.7, 0, { appearAt: 2 }),
+      dog('pack', -0.4, -1.3, 0, { appearAt: 2 }),
+      dog('poncho', 0.6, -1.0, 0, { appearAt: 2 }),
+      person(RED, -2.4, -1.0, 0, 'haul', 0, { appearAt: 2 }),
     ],
     paths: [],
+    camera: { distanceFactor: 1.1, elevationDeg: 40, azimuthDeg: -110 },
+    shots: [
+      shot(0, [-0.3, 0.8, 0.6], 8, 24, -80),
+      shot(1, [1.6, 1.2, 0.2], 10, 22, -95),
+      shot(2, [-0.6, 0.4, -1.0], 6, 26, -100),
+    ],
+  },
+  // Lost compass (book p. 20): 0 the team walks in the storm; 1 the sled lies on its side and the men look for the compass
+  // in the snow; 2 Poncho leads them, in single file, towards the base, which shows its windows.
+  'brujula-perdida': {
+    setting: 'plain',
+    radius: 3.6,
+    elements: [
+      sled(-3.2, 0.4, 0, { until: 1, path: 'storm', radius: 0.8 }),
+      dog('pack', -3.2, 0.4, 0, { until: 1, path: 'storm', lead: 1.1, side: 0.28 }),
+      dog('pack', -3.2, 0.4, 0, { until: 1, path: 'storm', lead: 1.1, side: -0.28 }),
+      dog('poncho', -3.2, 0.4, 0, { until: 1, path: 'storm', lead: 1.9 }),
+      person(NAVY, -3.2, 0.4, 0, 'walk', 0, { until: 1, path: 'storm', lead: -1.6 }),
+      prop('overturnedSled', -1.0, -0.2, 0.3, 1, { appearAt: 1, until: 2, radius: 1.0 }),
+      person(NAVY, 0.4, -0.7, yawToward(0.4, -0.7, -0.6, -0.1), 'shovel', 0, { appearAt: 1, until: 2 }),
+      person(ORANGE, -2.0, 1.1, yawToward(-2.0, 1.1, -1.0, -0.2), 'tend', 1.3, { appearAt: 1, until: 2 }),
+      dog('pack', 0.8, 0.9, 2.5, { appearAt: 1, until: 2 }),
+      dog('poncho', 0.2, 0.3, 0.4, { appearAt: 1, until: 2 }),
+      prop('baseHut', 2.5, 1.6, Math.PI, 0.9, { appearAt: 2, radius: 1.2 }),
+      dog('poncho', -2.6, -0.4, 0, { appearAt: 2, path: 'home' }),
+      person(NAVY, -2.6, -0.4, 0, 'walk', 0, { appearAt: 2, path: 'home', lag: 0.9 }),
+      person(ORANGE, -2.6, -0.4, 0, 'walk', 1.7, { appearAt: 2, path: 'home', lag: 1.8 }),
+    ],
+    paths: [
+      { id: 'storm', from: [-3.2, 0.4], to: [-1.8, 0.4], delay: 0.2, duration: 6 },
+      { id: 'home', from: [-2.6, -0.4], via: [[-0.8, -1.0]], to: [1.0, -0.4], delay: 0.4, duration: 11 },
+    ],
     camera: { distanceFactor: 1.05, elevationDeg: 42, azimuthDeg: -120 },
     shots: [
-      shot(0, [-0.5, 0.5, 0], 8.5, 28, -90),
-      shot(1, [-2.2, 0.3, -0.5], 4, 24, -40),
-      shot(2, [-0.2, 0.6, -0.3], 4.2, 18, 200),
+      shot(0, [-2, 0.5, 0.4], 7, 26, -90),
+      shot(1, [-0.4, 0.4, 0.1], 5.5, 30, -95),
+      shot(2, [0.2, 0.6, 0.1], 6.5, 24, -110),
+    ],
+  },
+  // The years go by (book p. 21): 0 Poncho lies by the hut, old, with a man; 1 the young dogs run with the sled and he stays;
+  // 2 the ship arrives at the edge of the ice and Poncho walks to its ramp with the man.
+  'adios-a-la-antartida': {
+    setting: 'coast',
+    radius: 4.2,
+    elements: [
+      prop('baseHut', 3.4, 1.6, Math.PI, 1, { radius: 1.2 }),
+      dog('poncho', -0.6, 0.0, 0.3, { until: 2, curled: true }),
+      person(NAVY, 0.4, -0.4, yawToward(0.4, -0.4, -0.6, 0), 'stand', 0, { until: 1 }),
+      sled(-3.0, -2.0, 0, { appearAt: 1, until: 2, path: 'run', radius: 0.8 }),
+      dog('pack', -3.0, -2.0, 0, { appearAt: 1, until: 2, path: 'run', lead: 1.1, side: 0.28 }),
+      dog('pack', -3.0, -2.0, 0, { appearAt: 1, until: 2, path: 'run', lead: 1.1, side: -0.28 }),
+      dog('pack', -3.0, -2.0, 0, { appearAt: 1, until: 2, path: 'run', lead: 1.8 }),
+      person(RED, -3.0, -2.0, 0, 'walk', 0, { appearAt: 1, until: 2, path: 'run', lead: -1.6 }),
+      prop('icebreakerHull', 0, 3.4, Math.PI, 1, { appearAt: 2, radius: 0.01 }),
+      prop('loadingRamp', -0.8, 1.0, Math.PI, 1, { appearAt: 2, radius: 0.5 }),
+      dog('poncho', -2.4, -0.9, 0, { appearAt: 2, path: 'board' }),
+      person(NAVY, -2.4, -0.9, 0, 'walk', 0, { appearAt: 2, path: 'board', lag: 1.0, side: 0.7 }),
+    ],
+    paths: [
+      { id: 'run', from: [-3.0, -2.0], via: [[0.5, -2.1], [2.2, -1.7], [0.5, -1.4], [-2.0, -1.5]], to: [-3.0, -2.0], loop: true, delay: 0.2, duration: 16 },
+      { id: 'board', from: [-2.4, -0.9], to: [-1.6, 0.1], delay: 0.5, duration: 9 },
+    ],
+    camera: { distanceFactor: 1.1, elevationDeg: 42, azimuthDeg: -112 },
+    shots: [
+      shot(0, [-0.6, 0.4, 0.0], 5.5, 26, -95),
+      shot(1, [-0.2, 0.4, -1.2], 8, 28, -90),
+      shot(2, [-1.2, 0.6, 0.5], 8, 24, -95),
+    ],
+  },
+  // A quiet end (book p. 21-22): 0 the hotel of an old comrade, Poncho and a man in front of it; 1 children and an improvised sled, and
+  // he lives almost eighteen years; 2 one spring morning in the garden he rests under the tree and does not wake.
+  ushuaia: {
+    setting: 'plain',
+    radius: 4,
+    elements: [
+      prop('townHouse', 0, 2.6, Math.PI, 1, { radius: 1.6 }),
+      prop('lowFence', 0, 1.0, 0, 1, { radius: 1.2 }),
+      prop('lengaTree', -2.8, 1.8, 0, 1, { radius: 0.5 }),
+      prop('nireTree', 2.8, 1.6, 0, 1, { radius: 0.4 }),
+      prop('shrub', 1.8, 0.4, 0, 1, { radius: 0.3 }),
+      person(NAVY, -0.4, 0.1, yawToward(-0.4, 0.1, 0.6, -0.3), 'stand', 0, { until: 2 }),
+      dog('poncho', 0.6, -0.3, yawToward(0.6, -0.3, -0.4, 0.1), { until: 1 }),
+      dog('poncho', 0.3, -1.2, 0, { appearAt: 1, until: 2, path: 'stroll' }),
+      prop('makeshiftSled', 1.6, -1.8, 0.3, 1, { appearAt: 1, until: 2, radius: 0.8 }),
+      person(RED, 2.4, -0.9, yawToward(2.4, -0.9, 1.6, -1.8), 'cheer', 0, { appearAt: 1, until: 2, scale: 0.6 }),
+      person(ORANGE, 0.9, -2.3, yawToward(0.9, -2.3, 1.6, -1.8), 'cheer', 2.5, { appearAt: 1, until: 2, scale: 0.6 }),
+      dog('poncho', -2.2, 1.0, 0.8, { appearAt: 2, curled: true }),
+    ],
+    paths: [{ id: 'stroll', from: [0.3, -1.2], via: [[-1.0, -1.7], [-1.7, -1.1], [-1.2, -0.7]], to: [0.3, -1.2], loop: true, delay: 0.3, duration: 14 }],
+    camera: { distanceFactor: 1.05, elevationDeg: 38, azimuthDeg: -115 },
+    shots: [
+      shot(0, [0, 1.0, 0.8], 8.5, 22, -95),
+      shot(1, [0.8, 0.4, -1.0], 6.5, 28, -90),
+      shot(2, [-2.2, 0.4, 1.0], 4.2, 24, -75),
     ],
   },
 };

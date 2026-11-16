@@ -10,9 +10,8 @@ import {
   voyageStops,
 } from '@antartida/core';
 import { PERSON_VARIANTS } from '../src/voyage/ponchoPeople.ts';
-import { PONCHO_PROP_IDS } from '../src/voyage/ponchoProps.ts';
 import { PONCHO_MODELS } from '../src/voyage/ponchoModels.ts';
-import { elementStaticTris, pathFootprints, sceneFootprints, sceneStaticTris } from '../src/voyage/ponchoSceneBuild.ts';
+import { elementStaticTris, pathFootprints, SCENE_PROP_IDS, sceneFootprints, sceneStaticTris } from '../src/voyage/ponchoSceneBuild.ts';
 import { sceneLookAt } from '../src/voyage/ponchoSceneFocus.ts';
 import type { Tri } from '../src/voyage/lowPoly.ts';
 
@@ -24,7 +23,7 @@ describe('scenes of Poncho: ids against the models', () => {
     it(`${id}: every element names a model, a variant or a dog that exists`, () => {
       for (const e of scene.elements) {
         if (e.kind === 'person') expect(PERSON_VARIANTS).toContain(e.id);
-        if (e.kind === 'prop') expect(PONCHO_PROP_IDS).toContain(e.id);
+        if (e.kind === 'prop') expect(SCENE_PROP_IDS).toContain(e.id);
         if (e.kind === 'sled') expect(e.id).toBe('nansenSled');
         if (e.kind === 'dog') expect(['poncho', 'pack']).toContain(e.id);
       }

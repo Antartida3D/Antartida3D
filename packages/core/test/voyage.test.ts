@@ -722,20 +722,8 @@ describe('voyage state', () => {
     expect(advanceVoyage(end, 10)).toBe(end);
   });
 
-  it('stops at the next milestone, without opening it, when asked to', () => {
-    let s = startVoyage('irizar');
-    for (let i = 1; i < last; i++) {
-      s = advanceVoyage(s, 1000, true);
-      expect(s.t).toBe(ship[i].t);
-      expect(s.card).toBe(-1);
-      expect(voyageStopAt(s)).toBe(i);
-    }
-    s = advanceVoyage(s, 1000, true);
-    expect(s.card).toBe(last);
-  });
-
   it('opens the card of a milestone passed only when asked, and holds the trip while it is open', () => {
-    const s = advanceVoyage(startVoyage('irizar'), 1000, true);
+    const s = skipToNextStop(startVoyage('irizar'));
     expect(openVoyageCard(s, 2)).toBe(s); // not passed yet
     const open = openVoyageCard(s, 1);
     expect(open.card).toBe(1);
@@ -752,8 +740,8 @@ describe('voyage state', () => {
   });
 
   it('goes back keeping the milestones passed, and offers the one behind the vehicle', () => {
-    let s = advanceVoyage(startVoyage('irizar'), 1000, true);
-    s = advanceVoyage(s, 1000, true);
+    let s = skipToNextStop(startVoyage('irizar'));
+    s = skipToNextStop(s);
     const at = s.t;
     s = retreatVoyage(s, 1);
     expect(s.t).toBeCloseTo(at - 1 / VOYAGE_SECONDS.ship);

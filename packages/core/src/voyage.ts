@@ -735,10 +735,9 @@ export const voyageArrived = (s: VoyageState) => s.reached >= voyageStops(s.kind
 /**
  * Advances the trip by `seconds` of the user holding "advance". The milestones on the way are
  * passed without stopping: their cards are offered, not opened (#157), for whoever does not want
- * to read them all. Only the arrival stops the trip and opens its card. With `toNext` it stops at
- * the next milestone, without opening it: the "next milestone" button.
+ * to read them all. Only the arrival stops the trip and opens its card.
  */
-export function advanceVoyage(s: VoyageState, seconds: number, toNext = false): VoyageState {
+export function advanceVoyage(s: VoyageState, seconds: number): VoyageState {
   if (s.card >= 0 || voyageArrived(s) || seconds <= 0) return s;
   const stops = voyageStops(s.kind);
   const last = lastStop(s.kind);
@@ -751,7 +750,6 @@ export function advanceVoyage(s: VoyageState, seconds: number, toNext = false): 
   let reached = s.reached;
   while (reached < stops.length && t >= stops[reached].t) {
     if (reached === last) return { ...s, t: stops[last].t, reached: last + 1, card: last };
-    if (toNext) return { ...s, t: stops[reached].t, reached: reached + 1 };
     reached++;
   }
   return { ...s, t, reached };

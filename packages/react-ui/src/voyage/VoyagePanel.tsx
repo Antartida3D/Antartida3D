@@ -363,6 +363,12 @@ function MilestoneCard({ voyage, animated, onExit, onSource, tour }: {
       {milestone.hook && (!tour || tour.view.showsHook) && <p className="vhook">{milestone.hook}</p>}
       <div className="row vactions">
         {tour && <button type="button" className="btn" disabled={tour.view.first} onClick={tour.onBack}>Atrás</button>}
+        {!beforeHop && (!tour || tour.view.showsMore) && (
+          <button type="button" className="btn ghost" aria-expanded={more} onClick={() => setMore((m) => !m)}>
+            {more ? 'Ver menos' : 'Saber más'}
+          </button>
+        )}
+        {/* The one main button, last on the right, where the thumb reaches on a phone (#177). */}
         {tour && !tour.view.last ? (
           <button type="button" className="btn primary" onClick={tour.onNext}>Siguiente</button>
         ) : (
@@ -372,14 +378,6 @@ function MilestoneCard({ voyage, animated, onExit, onSource, tour }: {
               : beforeHop ? 'Continuar' : last ? 'Terminar el viaje' : arrived ? 'Volver a la llegada' : 'Seguir viaje'}
           </button>
         )}
-        {!beforeHop && (!tour || tour.view.showsMore) && (
-          <button type="button" className="btn ghost" aria-expanded={more} onClick={() => setMore((m) => !m)}>
-            {more ? 'Ver menos' : 'Saber más'}
-          </button>
-        )}
-        <button type="button" className="btn primary" onClick={next}>
-          {beforeHop ? 'Continuar' : last ? 'Terminar el viaje' : arrived ? 'Volver a la llegada' : 'Seguir viaje'}
-        </button>
       </div>
     </>
   );
@@ -572,7 +570,9 @@ function TravelBar({ voyage, animated, onExit, onSource }: { voyage: VoyageContr
           It is the last one, on the right, where the thumb reaches on a phone (#177). */}
       <div className="row">
         <button type="button" className="btn ghost vexit" onClick={onExit} aria-label="Salir del viaje" title="Salir del viaje">✕</button>
-        <button type="button" className={'btn' + (animated ? '' : ' primary')} onClick={() => voyage.skip(animated)}>Próximo hito</button>
+        {/* Where the trip is not animated (2D map, reduced motion) it goes step by step. Animated, holding
+            «avanzar» picks up speed (#166): a button to jump ahead was one too many (#190). */}
+        {!animated && <button type="button" className="btn primary" onClick={voyage.skip}>Próximo hito</button>}
         {animated && (
           <button
             type="button"

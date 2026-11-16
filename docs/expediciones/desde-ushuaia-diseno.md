@@ -44,9 +44,9 @@ El turismo se menciona como una línea de contexto: no es un transporte jugable 
 - Al soltar, el vehículo frena suave como antes. Si se vuelve a apretar enseguida, conserva casi toda la velocidad: lo ganado se pierde el doble de rápido de lo que se ganó (`nextHeld`). Al darse vuelta, vuelve a ×1.
 - Sobre el botón, un globito muestra la velocidad mientras se mantiene, de a medio punto (×1,5, ×2… ×4).
 - Reemplaza a las marchas por toques seguidos (×2 y ×3,5) y al cartel «¿Sabías?» que las explicaba: ya no hace falta saber nada para ir más rápido.
-- «Próximo hito» no cambia: va rápido hasta el siguiente hito y se detiene.
+- «Próximo hito» ya no está en el viaje animado (#190): con esta aceleración dejó de hacer falta y era un botón más en una barra cargada. Queda en el mapa 2D y con movimiento reducido, donde es la forma de avanzar.
 - **Según la distancia de la cámara (#168):** el vehículo se dibuja más grande cuanto más lejos está la cámara, para que siempre se vea igual. Por eso, a la misma velocidad sobre el mapa, desde lejos parecía arrastrarse. Ahora el viaje va más rápido cuanto más lejos está la cámara: a ×1 hasta 25 unidades de distancia y proporcional a la distancia desde ahí, hasta ×4 (`voyagePace`, `VOYAGE_PACE_DISTANCE` y `VOYAGE_PACE_TOP` en `core/src/voyage.ts`). Recorre los mismos largos de barco por segundo y en pantalla se mueve parecido de cerca y de lejos.
-- Se multiplica con la aceleración al mantener y vale también para «Próximo hito», «retroceder» y el avión. El globito ×N muestra solo la aceleración por mantener, no este factor.
+- Se multiplica con la aceleración al mantener y vale también para «retroceder» y el avión. El globito ×N muestra solo la aceleración por mantener, no este factor.
 - La cámara la mide la escena 3D (`Voyage3D.tsx`, en `bus.pace`). En el mapa 2D el viaje va a su ritmo de siempre.
 
 ## Tope de alejamiento durante el viaje (#167)
@@ -320,8 +320,8 @@ Pedido de quien lleva el issue: el viaje frenaba en cada hito y obligaba a leer.
 
 - **El viaje no frena:** al mantener «avanzar» el vehículo pasa los hitos de largo (`advanceVoyage`, en `core/src/voyage.ts`). Solo la llegada detiene el viaje y abre su tarjeta. La salida tampoco abre la suya: el viaje arranca sin tarjeta.
 - **Se ofrecen:** la barra del viaje muestra el hito por el que se acaba de pasar (`voyageStopAt`) con un botón «Leer» y, si tiene pregunta sin responder, otro «¿Una pregunta?». Si se retrocede, ofrece el hito que quedó detrás. El pin gris de un hito pasado también es un botón que abre su tarjeta. Mientras la tarjeta está abierta el viaje espera, como con los animales.
-- **«Próximo hito»** viaja hasta el siguiente hito y se detiene ahí, sin abrirlo. En el mapa 2D y con movimiento reducido salta al hito, también sin abrirlo.
+- **«Próximo hito»** existe solo en el mapa 2D y con movimiento reducido: salta al siguiente hito, sin abrirlo. En el viaje animado se quitó (#190): se avanza manteniendo «avanzar».
 - **La pregunta** espera detrás de «Responder una pregunta». Si la tarjeta se abrió desde «¿Una pregunta?», la pregunta se ve de entrada. En la llegada no hay botón extra: la pregunta se ve de entrada y responderla sigue siendo opcional.
 - **Llegada en el Irízar (mapa 3D):** la ficha muestra la pregunta y un solo botón, «Continuar», que hace el traslado en helicóptero sin opción de saltearlo. El resumen (preguntas, hitos y cuaderno) aparece cuando el helicóptero se posa. Si la pregunta quedó sin responder, se oculta y se muestran las notas: el traslado ya dio la respuesta.
 - **Al llegar,** la tarjeta lista los hitos como el cuaderno de avistajes: en sólido los abiertos y punteados los que no («abriste X de Y»; la llegada no se cuenta). A diferencia de los animales, un hito sin abrir muestra su nombre y se puede abrir desde ahí: es contenido para leer, no algo que encontrar. Al cerrarlo se vuelve a la llegada («Volver a la llegada»).
-- **Pruebas:** `core/test/voyage.test.ts` (el viaje no frena, se detiene en la llegada, «Próximo hito» no abre, una tarjeta se abre solo si ya se pasó el hito, después de la llegada se vuelve a ella, puntaje con preguntas sin responder). E2E en `voyage-arrival.spec.ts` y `voyage3d.spec.ts`.
+- **Pruebas:** `core/test/voyage.test.ts` (el viaje no frena, se detiene en la llegada, el salto al próximo hito no abre, una tarjeta se abre solo si ya se pasó el hito, después de la llegada se vuelve a ella, puntaje con preguntas sin responder). E2E en `voyage-arrival.spec.ts` y `voyage3d.spec.ts`.

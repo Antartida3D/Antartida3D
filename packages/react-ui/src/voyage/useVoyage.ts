@@ -40,9 +40,6 @@ export interface VoyageBus {
  */
 export const NARROW_PX = 820;
 
-/** Speed of the trip to the next milestone when the user asks for it instead of holding "advance". */
-const SKIP_SPEED = 6;
-
 /** Seconds the vehicle takes to pick up speed and to coast to a stop. */
 const EASE_SECONDS = 0.3;
 
@@ -53,8 +50,8 @@ export interface VoyageController {
   start: (transport: TransportId) => void;
   /** Move while true, forward or back along the trip: the user sets the pace. */
   hold: (on: boolean, back?: boolean) => void;
-  /** Go to the next milestone: travelling there fast when `animate`, or at once (reduced motion, 2D map). */
-  skip: (animate?: boolean) => void;
+  /** Jump to the next milestone: the step-by-step trip of the 2D map and of reduced motion. */
+  skip: () => void;
   closeCard: () => void;
   /** Animals spotted on this trip, and the one whose card is open. */
   seen: readonly string[];
@@ -109,13 +106,12 @@ export function useVoyage(): VoyageController {
     show(next);
     notify();
   };
-  // `auto`: travelling by itself to the next milestone. `held`: seconds of holding that count for the speed.
-  const drive = useRef({ pressed: false, auto: false, power: 0, held: 0, back: false });
+  // `held`: seconds of holding that count for the speed.
+  const drive = useRef({ pressed: false, power: 0, held: 0, back: false });
   const stop = () => {
     cancelAnimationFrame(frame.current);
     frame.current = 0;
     drive.current.pressed = false;
-    drive.current.auto = false;
     drive.current.power = 0;
     drive.current.held = 0;
     bus.speed = 1;
@@ -155,7 +151,7 @@ export function useVoyage(): VoyageController {
     cancelAnimationFrame(hop.current);
   }, []);
 
-  /** Moves the trip frame by frame while a button is held or the trip goes by itself, then coasts to a stop. */
+  /** Moves the trip frame by frame while a button is held, then coasts to a stop. */
   const run = () => {
     if (frame.current) return; // already moving, or still coasting from the previous press
     const d = drive.current;
@@ -166,22 +162,21 @@ export function useVoyage(): VoyageController {
       // A frame can carry a timestamp older than the press that started the loop.
       const dt = Math.min(0.1, Math.max(0, (now - last) / 1000));
       last = now;
-      const moving = d.pressed || d.auto;
       // Ease in and out instead of starting and stopping dead.
-      d.power += ((moving ? 1 : 0) - d.power) * (1 - Math.exp(-dt / EASE_SECONDS));
-      // Held, it picks up speed little by little; going by itself to the next milestone it goes fast at once.
-      d.held = d.auto ? 0 : nextHeld(d.held, dt, d.pressed);
-      const speed = d.auto ? SKIP_SPEED : rampSpeed(d.held);
+      d.power += ((d.pressed ? 1 : 0) - d.power) * (1 - Math.exp(-dt / EASE_SECONDS));
+      // Held, it picks up speed little by little.
+      d.held = nextHeld(d.held, dt, d.pressed);
+      const speed = rampSpeed(d.held);
       bus.speed = d.pressed ? speed : 1;
       // From farther the trip goes faster, so it does not crawl on the screen (#168).
       const seconds = dt * speed * bus.pace * d.power;
-      // Going by itself it stops at the next milestone; held, it goes past them (#157).
-      const next = d.back ? retreatVoyage(before, seconds) : advanceVoyage(before, seconds, d.auto);
+      // Held, it goes past the milestones (#157).
+      const next = d.back ? retreatVoyage(before, seconds) : advanceVoyage(before, seconds);
       bus.state = next;
       notify();
       const atEnd = d.back ? next.t <= 0 : voyageArrived(next);
       const passed = next.reached !== before.reached;
-      if (next.card !== before.card || atEnd || (d.auto && passed) || (!moving && d.power < 0.03)) {
+      if (next.card !== before.card || atEnd || (!d.pressed && d.power < 0.03)) {
         stop();
         show(next);
       } else {
@@ -263,7 +258,6 @@ export function useVoyage(): VoyageController {
       }
       if (d.pressed || !bus.state) return;
       d.pressed = true;
-      d.auto = false; // the user takes over
       if (d.back !== back) {
         // Turning round: no coasting the other way, and the speed starts again from ×1.
         d.power = 0;
@@ -273,20 +267,10 @@ export function useVoyage(): VoyageController {
       bus.back = back;
       run();
     },
-    skip: (animate = false) => {
+    skip: () => {
       if (!bus.state) return;
-      if (!animate) {
-        stop();
-        commit(skipToNextStop(bus.state));
-        return;
-      }
-      const d = drive.current;
-      d.auto = true;
-      d.pressed = false;
-      if (d.back) d.power = 0;
-      d.back = false;
-      bus.back = false;
-      run();
+      stop();
+      commit(skipToNextStop(bus.state));
     },
     closeCard: () => {
       if (!bus.state) return;

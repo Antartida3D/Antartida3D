@@ -7,6 +7,7 @@ import {
 import { useBackLayer, usePageSettled, useReducedMotion, useTimers } from '../hooks.ts';
 import { useVoyage, type VoyageBus } from '../voyage/useVoyage.ts';
 import { Icon } from '../ui.tsx';
+import { CompassRose } from '../Cartography.tsx';
 import { ExplorationLog } from './ExplorationLog.tsx';
 import { Legend } from './Legend.tsx';
 import { ClaimsControl, ClaimsDetails, type ClaimsSelection, type ClaimsStatus } from './ClaimsControl.tsx';
@@ -92,6 +93,8 @@ export interface MapViewProps {
   onStartVoyage?: (point: MapPoint, resume?: ResumePoint) => void;
   onEndVoyage?: (done: boolean) => void;
   onVoyageProgress?: (step: number, sub: number) => void;
+  /** The 2D base image and optional ink layer reached a usable state. */
+  onMap2DReady?: () => void;
 }
 
 /** Keyboard navigation of the 3D camera: same keys as 2D, plus Q and E to turn. */
@@ -163,6 +166,7 @@ export function MapView({
   onStartVoyage,
   onEndVoyage,
   onVoyageProgress,
+  onMap2DReady,
 }: MapViewProps) {
   const vpRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState<Size>({ vw: 390, vh: 844 });
@@ -593,7 +597,16 @@ export function MapView({
               onClaimsStatus={setClaimsStatus}
             />
           ) : (
-            <Map2DLayer geo={geo} view={view} anim={anim} phase={phase} markers={markers} shown={shown} onPick={onPick} />
+            <Map2DLayer
+              geo={geo}
+              view={view}
+              anim={anim}
+              phase={phase}
+              markers={markers}
+              shown={shown}
+              onPick={onPick}
+              onReady={onMap2DReady}
+            />
           )}
         </div>
 
@@ -601,6 +614,7 @@ export function MapView({
 
         <header className="top">
           <div className="brand">
+            <CompassRose />
             <h1>Antártida por descubrir</h1>
             <p>cuaderno de campo · desde Ushuaia</p>
           </div>

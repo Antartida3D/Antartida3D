@@ -1,5 +1,8 @@
 import { lazy, Suspense, useId, useRef, useState } from 'react';
 import {
+  ANTARCTICA_PATH,
+  ICE_SHELVES_PATH,
+  SOUTH_AMERICA_PATH,
   TIER,
   formatTemperature,
   formatTemperatureAge,
@@ -10,6 +13,7 @@ import {
 import { BottomSheet } from '../BottomSheet.tsx';
 import { useFocusReturn } from '../hooks.ts';
 import { POINT_MODEL_IDS } from '../voyage/pointModelIds.ts';
+import { CompassRose } from '../Cartography.tsx';
 import { useCurrentTemperatures } from './useCurrentTemperatures.ts';
 
 // Its own chunk: it needs WebGL, which the 2D map does not.
@@ -31,13 +35,38 @@ function TemperatureLine({ pointId }: { pointId: string }) {
 
   return (
     <>
-      <p className="sheet-temp" aria-live="polite">
-        {text}
-      </p>
-      <p className="anno sheet-temp-attr">
-        Datos meteorológicos: Open-Meteo.com (CC BY 4.0)
-      </p>
+      <p className="sheet-temp" aria-live="polite">{text}</p>
+      <p className="anno sheet-temp-attr">Datos meteorológicos: Open-Meteo.com (CC BY 4.0)</p>
     </>
+  );
+}
+
+/** Decorative atlas vignette; it carries no geographic interaction or measurement. */
+function AtlasVignette() {
+  const clipId = useId();
+  return (
+    <div className="point-sheet-atlas" aria-hidden="true">
+      <svg className="point-sheet-chart" viewBox="-80 -80 1160 1160" focusable="false">
+        <defs>
+          <clipPath id={clipId}><circle cx="500" cy="500" r="530" /></clipPath>
+        </defs>
+        <circle className="point-sheet-ocean" cx="500" cy="500" r="530" />
+        <g className="point-sheet-graticule">
+          <circle cx="500" cy="500" r="139" />
+          <circle cx="500" cy="500" r="280" />
+          <circle cx="500" cy="500" r="426" />
+          <path d="M500-30V1030M-30 500H1030M125 125l750 750M125 875l750-750" />
+        </g>
+        <g className="point-sheet-coast" clipPath={`url(#${clipId})`}>
+          <path d={ICE_SHELVES_PATH} />
+          <path d={ANTARCTICA_PATH} />
+          <path d={SOUTH_AMERICA_PATH} />
+        </g>
+        <circle className="point-sheet-chart-rim" cx="500" cy="500" r="530" />
+        <circle className="point-sheet-chart-rim" cx="500" cy="500" r="554" />
+      </svg>
+      <CompassRose className="chart-compass point-sheet-compass" />
+    </div>
   );
 }
 
@@ -108,10 +137,18 @@ export function PointSheet({ point, onClose, fallbackFocus, preview = false, onM
         more text; dragged down it closes, like the other sheets of the map. No close button: a tap
         outside, dragging it down, Escape and «Volver al mapa» close it.
       */}
-      <BottomSheet className="point half" labelledBy="sheet-title" sheetRef={ref} onClose={onClose}>
-        <span className={tagClass}>{tagLabel}</span>
-        <h2 id="sheet-title" tabIndex={-1}>{point.title}</h2>
-        <p className="place">{point.place}</p>
+      <BottomSheet className="point half point-sheet" labelledBy="sheet-title" sheetRef={ref} onClose={onClose}>
+        <div className="point-sheet-masthead">
+          <span>Cuaderno de campo</span>
+        </div>
+        <div className="point-sheet-heading">
+          <div>
+            <span className={tagClass}>{tagLabel}</span>
+            <h2 id="sheet-title" tabIndex={-1}>{point.title}</h2>
+            <p className="place">{point.place}</p>
+          </div>
+          <AtlasVignette />
+        </div>
         {!isSea && <TemperatureLine pointId={point.id} />}
         {isSea ? (
           <>
@@ -152,9 +189,12 @@ export function PointSheet({ point, onClose, fallbackFocus, preview = false, onM
             {point.tier === 'B' && <p className="anno">Esta expedición todavía no está disponible. Se suma en una próxima etapa.</p>}
           </>
         )}
-        <div className="row" style={{ marginTop: 12 }}>
-          {action && <button type="button" className="btn" onClick={action.onClick}>{action.label}</button>}
-          <button type="button" className="btn" onClick={onClose}>Volver al mapa</button>
+        <div className="point-sheet-footer">
+          <span className="point-sheet-rule" aria-hidden="true">✧</span>
+          <div className="row" style={{ marginTop: 0 }}>
+            {action && <button type="button" className="btn" onClick={action.onClick}>{action.label}</button>}
+            <button type="button" className="btn" onClick={onClose}>Volver al mapa</button>
+          </div>
         </div>
       </BottomSheet>
     </>

@@ -1,0 +1,259 @@
+/* Map point layout over the shared cartographic surface. */
+.sheet.point-sheet {
+  left: 12px;
+  right: 12px;
+  bottom: max(12px, calc(100% - 100dvh + 12px));
+  max-height: calc(100dvh - 24px);
+  padding: 22px 24px 26px;
+  border: 1px solid var(--chart-ink);
+  border-radius: var(--chart-radius);
+  color: var(--chart-ink);
+  scrollbar-width: thin;
+  scrollbar-color: var(--chart-rule) var(--chart-paper);
+}
+
+.point-sheet .point-sheet-masthead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 3px double var(--chart-rule);
+}
+
+.point-sheet-masthead > span,
+.point-sheet .point-sheet-label {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--chart-muted);
+}
+
+.point-sheet .point-sheet-close {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border: 1px solid var(--chart-rule);
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: none;
+}
+
+.point-sheet-close svg path {
+  stroke: currentColor;
+  stroke-width: 1.6;
+}
+
+.point-sheet-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 112px;
+  align-items: center;
+  gap: 10px;
+  min-height: 132px;
+  margin-bottom: 12px;
+}
+
+.point-sheet .tag {
+  display: inline;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--chart-muted);
+  font-size: 11px;
+  letter-spacing: .07em;
+  line-height: 1.6;
+}
+
+.point-sheet h2 {
+  margin: 14px 0 8px;
+  font-size: clamp(28px, 5vw, 38px);
+  font-weight: 500;
+  line-height: 1.08;
+  overflow-wrap: anywhere;
+}
+
+.point-sheet .place {
+  margin: 0;
+  font-family: 'Fraunces', Georgia, serif;
+  font-style: italic;
+  font-size: 16px;
+  color: var(--chart-muted);
+}
+
+.point-sheet-atlas {
+  position: relative;
+  width: 112px;
+  height: 126px;
+}
+
+.point-sheet-chart {
+  display: block;
+  width: 112px;
+  height: 112px;
+  overflow: hidden;
+}
+
+.point-sheet-ocean { fill: var(--chart-wash); }
+
+.point-sheet-graticule {
+  fill: none;
+  stroke: var(--chart-ink);
+  stroke-width: 4;
+  stroke-dasharray: 8 9;
+  opacity: .42;
+}
+
+.point-sheet-coast {
+  fill: var(--chart-paper);
+  stroke: var(--chart-ink);
+  stroke-width: 5;
+  stroke-linejoin: round;
+}
+
+.point-sheet-chart-rim {
+  fill: none;
+  stroke: var(--chart-ink);
+  stroke-width: 4;
+}
+
+.point-sheet-compass {
+  position: absolute;
+  right: -6px;
+  bottom: -2px;
+  width: 60px;
+  height: 60px;
+  color: var(--chart-ink);
+  background: radial-gradient(closest-side, var(--chart-paper) 70%, transparent);
+}
+
+
+.point-sheet .q {
+  margin: 0;
+  padding: 19px 0 20px;
+  border: 0;
+  border-block: 3px double var(--chart-rule);
+  border-radius: 0;
+  background: transparent;
+}
+
+.point-sheet .point-sheet-label {
+  display: block;
+  margin-bottom: 10px;
+}
+
+.point-sheet .q p {
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.point-sheet .q small {
+  display: block;
+  margin-top: 14px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--chart-muted);
+}
+
+.point-sheet .anno {
+  margin: 20px 0 0;
+  font-family: 'Atkinson Hyperlegible', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--chart-muted);
+}
+
+.point-sheet-footer { margin-top: 18px; }
+
+.point-sheet-rule {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 18px;
+  color: var(--chart-muted);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.point-sheet-rule::before,
+.point-sheet-rule::after {
+  content: '';
+  height: 1px;
+  flex: 1;
+  background: var(--chart-rule);
+}
+
+.point-sheet-footer .btn {
+  width: 100%;
+  min-height: 48px;
+  gap: 10px;
+  border: 3px double var(--chart-ink);
+  border-radius: var(--chart-button-radius);
+  background: var(--chart-wash);
+  color: var(--chart-ink);
+  box-shadow: inset 0 0 0 3px var(--chart-paper);
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.point-sheet-footer .btn:hover:not(:disabled) {
+  background: var(--deep);
+  border-color: var(--deep);
+  color: var(--chart-paper);
+  box-shadow: none;
+}
+
+.point-sheet .point-sheet-close:hover { background: var(--chart-wash); }
+
+.point-sheet button:focus-visible {
+  outline: 3px solid var(--deep);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+.point-sheet .sheet-sources {
+  border-color: var(--chart-rule);
+  overflow-wrap: anywhere;
+}
+
+.point-sheet .sheet-sources li,
+.point-sheet .sheet-sources small { color: var(--chart-muted); }
+
+/* BottomSheet's small point state is half-height; .full/.dragging keep the shared 92% and inline drag limits. */
+@media (max-width: 819.98px) {
+  .sheet.point-sheet.half:not(.full):not(.dragging) {
+    max-height: 50%;
+  }
+}
+
+@media (min-width: 820px) {
+  .sheet.point-sheet {
+    left: auto;
+    right: 24px;
+    bottom: max(24px, calc(100% - 100dvh + 24px));
+    width: 456px;
+    max-height: calc(100dvh - 48px);
+    padding: 22px 30px 28px;
+  }
+}
+
+@media (max-width: 480px) {
+  .point-sheet-heading {
+    grid-template-columns: minmax(0, 1fr) 96px;
+    min-height: 112px;
+  }
+  .point-sheet-atlas { width: 96px; height: 108px; }
+  .point-sheet-chart { width: 96px; height: 96px; }
+  .point-sheet-compass { width: 52px; height: 52px; }
+}
+
+@media (max-width: 380px) {
+  .sheet.point-sheet { padding-inline: 20px; }
+  .point-sheet .q p { font-size: 20px; }
+}

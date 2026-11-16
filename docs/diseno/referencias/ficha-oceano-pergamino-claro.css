@@ -1,0 +1,16 @@
+/* Prototipo temporal: se inyecta solo en el navegador para revisar la ficha. */
+.sheet.point-sheet {
+  --chart-paper: #f3e8d2;
+  --chart-ink: #403536;
+  --chart-muted: #655d56;
+  --chart-rule: #b9b0a5;
+  --chart-wash: #eddfc0;
+  background: linear-gradient(rgb(243 232 210 / 89%), rgb(243 232 210 / 89%)), var(--chart-texture) !important;
+  background-blend-mode: normal !important;
+  color: var(--chart-ink) !important;
+  box-shadow: inset 0 0 0 6px #f8f0df, inset 0 0 0 7px var(--chart-rule), inset 0 0 26px rgb(180 145 92 / 12%), 0 9px 26px rgb(64 53 54 / 15%) !important;
+}
+.sheet.point-sheet::before { opacity: .07 !important; }
+.sheet.point-sheet, .sheet.point-sheet * { border-color: var(--chart-rule); }
+.point-sheet .point-sheet-label, .point-sheet .place, .point-sheet .q small, .point-sheet .anno { color: var(--chart-muted); }
+.point-sheet h2, .point-sheet .q p { color: var(--chart-ink); }

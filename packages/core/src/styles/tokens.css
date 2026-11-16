@@ -7,4 +7,16 @@
   --ocre: #C0862F;
   --oxide: #A4471F;
   --pencil: #5E656C;
+
+  /* Cartographic UI: keep geographic scene colors above independent. */
+  --chart-paper: #F3E8D2;
+  --chart-ink: #403536;
+  --chart-muted: #655D56;
+  --chart-rule: #B9B0A5;
+  --chart-wash: #EDDFC0;
+  --chart-radius: 13px;
+  --chart-button-radius: 9px;
+  --chart-texture: url('../assets/paper-512.webp');
+  --chart-surface: linear-gradient(rgb(243 232 210 / 89%), rgb(243 232 210 / 89%)), var(--chart-texture);
+  --chart-shadow: inset 0 0 0 6px #F8F0DF, inset 0 0 0 7px var(--chart-rule), inset 0 0 26px rgb(180 145 92 / 12%), 0 9px 26px rgb(64 53 54 / 15%);
 }

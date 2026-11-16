@@ -8,8 +8,8 @@
      must remain inside the screen. */
   height: min(100%, 100dvh);
   overflow: hidden;
-  background: var(--paper);
-  color: var(--ink);
+  background: var(--chart-paper);
+  color: var(--chart-ink);
 }
 
 .orc-scene-wrap,
@@ -18,12 +18,11 @@
   inset: 0;
   width: 100%;
   height: 100%;
-  /* The dioramas zoom with the same touches as the map: no text selection or magnifier over them (#190). */
+  z-index: 0;
+  overflow: hidden;
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
-  z-index: 0;
-  overflow: hidden;
 }
 
 .orc-fallback-svg {
@@ -55,12 +54,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width:44px;
+  height:44px;
   border-radius: 50%;
-  border: 1.5px solid var(--ink);
-  background: var(--paper);
-  color: var(--ink);
+  border: 1.5px solid var(--chart-ink);
+  background: var(--chart-paper);
+  color: var(--chart-ink);
   font-family: 'Atkinson Hyperlegible', system-ui, sans-serif;
   font-size: 12px;
   font-weight: 700;
@@ -79,14 +78,14 @@
   pointer-events: auto;
   margin-top: 6px;
   max-width: 280px;
-  background: #FBF4E6;
-  border: 1.5px solid var(--ink);
-  border-radius: 6px 12px 8px 10px;
+
+  border: 1.5px solid var(--chart-ink);
+
   padding: 8px 10px;
   font-size: 12px;
   line-height: 1.35;
-  color: var(--ink);
-  box-shadow: 2px 3px 0 rgba(31, 42, 54, 0.2);
+  color: var(--chart-ink);
+
 }
 
 .orc-scene-help-popover p {
@@ -103,7 +102,7 @@
   border: none;
   padding: 0;
   font: inherit;
-  color: var(--navy, #274666);
+  color: var(--deep);
   text-decoration: underline;
   cursor: pointer;
   font-weight: 600;
@@ -111,7 +110,7 @@
 
 .orc-scene-sources-link:hover,
 .orc-scene-sources-link:focus-visible {
-  color: var(--teal, #1a7f72);
+  color: var(--chart-ink);
 }
 
 /* KindChip: color + shape + border + text */
@@ -123,7 +122,7 @@
   font-weight: 700;
   line-height: 1.25;
   padding: 3px 9px;
-  border-radius: 10px;
+  border-radius:2px;
   white-space: nowrap;
 }
 
@@ -134,9 +133,9 @@
 }
 
 .orc-chip-real {
-  background: var(--ink);
+  background: var(--chart-ink);
   color: var(--ice);
-  border: 1.5px solid var(--ink);
+  border: 1.5px solid var(--chart-ink);
 }
 
 .orc-chip-sim {
@@ -146,15 +145,15 @@
 }
 
 .orc-chip-recon {
-  background: #FBF4E6;
+  background:var(--chart-wash);
   color: #4A2E08;
   border: 1.5px dashed #7A4E10;
 }
 
 .orc-chip-calc {
   background: #E8DEC9;
-  color: var(--ink);
-  border: 1.5px dotted var(--ink);
+  color: var(--chart-ink);
+  border: 1.5px dotted var(--chart-ink);
 }
 
 /* Top bar */
@@ -168,12 +167,10 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  background: linear-gradient(
-    rgba(243, 235, 221, 0.96) 65%,
-    rgba(243, 235, 221, 0)
-  );
+
   pointer-events: none;
-}
+
+  border-bottom:1px solid var(--chart-rule);}
 
 .orc-top > * {
   pointer-events: auto;
@@ -190,7 +187,7 @@
   min-height: 44px;
   padding: 0 12px;
   font-size: 14px;
-  box-shadow: 1px 2px 0 rgba(31, 42, 54, 0.16);
+  box-shadow:none;
 }
 
 .orc-top-title {
@@ -204,13 +201,14 @@
   font-family: 'Fraunces', Georgia, serif;
   font-size: 16px;
   line-height: 1.1;
-  color: var(--ink);
-}
+  color: var(--chart-ink);
+
+  font-weight:500;}
 
 .orc-top-title span {
   display: block;
   font-size: 12px;
-  color: #2B3640;
+  color: var(--chart-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -252,41 +250,42 @@
   width: 100%;
   min-height: 44px;
   padding: 4px 1px;
-  border-radius: 18px;
-  border: 1.5px solid rgba(31, 42, 54, 0.45);
-  background: rgba(251, 244, 230, 0.92);
-  color: var(--ink);
+  border-radius:var(--chart-button-radius);
+  border: 1.5px solid color-mix(in srgb, var(--chart-ink) 45%, transparent);
+  background:var(--chart-paper);
+  color: var(--chart-ink);
   font-size: 12px;
   letter-spacing: -0.02em;
-  font-weight: 700;
+  font-weight:500;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 2px;
   white-space: nowrap;
   transition: transform 0.15s ease, background-color 0.15s ease;
-}
+
+  font-family:'Fraunces', Georgia, serif;}
 
 .orc-step-btn:hover {
-  background: #fff;
+  background:var(--chart-wash);
 }
 
 .orc-step-btn.is-visited {
   border-color: var(--deep);
-  background: #E7F0F5;
+  background:var(--chart-wash);
 }
 
 .orc-step-btn.is-current {
-  background: var(--ink);
+  background: var(--chart-ink);
   color: var(--ice);
-  border-color: var(--ink);
+  border-color: var(--chart-ink);
 }
 
 .orc-step-num {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: rgba(31, 42, 54, 0.12);
+  background: color-mix(in srgb, var(--chart-ink) 12%, transparent);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -339,8 +338,8 @@
   height: 18px;
   border-radius: 50%;
   background: var(--ocre);
-  border: 2px solid var(--ink);
-  box-shadow: 0 0 0 2px var(--paper);
+  border: 2px solid var(--chart-ink);
+  box-shadow: 0 0 0 2px var(--chart-paper);
   flex: none;
 }
 
@@ -380,12 +379,12 @@
   font-size: 13px;
   font-weight: 700;
   line-height: 1.05;
-  color: var(--ink);
-  background: rgba(251, 244, 230, 0.95);
-  border: 1.5px solid var(--ink);
-  border-radius: 4px 10px 6px 8px;
+  color: var(--chart-ink);
+  background: color-mix(in srgb, var(--chart-paper) 95%, transparent);
+  border: 1.5px solid var(--chart-ink);
+  border-radius:var(--chart-radius);
   padding: 2px 7px 3px;
-  box-shadow: 1px 2px 0 rgba(31, 42, 54, 0.18);
+  box-shadow: 1px 2px 0 color-mix(in srgb, var(--chart-ink) 18%, transparent);
   white-space: nowrap;
 }
 
@@ -401,11 +400,11 @@
   max-height: 60dvh;
   overflow-y: auto;
   z-index: 8;
-  background: #FBF4E6;
-  border: 2px solid var(--ink);
-  border-radius: 10px 18px 12px 14px;
+  background: var(--chart-paper);
+  border: 2px solid var(--chart-ink);
+  border-radius:var(--chart-radius);
   padding: 12px 14px;
-  box-shadow: 3px 5px 0 rgba(31, 42, 54, 0.22);
+  box-shadow: 3px 5px 0 color-mix(in srgb, var(--chart-ink) 22%, transparent);
   animation: orc-card-in 0.24s cubic-bezier(0.2, 0.8, 0.3, 1) both;
 }
 
@@ -426,10 +425,10 @@
 .orc-btn-return {
   padding: 4px 10px;
   font-size: 13px;
-  border: 1.5px solid var(--ink);
-  border-radius: 6px;
-  background: var(--paper);
-  color: var(--ink);
+  border: 1.5px solid var(--chart-ink);
+  border-radius: var(--chart-button-radius);
+  background: var(--chart-paper);
+  color: var(--chart-ink);
   cursor: pointer;
 }
 
@@ -463,7 +462,7 @@
 .orc-spot-sub {
   margin: 4px 0 8px;
   font-size: 13px;
-  color: #2B3640;
+  color: var(--chart-muted);
 }
 
 .orc-spot-facts {
@@ -494,10 +493,10 @@
   height: var(--orc-sheet);
   max-height: var(--orc-sheet);
   z-index: 6;
-  background: var(--paper);
-  border-top: 2px solid var(--ink);
-  border-radius: 18px 18px 0 0;
-  box-shadow: 0 -8px 24px rgba(31, 42, 54, 0.22);
+
+  border-top: 2px solid var(--chart-ink);
+
+
   display: flex;
   flex-direction: column;
   padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -511,9 +510,9 @@
   bottom: 0;
   width: auto;
   padding: 0 0 env(safe-area-inset-bottom, 0px);
-  border: 0;
-  border-top: 2px solid var(--ink);
-  border-radius: 18px 18px 0 0;
+  border:1px solid var(--chart-ink);
+  border-top: 2px solid var(--chart-ink);
+  border-radius:var(--chart-radius) var(--chart-radius) 0 0;
   overflow: hidden;
   max-height: var(--orc-sheet);
   z-index: 6;
@@ -537,7 +536,7 @@
   width: 100%;
   height: 28px;
   margin: 0;
-  border-radius: 18px 18px 0 0;
+  border-radius:var(--chart-radius) var(--chart-radius) 0 0;
 }
 
 .orc-panel .sheet-handle:focus-visible {
@@ -563,15 +562,19 @@
 }
 
 .orc-panel-head {
-  margin-bottom: 6px;
-}
+  margin-bottom:12px;
+
+  border-bottom:3px double var(--chart-rule);
+  padding-bottom:12px;}
 
 .orc-kicker {
   display: block;
-  font-size: 17px;
-  line-height: 1.05;
-  color: var(--deep);
-}
+  font-size:12px;
+  line-height:1.4;
+  color:var(--chart-muted);
+
+  font-family:'Fraunces', Georgia, serif;
+  letter-spacing:.08em;}
 
 /* Scoped to the panel so the shared `.sheet h2` style does not win on phones. */
 .orc-panel .orc-chapter-h2 {
@@ -579,8 +582,9 @@
   font-family: 'Fraunces', Georgia, serif;
   font-size: 20px;
   line-height: 1.12;
-  color: var(--ink);
-}
+  color: var(--chart-ink);
+
+  font-weight:500;}
 
 .orc-chapter-h2:focus {
   outline: none;
@@ -611,22 +615,23 @@
   margin: 0;
   font-size: 14px;
   line-height: 1.38;
-  color: var(--ink);
+  color: var(--chart-ink);
 }
 
 /* Guided tour stop card */
 .orc-tour-card {
-  background: #FBF4E6;
-  border: 1.5px solid rgba(31, 42, 54, 0.35);
-  border-radius: 10px;
-  padding: 12px 14px;
+  background:transparent;
+  border:0;
+  border-radius:0;
+  padding:12px 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
-}
+
+  border-bottom:1px solid var(--chart-rule);}
 
 .orc-activity .orc-tour-card {
-  background: var(--paper);
+  background:transparent;
 }
 
 .orc-tour-meta {
@@ -639,15 +644,17 @@
 .orc-tour-count {
   font-size: 12px;
   font-weight: 700;
-  color: var(--pencil);
+  color: var(--chart-muted);
 }
 
 .orc-tour-line {
   margin: 0;
-  font-size: 16px;
-  line-height: 1.42;
-  color: var(--ink);
-}
+  font-size:18px;
+  line-height:1.45;
+  color: var(--chart-ink);
+
+  font-family:'Fraunces', Georgia, serif;
+  font-weight:500;}
 
 .orc-tour-card .orc-fact-srcs {
   margin-top: 0;
@@ -665,12 +672,13 @@
 }
 
 .orc-fact-card {
-  background: #FBF4E6;
-  border: 1.5px solid rgba(31, 42, 54, 0.42);
-  border-radius: 6px 14px 8px 12px;
+  background:transparent;
+  border:0;
+  border-radius:0;
   padding: 8px 10px;
-  box-shadow: 2px 3px 0 rgba(31, 42, 54, 0.1);
-}
+  box-shadow:none;
+
+  border-bottom:1px solid var(--chart-rule);}
 
 .orc-fact-top {
   display: flex;
@@ -683,14 +691,14 @@
 .orc-fact-title {
   font-family: 'Fraunces', Georgia, serif;
   font-size: 14px;
-  color: var(--ink);
+  color: var(--chart-ink);
 }
 
 .orc-fact-text {
   margin: 0;
   font-size: 13px;
   line-height: 1.35;
-  color: var(--ink);
+  color: var(--chart-ink);
 }
 
 .orc-fact-srcs {
@@ -703,7 +711,7 @@
 }
 
 .orc-src-prefix {
-  color: #5E656C;
+  color: var(--chart-muted);
   font-size: 12px;
 }
 
@@ -728,7 +736,7 @@
 }
 
 .orc-src-link:hover {
-  color: var(--ocre);
+  color: var(--chart-ink);
 }
 
 .orc-src-link:focus-visible {
@@ -739,10 +747,10 @@
 
 details.orc-more {
   margin-top: 4px;
-  border: 1px dashed rgba(31, 42, 54, 0.3);
-  border-radius: 8px;
+  border: 1px dashed color-mix(in srgb, var(--chart-ink) 30%, transparent);
+  border-radius:var(--chart-radius);
   padding: 8px 10px;
-  background: rgba(251, 244, 230, 0.6);
+  background: color-mix(in srgb, var(--chart-paper) 60%, transparent);
 }
 
 details.orc-more > summary {
@@ -786,9 +794,9 @@ details.orc-more > summary:focus-visible {
 
 /* Activity blocks */
 .orc-activity {
-  background: #FBF4E6;
-  border: 1.5px solid var(--ink);
-  border-radius: 8px 14px 10px 12px;
+  background: var(--chart-paper);
+  border: 1.5px solid var(--chart-ink);
+  border-radius:var(--chart-radius);
   padding: 9px 11px;
   display: flex;
   flex-direction: column;
@@ -813,7 +821,7 @@ details.orc-more > summary:focus-visible {
   margin: 0;
   font-size: 13px;
   line-height: 1.3;
-  color: #2B3640;
+  color: var(--chart-muted);
 }
 
 .orc-link-btn {
@@ -855,13 +863,13 @@ details.orc-more > summary:focus-visible {
 /* MonthStrip */
 .orc-month-strip-wrap {
   position: absolute;
-  /* Below the header and the chapter buttons, which end at 106 px on a portrait phone. */
+  /* Below the header and chapter buttons on a portrait phone. */
   top: 114px;
   left: 8px;
   right: auto;
   width: fit-content;
   max-width: calc(100vw - 16px);
-  /* Above the hotspots (11), so the open popover and «Saber más» are never covered by a dot. */
+  /* Above the hotspots, so the open popover and «Saber más» stay usable. */
   z-index: 12;
 }
 
@@ -871,20 +879,20 @@ details.orc-more > summary:focus-visible {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: var(--paper);
-  border: 1.5px solid var(--ink);
-  border-radius: 8px;
-  box-shadow: 2px 3px 0 rgba(31, 42, 54, 0.12);
+
+  border: 1.5px solid var(--chart-ink);
+
+
   cursor: pointer;
-  font-family: inherit;
+  font-family: 'Fraunces', Georgia, serif;
   font-size: 13px;
   font-weight: 700;
-  color: var(--ink);
+  color: var(--chart-ink);
   white-space: nowrap;
 }
 
 .orc-month-chip:hover {
-  background: #fff;
+  background:var(--chart-wash);
 }
 
 .orc-month-chip:focus-visible {
@@ -924,11 +932,11 @@ details.orc-more > summary:focus-visible {
   overflow-y: auto;
   overflow-x: hidden;
   box-sizing: border-box;
-  background: var(--paper);
-  border: 1.5px solid var(--ink);
-  border-radius: 10px;
+
+  border: 1.5px solid var(--chart-ink);
+
   padding: 6px;
-  box-shadow: 2px 4px 0 rgba(31, 42, 54, 0.18);
+
   animation: orc-card-in 0.18s cubic-bezier(0.2, 0.8, 0.3, 1) both;
 }
 
@@ -953,11 +961,11 @@ details.orc-more > summary:focus-visible {
   display: flex;
   align-items: stretch;
   gap: 2px;
-  background: var(--paper);
-  border: 1.5px solid var(--ink);
-  border-radius: 8px;
+
+  border: 1.5px solid var(--chart-ink);
+
   padding: 3px;
-  box-shadow: 2px 3px 0 rgba(31, 42, 54, 0.12);
+
 }
 
 .orc-month-btn {
@@ -971,21 +979,21 @@ details.orc-more > summary:focus-visible {
   gap: 3px;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 5px;
+  border-radius: var(--chart-button-radius);
   cursor: pointer;
   font-family: inherit;
   font-size: 12px;
   font-weight: 700;
-  color: var(--ink);
+  color: var(--chart-ink);
 }
 
 .orc-month-btn:hover {
-  background: rgba(31, 42, 54, 0.08);
+  background: color-mix(in srgb, var(--chart-ink) 8%, transparent);
 }
 
 .orc-month-btn.is-active,
 .orc-month-btn[aria-pressed="true"] {
-  background: var(--ink);
+  background: var(--chart-ink);
   color: var(--ice);
 }
 
@@ -1008,7 +1016,7 @@ details.orc-more > summary:focus-visible {
   display: block;
   height: 16px;
   border-radius: 2px;
-  background: rgba(31, 42, 54, 0.08);
+  background: color-mix(in srgb, var(--chart-ink) 8%, transparent);
   overflow: hidden;
 }
 
@@ -1038,7 +1046,7 @@ details.orc-more > summary:focus-visible {
 
 .orc-month-ice-stripe[data-ice="no"] {
   background: transparent;
-  box-shadow: inset 0 0 0 1px rgba(31, 42, 54, 0.18);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--chart-ink) 18%, transparent);
 }
 
 .orc-month-btn[aria-pressed="true"] .orc-month-ice-stripe {
@@ -1059,8 +1067,8 @@ details.orc-more > summary:focus-visible {
   padding: 2px 8px;
   font-size: 11px;
   font-weight: 700;
-  color: var(--ink);
-  background: rgba(251, 244, 230, 0.92);
+  color: var(--chart-ink);
+  background: color-mix(in srgb, var(--chart-paper) 92%, transparent);
   border-radius: 6px;
 }
 
@@ -1084,12 +1092,12 @@ details.orc-more > summary:focus-visible {
 
 .orc-month-details {
   margin-top: 4px;
-  background: #FBF4E6;
-  border: 1.5px solid var(--ink);
-  border-radius: 8px;
+  background: var(--chart-paper);
+  border: 1.5px solid var(--chart-ink);
+  border-radius:var(--chart-radius);
   padding: 6px 10px;
   font-size: 12px;
-  box-shadow: 2px 3px 0 rgba(31, 42, 54, 0.12);
+  box-shadow: 2px 3px 0 color-mix(in srgb, var(--chart-ink) 12%, transparent);
   overflow-y: auto;
 }
 
@@ -1102,6 +1110,7 @@ details.orc-more > summary:focus-visible {
   cursor: pointer;
   font-weight: 700;
   color: var(--deep);
+  font-family: 'Fraunces', Georgia, serif;
 }
 
 .orc-month-summary-toggle:focus-visible {
@@ -1121,7 +1130,7 @@ details.orc-more > summary:focus-visible {
   flex-direction: column;
   gap: 4px;
   font-size: 12px;
-  color: var(--ink);
+  color: var(--chart-ink);
 }
 
 .orc-month-ice-text {
@@ -1144,9 +1153,9 @@ details.orc-more > summary:focus-visible {
 }
 
 .orc-chart-frame {
-  background: var(--paper);
-  border: 1px solid rgba(31, 42, 54, 0.35);
-  border-radius: 8px;
+  background: var(--chart-paper);
+  border: 1px solid color-mix(in srgb, var(--chart-ink) 35%, transparent);
+  border-radius:var(--chart-radius);
   padding: 6px 8px;
 }
 
@@ -1157,9 +1166,9 @@ details.orc-more > summary:focus-visible {
 }
 
 .orc-answer-sentence-block {
-  background: #FBF4E6;
-  border: 1.5px solid var(--ink);
-  border-radius: 8px;
+  background: var(--chart-paper);
+  border: 1.5px solid var(--chart-ink);
+  border-radius:var(--chart-radius);
   padding: 8px 10px;
   display: flex;
   flex-direction: column;
@@ -1170,7 +1179,7 @@ details.orc-more > summary:focus-visible {
   margin: 0;
   font-size: 13.5px;
   line-height: 1.38;
-  color: var(--ink);
+  color: var(--chart-ink);
 }
 
 .orc-answer-cta-row {
@@ -1183,7 +1192,7 @@ details.orc-more > summary:focus-visible {
   color: var(--deep);
   border: 1.5px solid var(--deep);
   padding: 4px 10px;
-  border-radius: 6px;
+  border-radius: var(--chart-button-radius);
 }
 
 .orc-swatch-dot {
@@ -1205,9 +1214,9 @@ details.orc-more > summary:focus-visible {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  background: #FBF4E6;
-  border: 1.5px solid var(--ink);
-  border-radius: 10px;
+  background: var(--chart-paper);
+  border: 1.5px solid var(--chart-ink);
+  border-radius:var(--chart-radius);
   padding: 8px 10px;
 }
 
@@ -1232,9 +1241,9 @@ details.orc-more > summary:focus-visible {
   gap: 6px;
   min-height: 32px;
   padding: 4px 10px;
-  border-radius: 18px;
-  border: 1.5px dashed var(--pencil);
-  color: var(--pencil);
+  border-radius:var(--chart-radius);
+  border: 1.5px dashed var(--chart-muted);
+  color: var(--chart-muted);
   font-size: 13px;
 }
 
@@ -1246,9 +1255,9 @@ details.orc-more > summary:focus-visible {
 }
 
 .orc-check.is-done {
-  border: 1.5px solid var(--ink);
+  border: 1.5px solid var(--chart-ink);
   background: var(--ice);
-  color: var(--ink);
+  color: var(--chart-ink);
   font-weight: 700;
 }
 
@@ -1279,9 +1288,9 @@ details.orc-more > summary:focus-visible {
 
 .orc-done-readings {
   margin: 0;
-  background: #FBF4E6;
-  border: 1.5px solid var(--ink);
-  border-radius: 10px;
+  background: var(--chart-paper);
+  border: 1.5px solid var(--chart-ink);
+  border-radius:var(--chart-radius);
   padding: 4px 12px;
 }
 
@@ -1294,7 +1303,7 @@ details.orc-more > summary:focus-visible {
 }
 
 .orc-done-readings > div + div {
-  border-top: 1px dashed rgba(31, 42, 54, 0.3);
+  border-top: 1px dashed color-mix(in srgb, var(--chart-ink) 30%, transparent);
 }
 
 .orc-done-readings dt {
@@ -1313,7 +1322,7 @@ details.orc-more > summary:focus-visible {
 .orc-done-readings small {
   grid-column: 1 / -1;
   font-size: 12px;
-  color: var(--ink);
+  color: var(--chart-ink);
   opacity: 0.8;
 }
 
@@ -1321,8 +1330,8 @@ details.orc-more > summary:focus-visible {
 .orc-panel .orc-bar {
   position: static;
   padding: 7px 14px 9px;
-  background: var(--paper);
-  border-top: 1px dashed rgba(31, 42, 54, 0.3);
+  background: var(--chart-paper);
+  border-top:3px double var(--chart-rule);
   display: flex;
   gap: 8px;
   align-items: center;
@@ -1345,7 +1354,7 @@ details.orc-more > summary:focus-visible {
 .orc-scrim {
   position: fixed;
   inset: 0;
-  background: rgba(31, 42, 54, 0.45);
+  background: color-mix(in srgb, var(--chart-ink) 45%, transparent);
   backdrop-filter: blur(1.5px);
   z-index: 10;
   animation: orc-fade-in 0.2s ease-out both;
@@ -1364,11 +1373,11 @@ details.orc-more > summary:focus-visible {
   bottom: 12px;
   max-height: 44dvh;
   z-index: 20;
-  background: #FBF4E6;
-  border: 2px solid var(--ink);
-  border-radius: 16px;
+
+  border: 2px solid var(--chart-ink);
+
   padding: 14px 16px;
-  box-shadow: 0 -8px 28px rgba(31, 42, 54, 0.28);
+
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -1385,9 +1394,9 @@ details.orc-more > summary:focus-visible {
 .orc-sources-defs {
   margin: 4px 0 8px;
   padding: 8px 10px;
-  background: rgba(251, 244, 230, 0.7);
-  border: 1px dashed rgba(31, 42, 54, 0.3);
-  border-radius: 8px;
+  background: color-mix(in srgb, var(--chart-paper) 70%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--chart-ink) 30%, transparent);
+  border-radius:var(--chart-radius);
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -1407,7 +1416,7 @@ details.orc-more > summary:focus-visible {
 
 .orc-sources-def dd {
   margin: 0;
-  color: #3B4651;
+  color: var(--chart-muted);
 }
 
 .orc-sources-list {
@@ -1431,9 +1440,9 @@ details.orc-more > summary:focus-visible {
   gap: 2px;
   min-height: 44px;
   padding: 8px 10px;
-  background: var(--paper);
-  border: 1px solid rgba(31, 42, 54, 0.32);
-  border-radius: 8px;
+  background: var(--chart-paper);
+  border: 1px solid color-mix(in srgb, var(--chart-ink) 32%, transparent);
+  border-radius:var(--chart-radius);
   text-decoration: none;
   color: inherit;
   box-sizing: border-box;
@@ -1441,7 +1450,7 @@ details.orc-more > summary:focus-visible {
 
 .orc-source-card:hover {
   border-color: var(--deep);
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--chart-wash);
 }
 
 .orc-source-card:focus-visible {
@@ -1463,19 +1472,19 @@ details.orc-more > summary:focus-visible {
 
 .orc-source-org {
   font-size: 12.5px;
-  color: var(--ink);
+  color: var(--chart-ink);
   line-height: 1.25;
 }
 
 .orc-source-meta {
   font-size: 11px;
-  color: #5E656C;
+  color: var(--chart-muted);
 }
 
 .orc-sources-footer {
   margin-top: 6px;
   padding-top: 8px;
-  border-top: 1px dashed rgba(31, 42, 54, 0.25);
+  border-top: 1px dashed color-mix(in srgb, var(--chart-ink) 25%, transparent);
   display: flex;
   justify-content: center;
 }
@@ -1494,7 +1503,8 @@ details.orc-more > summary:focus-visible {
     align-items: center;
     justify-content: space-between;
     gap: 18px;
-  }
+
+  border-bottom:1px solid var(--chart-rule);}
 
   .orc-top-r1 {
     flex: 0 0 auto;
@@ -1507,7 +1517,8 @@ details.orc-more > summary:focus-visible {
 
   .orc-top-title strong {
     font-size: 20px;
-  }
+
+  font-weight:500;}
 
   /* Same width and right edge as the chapter panel below, so the steps sit centred over it. */
   .orc-steps-nav {
@@ -1532,7 +1543,11 @@ details.orc-more > summary:focus-visible {
     min-height: 40px;
     padding: 6px 12px;
     font-size: 13px;
-  }
+
+  border-radius:var(--chart-button-radius);
+  background:var(--chart-paper);
+  font-family:'Fraunces', Georgia, serif;
+  font-weight:500;}
 
   .orc-scene-badge {
     left: 24px;
@@ -1568,9 +1583,10 @@ details.orc-more > summary:focus-visible {
     width: 480px;
     height: auto;
     max-height: calc(100dvh - 110px);
-    border: 2px solid var(--ink);
-    border-radius: 10px 18px 12px 16px;
-    box-shadow: 4px 6px 0 rgba(31, 42, 54, 0.2);
+    border: 2px solid var(--chart-ink);
+    border-radius: var(--chart-radius);
+
+
     transform: translate3d(0, 0, 0);
     visibility: visible;
     transition: transform 0.28s cubic-bezier(0.2, 0.85, 0.3, 1), visibility 0s linear 0s;
@@ -1588,7 +1604,10 @@ details.orc-more > summary:focus-visible {
     align-items: flex-start;
     justify-content: space-between;
     gap: 10px;
-  }
+
+  border-bottom:3px double var(--chart-rule);
+  padding-bottom:12px;
+  margin-bottom:12px;}
 
   .orc-panel-head-title {
     min-width: 0;
@@ -1610,12 +1629,13 @@ details.orc-more > summary:focus-visible {
     z-index: 6;
     min-height: 44px;
     padding: 8px 14px;
-    background: var(--paper);
-    color: var(--ink);
-    border: 2px solid var(--ink);
+
+    color: var(--chart-ink);
+    border: 2px solid var(--chart-ink);
     border-right: 0;
-    border-radius: 14px 0 0 14px;
-    box-shadow: -3px 4px 0 rgba(31, 42, 54, 0.2);
+    border-radius: var(--chart-radius) 0 0 var(--chart-radius);
+
+
     font-family: inherit;
     font-size: 14px;
     font-weight: 700;
@@ -1637,7 +1657,8 @@ details.orc-more > summary:focus-visible {
 
   .orc-panel .orc-chapter-h2 {
     font-size: 26px;
-  }
+
+  font-weight:500;}
 
   /* Only the spots that matter in this chapter keep their label; the rest show it on hover or
      focus, so six labels do not compete with the scene. */
@@ -1672,7 +1693,8 @@ details.orc-more > summary:focus-visible {
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-  }
+
+  border-bottom:1px solid var(--chart-rule);}
 
   .orc-top-r1 {
     flex: 0 0 auto;
@@ -1683,7 +1705,8 @@ details.orc-more > summary:focus-visible {
     min-height: 36px;
     padding: 0 10px;
     font-size: 13px;
-  }
+
+  box-shadow:none;}
 
   .orc-top-title {
     text-align: left;
@@ -1691,7 +1714,8 @@ details.orc-more > summary:focus-visible {
 
   .orc-top-title strong {
     font-size: 15px;
-  }
+
+  font-weight:500;}
 
   .orc-top-title span {
     font-size: 12px;
@@ -1719,7 +1743,11 @@ details.orc-more > summary:focus-visible {
     min-height: 36px;
     padding: 4px 8px;
     font-size: 12px;
-  }
+
+  border-radius:var(--chart-button-radius);
+  background:var(--chart-paper);
+  font-family:'Fraunces', Georgia, serif;
+  font-weight:500;}
 
   .orc-panel {
     top: 52px;
@@ -1729,9 +1757,10 @@ details.orc-more > summary:focus-visible {
     width: 46%;
     height: auto;
     max-height: calc(100dvh - 60px);
-    border: 2px solid var(--ink);
-    border-radius: 10px 16px 12px 14px;
-    box-shadow: 3px 5px 0 rgba(31, 42, 54, 0.2);
+    border: 2px solid var(--chart-ink);
+    border-radius: var(--chart-radius);
+
+
   }
 
   .orc-panel-scroll {
@@ -1740,11 +1769,16 @@ details.orc-more > summary:focus-visible {
 
   .orc-panel .orc-chapter-h2 {
     font-size: 18px;
-  }
+
+  font-weight:500;}
 
   .orc-kicker {
-    font-size: 13px;
-  }
+    font-size:12px;
+
+  font-family:'Fraunces', Georgia, serif;
+  letter-spacing:.08em;
+  line-height:1.4;
+  color:var(--chart-muted);}
 
   .orc-bar.ebar {
     padding: 6px 10px;

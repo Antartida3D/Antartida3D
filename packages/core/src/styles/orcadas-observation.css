@@ -18,18 +18,19 @@
 .orc-obs-tab {
   min-height: 44px;
   padding: 5px 6px;
-  border-radius: 6px 10px 6px 8px;
-  border: 1.5px solid var(--ink);
-  background: var(--paper);
-  color: var(--ink);
+  border-radius:var(--chart-button-radius);
+  border: 1.5px solid var(--chart-ink);
+  background: var(--chart-paper);
+  color: var(--chart-ink);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 2px;
   text-align: center;
-  box-shadow: 1px 2px 0 rgba(31, 42, 54, 0.14);
+  box-shadow:none;
   transition: transform 0.15s ease, background-color 0.15s ease;
+  font-family: 'Fraunces', Georgia, serif;
 }
 
 .orc-obs-tab-check {
@@ -69,9 +70,9 @@
 }
 
 .orc-obs-tab.is-active {
-  background: var(--ink);
+  background: var(--chart-ink);
   color: var(--ice);
-  border-color: var(--ink);
+  border-color: var(--chart-ink);
   box-shadow: 2px 3px 0 rgba(30, 62, 92, 0.28);
 }
 
@@ -86,7 +87,7 @@
 }
 
 .orc-obs-tab.is-active .orc-obs-tab-sub {
-  color: var(--ocre);
+  color:var(--chart-paper);
 }
 
 .orc-obs-tab.is-off:not(.is-active) .orc-obs-tab-sub {
@@ -112,21 +113,21 @@
   font-family: 'Fraunces', Georgia, serif;
   font-size: 15px;
   line-height: 1.15;
-  color: var(--ink);
+  color: var(--chart-ink);
 }
 
 .orc-obs-hint {
   margin: 0;
   font-size: 12.5px;
   line-height: 1.3;
-  color: var(--ink);
+  color: var(--chart-ink);
 }
 
 details.orc-obs-details {
-  border: 1px dashed rgba(31, 42, 54, 0.3);
-  border-radius: 8px;
+  border: 1px dashed color-mix(in srgb, var(--chart-ink) 30%, transparent);
+  border-radius:var(--chart-radius);
   padding: 6px 9px;
-  background: rgba(251, 244, 230, 0.65);
+  background: color-mix(in srgb, var(--chart-paper) 65%, transparent);
 }
 
 details.orc-obs-details > summary {
@@ -172,7 +173,7 @@ details.orc-obs-details > summary {
   font-size: 12px;
   font-weight: 700;
   padding: 3px 7px;
-  border-radius: 10px;
+  border-radius:var(--chart-radius);
   background: var(--ice);
   border: 1px solid var(--deep);
   color: var(--deep);
@@ -182,9 +183,9 @@ details.orc-obs-details > summary {
 /* Instrument SVG Plate */
 .orc-obs-plate {
   position: relative;
-  background: var(--ice);
-  border: 1.5px solid var(--ink);
-  border-radius: 8px 12px 8px 10px;
+  background:var(--chart-paper);
+  border: 1.5px solid var(--chart-ink);
+  border-radius:2px;
   padding: 4px;
   box-shadow: inset 0 0 0 1px rgba(192, 134, 47, 0.25);
   overflow: hidden;
@@ -202,28 +203,28 @@ details.orc-obs-details > summary {
   font-family: 'Atkinson Hyperlegible', system-ui, sans-serif;
   font-size: 13px;
   font-weight: 700;
-  fill: var(--ink);
+  fill: var(--chart-ink);
 }
 
 .orc-obs-svg-tag {
   font-family: 'Atkinson Hyperlegible', system-ui, sans-serif;
   font-size: 12.5px;
   font-weight: 700;
-  fill: var(--ink);
+  fill: var(--chart-ink);
 }
 
 .orc-obs-svg-scale-num {
   font-family: 'Fraunces', Georgia, serif;
   font-size: 13px;
   font-weight: 700;
-  fill: var(--ink);
+  fill: var(--chart-ink);
 }
 
 .orc-obs-svg-scale-sub {
   font-family: 'Atkinson Hyperlegible', system-ui, sans-serif;
   font-size: 12px;
   font-weight: 700;
-  fill: var(--pencil);
+  fill: var(--chart-muted);
 }
 
 .orc-obs-svg-callout {
@@ -237,35 +238,35 @@ details.orc-obs-details > summary {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0;
-  fill: var(--pencil);
+  fill: var(--chart-muted);
 }
 
 .orc-obs-svg-dial-num {
   font-family: 'Fraunces', Georgia, serif;
   font-size: 12.5px;
   font-weight: 700;
-  fill: var(--ink);
+  fill: var(--chart-ink);
 }
 
 .orc-obs-svg-rose-cardinal {
   font-family: 'Fraunces', Georgia, serif;
   font-size: 12.5px;
   font-weight: 700;
-  fill: var(--ink);
+  fill: var(--chart-ink);
 }
 
 .orc-obs-svg-rose-point {
   font-family: 'Atkinson Hyperlegible', system-ui, sans-serif;
   font-size: 12px;
   font-weight: 700;
-  fill: var(--ink);
+  fill: var(--chart-ink);
 }
 
 .orc-obs-svg-legend {
   font-family: 'Atkinson Hyperlegible', system-ui, sans-serif;
   font-size: 12px;
   font-weight: 700;
-  fill: var(--ink);
+  fill: var(--chart-ink);
 }
 
 /* 1. Shelter louvered door opening animation */
@@ -370,15 +371,15 @@ details.orc-obs-details > summary {
   margin-top: 4px;
   padding: 5px 8px;
   border-radius: 6px;
-  background: var(--paper);
+  background: var(--chart-paper);
   border: 1px solid var(--deep);
   font-size: 12px;
-  color: var(--ink);
+  color: var(--chart-ink);
 }
 
 .orc-obs-beaufort.is-pending {
   border-style: dashed;
-  color: var(--ink);
+  color: var(--chart-ink);
 }
 
 /* 4. Cloud picker interactive sectors */
@@ -402,17 +403,17 @@ details.orc-obs-details > summary {
   height: 44px;
   min-width: 44px;
   min-height: 44px;
-  border-radius: 10px;
-  border: 1.5px solid var(--ink);
-  background: var(--paper);
-  color: var(--ink);
+  border-radius:var(--chart-radius);
+  border: 1.5px solid var(--chart-ink);
+  background: var(--chart-paper);
+  color: var(--chart-ink);
   font-size: 20px;
   font-weight: 700;
   line-height: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 1px 2px 0 rgba(31, 42, 54, 0.16);
+  box-shadow: 1px 2px 0 color-mix(in srgb, var(--chart-ink) 16%, transparent);
 }
 
 .orc-obs-step-btn:hover:not(:disabled) {
@@ -436,7 +437,7 @@ details.orc-obs-details > summary {
   cursor: pointer;
   touch-action: none;
   user-select: none;
-  border-radius: 8px;
+  border-radius:var(--chart-radius);
 }
 
 .orc-obs-slider:focus-visible {
@@ -449,8 +450,8 @@ details.orc-obs-details > summary {
   width: 100%;
   height: 10px;
   border-radius: 5px;
-  background: var(--paper);
-  border: 1.5px solid var(--ink);
+  background: var(--chart-paper);
+  border: 1.5px solid var(--chart-ink);
 }
 
 .orc-obs-slider-fill {
@@ -459,7 +460,7 @@ details.orc-obs-details > summary {
   top: 0;
   bottom: 0;
   background: var(--glacier);
-  border-radius: 4px 0 0 4px;
+  border-radius:var(--chart-radius);
 }
 
 .orc-obs-slider-thumb {
@@ -469,8 +470,8 @@ details.orc-obs-details > summary {
   height: 22px;
   border-radius: 50%;
   background: var(--ocre);
-  border: 2px solid var(--ink);
-  box-shadow: 0 1px 3px rgba(31, 42, 54, 0.3);
+  border: 2px solid var(--chart-ink);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--chart-ink) 30%, transparent);
   transform: translate3d(-50%, -50%, 0);
 }
 
@@ -481,7 +482,7 @@ details.orc-obs-details > summary {
   white-space: nowrap;
   font-size: 12px;
   font-weight: 700;
-  color: var(--ink);
+  color: var(--chart-ink);
 }
 
 .orc-obs-num-input {
@@ -492,11 +493,11 @@ details.orc-obs-details > summary {
   font-size: 15px;
   font-weight: 700;
   text-align: center;
-  color: var(--ink);
-  background: var(--paper);
-  border: 1.5px solid var(--ink);
-  border-radius: 8px;
-  box-shadow: 1px 2px 0 rgba(31, 42, 54, 0.14);
+  color: var(--chart-ink);
+  background:var(--chart-paper);
+  border: 1.5px solid var(--chart-ink);
+  border-radius:var(--chart-radius);
+  box-shadow: 1px 2px 0 color-mix(in srgb, var(--chart-ink) 14%, transparent);
   flex: none;
 }
 
@@ -519,12 +520,12 @@ details.orc-obs-details > summary {
   justify-content: space-between;
   gap: 8px;
   padding: 7px 10px;
-  border-radius: 8px;
+  border-radius:var(--chart-radius);
   border: 1.5px solid var(--deep);
   background: var(--ice);
   font-size: 12.5px;
   line-height: 1.32;
-  color: var(--ink);
+  color: var(--chart-ink);
 }
 
 .orc-obs-feedback.is-exact {
@@ -534,16 +535,16 @@ details.orc-obs-details > summary {
 
 .orc-obs-feedback.is-close {
   border-color: var(--ocre);
-  background: var(--paper);
+  background: var(--chart-paper);
 }
 
 .orc-obs-feedback.is-off {
   border-color: var(--oxide);
-  background: var(--paper);
+  background: var(--chart-paper);
 }
 
 .orc-obs-feedback.is-off strong {
-  color: var(--oxide);
+  color: var(--chart-ink);
 }
 
 .orc-obs-retry-btn {
@@ -551,12 +552,13 @@ details.orc-obs-details > summary {
   min-height: 44px;
   min-width: 44px;
   padding: 0 12px;
-  border-radius: 8px;
+  border-radius:var(--chart-radius);
   border: 1.5px solid var(--oxide);
   background: var(--ice);
   color: var(--oxide);
   font-size: 12px;
   font-weight: 700;
+  font-family: 'Fraunces', Georgia, serif;
 }
 
 /* Reduced motion support (both class and media query) */

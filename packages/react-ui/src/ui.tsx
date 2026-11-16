@@ -39,14 +39,14 @@ export function SvgHtml({ html, className, viewBox, preserveAspectRatio }: {
   );
 }
 
-const stroke = { stroke: '#1F2A36', strokeLinecap: 'round' as const };
+const stroke = { stroke: 'currentColor', strokeLinecap: 'round' as const };
 
 export const Icon = {
   plus: <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" {...stroke} strokeWidth="2.4" /></svg>,
   minus: <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14" {...stroke} strokeWidth="2.4" /></svg>,
   reset: (
     <svg viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="12" cy="12" r="7.5" stroke="#1F2A36" strokeWidth="2" fill="none" />
+      <circle cx="12" cy="12" r="7.5" stroke="currentColor" strokeWidth="2" fill="none" />
       <path d="M12 2v4M12 18v4M2 12h4M18 12h4" {...stroke} strokeWidth="2" />
     </svg>
   ),
@@ -55,7 +55,7 @@ export const Icon = {
   list: (
     <svg className="ico" viewBox="0 0 24 24" aria-hidden="true">
       <path d="M8 6h12M8 12h12M8 18h12" {...stroke} strokeWidth="2" fill="none" />
-      <circle cx="4" cy="6" r="1.5" fill="#1F2A36" /><circle cx="4" cy="12" r="1.5" fill="#1F2A36" /><circle cx="4" cy="18" r="1.5" fill="#1F2A36" />
+      <circle cx="4" cy="6" r="1.5" fill="currentColor" /><circle cx="4" cy="12" r="1.5" fill="currentColor" /><circle cx="4" cy="18" r="1.5" fill="currentColor" />
     </svg>
   ),
   back: (
@@ -65,13 +65,13 @@ export const Icon = {
   ),
   check: (
     <svg viewBox="0 0 14 14" aria-hidden="true">
-      <path d="M2.5,7.5 L5.8,10.5 L11.5,3.5" fill="none" stroke="#1F2A36" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M2.5,7.5 L5.8,10.5 L11.5,3.5" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   ),
   sea: (
     <svg viewBox="0 0 14 14" aria-hidden="true">
-      <path d="M1.5 5.5 C3.2 4.2 4.8 6.8 6.5 5.5 C8.2 4.2 9.8 6.8 12.5 5.5" fill="none" stroke="#1E3E5C" strokeWidth="1.8" strokeLinecap="round" />
-      <path d="M2.5 8.8 C4 7.8 5.4 9.8 7 8.8 C8.6 7.8 10 9.8 11.5 8.8" fill="none" stroke="#1E3E5C" strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M1.5 5.5 C3.2 4.2 4.8 6.8 6.5 5.5 C8.2 4.2 9.8 6.8 12.5 5.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M2.5 8.8 C4 7.8 5.4 9.8 7 8.8 C8.6 7.8 10 9.8 11.5 8.8" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
     </svg>
   ),
 };

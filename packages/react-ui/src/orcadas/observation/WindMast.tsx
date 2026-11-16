@@ -104,8 +104,8 @@ export function WindMast({
             cx={roseCx}
             cy={roseCy}
             r={roseR + 12}
-            fill="#FBF4E6"
-            stroke="#1F2A36"
+            fill="var(--chart-paper)"
+            stroke="var(--chart-ink)"
             strokeWidth="1.5"
           />
           <circle
@@ -113,7 +113,7 @@ export function WindMast({
             cy={roseCy}
             r={roseR}
             fill="none"
-            stroke="#1F2A36"
+            stroke="var(--chart-ink)"
             strokeWidth="1"
             strokeDasharray="2 2"
           />
@@ -149,7 +149,7 @@ export function WindMast({
                   y1={y1}
                   x2={x2}
                   y2={y2}
-                  stroke={isCardinal ? '#1F2A36' : '#5E656C'}
+                  stroke={isCardinal ? 'var(--chart-ink)' : 'var(--chart-muted)'}
                   strokeWidth={isCardinal ? 1.6 : isIntercardinal ? 1.1 : 0.7}
                 />
                 <text
@@ -174,17 +174,17 @@ export function WindMast({
             <polygon
               points="-7,44 0,24 7,44 0,39"
               fill="#C0862F"
-              stroke="#1F2A36"
+              stroke="var(--chart-ink)"
               strokeWidth="1.3"
               strokeLinejoin="round"
             />
             {/* Vane shaft */}
-            <line x1="0" y1="36" x2="0" y2="-46" stroke="#1F2A36" strokeWidth="2.4" />
+            <line x1="0" y1="36" x2="0" y2="-46" stroke="var(--chart-ink)" strokeWidth="2.4" />
             {/* Vane arrowhead pointing to wind direction (at top -y) */}
             <polygon
               points="0,-54 -6,-38 0,-42 6,-38"
               fill="#A4471F"
-              stroke="#1F2A36"
+              stroke="var(--chart-ink)"
               strokeWidth="1.3"
               strokeLinejoin="round"
             />
@@ -195,7 +195,7 @@ export function WindMast({
             cy={roseCy}
             r="5"
             fill="#C0862F"
-            stroke="#1F2A36"
+            stroke="var(--chart-ink)"
             strokeWidth="1.4"
           />
 
@@ -210,13 +210,13 @@ export function WindMast({
             width="8"
             height="46"
             rx="2"
-            fill="#5E656C"
-            stroke="#1F2A36"
+            fill="var(--chart-muted)"
+            stroke="var(--chart-ink)"
             strokeWidth="1.4"
           />
           {/* Guy wires */}
-          <line x1="276" y1="68" x2="236" y2="104" stroke="#5E656C" strokeWidth="1" strokeDasharray="3 2" />
-          <line x1="284" y1="68" x2="324" y2="104" stroke="#5E656C" strokeWidth="1" strokeDasharray="3 2" />
+          <line x1="276" y1="68" x2="236" y2="104" stroke="var(--chart-muted)" strokeWidth="1" strokeDasharray="3 2" />
+          <line x1="284" y1="68" x2="324" y2="104" stroke="var(--chart-muted)" strokeWidth="1" strokeDasharray="3 2" />
 
           {/* Rotating 4-cup assembly (top-down angled perspective centered at 280, 52) */}
           <g transform="translate(280, 50)">
@@ -229,36 +229,36 @@ export function WindMast({
               }
             >
               {/* Cross arms */}
-              <line x1="-38" y1="0" x2="38" y2="0" stroke="#1F2A36" strokeWidth="2" />
-              <line x1="0" y1="-38" x2="0" y2="38" stroke="#1F2A36" strokeWidth="2" />
+              <line x1="-38" y1="0" x2="38" y2="0" stroke="var(--chart-ink)" strokeWidth="2" />
+              <line x1="0" y1="-38" x2="0" y2="38" stroke="var(--chart-ink)" strokeWidth="2" />
               {/* 4 hemispherical cups */}
               <path
                 d="M 32 -8 A 9 9 0 1 1 32 8 Z"
                 fill="#C0862F"
-                stroke="#1F2A36"
+                stroke="var(--chart-ink)"
                 strokeWidth="1.4"
               />
               <path
                 d="M -32 8 A 9 9 0 1 1 -32 -8 Z"
                 fill="#C0862F"
-                stroke="#1F2A36"
+                stroke="var(--chart-ink)"
                 strokeWidth="1.4"
               />
               <path
                 d="M -8 -32 A 9 9 0 1 1 8 -32 Z"
                 fill="#A4471F"
-                stroke="#1F2A36"
+                stroke="var(--chart-ink)"
                 strokeWidth="1.4"
               />
               <path
                 d="M 8 32 A 9 9 0 1 1 -8 32 Z"
                 fill="#A4471F"
-                stroke="#1F2A36"
+                stroke="var(--chart-ink)"
                 strokeWidth="1.4"
               />
             </g>
             {/* Rotor hub cap */}
-            <circle cx="0" cy="0" r="5.5" fill="#FBF4E6" stroke="#1F2A36" strokeWidth="1.5" />
+            <circle cx="0" cy="0" r="5.5" fill="var(--chart-paper)" stroke="var(--chart-ink)" strokeWidth="1.5" />
           </g>
 
           <text x="215" y="24" className="orc-obs-svg-tag">
@@ -274,7 +274,7 @@ export function WindMast({
             width={dW}
             height={dH}
             rx="8"
-            fill="#FBF4E6"
+            fill="var(--chart-paper)"
             stroke="#C0862F"
             strokeWidth="3.5"
           />
@@ -285,7 +285,7 @@ export function WindMast({
             height={dH}
             rx="8"
             fill="none"
-            stroke="#1F2A36"
+            stroke="var(--chart-ink)"
             strokeWidth="1.5"
           />
 
@@ -305,7 +305,7 @@ export function WindMast({
               y1={dY + 46}
               x2={dX + dW - 8}
               y2={dY + 46}
-              stroke="#1F2A36"
+              stroke="var(--chart-ink)"
               strokeWidth="1.5"
             />
 
@@ -317,7 +317,7 @@ export function WindMast({
                   y1={dY + 46}
                   x2={x}
                   y2={dY + (isTen ? 26 : isFive ? 32 : 37)}
-                  stroke="#1F2A36"
+                  stroke="var(--chart-ink)"
                   strokeWidth={isTen ? 2 : isFive ? 1.4 : 0.9}
                   strokeLinecap="round"
                 />
@@ -357,7 +357,7 @@ export function WindMast({
               <polygon
                 points={`${needleX},${dY + 45} ${needleX - 5},${dY + 22} ${needleX + 5},${dY + 22}`}
                 fill="#A4471F"
-                stroke="#1F2A36"
+                stroke="var(--chart-ink)"
                 strokeWidth="0.9"
               />
             </g>

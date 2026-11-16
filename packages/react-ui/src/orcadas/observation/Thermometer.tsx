@@ -5,9 +5,9 @@ const TEMP_MAX = 10;
 
 // Notebook illustration palette for the Stevenson screen (uses CSS tokens with hex fallbacks)
 const SHELTER = {
-  ink: 'var(--ink, #1F2A36)',
+  ink: 'var(--chart-ink, var(--ink, #1F2A36))',
   deep: 'var(--deep, #1E3E5C)',
-  pencil: 'var(--pencil, #5E656C)',
+  pencil: 'var(--chart-muted, var(--pencil, #5E656C))',
   brass: 'var(--ocre, #C0862F)',
   snow: '#E7F0F5',
   snowLine: 'var(--glacier, #7FA8C4)',
@@ -181,7 +181,7 @@ export function Thermometer({
           </linearGradient>
           <radialGradient id={glassGradId} cx="35%" cy="30%" r="70%">
             <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.55" />
-            <stop offset="70%" stopColor="#FBF4E6" stopOpacity="0.1" />
+            <stop offset="70%" stopColor="var(--chart-paper)" stopOpacity="0.1" />
             <stop offset="100%" stopColor="#7FA8C4" stopOpacity="0.22" />
           </radialGradient>
         </defs>
@@ -343,7 +343,7 @@ export function Thermometer({
               width="20"
               height="90"
               rx="3"
-              fill="#FBF4E6"
+              fill="var(--chart-paper)"
               stroke={SHELTER.ink}
               strokeWidth="1.2"
             />
@@ -567,7 +567,7 @@ export function Thermometer({
             y={lensCy - lensR}
             width={lensR * 2}
             height={lensR * 2}
-            fill="#FBF4E6"
+            fill="var(--chart-paper)"
           />
 
           {/* Subtle millimeter/tenth grid lines */}
@@ -580,7 +580,7 @@ export function Thermometer({
                   y1={y}
                   x2={lensCx - (isMajor ? 34 : isHalf ? 24 : 17)}
                   y2={y}
-                  stroke="#1F2A36"
+                  stroke="var(--chart-ink)"
                   strokeWidth={isMajor ? 2 : isHalf ? 1.4 : 0.9}
                   strokeLinecap="round"
                 />
@@ -615,7 +615,7 @@ export function Thermometer({
             width="16"
             height={lensR * 2}
             fill="#E7F0F5"
-            stroke="#1F2A36"
+            stroke="var(--chart-ink)"
             strokeWidth="1.5"
           />
 
@@ -691,7 +691,7 @@ export function Thermometer({
           cy={lensCy}
           r={lensR - 2.5}
           fill="none"
-          stroke="#1F2A36"
+          stroke="var(--chart-ink)"
           strokeWidth="1.5"
         />
         <circle
@@ -699,7 +699,7 @@ export function Thermometer({
           cy={lensCy}
           r={lensR + 2.5}
           fill="none"
-          stroke="#1F2A36"
+          stroke="var(--chart-ink)"
           strokeWidth="1.5"
         />
         {/* Drawn after the lens rim, so the word is never cut by it; a paper halo keeps it legible */}
@@ -707,8 +707,8 @@ export function Thermometer({
           x={lensCx + 21}
           y={meniscusY + 3.5}
           className="orc-obs-svg-callout"
-          fill="#A4471F"
-          stroke="#FBF4E6"
+          fill="var(--chart-ink)"
+          stroke="var(--chart-paper)"
           strokeWidth="3"
           paintOrder="stroke"
           pointerEvents="none"

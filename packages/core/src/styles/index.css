@@ -1,5 +1,6 @@
 @import './fonts.css';
 @import './tokens.css';
+@import './cartography.css';
 @import './painted.css';
 @import './voyage.css';
 @import './orcadas.css';
@@ -10,3 +11,4 @@
 @import './loading.css';
 @import './fossils.css';
 @import './marine.css';
+@import './point-sheet.css';

@@ -1,5 +1,6 @@
 @import './fonts.css';
 @import './tokens.css';
+@import './components.css';
 @import './cartography.css';
 @import './painted.css';
 @import './voyage.css';

@@ -36,7 +36,6 @@
   color: var(--chart-ink);
 }
 .view-toggle .chip[aria-pressed="true"] {
-  border: 3px double var(--chart-paper);
   background: var(--chart-ink);
   color: var(--chart-paper);
 }

@@ -230,19 +230,8 @@
 .ld-actions .btn {
   min-height: 38px;
   padding: 7px 16px;
-  color: #403536;
-  background: #EDDFC0;
-  border: 1px solid #403536;
-  border-radius: var(--chart-button-radius);
   font: inherit;
   font-weight: 700;
-  cursor: pointer;
-}
-
-.ld-actions .btn:hover,
-.ld-actions .btn:focus-visible {
-  color: #F3E8D2;
-  background: #1E3E5C;
 }
 
 .ld-actions .btn:focus-visible {

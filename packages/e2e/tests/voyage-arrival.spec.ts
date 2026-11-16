@@ -203,6 +203,8 @@ test.describe('optional milestones on the trip from Ushuaia (#157)', () => {
     const card = await travelToMarambio(page);
     const log = card.locator('.vnotebook').filter({ hasText: 'Hitos del viaje' });
     await expect(log).toContainText(/abriste 1 de \d+/);
+    // Every milestone of the list has the pin of the map beside its name (#233).
+    await expect(log.locator('.vnote .vpinicon')).toHaveCount(await log.locator('.vnote').count());
     await expect(log.getByRole('button', { name: /, abierto\./ })).toHaveCount(1);
     const missed = log.getByRole('button', { name: /, sin abrir\./ });
     await expect(missed.first()).toBeVisible();

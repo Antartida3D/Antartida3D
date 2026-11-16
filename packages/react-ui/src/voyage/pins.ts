@@ -1,20 +1,16 @@
 import { CircleGeometry, MeshBasicMaterial, Shape, ShapeGeometry } from 'three';
+import { PIN_DOT_R, PIN_HEAD_R as HEAD_R, PIN_HEAD_Y as HEAD_Y, PIN_LINE as LINE, pinTangent } from './pinShape.ts';
 
-const HEAD_Y = 0.68;
 /** Height of the center of the round head of a pin, in pin units: where its button goes. */
-export const PIN_HEAD_Y = HEAD_Y;
-const HEAD_R = 0.32;
-/** Width of the ink line around the pin, like the line around the markers of the map. */
-const LINE = 0.055;
+export { PIN_HEAD_Y } from './pinShape.ts';
 
 /** Outline of a pin: a round head over a point at `tipY`. */
 function pinShape(radius: number, tipY: number): ShapeGeometry {
-  // Angle where the straight sides meet the round head.
-  const side = Math.asin(radius / (HEAD_Y - tipY));
+  const { side, x, y } = pinTangent(radius, tipY);
   const pin = new Shape();
   pin.moveTo(0, tipY);
   // The arc does not join itself to the starting point: draw the side up to it.
-  pin.lineTo(radius * Math.cos(side), HEAD_Y - radius * Math.sin(side));
+  pin.lineTo(x, y);
   pin.absarc(0, HEAD_Y, radius, -side, Math.PI + side, false);
   pin.closePath();
   return new ShapeGeometry(pin, 24);
@@ -27,7 +23,7 @@ function pinShape(radius: number, tipY: number): ShapeGeometry {
 export const buildPinGeometry = () => ({
   line: pinShape(HEAD_R + LINE, -LINE * 2),
   fill: pinShape(HEAD_R, 0),
-  dot: new CircleGeometry(HEAD_R * 0.4, 24).translate(0, HEAD_Y, 0),
+  dot: new CircleGeometry(PIN_DOT_R, 24).translate(0, HEAD_Y, 0),
 });
 
 // Always drawn over the relief: a milestone must be seen coming.

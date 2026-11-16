@@ -26,7 +26,7 @@ description: Frontend: accesibilidad, rendimiento, estados de UI y diseño dibuj
 4. Soporte para accesibilidad y preferencias de usuario:
    - Respeta `prefers-reduced-motion`: sin vuelos de cámara ni animaciones continuas.
    - Fallback automático cuando WebGL no esté disponible.
-5. Usa los tokens de diseño existentes (`tokens.css`, paleta `--paper`, `--ink`, `--ocre`, etc.); no introduzcas valores arbitrarios.
+5. Usa los tokens de diseño existentes (`tokens.css`, paleta `--paper`, `--ink`, `--ocre`, etc.); no introduzcas valores arbitrarios. Los botones, píldoras y chips siguen la regla `40-componentes-ui.md`.
 6. Cubre con pruebas E2E los flujos principales (Playwright a 390 px mobile y 1440 px desktop).
 
 ## Guardián

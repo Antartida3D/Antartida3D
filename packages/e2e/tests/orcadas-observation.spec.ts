@@ -4,7 +4,7 @@ import { ORCADAS_CLIMATE } from '../../core/src/content/orcadas-series.ts';
 import { beaufort, observationFor, type Reading } from '../../core/src/orcadas.ts';
 import { openOrcadasFromMap } from './orcadas-helpers.ts';
 
-const primary = (page: Page) => page.locator('.ebar .btn.primary');
+const primary = (page: Page) => page.locator('.sheet-actions .btn.primary');
 
 function currentExpectedReading(): Reading {
   const now = new Date();
@@ -215,7 +215,7 @@ test.describe('Orcadas · observación', () => {
       .click();
     await expect(page.getByRole('heading', { level: 2, name: 'La respuesta' })).toBeVisible();
     await expect(page.locator('.orc-done-summary')).toContainText('4 de 4 lecturas dentro del margen');
-    await page.locator('details.orc-more', { hasText: 'Tu observación del día' }).locator('> summary').click();
+    await page.locator('details.sheet-more', { hasText: 'Tu observación del día' }).locator('> summary').click();
     await expect(page.locator('.orc-done-readings')).toContainText(windBf.name);
   });
 

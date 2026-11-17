@@ -1,7 +1,8 @@
 import { lazy, Suspense, useEffect, useReducer, useRef, useState } from 'react';
 import {
-  INITIAL_MARINE, MARINE_CHAPTERS, MARINE_ORGANISMS, MARINE_QUESTION, MARINE_SOURCES, MARINE_STOPS, MARINE_VIEW_TEXT,
-  isUnderwater, linksOf, marineReducer, type MarineSourceId,
+  INITIAL_MARINE, MARINE_CHAPTERS, MARINE_ORGANISMS, MARINE_QUESTION, MARINE_STOPS, MARINE_VIEW_TEXT,
+  isUnderwater, linksOf, marineReducer,
+  MARINE_CITED,
 } from '@antartida/core';
 import { BottomSheet, type OpenSheetSize } from '../BottomSheet.tsx';
 import { useIsDesktop } from '../hooks.ts';
@@ -9,14 +10,17 @@ import { CanvasGuard } from '../CanvasGuard.tsx';
 import { KindChip } from '../orcadas/KindChip.tsx';
 import { useSceneFrame } from '../sceneFrame.tsx';
 import { Icon } from '../ui.tsx';
+import { Cites } from '../sheet/Cite.tsx';
+import { MoreFold } from '../sheet/MoreFold.tsx';
+import { SheetActions } from '../sheet/SheetActions.tsx';
+import { SheetHeader } from '../sheet/SheetHeader.tsx';
+import { SourcesContext } from '../sheet/SourcesContext.ts';
+import { SourcesView } from '../sheet/SourcesView.tsx';
 import { FoodWebPanel, WebDiagram } from './FoodWeb.tsx';
 
 const Scene = lazy(() => import('./MarineScene.tsx').then((m) => ({ default: m.MarineScene })));
 
-function SourceLink({ id }: { id: MarineSourceId }) {
-  const s = MARINE_SOURCES[id];
-  return <a href={s.url} target="_blank" rel="noopener noreferrer">{s.title} ↗</a>;
-}
+const SOURCES = MARINE_CITED;
 
 /** «a, b y c». */
 const list = (items: readonly string[]) => items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} y ${items[items.length - 1]}`;
@@ -40,13 +44,13 @@ export function MarineExpedition({ reduced, webgl, resume, onProgress, onLeave }
   const [sheetSize, setSheetSize] = useState<OpenSheetSize>('small');
   const [reset, setReset] = useState(0);
   const [sourcesOpen, setSourcesOpen] = useState(false);
+  const [highlight, setHighlight] = useState<string | null>(null);
+  const sourcesBtn = useRef<HTMLButtonElement>(null);
   const [graphicsLost, setGraphicsLost] = useState(false);
   const root = useRef<HTMLElement>(null);
   const panel = useRef<HTMLElement>(null);
   const top = useRef<HTMLElement>(null);
-  const title = useRef<HTMLHeadingElement>(null);
   const scroll = useRef<HTMLDivElement>(null);
-  const dialog = useRef<HTMLDialogElement>(null);
   const desktop = useIsDesktop();
   const stop = MARINE_STOPS[state.stop];
   const chapter = MARINE_CHAPTERS.findIndex((c) => c.id === stop.chapter);
@@ -55,7 +59,7 @@ export function MarineExpedition({ reduced, webgl, resume, onProgress, onLeave }
   const under = isUnderwater(stop.view, state);
 
   useEffect(() => {
-    title.current?.focus({ preventScroll: true });
+    root.current?.querySelector<HTMLElement>('#marine-title')?.focus({ preventScroll: true });
     if (scroll.current) scroll.current.scrollTop = 0;
     setSheetSize('small');
   }, [state.stop]);
@@ -70,11 +74,10 @@ export function MarineExpedition({ reduced, webgl, resume, onProgress, onLeave }
     return () => el?.removeEventListener('webglcontextlost', lost, true);
   }, []);
 
-  useEffect(() => {
-    const el = dialog.current;
-    if (sourcesOpen && el && !el.open) el.showModal();
-    else if (!sourcesOpen && el?.open) el.close();
-  }, [sourcesOpen]);
+  const openSource = (id: string | null) => {
+    setHighlight(id);
+    setSourcesOpen(true);
+  };
 
   const toggle = (pressed: boolean, on: string, off: string, action: () => void, note?: string) => <div className="marine-interaction">
     <button className="btn marine-action" aria-pressed={pressed} onClick={action}>{pressed ? on : off}</button>
@@ -83,12 +86,15 @@ export function MarineExpedition({ reduced, webgl, resume, onProgress, onLeave }
 
   const content = <>
     <div className="orc-panel-scroll marine-panel-content" ref={scroll}>
-      <div className="orc-panel-head"><div className="orc-panel-head-title">
-        <span className="orc-kicker">{MARINE_CHAPTERS[chapter].label} · parada {state.stop + 1} de {MARINE_STOPS.length}</span>
-        <h2 id="marine-title" className="orc-chapter-h2" ref={title} tabIndex={-1}>{stop.title}</h2>
-      </div></div>
+      <SheetHeader
+        label={<>{MARINE_CHAPTERS[chapter].label} · parada {state.stop + 1} de {MARINE_STOPS.length}</>}
+        title={stop.title}
+        titleId="marine-title"
+        titleClass="orc-chapter-h2"
+        titleFocusable
+      />
       <p className="marine-eyebrow">{stop.eyebrow}</p>
-      <p className="marine-line" aria-live="polite">{stop.line}</p>
+      <p className="marine-line" aria-live="polite">{stop.line}<Cites ids={stop.sources} /></p>
 
       {(stop.id === 'ceiling' || stop.id === 'emperor-hunt') && toggle(state.under, 'Volver a la superficie', stop.id === 'ceiling' ? 'Mirar bajo el hielo' : 'Mirar bajo el agua', () => dispatch({ type: 'surface' }))}
 
@@ -153,16 +159,15 @@ export function MarineExpedition({ reduced, webgl, resume, onProgress, onLeave }
         <li><span>✓</span>Recorriste {state.visited.length} de {MARINE_STOPS.length} paradas</li>
       </ul>}
 
-      <div className="marine-source-line"><span>Fuente</span>{stop.sources.map((id) => <SourceLink key={id} id={id} />)}</div>
-      <details className="marine-more" key={stop.id}><summary>Saber más</summary><p>{stop.more}</p></details>
+      <MoreFold key={stop.id}><p>{stop.more}</p></MoreFold>
     </div>
-    <div className="orc-bar ebar">
-      {state.stop > 0 && <button type="button" className="btn ghost marine-prev" onClick={() => dispatch({ type: 'prev' })}>Atrás</button>}
+    <SheetActions>
+      {state.stop > 0 && <button type="button" className="btn marine-prev" onClick={() => dispatch({ type: 'prev' })}>Atrás</button>}
       <button type="button" className="btn primary marine-next" onClick={() => last ? onLeave(true) : dispatch({ type: 'next' })}>{last ? 'Terminar expedición' : 'Siguiente'}</button>
-    </div>
+    </SheetActions>
   </>;
 
-  return <section className={`orc marine-expedition${!desktop && sheetSize === 'tall' ? ' is-panel-expanded' : ''}${!desktop && sheetSize === 'peek' ? ' is-panel-peek' : ''}`} ref={root} aria-label="Expedición Océano">
+  return <SourcesContext.Provider value={{ list: SOURCES, open: openSource }}><section className={`orc marine-expedition${!desktop && sheetSize === 'tall' ? ' is-panel-expanded' : ''}${!desktop && sheetSize === 'peek' ? ' is-panel-peek' : ''}`} ref={root} aria-label="Expedición Océano">
     <div className={`marine-stage${under ? ' is-under' : ''}`}>
       {use3D
         ? <CanvasGuard onFail={() => setGraphicsLost(true)}><Suspense fallback={<div className="marine-loading" role="status">Bajando bajo el hielo…</div>}><Scene view={stop.view} state={state} reduced={reduced} reset={reset} shift={shift} /></Suspense></CanvasGuard>
@@ -190,7 +195,7 @@ export function MarineExpedition({ reduced, webgl, resume, onProgress, onLeave }
       <div className="orc-top-r1">
         <button type="button" className="pill orc-top-btn" aria-label="Volver al mapa" onClick={() => onLeave(false)}>{Icon.back}<span>Mapa</span></button>
         <div className="orc-top-title"><strong>Océano</strong><span>{MARINE_QUESTION}</span></div>
-        <button type="button" className="pill orc-top-btn" aria-haspopup="dialog" onClick={() => setSourcesOpen(true)}>Fuentes</button>
+        <button type="button" className="pill orc-top-btn" aria-haspopup="dialog" ref={sourcesBtn} onClick={() => openSource(null)}>Fuentes</button>
       </div>
       <nav className="orc-steps-nav" aria-label="Capítulos de Océano">
         <ol className="orc-steps">
@@ -208,15 +213,8 @@ export function MarineExpedition({ reduced, webgl, resume, onProgress, onLeave }
     {desktop
       ? <section className="orc-panel marine-panel" ref={panel} aria-labelledby="marine-title">{content}</section>
       : <BottomSheet className="orc-panel marine-panel" labelledBy="marine-title" sheetRef={panel} floor="peek" size={sheetSize} onSize={setSheetSize}>{content}</BottomSheet>}
-    <dialog className="marine-dialog" ref={dialog} aria-labelledby="marine-dialog-title" onClose={() => setSourcesOpen(false)} onClick={(e) => { if (e.target === e.currentTarget) setSourcesOpen(false); }}>
-      <div className="marine-dialog-heading"><h2 id="marine-dialog-title">Fuentes del recorrido</h2><button className="iconbtn" aria-label="Cerrar fuentes" onClick={() => setSourcesOpen(false)}>{Icon.close}</button></div>
-      <p>{MARINE_QUESTION}</p>
-      <p>Las escenas son ilustraciones inspiradas en mares antárticos, no el registro de un lugar. Cada estudio conserva el sitio donde se hizo.</p>
-      {(Object.keys(MARINE_SOURCES) as MarineSourceId[]).map((id) => {
-        const s = MARINE_SOURCES[id];
-        return <article className="marine-source-entry" key={id}><h3><span>{id}</span> <SourceLink id={id} /></h3><p>{s.org}</p><p>{s.detail}</p>
-          <small>Consultado: {s.date.split('-').reverse().join('/')}{s.read === 'abstract' ? ' · leído en su resumen' : ''}</small></article>;
-      })}
-    </dialog>
-  </section>;
+    {sourcesOpen && <SourcesView list={SOURCES} highlight={highlight} place={MARINE_QUESTION}
+      notice="Las escenas son ilustraciones inspiradas en mares antárticos, no el registro de un lugar. Cada estudio conserva el sitio donde se hizo."
+      onClose={() => setSourcesOpen(false)} fallbackFocus={() => sourcesBtn.current} />}
+  </section></SourcesContext.Provider>;
 }

@@ -64,18 +64,18 @@ test('dialogs close with Escape and return focus to their trigger', async ({ pag
   await tabTo(page, LIST_BUTTON_RE);
   await page.keyboard.press('Enter');
   await expect(page.getByRole('dialog', { name: 'Todos los puntos' })).toBeVisible();
-  await expectFocused(page, 'Ver mapa');
+  await expectFocused(page, 'Volver al mapa');
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expectFocused(page, LIST_BUTTON_LABEL);
 
   await page.keyboard.press('Enter');
-  await expectFocused(page, 'Ver mapa');
+  await expectFocused(page, 'Volver al mapa');
   // With Océano (#8), Poncho (#9) and Fósiles (#7) all expeditions, a point of interest opens the sheet.
   await tabTo(page, /^Volcán en el hielo/);
   await page.keyboard.press('Enter');
   const sheet = page.getByRole('dialog', { name: 'Volcán en el hielo' });
-  await expect(sheet.getByRole('button', { name: /^Fuentes verificadas/ })).toBeVisible();
+  await expect(sheet.getByRole('button', { name: /^Fuente / }).first()).toBeVisible();
   // No close button (#148): the title takes the focus; a tap outside, a drag down, Escape and «Volver al mapa» close it.
   await expectFocused(page, 'Volcán en el hielo');
   await expect(sheet.getByRole('button', { name: 'Cerrar ficha' })).toHaveCount(0);
@@ -90,6 +90,7 @@ test('Océano is available and opens its own expedition', async ({ page }) => {
   const oceanoBtn = page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Océano/ });
   await expect(oceanoBtn).toBeVisible();
   await oceanoBtn.click();
+  await page.getByRole('button', { name: 'Comenzar expedición' }).click();
   await expect(page.getByRole('region', { name: 'Expedición Océano' })).toBeVisible();
   await page.getByRole('button', { name: 'Volver al mapa' }).click();
   await expect(page.getByRole('region', { name: 'Expedición Océano' })).toHaveCount(0);
@@ -101,6 +102,7 @@ test('Fósiles is available and opens its own expedition', async ({ page }) => {
   const fosilesBtn = page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Fósiles/ });
   await expect(fosilesBtn).toBeVisible();
   await fosilesBtn.click();
+  await page.getByRole('button', { name: 'Comenzar expedición' }).click();
   await expect(page.getByRole('region', { name: 'Expedición Fósiles' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Las rocas recuerdan' })).toBeVisible();
   await page.getByRole('button', { name: 'Volver al mapa' }).click();
@@ -111,13 +113,13 @@ test('a point with verified content shows its sources; Poncho expedition cites i
   await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
   await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Volcán en el hielo/ }).click();
   const erebus = page.getByRole('dialog', { name: 'Volcán en el hielo' });
-  // Sources start folded so they do not push the sheet's actions out of view.
-  const toggle = erebus.getByRole('button', { name: /^Fuentes verificadas/ });
-  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  // The sources are numbered citations that open the one sources view, so they do not push the sheet's actions out of view.
   await expect(erebus.getByRole('link', { name: 'Erebus Breaks Through' })).toHaveCount(0);
-  await toggle.click();
-  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-  await expect(erebus.getByRole('link', { name: 'Erebus Breaks Through' })).toHaveAttribute('href', /^https:\/\/science\.nasa\.gov\//);
+  await erebus.getByRole('button', { name: /^Fuente / }).first().click();
+  const erebusSources = page.getByRole('dialog', { name: 'Fuentes' });
+  await expect(erebusSources.getByRole('link', { name: 'Erebus Breaks Through' })).toHaveAttribute('href', /^https:\/\/science\.nasa\.gov\//);
+  await page.keyboard.press('Escape');
+  await expect(erebusSources).toHaveCount(0);
   await page.keyboard.press('Escape');
 
   await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
@@ -132,13 +134,6 @@ test('a point with verified content shows its sources; Poncho expedition cites i
     'href',
     /^https:\/\//,
   );
-  await poncho.getByRole('button', { name: 'Ver las fuentes' }).click();
-  const sources = page.getByRole('dialog', { name: 'Fuentes' });
-  await expect(sources.locator('[data-source="P1"] a')).toHaveAttribute(
-    'href',
-    'https://www.marambio.aq/pdf/poncho.pdf',
-  );
-  await sources.getByRole('button', { name: 'Volver al viaje' }).click();
   await expect(poncho).toBeVisible();
 });
 

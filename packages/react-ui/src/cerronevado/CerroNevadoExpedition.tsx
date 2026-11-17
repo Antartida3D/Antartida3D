@@ -1,40 +1,37 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  CERRO_NEVADO_SOURCES,
   CERRO_NEVADO_SPOTS,
   CERRO_NEVADO_TITLE,
   cerroNevadoFacts,
   PTS,
   type CerroNevadoFact,
-  type CerroNevadoSourceId,
+  CERRO_NEVADO_CITED,
 } from '@antartida/core';
 import { BottomSheet, type OpenSheetSize } from '../BottomSheet.tsx';
 import { useIsDesktop } from '../hooks.ts';
 import { useSceneFrame } from '../sceneFrame.tsx';
 import { KindChip } from '../orcadas/KindChip.tsx';
 import { Icon, Quoted } from '../ui.tsx';
+import { Cites } from '../sheet/Cite.tsx';
+import { SheetActions } from '../sheet/SheetActions.tsx';
+import { SheetHeader } from '../sheet/SheetHeader.tsx';
+import { SourcesContext } from '../sheet/SourcesContext.ts';
+import { SourcesView } from '../sheet/SourcesView.tsx';
 import { CerroNevadoScene } from './CerroNevadoScene.tsx';
 
 const QUESTION = PTS.find((p) => p.id === 'cerronevado')!.q;
-const sourceAnchor = (id: string) => `cn-source-${id}`;
+const SOURCES = CERRO_NEVADO_CITED;
 
-function FactCard({ fact, onOpenSource }: { fact: CerroNevadoFact; onOpenSource: (id: CerroNevadoSourceId) => void }) {
+function FactCard({ fact }: { fact: CerroNevadoFact }) {
   return (
     <article className="orc-fact-card">
       <div className="orc-fact-top">
         <KindChip kind={fact.kind} />
       </div>
-      <p className="orc-fact-text"><Quoted text={fact.text} /></p>
-      {fact.sources.length > 0 && (
-        <div className="orc-fact-srcs">
-          <span className="orc-src-prefix">Fuente:</span>
-          {fact.sources.map((id) => (
-            <button key={id} type="button" className="orc-src-link" onClick={() => onOpenSource(id)}>
-              {CERRO_NEVADO_SOURCES[id].short}
-            </button>
-          ))}
-        </div>
-      )}
+      <p className="orc-fact-text">
+        <Quoted text={fact.text} />
+        <Cites ids={fact.sources} />
+      </p>
     </article>
   );
 }
@@ -56,7 +53,7 @@ export function CerroNevadoExpedition({ reduced, onLeave }: { reduced: boolean; 
   const rootRef = useRef<HTMLElement>(null);
   const topRef = useRef<HTMLElement>(null);
   const panelRef = useRef<HTMLElement>(null);
-  const headingRef = useRef<HTMLHeadingElement>(null);
+  const sourcesBtn = useRef<HTMLButtonElement>(null);
   const moved = useRef(false);
 
   const spot = CERRO_NEVADO_SPOTS[index];
@@ -64,33 +61,23 @@ export function CerroNevadoExpedition({ reduced, onLeave }: { reduced: boolean; 
 
   useEffect(() => {
     if (!moved.current) return;
-    headingRef.current?.focus({ preventScroll: true });
-  }, [index, showSources]);
-
-  useEffect(() => {
-    if (!showSources || !highlight) return;
-    document.getElementById(sourceAnchor(highlight))?.scrollIntoView({ block: 'nearest' });
-  }, [showSources, highlight]);
+    rootRef.current?.querySelector<HTMLElement>('#cn-panel-title')?.focus({ preventScroll: true });
+  }, [index]);
 
   const unfold = () => setSheetSize((size) => (size === 'peek' ? 'small' : size));
   const go = (next: number) => {
     moved.current = true;
-    setShowSources(false);
-    setHighlight(null);
     setIndex(next);
     unfold();
   };
   const openSources = (id: string | null) => {
-    moved.current = true;
     setHighlight(id);
     setShowSources(true);
     unfold();
   };
   const closeSources = () => {
-    moved.current = true;
     setShowSources(false);
     setHighlight(null);
-    unfold();
   };
   const onNoWebGL = useCallback(() => setNoWebGL(true), []);
   // The scene fills the screen: its view moves to the part the bar and the panel leave free.
@@ -99,69 +86,43 @@ export function CerroNevadoExpedition({ reduced, onLeave }: { reduced: boolean; 
   const panelBody = (
     <>
       <div className="orc-panel-scroll">
-        <div className="orc-panel-head">
-          <span id="cn-panel-label" className="orc-kicker hand">
-            {showSources ? 'Fuentes de la colonia' : `Punto ${index + 1} de ${CERRO_NEVADO_SPOTS.length}`}
-          </span>
-          <h2 className="orc-chapter-h2" ref={headingRef} tabIndex={-1}>
-            {showSources ? 'De dónde sale cada dato' : spot.label}
-          </h2>
-        </div>
-        {showSources ? (
-          <ul className="mar-sources">
-            {(Object.entries(CERRO_NEVADO_SOURCES) as [CerroNevadoSourceId, (typeof CERRO_NEVADO_SOURCES)[CerroNevadoSourceId]][]).map(([id, src]) => (
-              <li key={id} id={sourceAnchor(id)} className={`mar-source${id === highlight ? ' is-highlight' : ''}`}>
-                <strong>{src.label}</strong>
-                <span>{src.org}</span>
-                <span>Consultado el {src.consulted.split('-').reverse().join('/')}</span>
-                <a href={src.url} target="_blank" rel="noreferrer">
-                  Abrir la fuente
-                </a>
-              </li>
+        <SheetHeader
+          label={`Punto ${index + 1} de ${CERRO_NEVADO_SPOTS.length}`}
+          title={spot.label}
+          titleId="cn-panel-title"
+          titleClass="orc-chapter-h2"
+          titleFocusable
+        />
+        <div className="orc-chapter-content">
+          {index === 0 && <p className="orc-question">{QUESTION}</p>}
+          <p className="orc-lead">{spot.subtitle}</p>
+          {noWebGL && <p className="cn-no3d">Sin gráficos 3D en este navegador: el recorrido sigue en palabras.</p>}
+          <div className="orc-facts-list">
+            {cerroNevadoFacts(spot.id).map((fact) => (
+              <FactCard key={fact.id} fact={fact} />
             ))}
-          </ul>
-        ) : (
-          <div className="orc-chapter-content">
-            {index === 0 && <p className="orc-question">{QUESTION}</p>}
-            <p className="orc-lead">{spot.subtitle}</p>
-            {noWebGL && <p className="cn-no3d">Sin gráficos 3D en este navegador: el recorrido sigue en palabras.</p>}
-            <div className="orc-facts-list">
-              {cerroNevadoFacts(spot.id).map((fact) => (
-                <FactCard key={fact.id} fact={fact} onOpenSource={openSources} />
-              ))}
-            </div>
           </div>
-        )}
+        </div>
       </div>
-      <div className="orc-bar ebar">
-        {showSources ? (
-          <button type="button" className="btn primary" onClick={closeSources}>
-            Volver a la colonia
+      <SheetActions>
+        {index > 0 && (
+          <button type="button" className="btn" onClick={() => go(index - 1)}>
+            Atrás
           </button>
-        ) : (
-          <>
-            {index > 0 && (
-              <button type="button" className="btn ghost" onClick={() => go(index - 1)}>
-                Atrás
-              </button>
-            )}
-            <button type="button" className="btn primary" onClick={() => (last ? onLeave() : go(index + 1))}>
-              {last ? 'Volver al mapa' : 'Siguiente'}
-            </button>
-          </>
         )}
-      </div>
+        <button type="button" className="btn primary" onClick={() => (last ? onLeave() : go(index + 1))}>
+          {last ? 'Volver al mapa' : 'Siguiente'}
+        </button>
+      </SheetActions>
     </>
   );
 
   return (
+    <SourcesContext.Provider value={{ list: SOURCES, open: openSources }}>
     <section
       ref={rootRef}
       className={`orc mar cn${!isDesktop && sheetSize === 'tall' ? ' is-panel-expanded' : ''}${!isDesktop && sheetSize === 'peek' ? ' is-panel-peek' : ''}`}
       aria-label={CERRO_NEVADO_TITLE}
-      onKeyDown={(e) => {
-        if (e.key === 'Escape' && showSources) closeSources();
-      }}
     >
       <CerroNevadoScene focus={spot.id} reduced={reduced} sidePanel={isDesktop} overlayRef={overlayRef} onNoWebGL={onNoWebGL} shift={shift} />
 
@@ -211,21 +172,23 @@ export function CerroNevadoExpedition({ reduced, onLeave }: { reduced: boolean; 
             <strong>{CERRO_NEVADO_TITLE}</strong>
             <span>{QUESTION}</span>
           </div>
-          <button type="button" className="pill orc-top-btn" aria-pressed={showSources} onClick={() => (showSources ? closeSources() : openSources(null))}>
+          <button type="button" className="pill orc-top-btn" ref={sourcesBtn} aria-haspopup="dialog" onClick={() => openSources(null)}>
             Fuentes
           </button>
         </div>
       </header>
 
       {isDesktop ? (
-        <section className="orc-panel" ref={panelRef} aria-labelledby="cn-panel-label">
+        <section className="orc-panel" ref={panelRef} aria-labelledby="cn-panel-title">
           {panelBody}
         </section>
       ) : (
-        <BottomSheet className="orc-panel" labelledBy="cn-panel-label" sheetRef={panelRef} floor="peek" size={sheetSize} onSize={setSheetSize}>
+        <BottomSheet className="orc-panel" labelledBy="cn-panel-title" sheetRef={panelRef} floor="peek" size={sheetSize} onSize={setSheetSize}>
           {panelBody}
         </BottomSheet>
       )}
+      {showSources && <SourcesView list={SOURCES} kinds highlight={highlight} onClose={closeSources} place={QUESTION} fallbackFocus={() => sourcesBtn.current} />}
     </section>
+    </SourcesContext.Provider>
   );
 }

@@ -1,5 +1,6 @@
+import { Cites } from '../sheet/Cite.tsx';
 import {
-  MARINE_LINKS, MARINE_ORGANISMS, MARINE_SOURCES, linkSentence, linksOf, type MarineOrganism,
+  MARINE_LINKS, MARINE_ORGANISMS, linkSentence, linksOf, type MarineOrganism,
 } from '@antartida/core';
 
 const ORGANISMS = Object.keys(MARINE_ORGANISMS) as MarineOrganism[];
@@ -19,7 +20,7 @@ export function FoodWebPanel({ selected, onSelect }: { selected: MarineOrganism 
           <li key={`${l.from}>${l.to}`}>
             <b>{linkSentence(l)}</b>
             <span>{l.scope} · {l.note}</span>
-            <small>{l.sources.map((id) => <a key={id} href={MARINE_SOURCES[id].url} target="_blank" rel="noopener noreferrer">{id} ↗</a>)}</small>
+            <small><Cites ids={l.sources} /></small>
           </li>
         ))}
       </ul>

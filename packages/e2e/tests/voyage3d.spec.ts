@@ -64,7 +64,7 @@ for (const [name, kind, start] of [['Hércules C-130', 'plane', 'Despegar'], ['A
     for (let n = 1; ; n++) {
       if (n > 1) await page.getByRole('button', { name: 'Próximo hito' }).click();
       await page.getByRole('group', { name: 'Hito por el que pasás' }).getByRole('button', { name: /^Leer el hito: / }).click();
-      await expect(page.locator('.vstep')).toHaveText(new RegExp(`^Hito ${n} de`));
+      await expect(page.locator('.sheet-label')).toHaveText(new RegExp(`^Hito ${n} de`));
       if (n > 1) {
         const want = (await pinOf(page, n))!;
         const title = await page.locator('#voyage-title').textContent();
@@ -153,7 +153,7 @@ test('a milestone near the vehicle shows its name over its pin, and a pin ahead 
   const ahead = page.getByRole('dialog', { name: far });
   await expect(ahead).toBeVisible();
   // The card tells all it has at once.
-  await expect(ahead.locator('.vactions').getByRole('button')).toHaveText(['Seguir viaje']);
+  await expect(ahead.locator('.sheet-actions').getByRole('button')).toHaveText(['Seguir viaje']);
   await ahead.getByRole('button', { name: 'Seguir viaje' }).click();
   await expect(ahead).toHaveCount(0);
 

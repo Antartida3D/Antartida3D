@@ -50,7 +50,9 @@ export function ViewToggle({
             </>
           )}
           <p>Mientras tanto, podés seguir en el mapa 2D.</p>
-          <button type="button" className="btn" onClick={() => setNote(false)}>Entendido</button>
+          <div className="wn-actions">
+            <button type="button" className="btn" onClick={() => setNote(false)}>Entendido</button>
+          </div>
         </div>
       )}
       <div className="view-toggle" role="group" aria-label="Modo de vista">

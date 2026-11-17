@@ -27,6 +27,7 @@ test('the emperors of Cerro Nevado open a scene of their own, and leaving it doe
   await show3D(page);
   await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
   await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: new RegExp(CERRO_NEVADO_TITLE) }).click();
+  await page.getByRole('button', { name: 'Comenzar expedición' }).click();
   const scene = page.getByRole('region', { name: CERRO_NEVADO_TITLE });
   await expect(scene).toBeVisible({ timeout: 30_000 });
   await expect(scene.locator('.orc-scene-badge')).toContainText('Reconstrucción ilustrada');
@@ -39,7 +40,8 @@ test('the emperors of Cerro Nevado open a scene of their own, and leaving it doe
 
   // The sources list every one, with its link.
   await scene.getByRole('button', { name: 'Fuentes', exact: true }).click();
-  for (const s of Object.values(CERRO_NEVADO_SOURCES)) await expect(scene.getByText(s.label)).toBeVisible();
+  const sources = page.getByRole('dialog', { name: 'Fuentes' });
+  for (const s of Object.values(CERRO_NEVADO_SOURCES)) await expect(sources).toContainText(s.label);
   await page.keyboard.press('Escape');
 
   // A point of the scene opens it; it may be out of the current view, so it is pressed without aiming.

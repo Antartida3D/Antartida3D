@@ -26,6 +26,7 @@ async function openFromList(page: Page) {
   await expect(log(page)).toContainText(`0/${AVAILABLE_COUNT}`);
   await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
   await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Océano/ }).click();
+  await page.getByRole('button', { name: 'Comenzar expedición' }).click();
   await expect(expedition(page)).toBeVisible();
   await expect(page.getByRole('heading', { level: 2, name: MARINE_STOPS[0].title })).toBeVisible();
 }
@@ -107,9 +108,9 @@ test('the keyboard alone walks every stop, and the sources open and close with E
   const sources = page.getByRole('button', { name: 'Fuentes', exact: true });
   await sources.focus();
   await page.keyboard.press('Enter');
-  const dialog = page.getByRole('dialog', { name: 'Fuentes del recorrido' });
+  const dialog = page.getByRole('dialog', { name: 'Fuentes' });
   await expect(dialog).toContainText('Pitman y Durban');
-  await expect(dialog).toContainText('leído en su resumen');
+  await expect(dialog).toContainText('Leído en su resumen');
   await page.keyboard.press('Escape');
   await expect(dialog).toBeHidden();
   await expect(sources).toBeFocused();

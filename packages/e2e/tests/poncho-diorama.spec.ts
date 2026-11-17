@@ -26,7 +26,7 @@ test('the story grows a sentence at each «Siguiente», and «Saber más» comes
 
   const panel = page.locator('.poncho-panel');
   await expect(panel.getByRole('heading', { name: stop.title })).toBeVisible();
-  await expect(panel.locator('.orc-kicker')).toHaveText(`Acto 1 · hito 1 de ${PONCHO_MILESTONES.length}`);
+  await expect(panel.locator('.sheet-label')).toHaveText(`Acto 1 · hito 1 de ${PONCHO_MILESTONES.length}`);
   // The panel is inside the screen, over a scene that fills it (no strip of paper beside the panel).
   const [box, view] = await Promise.all([panel.boundingBox(), page.evaluate(() => ({ w: innerWidth, h: innerHeight }))]);
   expect(box && box.x >= 0 && box.x + box.width <= view.w + 1 && box.y >= 0 && box.y + box.height <= view.h + 1, 'the panel is inside the screen').toBe(true);
@@ -39,7 +39,7 @@ test('the story grows a sentence at each «Siguiente», and «Saber más» comes
   await expect(panel).not.toContainText(/\b1 de 3\b/);
   await expect(line).toContainText('nace Poncho el 10 de abril de 1961');
   await expect(line).not.toContainText('cachorro más juguetón');
-  await expect(panel.locator('details.poncho-more')).toHaveCount(0);
+  await expect(panel.locator('details.sheet-more')).toHaveCount(0);
 
   // Each «Siguiente» adds a sentence; the ones before stay.
   await panel.getByRole('button', { name: 'Siguiente' }).click();
@@ -58,7 +58,7 @@ test('the story grows a sentence at each «Siguiente», and «Saber más» comes
   // At the end: the hook, «Saber más» that unfolds in the panel (no modal), and the arrow leaves for the trip.
   await expect(panel).toContainText(stop.hook ?? '');
   await expect(panel.getByRole('button', { name: 'Seguir con Poncho' })).toBeVisible();
-  const more = panel.locator('details.poncho-more');
+  const more = panel.locator('details.sheet-more');
   await expect(more).not.toHaveAttribute('open', '');
   await more.locator('summary').click();
   await expect(more).toHaveAttribute('open', '');
@@ -93,7 +93,9 @@ test('the photograph of a stop opens in a modal and Escape closes it without lea
   await archive.click();
   const modal = page.getByRole('dialog', { name: 'Archivo fotográfico' });
   await expect(modal).toBeVisible();
-  await expect(modal.getByRole('link', { name: 'Fundación Marambio' })).toHaveAttribute('href', /^https:\/\//);
+  await modal.getByRole('button', { name: /^Fuente / }).click();
+  await expect(page.getByRole('dialog', { name: 'Fuentes' }).locator('.sources-card[aria-current] a')).toHaveAttribute('href', /^https:\/\//);
+  await page.keyboard.press('Escape');
   await page.keyboard.press('Escape');
   await expect(modal).toHaveCount(0);
   await expect(panel.getByRole('heading', { name: stop.title })).toBeVisible();
@@ -113,7 +115,9 @@ test('the photograph of Esperanza at the end of the first stop names its author 
   await expect(modal.getByRole('img')).toBeVisible();
   await expect(modal).toContainText('Godot13');
   await expect(modal.getByRole('link', { name: 'CC BY-SA 4.0' })).toHaveAttribute('href', 'https://creativecommons.org/licenses/by-sa/4.0/');
-  await expect(modal.getByRole('link', { name: 'Wikimedia Commons' })).toHaveAttribute('href', /^https:\/\/commons\.wikimedia\.org\//);
+  await modal.getByRole('button', { name: /^Fuente / }).click();
+  await expect(page.getByRole('dialog', { name: 'Fuentes' }).locator('.sources-card[aria-current] a')).toHaveAttribute('href', /^https:\/\/commons\.wikimedia\.org\//);
+  await page.keyboard.press('Escape');
   await page.keyboard.press('Escape');
   await expect(modal).toHaveCount(0);
 });

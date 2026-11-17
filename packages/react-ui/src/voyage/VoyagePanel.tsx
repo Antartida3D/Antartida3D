@@ -3,7 +3,6 @@ import {
   SIGHTINGS,
   expeditionAt,
   findTransport,
-  formatIsoDate,
   logLineAt,
   nextVoyageCard,
   previousVoyageCard,
@@ -11,14 +10,10 @@ import {
   ponchoPhotoAt,
   quizScore,
   sceneOf,
-  tripSources,
   FAUNA_COUNT,
   PLACES_COUNT,
   sightingNote,
   TRANSPORTS,
-  VOYAGE_SOURCES,
-  VOYAGE_SOURCES_CONSULTED,
-  VOYAGE_SOURCE_CODES,
   VOYAGE_TOURISM_NOTE,
   VOYAGE_TRANSFER,
   storyInOrder,
@@ -31,13 +26,17 @@ import {
   type TransportId,
   type VoyageFact,
   type VoyageState,
-  type VoyageSource,
   type VoyageSourceCode,
 } from '@antartida/core';
 import { BottomSheet } from '../BottomSheet.tsx';
 import { useFocusReturn } from '../hooks.ts';
 import { Quoted } from '../ui.tsx';
-import { Fact, TripContext, type OpenSources } from './Fact.tsx';
+import { SheetActions } from '../sheet/SheetActions.tsx';
+import { SheetHeader } from '../sheet/SheetHeader.tsx';
+import { SheetText } from '../sheet/SheetText.tsx';
+import { SourcesContext } from '../sheet/SourcesContext.ts';
+import { SourcesView } from '../sheet/SourcesView.tsx';
+import { Fact, tripSourcesContext } from './Fact.tsx';
 import { PonchoDiorama } from './PonchoDiorama.tsx';
 import { HitoNav, PONCHO_PHOTO_URL, PhotoCredit, PonchoPanel } from './PonchoPanel.tsx';
 import { PonchoIntro } from './PonchoIntro.tsx';
@@ -48,54 +47,9 @@ import type { VoyageController } from './useVoyage.ts';
 // Its own chunk: it needs WebGL, which the 2D fallback of the trip does not.
 const VehiclePreview = lazy(() => import('./VehiclePreview.tsx').then((m) => ({ default: m.VehiclePreview })));
 
-/** Date a source was read, when it is not the date the page gives for all of them. */
-const sourceConsulted = (code: VoyageSourceCode) => (VOYAGE_SOURCES[code] as VoyageSource).consulted;
-
-/** Separate page with the sources of the trip, numbered as the facts cite them. */
-function SourcesPage({ focus, transport, notice, onClose }: { focus: VoyageSourceCode; transport?: TransportId; notice?: string; onClose: () => void }) {
-  // Poncho lists only what it cites, numbered from 1; the trips from Ushuaia list the whole registry.
-  const codes = transport ? tripSources(transport) : VOYAGE_SOURCE_CODES;
-  const ref = useRef<HTMLDivElement>(null);
-  useFocusReturn(true, ref, `[data-source="${focus}"] a`);
-  return (
-    <div
-      className="listview vsources"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="sources-title"
-      ref={ref}
-      onKeyDown={(e) => {
-        if (e.key !== 'Escape') return;
-        e.stopPropagation();
-        onClose();
-      }}
-    >
-      <div className="inner">
-        <div className="listhead">
-          <h2 id="sources-title">Fuentes</h2>
-          <button type="button" className="btn" onClick={onClose}>Volver al viaje</button>
-        </div>
-        <p className="gdesc">Cada dato del viaje lleva un número entre corchetes. Acá está de dónde sale. Consultadas el {formatIsoDate(VOYAGE_SOURCES_CONSULTED)}, salvo las que dan otra fecha.</p>
-        {notice && <p className="gdesc">{notice}</p>}
-        <ol className="vsrclist">
-          {codes.map((code) => (
-            <li key={code} data-source={code} className={code === focus ? 'on' : undefined}>
-              <strong>{VOYAGE_SOURCES[code].org}</strong>
-              <span><Quoted text={VOYAGE_SOURCES[code].title} /></span>
-              {sourceConsulted(code) && <span>Consultada el {formatIsoDate(sourceConsulted(code)!)}.</span>}
-              <a href={VOYAGE_SOURCES[code].url} target="_blank" rel="noopener noreferrer">Abrir la fuente</a>
-            </li>
-          ))}
-        </ol>
-      </div>
-    </div>
-  );
-}
-
-function Picker({ onStart, onExit, onSource, preview, reduced }: {
+function Picker({ onStart, onExit, preview, reduced }: {
   onStart: (id: TransportId) => void;
   onExit: () => void;
-  onSource: OpenSources;
   /** Show the turning 3D model of the picked vehicle (needs WebGL). */
   preview: boolean;
   reduced: boolean;
@@ -109,9 +63,7 @@ function Picker({ onStart, onExit, onSource, preview, reduced }: {
     {/* Touching the map outside the sheet closes it, like the sheet of a point. */}
     <div className="scrim vscrim" onClick={onExit} />
     <BottomSheet className="voyage" labelledBy="voyage-title" sheetRef={ref} onClose={onExit}>
-      {/* No close button: the sheet is dragged down, and «Volver al mapa» is below. */}
-      <h2 id="voyage-title">Desde Ushuaia</h2>
-      <p className="place">Elegí cómo cruzar a la Antártida. Son los medios que usa la ciencia argentina.</p>
+      <SheetHeader title="Desde Ushuaia" titleId="voyage-title" place="Elegí cómo cruzar a la Antártida. Son los medios que usa la ciencia argentina." />
       <div className="vpick" role="group" aria-label="Medio de transporte">
         {TRANSPORTS.map((v) => (
           <button key={v.id} type="button" className="vopt" aria-pressed={v.id === picked} onClick={() => setPicked(v.id)}>
@@ -125,45 +77,40 @@ function Picker({ onStart, onExit, onSource, preview, reduced }: {
           <VehiclePreview id={picked} reduced={reduced} />
         </Suspense>
       )}
-      <p>{transport.pitch}</p>
+      <SheetText text={transport.pitch} />
       <ul className="vfacts">
-        {transport.facts.map((f) => <Fact key={f.text} fact={f} onSource={onSource} />)}
-        <Fact fact={VOYAGE_TOURISM_NOTE} onSource={onSource} />
+        {transport.facts.map((f) => <Fact key={f.text} fact={f} />)}
+        <Fact fact={VOYAGE_TOURISM_NOTE} />
       </ul>
-      <div className="row vactions">
+      <SheetActions>
         <button type="button" className="btn" onClick={onExit}>Volver al mapa</button>
         <button type="button" className="btn primary" onClick={() => onStart(picked)}>
           {transport.kind === 'plane' ? 'Despegar' : 'Zarpar'}
         </button>
-      </div>
+      </SheetActions>
     </BottomSheet>
     </>
   );
 }
 
 /** Card of an animal the traveller touched on the map. */
-function SightingCard({ voyage, onSource }: { voyage: VoyageController; onSource: OpenSources }) {
+function SightingCard({ voyage }: { voyage: VoyageController }) {
   const ref = useRef<HTMLElement>(null);
-  useFocusReturn(true, ref, '.btn.primary');
   const sighting = SIGHTINGS.find((s) => s.id === voyage.sighting)!;
   return (
-    <section
-      className="sheet voyage"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="voyage-title"
-      ref={ref}
-      onKeyDown={(e) => e.key === 'Escape' && voyage.closeSighting()}
-    >
-      <small className="vstep">Avistaje {voyage.seen.length} de {SIGHTINGS.length}</small>
-      <h2 id="voyage-title" className="vsighting"><SightingIcon icon={sighting.icon} />{sighting.name}</h2>
-      <p className="vlatin">{sighting.latin}</p>
-      <ul className="vfacts"><Fact fact={sighting.fact} onSource={onSource} /></ul>
+    <BottomSheet className="voyage" labelledBy="voyage-title" sheetRef={ref} onClose={voyage.closeSighting}>
+      <SheetHeader
+        label={`Avistaje ${voyage.seen.length} de ${SIGHTINGS.length}`}
+        title={<span className="vsighting"><SightingIcon icon={sighting.icon} />{sighting.name}</span>}
+        titleId="voyage-title"
+        place={<span className="vlatin">{sighting.latin}</span>}
+      />
+      <ul className="vfacts"><Fact fact={sighting.fact} /></ul>
       {sightingNote(sighting) && <p className="vsmall">{sightingNote(sighting)}</p>}
-      <div className="row vactions">
+      <SheetActions>
         <button type="button" className="btn primary" onClick={voyage.closeSighting}>Seguir viaje</button>
-      </div>
-    </section>
+      </SheetActions>
+    </BottomSheet>
   );
 }
 
@@ -241,15 +188,13 @@ function MilestoneLog({ voyage }: { voyage: VoyageController }) {
  * do not use it (their panel is `PonchoPanel`, beside the diorama): it is the one of the trips from
  * Ushuaia and the common card of Poncho where there is no WebGL.
  */
-function MilestoneCard({ voyage, animated, onExit, onSource }: {
+function MilestoneCard({ voyage, animated, onExit }: {
   voyage: VoyageController;
   animated: boolean;
   onExit: (done: boolean) => void;
-  onSource: OpenSources;
 }) {
   const state = voyage.state!;
   const ref = useRef<HTMLElement>(null);
-  useFocusReturn(true, ref, '.btn.primary');
   const stops = voyageStops(state.kind);
   const { milestone } = stops[state.card];
   const { notes, question } = expeditionAt(milestone.id, state.transport);
@@ -275,9 +220,12 @@ function MilestoneCard({ voyage, animated, onExit, onSource }: {
   const act = story ? ponchoActOpeningAt(milestone.id) : undefined;
   const body = (
     <>
-      {story ? <HitoNav voyage={voyage} /> : <small className="vstep">Hito {state.card + 1} de {stops.length}</small>}
-      {act && <small className="vact">Acto {act.number} · {act.act.title}</small>}
-      <h2 id="voyage-title">{milestone.title}</h2>
+      <SheetHeader
+        label={<>Hito {state.card + 1} de {stops.length}{act && <small className="vact">Acto {act.number} · {act.act.title}</small>}</>}
+        title={milestone.title}
+        titleId="voyage-title"
+      />
+      {story && <HitoNav voyage={voyage} />}
       {photo && (
         <figure className="vphoto">
           <img src={PONCHO_PHOTO_URL[photo.file]} alt={photo.alt} loading="lazy" />
@@ -287,9 +235,9 @@ function MilestoneCard({ voyage, animated, onExit, onSource }: {
         </figure>
       )}
       <ul className="vfacts">
-        <Fact fact={milestone.essential} onSource={onSource} />
+        <Fact fact={milestone.essential} />
         {/* Whoever opened the card asked to know about the place: all of it at once, with no «Saber más» (#190). */}
-        {!beforeHop && milestone.more.map((f) => <Fact key={f.text} fact={f} onSource={onSource} />)}
+        {!beforeHop && milestone.more.map((f) => <Fact key={f.text} fact={f} />)}
       </ul>
       {notes.length > 0 && (
         <div className="vexp" role="group" aria-label="Cómo funciona la expedición">
@@ -328,7 +276,7 @@ function MilestoneCard({ voyage, animated, onExit, onSource }: {
           )}
           {/* The notes answer the question: they wait for it, or for the hop that shows the answer. */}
           {(!question || answered || afterHop) && (
-            <ul className="vfacts">{notes.map((f) => <Fact key={f.text} fact={f} onSource={onSource} />)}</ul>
+            <ul className="vfacts">{notes.map((f) => <Fact key={f.text} fact={f} />)}</ul>
           )}
         </div>
       )}
@@ -349,27 +297,20 @@ function MilestoneCard({ voyage, animated, onExit, onSource }: {
         </>
       )}
       {milestone.hook && <p className="vhook">{milestone.hook}</p>}
-      <div className="row vactions">
+      <SheetActions>
         {/* The one main button, last on the right, where the thumb reaches on a phone (#177). */}
         <button type="button" className="btn primary" onClick={next}>
           {story
-            ? (last ? 'Terminar el viaje' : state.card === 0 ? 'Partir' : 'Continuar')
-            : beforeHop ? 'Continuar' : last ? 'Terminar el viaje' : arrived ? 'Volver a la llegada' : 'Seguir viaje'}
+            ? (last ? 'Terminar expedición' : state.card === 0 ? 'Partir' : 'Continuar')
+            : beforeHop ? 'Continuar' : last ? 'Terminar expedición' : arrived ? 'Volver a la llegada' : 'Seguir viaje'}
         </button>
-      </div>
+      </SheetActions>
     </>
   );
   return (
-    <section
-      className="sheet voyage"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="voyage-title"
-      ref={ref}
-      onKeyDown={(e) => e.key === 'Escape' && next()}
-    >
+    <BottomSheet className="voyage" labelledBy="voyage-title" sheetRef={ref} onClose={next}>
       {body}
-    </section>
+    </BottomSheet>
   );
 }
 
@@ -377,7 +318,7 @@ function MilestoneCard({ voyage, animated, onExit, onSource }: {
  * Shown while the helicopter flies from the ship to the base: the arrival card steps aside, so the
  * map shows. The hop is part of the arrival and cannot be skipped: it lasts a few seconds.
  */
-function TransferBar({ onSource }: { onSource: OpenSources }) {
+function TransferBar() {
   const ref = useRef<HTMLDivElement>(null);
   // No button to take the focus: the title holds it, so it is not lost while the hop plays.
   useFocusReturn(true, ref, '.vnext');
@@ -385,7 +326,7 @@ function TransferBar({ onSource }: { onSource: OpenSources }) {
     <div className="vbar" role="group" aria-label={VOYAGE_TRANSFER.title} ref={ref}>
       <p className="vnext" tabIndex={-1}><strong>{VOYAGE_TRANSFER.title}</strong></p>
       <ul className="vfacts">
-        {VOYAGE_TRANSFER.facts.map((f) => <Fact key={f.text} fact={f} onSource={onSource} />)}
+        {VOYAGE_TRANSFER.facts.map((f) => <Fact key={f.text} fact={f} />)}
       </ul>
     </div>
   );
@@ -422,7 +363,7 @@ function routeLogLine(state: VoyageState, animated: boolean): VoyageFact | null 
   return logLineAt(state.kind, (from + next.t) / 2, next.milestone.segment);
 }
 
-function TravelBar({ voyage, animated, onExit, onSource }: { voyage: VoyageController; animated: boolean; onExit: () => void; onSource: OpenSources }) {
+function TravelBar({ voyage, animated, onExit }: { voyage: VoyageController; animated: boolean; onExit: () => void }) {
   const state = voyage.state!;
   const bar = useRef<HTMLElement>(null);
   const trip = useRef<HTMLParagraphElement>(null);
@@ -499,7 +440,7 @@ function TravelBar({ voyage, animated, onExit, onSource }: { voyage: VoyageContr
       {/* The route log: a line of the book while the team travels between stops. Where the path is not animated, one per step. */}
       {state.kind === 'dogs' && (
         <ul className="vfacts vlog" aria-live="polite" aria-label="Diario de ruta">
-          {log && <Fact key={log.text} fact={log} onSource={onSource} />}
+          {log && <Fact key={log.text} fact={log} />}
         </ul>
       )}
       <div className="vprog" aria-hidden="true"><i ref={bar} /></div>
@@ -611,7 +552,7 @@ export function VoyagePanel({ voyage, transport, animated, webgl, reduced, onExi
   const diorama = (at: VoyageState) => {
     const { milestone } = voyageStops(at.kind)[at.card];
     const scene = at.kind === 'dogs' && webgl && !lost.includes(milestone.id) ? sceneOf(milestone.id) : undefined;
-    if (!scene) return <MilestoneCard key={at.card} voyage={voyage} animated={animated} onExit={onExit} onSource={setSources} />;
+    if (!scene) return <MilestoneCard key={at.card} voyage={voyage} animated={animated} onExit={onExit} />;
     const before = previousVoyageCard(at);
     const after = nextVoyageCard(at);
     return (
@@ -632,25 +573,35 @@ export function VoyagePanel({ voyage, transport, animated, webgl, reduced, onExi
         onMap={() => onExit(false)}
         onLost={() => setLost((l) => [...l, milestone.id])}
       >
-        {(tour) => <PonchoPanel voyage={voyage} tour={tour} onSource={setSources} />}
+        {(tour) => <PonchoPanel voyage={voyage} tour={tour} />}
       </PonchoDiorama>
     );
   };
   // On a wide screen an animal touched on the map opens beside it, and the trip controls stay put.
   const stage = voyage.sighting && !voyage.popover
-    ? <SightingCard voyage={voyage} onSource={setSources} />
+    ? <SightingCard voyage={voyage} />
     : !state
-      ? transport ? <PonchoIntro transport={findTransport(transport)} onStart={() => voyage.start(transport)} onExit={() => onExit(false)} onSource={setSources} /> : <Picker onStart={voyage.start} onExit={() => onExit(false)} onSource={setSources} preview={webgl} reduced={reduced} />
+      ? transport ? <PonchoIntro transport={findTransport(transport)} onStart={() => voyage.start(transport)} onExit={() => onExit(false)} preview={webgl} reduced={reduced} /> : <Picker onStart={voyage.start} onExit={() => onExit(false)} preview={webgl} reduced={reduced} />
     : voyage.transfer === 'flying'
-      ? <TransferBar onSource={setSources} />
+      ? <TransferBar />
     : state.card >= 0
       ? diorama(state)
-      : <TravelBar voyage={voyage} animated={animated} onExit={() => onExit(false)} onSource={setSources} />;
+      : <TravelBar voyage={voyage} animated={animated} onExit={() => onExit(false)} />;
   const trip = state?.transport ?? transport;
+  const context = tripSourcesContext(trip, setSources);
   return (
-    <TripContext.Provider value={trip && findTransport(trip).kind === 'dogs' ? trip : undefined}>
+    <SourcesContext.Provider value={context}>
       {stage}
-      {sources && <SourcesPage focus={sources} transport={trip} notice={trip ? findTransport(trip).notice : undefined} onClose={() => setSources(null)} />}
-    </TripContext.Provider>
+      {sources && (
+        <SourcesView
+          list={context.list}
+          highlight={sources}
+          title="Fuentes"
+          place="Cada dato del viaje lleva un número entre corchetes. Acá está de dónde sale."
+          notice={trip ? findTransport(trip).notice : undefined}
+          onClose={() => setSources(null)}
+        />
+      )}
+    </SourcesContext.Provider>
   );
 }

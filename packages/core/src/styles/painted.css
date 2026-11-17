@@ -165,7 +165,6 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
 .sw .sea svg{width:10px;height:10px;display:block}
 .hint{position:absolute;left:50%;top:128px;transform:translateX(-50%);font-family:'Caveat',cursive;font-size:19px;color:var(--chart-ink);background:color-mix(in srgb, var(--chart-paper) 92%, transparent);padding:2px 12px;border-radius:12px;white-space:nowrap;pointer-events:none;transition:opacity .5s;z-index:9}
 
-
 /* sheets */
 .scrim{position:absolute;inset:0;background:color-mix(in srgb, var(--chart-ink) 28%, transparent);animation:fadein .25s ease both;z-index:19}
 .sheet{position:absolute;left:0;right:0;bottom:0;max-height:calc(100dvh - 24px);overflow:auto;border-top:2px solid var(--chart-ink);padding:10px 20px 24px;animation:up .32s cubic-bezier(.2,.8,.3,1) both;z-index:20;
@@ -187,13 +186,6 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
   font-weight:500;}
 .sheet .place{margin:0 0 14px;color:var(--chart-muted)}
 .sheet-temp{margin:-8px 0 4px;font-size:13px;line-height:1.35;min-height:2.7em;color:var(--chart-muted)}
-.sheet-temp-attr{margin:0 0 12px}
-.sheet-sources{margin:12px 0 0;padding-top:10px;border-top:1px dashed color-mix(in srgb, var(--chart-ink) 30%, transparent)}
-.sheet-sources h3{font-family:'Fraunces',Georgia,serif;font-size:15px;margin:0 0 6px}
-.sheet-sources ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
-.sheet-sources li{font-size:13px;color:var(--chart-muted);line-height:1.3}
-.sheet-sources a{font-weight:700;color:var(--deep)}
-.sheet-sources small{display:block;color:var(--chart-muted)}
 .q{position:relative;margin:0 0 16px;padding:14px 16px;background:transparent;border:0;border-radius:0;}
 .q p{margin:0;font-family:'Fraunces',Georgia,serif;font-style:italic;font-size:19px;line-height:1.3}
 .q small{display:block;margin-top:8px;font-size:12px;color:var(--chart-muted)}
@@ -260,9 +252,6 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
 .ebody .wrap{max-width:760px;margin:0 auto;padding:8px 16px 24px}
 /* Lab fix: let pointer events reach the dig site under the body; content blocks stay interactive. */
 .ebody{pointer-events:none}.ebody .wrap > *{pointer-events:auto}
-.ebar{position:absolute;left:0;right:0;bottom:0;padding:14px 16px 16px;display:flex;gap:10px;justify-content:center;background:linear-gradient(color-mix(in srgb, var(--chart-paper) 0%, transparent),color-mix(in srgb, var(--chart-paper) 97%, transparent) 40%);z-index:4}
-.ebar .btn{flex:1;max-width:420px}
-.ebar .btn.ghost{flex:0 0 auto}
 
 .bigq{margin:22px auto 0;max-width:520px;text-align:center}
 .bigq .kick{font-family:'Caveat',cursive;font-size:22px;color:var(--deep)}
@@ -417,35 +406,23 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
 /* Sources and illustration notes, folded under the symbols (#114). */
 .legend{transition:transform .2s ease}
 .legend.swiping{transition:none}
+.legend .leg-note{font-style:italic;font-size:.82em;opacity:.9}
 .legend details{margin-top:6px;border-top:1px dashed color-mix(in srgb,var(--chart-ink) 30%,transparent);padding-top:2px}
 .legend summary{min-height:32px;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;cursor:pointer;list-style:none}
 .legend summary::-webkit-details-marker{display:none}
 .legend summary::before{content:'▸';font-size:12px;transition:transform .2s ease}
 .legend details[open] summary::before{transform:rotate(90deg)}
 
-/* Source details in point sheets. */
-.sheet-desc{margin:0;font-size:15px;line-height:1.45;color:var(--chart-ink)}
-.sheet-sources-toggle{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;min-height:32px;font:inherit;color:var(--chart-ink)}
-.sheet-sources-toggle::after{content:'▸';font-size:12px;transition:transform .15s}
-.sheet-sources-toggle[aria-expanded=true]::after{transform:rotate(90deg)}
-.sheet-sources-toggle:focus-visible{outline:2px solid var(--deep);outline-offset:2px;border-radius:4px}
-.sheet-sources ul[hidden]{display:none}
-
 /* Newer bottom-sheet variants. */
 .sheet.grows{scrollbar-width:none}
 .sheet.grows::-webkit-scrollbar{display:none}
 @media (max-width:819.98px){.sheet.half{max-height:50%}}
 .sheet.point .tag{display:inline-block;margin-top:2px}
-.scrim.clear{background:rgb(31 42 54 / 8%)}
-
-/* Main-side text variants retained with the clear palette. */
-.sheet-sources h3{font-family:'Fraunces',Georgia,serif;font-size:15px;margin:0}
-.sheet-sources ul{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
-.sheet-sources li{font-size:13px;color:var(--chart-muted);line-height:1.3}
-.sheet-sources small{display:block;color:var(--chart-muted)}
 
 @media (min-width:820px){
   .sheet.claims-sheet,.sheet.next-sheet{right:88px}
+  /* Wide enough for the title of each button in one line, two at most. */
+  .sheet.next-sheet{width:min(560px,calc(100vw - 176px))}
 }
 @media (max-height:500px){
   .m3d .legend{max-height:min(420px,max(48px,calc(100dvh - 262px)));}
@@ -473,17 +450,11 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
 .next-name strong{display:block;font-family:'Fraunces',Georgia,serif;font-size:22px;line-height:1.1}
 .next-name .place{display:block;color:var(--chart-muted)}
 .next-q{font-style:italic}
-.next-actions{margin-top:12px;display:grid;grid-template-columns:1fr;gap:8px;align-items:stretch}
-.next-actions .btn{width:100%;min-height:44px;margin:0;white-space:normal;text-align:center;line-height:1.15}
-/* Two buttons fit side by side on a wide card; three or a phone stack, all the same size, main one last (#177). */
-@media (min-width:421px){.next-actions.n2{grid-template-columns:1fr 1fr}}
 @media (max-height:500px){
   .next-card .next-q,.next-card .next-kicker{display:none}
   .next-card .next-done{margin:2px 0 4px;font-size:13px}
   .next-name strong{display:inline;font-size:17px}
   .next-name .place{display:inline;margin-left:6px}
-  .next-actions{margin-top:6px;grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:1fr}
-  .next-actions .btn{min-height:40px;padding-inline:6px;font-size:14px}
   .sheet.next-sheet{max-height:50%;padding-bottom:12px}
 }
 
@@ -521,3 +492,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
   .legend:not(.open) button.lt{min-height:46px;padding:0;justify-content:center}
   .legend:not(.open) .lt-label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
 }
+
+/* The controls on the right never leave the screen: the left rail gives way (a hidden overflow moved them 32 px on a phone). */
+.bottom .zoom{flex:none}
+.bottom .leftcol{min-width:0;max-width:calc(100% - 72px)}

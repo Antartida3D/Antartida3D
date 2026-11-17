@@ -9,54 +9,6 @@
   }
 }
 
-.mar-sources {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.mar-source {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  background: #FBF4E6;
-  border: 1.5px solid rgba(31, 42, 54, 0.42);
-  border-radius: var(--chart-radius);
-  padding: 8px 10px;
-  font-size: 13px;
-  line-height: 1.35;
-  color: var(--ink);
-}
-
-.mar-source.is-highlight {
-  border-color: var(--oxide);
-  box-shadow: 2px 3px 0 rgba(31, 42, 54, 0.16);
-}
-
-.mar-source strong {
-  font-family: 'Fraunces', Georgia, serif;
-  font-size: 14px;
-}
-
-.mar-source a {
-  align-self: flex-start;
-  min-height: 28px;
-  display: inline-flex;
-  align-items: center;
-  color: var(--deep);
-  font-weight: 700;
-  overflow-wrap: anywhere;
-}
-
-.mar-source a:focus-visible {
-  outline: 2px solid var(--deep);
-  outline-offset: 2px;
-  border-radius: 4px;
-}
-
 /* Dots over the drawing shown without WebGL. With WebGL the scene places them with a transform. */
 .mar .orc-hs {
   left: calc(var(--fx) * 1%);
@@ -100,56 +52,8 @@
   display: inline-block;
 }
 
-/* Trip to Orcadas: a dialog over the scene. */
-.mar-trip-scrim {
-  position: absolute;
-  inset: 0;
-  z-index: 30;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  background: rgba(31, 42, 54, 0.45);
-}
-
-.mar-trip {
-  width: min(420px, 100%);
-  max-height: calc(100dvh - 32px);
-  overflow-y: auto;
-  background: var(--paper);
-  color: var(--ink);
-  border: 2px solid var(--ink);
-  border-radius: var(--chart-radius);
-  box-shadow: 4px 6px 0 rgba(31, 42, 54, 0.2);
-  padding: 16px 18px;
-}
-
-.mar-trip h2 {
-  margin: 2px 0 8px;
-  font-family: 'Fraunces', Georgia, serif;
-  font-size: 20px;
-  line-height: 1.15;
-}
-
-.mar-trip p {
-  margin: 0 0 10px;
-  font-size: 14px;
-  line-height: 1.4;
-}
-
 .mar-trip .mar-trip-note {
   font-size: 12px;
-}
-
-.mar-trip-bar {
-  display: flex;
-  gap: 8px;
-  margin-top: 4px;
-}
-
-.mar-trip-bar .btn {
-  min-height: 44px;
-  flex: 1 1 auto;
 }
 
 /* Photographs of Eduardo Olivero's archive (#207): cards under the facts, as in Fósiles. */
@@ -161,10 +65,6 @@
 .mar-archive small { font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--pencil); }
 .mar-archive b { font-size: 14px; font-weight: 400; }
 .mar-archive span > span { font-size: 11px; text-decoration: underline; text-underline-offset: 3px; }
-
-.mar-photo { width: min(650px, 100%); max-height: calc(100dvh - 32px); overflow-y: auto; box-sizing: border-box; background: var(--paper); color: var(--ink); border: 2px solid var(--ink); border-radius: var(--chart-radius); box-shadow: 4px 6px 0 rgba(31, 42, 54, 0.2); padding: 16px 18px; }
-.mar-photo-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.mar-photo h2 { margin: 0; font-family: 'Fraunces', Georgia, serif; font-size: 20px; }
 .mar-photo figure { margin: 12px 0 0; }
 .mar-photo img { display: block; width: 100%; max-height: 60dvh; object-fit: contain; }
 .mar-photo figcaption { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; font-size: 12px; line-height: 1.5; }

@@ -61,10 +61,22 @@ const clickTo2DLimit = (page: Page, name: 'Acercar' | 'Alejar') => clickToLimit(
 }), () => settled2D(page));
 
 /** The hidden button keeps its space so the remaining controls do not jump under the pointer. */
-const controlRects = (page: Page) => page.locator('.zoom button').evaluateAll((buttons) => buttons.map((button) => {
+const rawControlRects = (page: Page) => page.locator('.zoom button').evaluateAll((buttons) => buttons.map((button) => {
   const { x, y, width, height } = button.getBoundingClientRect();
   return { x, y, width, height };
 }));
+
+/** The rects once the controls stopped sliding in: two reads a moment apart agree (#267). */
+async function controlRects(page: Page) {
+  let last = await rawControlRects(page);
+  for (let i = 0; i < 20; i++) {
+    await page.waitForTimeout(250);
+    const now = await rawControlRects(page);
+    if (JSON.stringify(now) === JSON.stringify(last)) return now;
+    last = now;
+  }
+  return last;
+}
 
 async function wheelOnMap(page: Page, deltaY: number) {
   const map = page.getByRole('application', { name: /Mapa.*Antártida/ });

@@ -1,4 +1,5 @@
-import { useContext, useMemo } from 'react';
+import { MoreFold } from '../sheet/MoreFold.tsx';
+import { useMemo } from 'react';
 import {
   MONTH_NAMES,
   ORCADAS_GUIDING_QUESTION,
@@ -14,7 +15,8 @@ import {
   type Reading,
   type ReadingKind,
 } from '@antartida/core';
-import { SourceContext } from './FactList.tsx';
+import { Cite } from '../sheet/Cite.tsx';
+import { SheetActions } from '../sheet/SheetActions.tsx';
 import { KindChip } from './KindChip.tsx';
 import { formatTempC, getReaderSource } from './century/centuryData.ts';
 import { NOTEBOOK_LABELS, formatRecorded } from './observation/Notebook.tsx';
@@ -55,7 +57,6 @@ export function Answer({
     ? `tu lectura (${formatTempC(threshold)})`
     : `la media de ${monthName} (${formatTempC(threshold)})`;
 
-  const onOpenSource = useContext(SourceContext);
 
   // Dot chart calculations
   const chartGeom = useMemo(() => {
@@ -275,11 +276,11 @@ export function Answer({
         <div className="orc-century-legend-items" aria-label="Referencias del gráfico">
           <span className="orc-legend-item">
             <i className="orc-swatch orc-swatch-dot" aria-hidden="true" />
-            Dato real: {monthName} igual de frío o más (SCAR READER)
+            {monthName} igual de frío o más (SCAR READER)
           </span>
           <span className="orc-legend-item">
             <i className="orc-swatch orc-swatch-dot-warm" aria-hidden="true" />
-            Dato real: {monthName} más cálido
+            {monthName} más cálido
           </span>
           <span className="orc-legend-item">
             <i className="orc-swatch orc-swatch-thresh" aria-hidden="true" />
@@ -294,28 +295,19 @@ export function Answer({
           Entre {seg1.fromYear} y {seg1.toYear}, {seg1.asCold} de {seg1.years}{' '}
           {pluralMonth} fueron tan fríos como {referenceText} o más. Desde {seg2.fromYear}, solo{' '}
           {seg2.asCold} de {seg2.years}.
+          <Cite id={readerSource.id} />
         </p>
         {!hasUserTemp && (
-          <div className="orc-answer-cta-row">
+          <SheetActions>
             <button
               type="button"
-              className="btn ghost orc-btn-goto-obs"
+              className="btn orc-btn-goto-obs"
               onClick={onGotoObservation}
             >
               Volver a Observar
             </button>
-          </div>
+          </SheetActions>
         )}
-        <div className="orc-fact-srcs">
-          <span className="orc-src-prefix">Fuente:</span>
-          <button
-            type="button"
-            className="orc-src-link"
-            onClick={() => onOpenSource?.(readerSource.id)}
-          >
-            {readerSource.short}
-          </button>
-        </div>
       </div>
 
       {/* Closing seal: one line; the detail of the day's observation stays folded. */}
@@ -338,8 +330,7 @@ export function Answer({
       </div>
 
       {recorded > 0 && (
-        <details className="orc-more">
-          <summary>Tu observación del día</summary>
+        <MoreFold summary="Tu observación del día">
           <div className="orc-done-sim">
             <KindChip kind="sim" />
             <span>El tiempo del día se sorteó dentro del clima real de {monthName}.</span>
@@ -364,7 +355,7 @@ export function Answer({
               );
             })}
           </dl>
-        </details>
+        </MoreFold>
       )}
     </div>
   );

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type MouseEvent, type PointerEvent, type ReactNode, type RefObject } from 'react';
 import { SHEET_TAP_PX, sheetAfterDrag, type SheetSize } from '@antartida/core';
+import { trapTab, useFocusReturn } from './hooks.ts';
 
 /** Sizes a sheet on screen can have. */
 export type OpenSheetSize = Exclude<SheetSize, 'closed'>;
@@ -22,8 +23,11 @@ const SHEET_MIN_PX = 56;
  * the page styles to show only its title and main button. Such a sheet is part of the page, not a
  * dialog: it is a labelled region and Escape does not close it. Pass `size` and `onSize` to let the
  * page know and set the size (for example, to frame the scene above the sheet).
+ *
+ * A modal sheet (the default) is the one container of every dialog of the app (#264): it brings its own
+ * scrim that closes it when tapped, keeps Tab inside, and gives the focus back to whoever opened it.
  */
-export function BottomSheet({ className = '', labelledBy, sheetRef, onClose, floor = 'closed', modal = true, size: sizeProp, onSize, children }: {
+export function BottomSheet({ className = '', labelledBy, sheetRef, onClose, floor = 'closed', modal = true, scrim, layer, initialFocus = '.btn.primary', fallbackFocus, size: sizeProp, onSize, children }: {
   /** Extra classes for the sheet, next to `sheet grows`. */
   className?: string;
   /** Id of the heading that names the dialog. */
@@ -38,6 +42,14 @@ export function BottomSheet({ className = '', labelledBy, sheetRef, onClose, flo
    * labelled region, not a dialog, that still closes with Escape or dragged down.
    */
   modal?: boolean;
+  /** Scrim behind the sheet; tapping it closes the sheet. On by default for a modal sheet, off for a peek or a non-modal one. */
+  scrim?: boolean;
+  /** `top`: a sheet opened over another one (the sources view), above its scrim too. */
+  layer?: 'top';
+  /** What takes the focus when a modal sheet opens (a CSS selector inside it). */
+  initialFocus?: string;
+  /** Where the focus goes back to on close when whoever opened the sheet is gone. */
+  fallbackFocus?: () => HTMLElement | null | undefined;
   /** Size set by the page; without it the sheet keeps its own, starting small. */
   size?: OpenSheetSize;
   onSize?: (size: OpenSheetSize) => void;
@@ -51,6 +63,14 @@ export function BottomSheet({ className = '', labelledBy, sheetRef, onClose, flo
     onSize?.(next);
   };
   const persistent = floor === 'peek';
+  const isDialog = !persistent && modal;
+  const showScrim = scrim ?? isDialog;
+  useFocusReturn(isDialog, sheetRef, initialFocus, fallbackFocus);
+  // A sheet with no main button takes the focus itself, so Tab stays inside it.
+  useEffect(() => {
+    const sheet = sheetRef.current;
+    if (isDialog && sheet && !sheet.contains(document.activeElement)) sheet.focus({ preventScroll: true });
+  }, [isDialog, sheetRef]);
   const [dragging, setDragging] = useState(false);
   const drag = useRef<{ y: number; height: number } | null>(null);
 
@@ -152,13 +172,19 @@ export function BottomSheet({ className = '', labelledBy, sheetRef, onClose, flo
   };
 
   return (
+    <>
+    {showScrim && <div className={`scrim sheet-scrim${layer ? ' sheet-top' : ''}`} onClick={onClose} />}
     <section
-      className={`sheet grows${expanded ? ' full' : ''}${size === 'peek' ? ' peek' : ''}${dragging ? ' dragging' : ''} ${className}`}
+      className={`sheet grows${expanded ? ' full' : ''}${size === 'peek' ? ' peek' : ''}${dragging ? ' dragging' : ''}${layer ? ' sheet-top' : ''} ${className}`}
       role={persistent || !modal ? 'region' : 'dialog'}
       aria-modal={persistent || !modal ? undefined : true}
       aria-labelledby={labelledBy}
       ref={sheetRef}
-      onKeyDown={persistent ? undefined : (e) => e.key === 'Escape' && onClose?.()}
+      tabIndex={isDialog ? -1 : undefined}
+      onKeyDown={persistent ? undefined : (e) => {
+        if (e.key === 'Escape') onClose?.();
+        else if (isDialog) trapTab(e, sheetRef.current);
+      }}
     >
       <button
         type="button"
@@ -175,5 +201,6 @@ export function BottomSheet({ className = '', labelledBy, sheetRef, onClose, flo
       </button>
       {children}
     </section>
+    </>
   );
 }

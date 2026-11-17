@@ -81,7 +81,7 @@ for (const mode of ['Mapa 2D', 'Relieve 3D'] as const) {
     expect(await coveringList(page)).toEqual([]);
 
     // The way back to the map stays on top and reachable by pointer.
-    await list.getByRole('button', { name: 'Ver mapa' }).click();
+    await list.getByRole('button', { name: 'Volver al mapa' }).click();
     await expect(list).toHaveCount(0);
     await expect(markers.first()).toBeVisible();
     expect(await markers.count()).toBe(before);

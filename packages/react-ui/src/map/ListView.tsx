@@ -26,7 +26,7 @@ export function ListView({ explored, onClose, onPick }: {
           <CompassRose className="chart-compass list-emblem" />
           <div><span className="editorial-kicker">Índice del atlas</span><h2 id="list-title">Todos los puntos</h2></div>
         </div>
-        <button type="button" className="btn" onClick={onClose}>Ver mapa</button>
+        <button type="button" className="btn" onClick={onClose}>Volver al mapa</button>
       </div>
       {GROUPS.map((g) => {
         const items = PTS.filter((p) => p.tier === g.tier);

@@ -14,7 +14,6 @@
 .fossil-scene-note small { padding: 2px 6px; font-size: 11px; color: var(--chart-ink); background: color-mix(in srgb, var(--chart-paper) 88%, transparent); border-radius: 4px; }
 .fossil-found { position: absolute; z-index: 4; bottom: calc(var(--scene-sheet, 0px) + 80px); left: calc((100% - var(--scene-side, 0px)) / 2); transform: translateX(-50%) rotate(-2deg); padding: 10px 16px; font: 22px 'Caveat', cursive; background: var(--paper); white-space: nowrap; box-shadow: 1px 2px 0 color-mix(in srgb, var(--ink) 20%, transparent); pointer-events: none; }
 .fossil-found small { display: block; font: 10px 'Atkinson Hyperlegible', sans-serif; margin-top: 4px; }
-.fossil-panel .orc-bar .btn { border-radius: var(--chart-button-radius); }
 .fossil-eyebrow { font-size: 12px; color: var(--pencil); margin: 0 0 8px; line-height: 1.5; }
 .fossil-line { font-size: 16px; line-height: 1.55; margin: 0 0 20px; }
 
@@ -48,14 +47,8 @@
   .fossil-scene-note small { display: none; }
   .fossil-line { font-size: 14px; }
 }
-.fossil-expedition button, .fossil-dialog button { cursor: pointer; }
-.fossil-expedition button:focus-visible, .fossil-dialog button:focus-visible, .fossil-expedition summary:focus-visible, .fossil-expedition a:focus-visible { outline: 3px solid var(--deep); outline-offset: 4px; }
-.fossil-source-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 5px 10px; font-size: 11px; color: var(--pencil); line-height: 1.6; }
-.fossil-source-line > span:first-child { text-transform: uppercase; font-size: 10px; letter-spacing: .08em; }
-.fossil-source-line a, .fossil-dialog a { color: var(--deep); text-underline-offset: 3px; }
-.fossil-more { margin-top: 17px; border-bottom: 1px solid color-mix(in srgb, var(--ink) 18%, transparent); padding-bottom: 18px; }
-.fossil-more summary { cursor: pointer; font-size: 14px; }
-.fossil-more p { font-size: 14px; line-height: 1.6; margin: 14px 0 0; }
+.fossil-expedition button { cursor: pointer; }
+.fossil-expedition button:focus-visible, .fossil-expedition summary:focus-visible, .fossil-expedition a:focus-visible { outline: 3px solid var(--deep); outline-offset: 4px; }
 .fossil-note { display: flex; flex-direction: column; gap: 5px; width: 100%; margin: 20px 0 0; padding: 14px 16px; text-align: left; font: inherit; color: var(--ink); background: color-mix(in srgb, var(--ice) 35%, var(--paper)); border: 1px dashed color-mix(in srgb, var(--ink) 40%, transparent); transform: rotate(-.6deg); }
 .fossil-note small { font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--pencil); }
 .fossil-note b { font: 18px 'Fraunces', serif; }
@@ -87,11 +80,6 @@
 .fossil-checklist li { display: flex; gap: 10px; }
 .fossil-checklist li span { color: var(--deep); }
 .fossil-loading { display: grid; place-items: center; height: 100%; font: 24px 'Caveat', cursive; }
-.fossil-dialog { width: min(650px, calc(100vw - 32px)); max-height: calc(100dvh - 40px); padding: 25px; border: 1px solid var(--ink); border-radius: var(--chart-radius); background: var(--paper); color: var(--ink); box-sizing: border-box; }
-.fossil-dialog::backdrop { background: color-mix(in srgb, var(--ink) 55%, transparent); }
-.fossil-dialog-heading { display: flex; align-items: center; justify-content: space-between; gap: 15px; }
-.fossil-dialog h2 { font: 28px 'Fraunces', serif; margin: 0; }
-.fossil-dialog p { font-size: 14px; line-height: 1.6; }
 .fossil-source-entry { border-top: 1px solid color-mix(in srgb, var(--ink) 20%, transparent); margin-top: 20px; padding-top: 15px; }
 .fossil-source-entry h3 { font-size: 16px; margin: 0 0 7px; }
 .fossil-source-entry p { margin: 7px 0; }
@@ -105,7 +93,7 @@
 .fossil-fallback > img { width: 100%; height: 100%; object-fit: cover; opacity: .85; }
 .fossil-fallback figcaption { position: absolute; bottom: 70px; left: 20px; right: 20px; padding: 12px; background: var(--paper); font-size: 11px; line-height: 1.5; }
 .fossil-fallback figcaption span { display: block; margin-top: 7px; }
-@media (prefers-reduced-motion: reduce) { .fossil-expedition *, .fossil-dialog * { scroll-behavior: auto; transition: none !important; animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .fossil-expedition * { scroll-behavior: auto; transition: none !important; animation: none !important; } }
 
 /* Geological time line (FossilTimeline): periods to scale, finds in their period. */
 .fossil-timeline { margin: 0 0 26px; }

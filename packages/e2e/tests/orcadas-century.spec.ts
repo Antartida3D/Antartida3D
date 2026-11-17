@@ -45,7 +45,7 @@ test('Viajar: renders annual series chart, folds legend and two-segment trend in
   await legendDetails.locator('> summary').click();
 
   await expect(
-    page.getByText(/Media de cada año \(dato real; la línea se corta en los años incompletos\)/)
+    page.getByText(/Media de cada año \(la línea se corta en los años incompletos\)/)
   ).toBeVisible();
   await expect(page.getByText('Media móvil de 11 años (cálculo)')).toBeVisible();
   await expect(page.getByText('Tendencia en dos tramos (cálculo)')).toBeVisible();
@@ -98,8 +98,8 @@ test('Responder: with user reading, sentence matches answerFor, chart shows thre
 
   const dotChart = page.getByRole('img', { name: /Gráfico de puntos de temperatura/ });
   await expect(dotChart).toBeVisible();
-  await expect(page.getByText(/Dato real: .* igual de frío o más/)).toBeVisible();
-  await expect(page.getByText(/Dato real: .* más cálido/)).toBeVisible();
+  await expect(page.getByText(/ igual de frío o más \(SCAR READER\)/)).toBeVisible();
+  await expect(page.getByText(/ más cálido$/)).toBeVisible();
   await expect(page.getByText('Tu lectura (simulación)')).toBeVisible();
 
   const currentMonth = new Date().getMonth() + 1;
@@ -113,14 +113,14 @@ test('Responder: with user reading, sentence matches answerFor, chart shows thre
   await expect(sentenceBlock).toContainText(`${seg2.fromYear}`);
   await expect(sentenceBlock).toContainText(`${seg2.asCold} de ${seg2.years}`);
   await expect(sentenceBlock).toContainText('−3,0 °C');
-  await expect(sentenceBlock).toContainText('SCAR READER');
+  await expect(sentenceBlock.getByRole('button', { name: /^Fuente / })).toBeVisible();
 
   await expect(page.locator('.orc-seal')).toBeVisible();
   await expect(page.getByText('Bitácora sellada')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Terminar expedición' })).toBeVisible();
 
   // Detailed reading breakdown stays folded under "Tu observación del día"
-  const obsDetails = page.locator('details.orc-more', { hasText: 'Tu observación del día' });
+  const obsDetails = page.locator('details.sheet-more', { hasText: 'Tu observación del día' });
   await expect(obsDetails).not.toHaveAttribute('open', /.*/);
   await obsDetails.locator('> summary').click();
   await expect(page.locator('.orc-done-readings')).toContainText('−3,0 °C');

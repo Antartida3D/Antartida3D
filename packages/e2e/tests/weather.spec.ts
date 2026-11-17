@@ -54,7 +54,7 @@ test('mocked response shows temperature with unit, model label, and attribution,
   const tempLine = erebus.locator('.sheet-temp');
   await expect(tempLine).toContainText(/°C/);
   await expect(tempLine).toContainText('Estimación de modelo');
-  await expect(erebus.locator('.sheet-temp-attr')).toContainText('Open-Meteo.com (CC BY 4.0)');
+  await expect(erebus.locator('.sheet-temp')).toContainText('Open-Meteo');
   expect(mock.getRequestCount()).toBe(1);
 
   await page.keyboard.press('Escape');

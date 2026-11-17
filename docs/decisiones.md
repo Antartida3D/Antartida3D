@@ -336,3 +336,4 @@ Pedido del usuario: en algunos lugares el zoom parecía no tener fin; sobre la A
 - El zoom se mide aparte con la GPU real (`scripts/bench/src/gpu.ts`, flags de ANGLE), sumando las tareas del proceso de GPU en una traza. Sin GPU disponible, Chromium cae a SwiftShader y los números no son comparables.
 - **JS inicial** = scripts del HTML (y `component-url`/`renderer-url` de las islas de Astro), más todo lo que importan estáticamente y los scripts inline. Los `import()` diferidos no cuentan.
 - Las capturas se toman con `prefers-reduced-motion: reduce` para que no dependan del momento exacto de una animación.
+- **Modales normalizados (#264, 17-11-2026):** un solo contenedor (`BottomSheet`), un solo «Saber más» (`MoreFold`), citas `[N]` con una vista de fuentes única (`SourcesView`), encabezado y acciones comunes ([DEC-264](decisiones/DEC-264-modales-normalizados.md)).

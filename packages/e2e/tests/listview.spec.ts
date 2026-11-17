@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { clearStorage } from '../storage.ts';
 import { mockOpenMeteo } from './weather-helpers.ts';
 import { MAP_2D_ENABLED, NO_2D, show3D } from './map-helpers.ts';
+import { LIST_BUTTON_LABEL } from '../../core/src/content/points.ts';
 
 let consoleErrors: string[] = [];
 
@@ -59,7 +60,7 @@ for (const mode of ['Mapa 2D', 'Relieve 3D'] as const) {
       // A first tap leaves a marker label open, raised to the top of the map (#54).
       const freeMarker = () =>
         page.evaluate(() => {
-          for (const el of document.querySelectorAll('.vp .mk:not(.cluster)')) {
+          for (const el of document.querySelectorAll('.vp .mk')) {
             const r = el.getBoundingClientRect();
             const x = r.left + r.width / 2;
             const y = r.top + r.height / 2;
@@ -74,7 +75,7 @@ for (const mode of ['Mapa 2D', 'Relieve 3D'] as const) {
       await expect(page.locator('.vp .mk.shown')).toHaveCount(1);
     }
 
-    await page.getByRole('button', { name: 'Ver como lista' }).click();
+    await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
     const list = page.getByRole('dialog', { name: 'Todos los puntos' });
     await expect(list).toBeVisible();
     expect(await coveringList(page)).toEqual([]);

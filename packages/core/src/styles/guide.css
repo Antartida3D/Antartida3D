@@ -1,0 +1,69 @@
+/* First-visit guide (#256): a card anchored to a pin, the registry or the orange button, and the «?» button. Components keep their look in components.css. */
+
+/* The ring around the anchor and the card both move with transform (a frame loop sets it). */
+.guide-ring {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 15;
+  border: 3px solid color-mix(in srgb, var(--chart-paper) 85%, transparent);
+  box-shadow: 0 0 0 7px color-mix(in srgb, var(--chart-paper) 28%, transparent);
+  pointer-events: none;
+  visibility: hidden;
+}
+.guide-ring.round { width: 64px; height: 64px; border-radius: 50%; }
+.guide-ring.box { border-radius: 14px; }
+.guidecard {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 16;
+  box-sizing: border-box;
+  width: min(340px, calc(100% - 32px));
+  padding: 16px 18px 18px;
+  background: var(--chart-surface);
+  border: 1px solid var(--chart-rule);
+  border-radius: var(--chart-radius);
+  box-shadow: var(--chart-shadow);
+  color: var(--chart-ink);
+  font-size: 15px;
+  line-height: 1.4;
+  opacity: 0;
+}
+.guidecard[data-anchored='true']::before {
+  content: '';
+  position: absolute;
+  left: calc(var(--arrow-x, 50%) - 8px);
+  width: 14px;
+  height: 14px;
+  background: inherit;
+  border: inherit;
+}
+.guidecard[data-anchored='true'][data-side='below']::before { top: -8px; border-right: 0; border-bottom: 0; transform: rotate(45deg); }
+.guidecard[data-anchored='true'][data-side='above']::before { bottom: -8px; border-left: 0; border-top: 0; transform: rotate(45deg); }
+.guide-kicker { display: block; font-family: 'Fraunces', Georgia, serif; font-weight: 500; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--chart-muted); }
+.guide-title { margin: 4px 0 10px; font-family: 'Fraunces', Georgia, serif; font-weight: 500; font-size: 22px; line-height: 1.15; }
+.guide-title:focus { outline: none; }
+.guidecard p { margin: 0 0 10px; }
+.guidecard b { font-weight: 700; }
+.guide-note { font-size: 13px; color: var(--chart-muted); }
+.guide-rows { list-style: none; margin: 0 0 12px; padding: 0; border-top: 1px solid var(--chart-rule); }
+.guide-rows li { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--chart-rule); }
+.guide-pin { position: relative; flex: none; display: block; width: 18px; height: 34px; }
+.guide-pin i { display: block; width: 18px; height: 18px; border-radius: 50%; box-sizing: border-box; }
+.guide-pin::after { content: ''; position: absolute; left: 50%; top: 18px; width: 2px; height: 14px; margin-left: -1px; background: var(--chart-ink); }
+.guide-pin.a i { background: var(--ocre); border: 2px solid var(--chart-ink); }
+.guide-pin.c i { border: 1.5px dashed var(--chart-muted); }
+.guide-pin.c::after { background: var(--chart-muted); }
+.guide-actions { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+.guide-actions .btn { flex: 1 1 0; }
+.guide-actions.stacked { flex-direction: column; align-items: stretch; }
+.guidecard .btn { min-height: 44px; white-space: nowrap; }
+.guidecard .btn svg { width: 18px; height: 18px; margin-left: 6px; vertical-align: -3px; }
+
+@media (min-width: 820px) {
+  .top .help-btn { order: 1; margin-left: 10px; }
+  .top .reg-wrap { order: 2; margin-left: auto; }
+}
+.stage.voyaging .help-btn { display: none; }
+.help-btn { font-family: 'Fraunces', Georgia, serif; font-weight: 700; font-size: 22px; flex: none; }

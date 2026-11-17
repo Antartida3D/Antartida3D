@@ -21,6 +21,9 @@ export function nextExpedition(explored: readonly string[]): MapPoint | null {
   return null;
 }
 
+/** The expeditions in the suggested order. */
+export const EXPEDITIONS_IN_ORDER: readonly MapPoint[] = EXPEDITION_ORDER.map((id) => BY_ID.get(id)!);
+
 /**
  * Suggestion shown on the map after completing `doneId` (`explored` already includes `doneId`).
  * Finishing Marambio also offers the Irizar voyage to Orcadas, unless Orcadas is already next.

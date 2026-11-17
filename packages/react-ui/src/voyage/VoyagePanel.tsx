@@ -41,6 +41,7 @@ import { Fact, TripContext, type OpenSources } from './Fact.tsx';
 import { PonchoDiorama } from './PonchoDiorama.tsx';
 import { HitoNav, PONCHO_PHOTO_URL, PhotoCredit, PonchoPanel } from './PonchoPanel.tsx';
 import { PonchoIntro } from './PonchoIntro.tsx';
+import { PinIcon } from './PinIcon.tsx';
 import { SightingIcon } from './SightingIcon.tsx';
 import type { VoyageController } from './useVoyage.ts';
 
@@ -224,6 +225,7 @@ function MilestoneLog({ voyage }: { voyage: VoyageController }) {
                 onClick={() => voyage.openMilestone(i)}
                 aria-label={open ? `${milestone.title}, abierto. Volver a leerlo.` : `${milestone.title}, sin abrir. Leerlo.`}
               >
+                <PinIcon />
                 {milestone.title}
               </button>
             </li>

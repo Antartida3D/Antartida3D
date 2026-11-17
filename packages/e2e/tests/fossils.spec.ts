@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { AVAILABLE_COUNT } from '../../core/src/content/points.ts';
-import { MAP_2D_ENABLED, NO_2D } from './map-helpers.ts';
+import { show3D } from './map-helpers.ts';
 
 let errors: string[] = [];
 test.beforeEach(async ({ page }) => {
@@ -138,35 +138,16 @@ test('fits the screen and the phone panel can expand and return to peek', async 
   await expect(page.locator('.reg')).toContainText(`0/${AVAILABLE_COUNT}`);
 });
 
-test('on the 2D map Fósiles and Base Marambio stay in one group, and tapping it lets you pick Fósiles', async ({ page }) => {
-  test.skip(!MAP_2D_ENABLED, NO_2D);
+test('Fósiles and Base Marambio each have their own marker, apart on screen, and the Fósiles one opens its expedition (#238)', async ({ page }) => {
   await page.goto('/');
-  const toggle = page.getByRole('group', { name: 'Modo de vista' });
-  await toggle.getByRole('button', { name: 'Mapa 2D' }).click();
-  await expect(toggle.getByRole('button', { name: 'Mapa 2D' })).toHaveAttribute('aria-pressed', 'true');
-  // Closer each tap, until the group is only the two of them and zooming no longer separates them.
-  const group = page.locator('.vp .mk.cluster[aria-label*="Fósiles"]');
-  for (let i = 0; i < 6; i++) {
-    await expect(group).toHaveCount(1);
-    const label = (await group.getAttribute('aria-label')) ?? '';
-    if (label.includes('Tocá para elegir uno.')) break;
-    await group.click();
-    await expect(group).not.toHaveAttribute('aria-label', label);
-  }
-  // Two points on a wide screen; on a phone Poncho (Base Esperanza) stays with them too.
-  await expect(group).toHaveAttribute('aria-label', /^Grupo de [23] puntos: Base Marambio, Fósiles(, Poncho)?\. Tocá para elegir uno\.$/);
-  await group.click();
-  const picker = page.getByRole('dialog', { name: 'Puntos en este lugar' });
-  await expect(picker.getByRole('button', { name: /Base Marambio/ })).toBeVisible();
-  // A small window over the map, not a whole screen: the map stays in view around it.
-  const box = (await picker.boundingBox())!;
-  expect(box.height).toBeLessThan(page.viewportSize()!.height * 0.8);
-  // The browser «back» closes the window and stays on the map (#185); the group opens it again.
-  await page.goBack();
-  await expect(picker).toBeHidden();
-  await expect(page.getByRole('button', { name: 'Ver como lista' })).toBeVisible();
-  await group.click();
-  await expect(picker).toBeVisible();
-  await picker.getByRole('button', { name: /Fósiles/ }).click();
+  await show3D(page);
+  const marambio = page.getByRole('button', { name: /^Base Marambio, Isla Marambio/ });
+  const fosiles = page.getByRole('button', { name: /^Fósiles, Isla James Ross/ });
+  await expect(marambio).toBeVisible();
+  await expect(fosiles).toBeVisible();
+  const [a, b] = [(await marambio.boundingBox())!, (await fosiles.boundingBox())!];
+  expect(Math.hypot(a.x + a.width / 2 - b.x - b.width / 2, a.y + a.height / 2 - b.y - b.height / 2)).toBeGreaterThan(40);
+  await expect(page.locator('.mk', { hasText: /^\d+$/ })).toHaveCount(0);
+  await fosiles.click();
   await expect(page.getByRole('region', { name: 'Expedición Fósiles' })).toBeVisible();
 });

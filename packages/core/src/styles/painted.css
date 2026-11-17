@@ -39,13 +39,12 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
 .ov{position:absolute;inset:0;pointer-events:none}
 /* Lab fix: markers move with a composited transform (left/top forced a repaint on every zoom frame). */
 .ov .mk{left:0;top:0}
-.ov.zooming .mk{transition:transform .45s cubic-bezier(.3,.6,.3,1)}
-.ov.wheeling .mk{transition:transform .18s cubic-bezier(.2,.7,.3,1)}
+.ov.zooming .mk,.ov.zooming .guide{transition:transform .45s cubic-bezier(.3,.6,.3,1)}
+.ov.wheeling .mk,.ov.wheeling .guide{transition:transform .18s cubic-bezier(.2,.7,.3,1)}
 .ov.hide{opacity:0;transition:opacity .4s}
 
 .mk{position:absolute;width:48px;height:48px;margin:-24px 0 0 -24px;padding:0;border:0;background:transparent;pointer-events:auto;display:flex;align-items:center;justify-content:center;border-radius:50%}
 .mk.ta{z-index:2}
-.mk.cluster{z-index:3}
 .mk .dot{position:relative;display:block;border-radius:50%}
 .mk.ta .dot{width:22px;height:22px;background:var(--ocre);border:2.5px solid var(--chart-ink);box-shadow:0 0 0 3px color-mix(in srgb, var(--chart-paper) 90%, transparent)}
 .mk.ta .pulse{position:absolute;inset:-9px;border-radius:50%;border:2px solid var(--ocre);animation:pulse 2.4s ease-out infinite}
@@ -62,16 +61,17 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
 .mk.tsea .dot{width:22px;height:22px;background:var(--chart-paper);border:2px solid var(--chart-ink);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px rgba(30,62,92,.22)}
 .mk.tsea .dot svg{width:14px;height:14px;display:block}
 .mk.tsea .mlabel{background:var(--chart-paper);border-color:var(--deep)}
-.mk.cluster .dot{width:34px;height:34px;background:var(--chart-paper);border:2px solid var(--chart-muted);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;color:var(--chart-ink)}
-.mk.cluster.has-a .dot{border:3px solid var(--ocre);box-shadow:0 0 0 2px var(--chart-ink)}
-.mk.cluster .dot::before{content:'';position:absolute;inset:-6px;border-radius:50%;border:1.5px dashed var(--chart-muted);opacity:.55}
 .mlabel{position:absolute;left:44px;top:50%;transform:translateY(-50%);white-space:nowrap;background:var(--chart-paper);border:1px solid color-mix(in srgb, var(--chart-ink) 35%, transparent);border-radius:var(--chart-radius);padding:3px 8px 4px;text-align:left;line-height:1.15;pointer-events:none;
   box-shadow:0 2px 5px rgb(84 54 45 / 20%);}
 .mk.lbl-left .mlabel{left:auto;right:44px}
 /* In the 3D map a marker stands on a thin stick over its place, so it does not cover the block
-   model drawn there. The stick ends exactly on the place; only the dot takes presses. */
-.m3d .ov .mk:not(.cluster){--stick:34px;transform:translateY(calc(-1 * var(--stick)))}
-.m3d .ov .mk:not(.cluster)::after{content:'';position:absolute;left:50%;top:50%;width:2px;height:var(--stick);margin-left:-1px;background:var(--chart-ink);box-shadow:0 0 0 1px color-mix(in srgb, var(--chart-paper) 75%, transparent);border-radius:1px;z-index:-1;pointer-events:none}
+   model drawn there. The stick ends exactly on the place; only the dot takes presses.
+   --lift is how high it stands: 34px (MARKER_STICK_PX), and the farther a marker was fanned out
+   from a crowd (#238) the taller, which the map sets on it. The stick of an expedition point is
+   a .guide, in a layer under every marker, so that no line covers another marker's dot. */
+.m3d .ov .mk{transform:translateY(calc(-1 * var(--lift, 34px)))}
+.m3d .ov .mk.tsea::after{content:'';position:absolute;left:50%;top:50%;width:2px;height:34px;margin-left:-1px;background:var(--chart-ink);box-shadow:0 0 0 1px color-mix(in srgb, var(--chart-paper) 75%, transparent);border-radius:1px;z-index:-1;pointer-events:none}
+.ov .guide{position:absolute;left:0;top:0;width:2px;margin-left:-1px;transform-origin:50% 0;background:var(--chart-ink);box-shadow:0 0 0 1px color-mix(in srgb, var(--chart-paper) 75%, transparent);border-radius:1px;pointer-events:none}
 /* Labels are closed: one shows on a first touch (.shown), under the mouse or with the keyboard focus. */
 .mk .mlabel{display:none}
 .mk.shown .mlabel,.mk:focus-visible .mlabel{display:block}
@@ -93,44 +93,67 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
 .stage.m3d .top,.stage.m3d .bottom{background:none}
 .brand h1{margin:0;font-family:'Fraunces',Georgia,serif;font-weight:500;font-size:22px;line-height:1.05;letter-spacing:-.01em}
 .brand p{margin:2px 0 0;font-family:'Fraunces', Georgia, serif;font-size:13px;color:var(--chart-muted);line-height:1.3;}
-.reg{min-width:118px;border:1px solid var(--chart-ink);padding:12px 14px}
+/* The exploration log is a button: it drops down the six expeditions (#235). */
+.reg-wrap{position:relative}
+.reg{position:relative;display:block;min-width:118px;border:1px solid var(--chart-ink);padding:12px 36px 12px 14px;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.reg:hover{background:var(--btn-hover-bg)}
 .reg small{display:block;font-size:11px;line-height:1.1;text-transform:uppercase;letter-spacing:.08em;color:var(--chart-muted);
   font-family:'Fraunces', Georgia, serif;}
 .reg b{display:block;font-family:'Fraunces',Georgia,serif;font-size:17px;margin-top:2px}
-.reg .bar{height:3px;margin-top:5px;border-radius:0;background:var(--chart-rule);overflow:hidden}
+.reg .bar{display:block;height:3px;margin-top:5px;border-radius:0;background:var(--chart-rule);overflow:hidden}
 .reg .bar i{display:block;height:100%;background:var(--ocre);transition:width .8s ease}
+/* A chevron that points down, and up while the list is open. */
+.reg-chev{position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex}
+.reg-chev .ico{width:18px;height:18px;transform:rotate(-90deg);transition:transform .2s ease}
+.reg.open .reg-chev .ico{transform:rotate(90deg)}
+.reg-menu{position:absolute;top:calc(100% + 6px);right:0;width:min(360px,calc(100vw - 24px));max-height:calc(100dvh - 96px);overflow:auto;
+  border:1px solid var(--chart-ink);padding:2px 12px}
+.reg-menu ol{list-style:none;margin:0;padding:0}
+.reg-menu li:last-child .li{border-bottom:0}
+.reg-menu .li{min-height:48px;padding:10px 2px;gap:10px}
+.reg-menu .li strong{font-size:17px}
+.reg-menu .li .go{display:inline-block;max-width:none;margin-top:2px;font-size:12px;text-align:left}
+/* Gold as the expedition markers, with a near-white tick (3:1 over the gold; paper would be less). */
+.reg-menu .li.done .num{background:var(--ocre);border-color:var(--ocre);color:var(--ice)}
+.reg-menu .li.done .num svg{width:14px;height:14px}
+/* Explored: its title struck through. */
+.reg-menu .li.done strong{text-decoration:line-through;text-decoration-thickness:1.5px}
+/* Open, the list goes over the buttons at the bottom of the map. */
+.top:has(.reg.open){z-index:11}
 
 .bottom{position:absolute;left:0;right:0;bottom:0;padding:24px 16px 16px;display:flex;justify-content:space-between;align-items:flex-end;gap:10px;background:none;pointer-events:none;z-index:10}
 .bottom > *{pointer-events:auto}
 .brand{pointer-events:none}
-.btn{min-height:48px;padding:0 18px;border-radius:var(--chart-button-radius);border:3px double var(--chart-ink);background:var(--chart-wash);font-family:'Fraunces',Georgia,serif;font-weight:500;font-size:18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;box-shadow:inset 0 0 0 3px var(--chart-paper);}
-.btn:hover:not(:disabled){
-  background:var(--deep);
-  color:var(--chart-paper);
-  box-shadow:none;}
-.btn.primary{background:var(--chart-wash);border-color:var(--chart-ink);
-  color:var(--chart-ink);}
-.btn.primary:hover:not(:disabled){
-  background:var(--deep);
-  color:var(--chart-paper);}
-/* Resume an unfinished expedition (#186): keep the expedition marker color distinct. */
-.btn.resume{background:#E0A93C;color:var(--chart-ink)}
-.btn.resume:hover:not(:disabled){background:#EDBB55;color:var(--chart-ink)}
-.btn[disabled]{opacity:.55;cursor:not-allowed;box-shadow:none}
-.btn.ghost{background:transparent;box-shadow:none;border-color:color-mix(in srgb, var(--chart-ink) 50%, transparent);
-  border:1px solid var(--chart-ink);
-  color:var(--chart-ink);}
-.btn.ghost:hover:not(:disabled){background:var(--deep);border-color:var(--deep);color:var(--chart-paper);box-shadow:none}
+/* On a phone only the exploration log shows (#249); the title stays for screen readers. */
+@media (max-width:819.98px){
+  .top .brand{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+  /* The log shrinks to a small «1/6» pill with its bar, so the map stays free; it drops the list down to the right. */
+  .top .reg-wrap{margin-right:auto}
+  .top .reg{min-width:0;padding:6px 12px}
+  .top .reg{display:grid;grid-template-columns:32px auto 32px;align-items:center}
+  .top .reg b{grid-column:2;text-align:center;white-space:nowrap}
+  .top .reg small{display:none}
+  .top .reg .unit{display:none}
+  .top .reg b{font-size:16px;margin-top:0}
+  .top .reg .bar{grid-column:1 / -1}
+  .top .reg-chev{position:static;transform:none;grid-column:3;justify-self:end;margin-right:-6px}
+  .top .reg-menu{left:0;right:auto}
+}
 .zoom{display:flex;flex-direction:column;gap:8px}
-.iconbtn{width:48px;height:48px;border-radius:50%;border:3px double var(--chart-ink);background:var(--chart-paper);display:flex;align-items:center;justify-content:center;padding:0;
-  box-shadow:none;}
-.iconbtn svg{width:22px;height:22px}
 .leftcol{display:flex;flex-direction:column;gap:10px;align-items:flex-start}
+/* «Siguiente» / «Continuar» go below the legend and «Actividades». */
+.leftcol > .btn.resume{order:4}
 
 .legend{border:1px solid var(--chart-ink);padding:12px 14px;max-width:260px;
   max-height:40dvh;
   overflow:auto;}
 .legend button.lt{border:0;background:transparent;padding:4px 2px;min-height:44px;display:flex;align-items:center;gap:6px;font-weight:700;font-size:16px;}
+/* Closed, the legend is one button as big as «Actividades» (#248). */
+.leftcol{--rail-w:12rem}
+.leftcol > .btn:not(.resume),.legend:not(.open){width:var(--rail-w)}
+.leftcol > .btn:not(.resume){justify-content:flex-start}
+.legend:not(.open){padding:0;min-height:48px;border-radius:var(--chart-button-radius);overflow:hidden}
+.legend:not(.open) button.lt{width:100%;min-height:46px;justify-content:flex-start;padding:0 18px;font-family:'Fraunces',Georgia,serif;font-weight:500;font-size:18px;gap:8px}
 .legend ul{list-style:none;margin:4px 0 2px;padding:0;display:flex;flex-direction:column;gap:6px}
 .legend li{display:flex;align-items:center;gap:8px;font-size:13px;line-height:1.2}
 .legend .sw{flex:none;width:18px;height:18px;display:flex;align-items:center;justify-content:center}
@@ -191,7 +214,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
 .listview .inner{max-width:860px;margin:0 auto;
   padding:24px 24px 48px;}
 .listhead{position:sticky;top:0;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 0 18px;background:var(--chart-paper);z-index:1;
-  border-bottom:3px double var(--chart-ink);}
+  border-bottom:1px solid var(--chart-ink);}
 .listhead h2{margin:0;font-family:'Fraunces',Georgia,serif;
   font-size:28px;
   font-weight:500;}
@@ -227,9 +250,6 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
 .etop .ttl{flex:1;min-width:0;text-align:center}
 .etop .ttl b{display:block;font-family:'Fraunces',Georgia,serif;font-size:17px;line-height:1.1}
 .etop .ttl span{display:block;font-size:13px;color:var(--chart-muted)}
-.pill{min-height:44px;padding:0 14px;border-radius:var(--chart-button-radius);border:3px double var(--chart-ink);background:var(--chart-paper);font-weight:500;font-size:15px;display:inline-flex;align-items:center;gap:6px;
-  font-family:'Fraunces', Georgia, serif;}
-.pill[aria-expanded="true"]{background:var(--chart-ink);color:#F7FAFB}
 .steps{display:flex;gap:5px}
 .steps i{flex:1;height:6px;border-radius:3px;background:color-mix(in srgb, var(--chart-ink) 16%, transparent)}
 .steps i.done{background:var(--deep)}
@@ -371,6 +391,9 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
 .webgl-note .wn-title{font-weight:700;font-size:15px}
 .webgl-note ol{margin:0 0 6px;padding-left:20px}
 .webgl-note .btn{min-height:40px;font-size:14px;padding:0 14px}
+/* The notice of a 3D that failed after the start (#242): over everything, in the middle, without blocking the app. */
+.webgl-note.fail3d{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:30;width:max-content;max-width:min(360px,calc(100vw - 32px))}
+.webgl-note .wn-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;margin-top:10px}
 .m3d .legend{max-height:min(420px,max(48px,calc(100dvh - 260px)));overflow-y:auto;overscroll-behavior:contain}
 .m3d .legend ul{max-height:min(250px,30dvh);overflow-y:auto;overscroll-behavior:contain}
 .claims-actions{display:flex;align-items:center;gap:6px}
@@ -438,9 +461,10 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
   .legend,.legend summary::before{transition:none}
 }
 
-/* Suggested next expedition (#75): tag over its marker, the card on returning, and its live text. */
-.mnext{position:absolute;left:50%;bottom:calc(50% + 16px);transform:translateX(-50%);white-space:nowrap;background:var(--chart-ink);color:var(--chart-paper);font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;line-height:1;padding:3px 6px;border-radius:var(--chart-radius);pointer-events:none}
-.mk.cluster .mnext{bottom:calc(50% + 22px)}
+/* Suggested next expedition (#75): halo on its marker, the card on returning, and its live text. */
+/* The suggested marker is told apart by a halo round its dot, not by a tag: inside a fan a tag crowds the lines of its neighbours. */
+.mk.next .dot{box-shadow:0 0 0 3px color-mix(in srgb, var(--chart-paper) 90%, transparent),0 0 0 6px var(--ocre)}
+.mk.next .pulse{inset:-13px;border-width:3px}
 .next-live{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 .next-card{font-size:14px;line-height:1.35}
 .next-card .next-done{font-size:15px;margin:6px 0 10px;font-family:inherit;font-weight:700}
@@ -464,11 +488,6 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
 }
 
 /* Suggested order in the list (#75) and the group picker as a bottom sheet (DEC-75-2). */
-.sheet.pick-sheet .inner{padding:0}
-.sheet.pick-sheet .gdesc{display:none}
-.sheet.pick-sheet .listhead{position:static;padding:4px 0 10px}
-.sheet.pick-sheet .listhead h2{font-size:22px}
-.sheet.pick-sheet .listhead .btn{white-space:nowrap}
 .listview ol,.sheet ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
 .li .num{flex:none;width:26px;height:26px;border-radius:50%;border:1.5px solid var(--chart-ink);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
 .li .go.next{background:var(--ocre);color:var(--chart-ink);padding:2px 6px;border-radius:var(--chart-radius)}
@@ -476,12 +495,29 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
 @media (max-height:500px){.btn.next-btn{display:none}}
 /* The suggestion is lighter than «Continuar»: on a phone it shows only the name (the marker's tag already says «Siguiente»). */
 .btn.next-btn{max-width:none;white-space:nowrap;text-align:left;line-height:1.15}
+/* The arrow stands in for the hidden «Siguiente:» label on a phone (#248). */
+.btn.resume .ico{display:inline-block;width:18px;height:18px;margin-left:8px;vertical-align:-3px}
 @media (max-width:819.98px){
-  .btn.next-btn{max-width:200px;white-space:normal;min-height:40px;padding-block:6px;font-size:14px}
+  .btn.next-btn{max-width:none;white-space:normal;min-height:48px;padding-block:6px;font-size:18px}
   .btn.next-btn .lbl{display:none}
+  .btn.next-btn .ico{display:block;margin-left:0}
+  .btn.resume:not(.next-btn) .ico{flex:none}
 }
 /* On a phone «Continuar» is one short line: the step (chapter, point) is left out, its full text stays in the accessible name. */
 @media (max-width:819.98px){
-  .btn.resume:not(.next-btn){white-space:nowrap;min-height:40px;padding-block:6px;font-size:14px}
+  .btn.resume:not(.next-btn){white-space:nowrap;min-height:48px;padding-block:6px;padding-inline:10px;font-size:15px}
+  .btn.resume:not(.next-btn) .ico{margin-left:6px}
   .btn.resume .rdetail{display:none}
+}
+
+/* On a phone the closed legend is a round button beside «Actividades» (#248); open, it takes a row of its own. */
+@media (max-width:819.98px){
+  .leftcol{display:grid;grid-template-columns:auto auto;justify-content:start;align-items:end;gap:10px}
+  /* Under the two buttons, as wide as both together: width 0 + min-width 100% keeps it out of the column sizing. */
+  .leftcol > .btn.resume{grid-column:1 / -1;order:4;width:0;min-width:100%;max-width:none;justify-content:center}
+  .leftcol > .legend.open,.leftcol > .claims-control{grid-column:1 / -1;order:1}
+  .leftcol > .btn:not(.resume){order:2}
+  .leftcol > .legend:not(.open){order:3;width:48px;height:48px;min-height:0;border-radius:var(--chart-button-radius)}
+  .legend:not(.open) button.lt{min-height:46px;padding:0;justify-content:center}
+  .legend:not(.open) .lt-label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
 }

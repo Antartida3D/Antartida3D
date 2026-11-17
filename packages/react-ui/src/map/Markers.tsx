@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import type { Marker } from '@antartida/core';
+import { guideLine, type Marker } from '@antartida/core';
 import { Icon } from '../ui.tsx';
 
 /** A press on a marker: `touch` tells a finger (or pen) from a mouse or the keyboard. */
@@ -24,12 +24,10 @@ export function MarkerButton({ m, style, shown, onPick }: {
       aria-label={m.aria}
     >
       <span className="dot">
-        {m.kind === 'cluster' && m.count}
         {m.kind === 'point' && m.pulse && <span className="pulse" />}
         {m.kind === 'point' && m.check && Icon.check}
         {m.kind === 'sea' && Icon.sea}
       </span>
-      {((m.kind === 'point' && m.next) || (m.kind === 'cluster' && m.hasNext)) && <span className="mnext" aria-hidden="true">Siguiente</span>}
       {m.kind === 'point' && m.label && (
         <span className="mlabel"><strong>{m.label.title}</strong><span>{m.label.sub}</span></span>
       )}
@@ -49,6 +47,12 @@ export function Markers({ markers, className, shown, onPick }: {
 }) {
   return (
     <div className={className}>
+      {/* The lines back to the real places of the fanned-out markers (#238), under every marker. */}
+      {markers.map((m) => {
+        if (m.kind !== 'point' || (!m.dx && !m.dy)) return null;
+        const { length, angle } = guideLine(m.dx, m.dy, 0);
+        return <span key={'g:' + m.key} className="guide" aria-hidden="true" style={{ height: length, transform: `translate3d(${m.left}px, ${m.top}px, 0) rotate(${angle}rad)` }} />;
+      })}
       {markers.map((m) => <MarkerButton key={m.key} m={m} style={{ transform: `translate3d(${m.left}px, ${m.top}px, 0)` }} shown={m.key === shown} onPick={onPick} />)}
     </div>
   );

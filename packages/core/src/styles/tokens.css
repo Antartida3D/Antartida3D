@@ -18,5 +18,26 @@
   --chart-button-radius: 9px;
   --chart-texture: url('../assets/paper-512.webp');
   --chart-surface: linear-gradient(rgb(243 232 210 / 89%), rgb(243 232 210 / 89%)), var(--chart-texture);
-  --chart-shadow: inset 0 0 0 6px #F8F0DF, inset 0 0 0 7px var(--chart-rule), inset 0 0 26px rgb(180 145 92 / 12%), 0 9px 26px rgb(64 53 54 / 15%);
+  /* Interface components (.agents/rules/project/40-componentes-ui.md): components.css reads these.
+     Changing the look of a component everywhere is changing a value here. */
+  --btn-bg: var(--chart-wash);
+  --btn-fg: var(--chart-ink);
+  --btn-line: var(--chart-ink);
+  /* One plain line: no double border and no inner frame, so a hover paints the whole button (#231). */
+  --btn-border: 1.5px solid var(--btn-line);
+  /* A hover darkens the resting color a little; it never changes the color (#231). */
+  --btn-hover-bg: color-mix(in srgb, var(--btn-bg) 86%, var(--chart-ink));
+  /* The main action of a screen is blue, so it is plain what to press (#231). */
+  --btn-primary-bg: var(--deep);
+  --btn-primary-fg: var(--chart-paper);
+  --btn-primary-hover-bg: color-mix(in srgb, var(--btn-primary-bg) 82%, black);
+  /* Resume an unfinished expedition (#186): the color of the expedition marker. */
+  --btn-resume-bg: #E0A93C;
+  --btn-resume-hover-bg: color-mix(in srgb, var(--btn-resume-bg) 86%, var(--chart-ink));
+  /* A chip is on the parchment, like a button: no cold white (#232). */
+  --chip-bg: var(--btn-bg);
+  /* Card over the dark blue of the loading screen: a stronger shadow than on paper. */
+  --chart-shadow-dark: inset 0 0 26px rgb(180 145 92 / 12%), 0 12px 34px rgb(8 18 30 / 40%);
+  /* No inner frame: a panel has one line around it, like a button (#231). */
+  --chart-shadow: inset 0 0 26px rgb(180 145 92 / 12%), 0 9px 26px rgb(64 53 54 / 15%);
 }

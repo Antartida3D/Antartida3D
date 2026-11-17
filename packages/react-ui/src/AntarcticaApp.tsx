@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import {
   APPROACH_MS,
   DIVE_MS,
@@ -16,25 +16,30 @@ import {
   saveExplored,
   loadViewMode,
   saveViewMode,
-  loadWelcomeSeen,
-  saveWelcomeSeen,
+  firstVisitStep,
+  loadIntroSeen,
+  nextExpedition,
+  saveIntroSeen,
   loadLastExpedition,
   saveLastExpedition,
   isValidResume,
-  showsWelcome,
   map3dLoadingStore,
   initialViewMode,
   MAP_2D_ENABLED,
   PTS,
   type ArrivalId,
+  type FirstVisitEvent,
+  type FirstVisitState,
   type MapPoint,
   type ResumePoint,
 } from '@antartida/core';
+import { Failed3DNotice } from './CanvasGuard.tsx';
 import { useBackLayer, useLoadingStore, useReducedMotion, useTimers } from './hooks.ts';
 import { LoadingScreen } from './loading/LoadingScreen.tsx';
 import { MapView, type Layer3DProps, type Phase, type ViewMode } from './map/MapView.tsx';
 import { Filters } from './ui.tsx';
 import { NARROW_PX } from './voyage/useVoyage.ts';
+import { scene3DFailure } from './webgl.ts';
 
 const loadOrcadas = () => import('./orcadas/OrcadasExpedition.tsx');
 const OrcadasExpedition = lazy(() => loadOrcadas().then((m) => ({ default: m.OrcadasExpedition })));
@@ -116,8 +121,12 @@ export function AntarcticaApp() {
   // With the 2D map off, a 3D load error (or a lost WebGL context) switches to the 2D map on its own.
   const failed3D = useLoadingStore(map3dLoadingStore).error !== null && !MAP_2D_ENABLED;
   const can3D = webglSupported === true && !failed3D;
-  // First visit: the map comes close to «Desde Ushuaia» (#115). True until MapView has shown it.
-  const [welcome, setWelcome] = useState(false);
+  // A 3D canvas that failed after the start, on the map or in an expedition: the app tells it once (#242).
+  const sceneFailed = useSyncExternalStore(scene3DFailure.subscribe, scene3DFailure.getSnapshot, () => false);
+  const [failNoticeClosed, setFailNoticeClosed] = useState(false);
+  // First visit (#256, #258): the loading card turns into «Mapa listo» and a three-step guide follows.
+  // A saved `antartida:intro` skips all of it.
+  const [flow, setFlow] = useState<FirstVisitState>(() => (loadIntroSeen() ? 'done' : 'loading'));
   const [map3dLoaderDismissed, setMap3dLoaderDismissed] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const [map2dReady, setMap2dReady] = useState(false);
@@ -150,14 +159,10 @@ export function AntarcticaApp() {
     if (failed3D) setMode('2d');
   }, [failed3D]);
 
-  // Decided once, in the same render as the starting view above, so MapView zooms in the right mode.
-  useEffect(() => {
-    setWelcome(showsWelcome(loadWelcomeSeen(), loadExplored()));
-  }, []);
-
-  const welcomeShown = () => {
-    saveWelcomeSeen();
-    setWelcome(false);
+  const guide = (event: FirstVisitEvent) => {
+    const result = firstVisitStep(flow, event, nextExpedition(explored) !== null);
+    if (result.markSeen) saveIntroSeen();
+    setFlow(result.state);
   };
 
   const map2DReady = useCallback(() => setMap2dReady(true), []);
@@ -336,9 +341,9 @@ export function AntarcticaApp() {
             onTravelIrizar={() => travelFromMarambio(false)}
             legend={legend}
             focusExpedition={returned}
-            // The loading screen covers the map while the shared loader settles; the welcome waits for it to close (#190).
-            welcome={welcome && map3dLoaderDismissed}
-            onWelcomeShown={welcomeShown}
+            // The guide starts from the ready card, which closes the loading screen first.
+            guideStep={flow}
+            onGuide={guide}
             mode={mode}
             showToggle={webglSupported !== null}
             available3D={can3D}
@@ -357,6 +362,17 @@ export function AntarcticaApp() {
               mode={mode}
               initialized={initialized}
               map2dReady={map2dReady}
+              unavailable3D={!can3D}
+              firstVisit={flow === 'loading' || flow === 'ready'}
+              onReady={() => guide('ready')}
+              onExplore={() => {
+                guide('explore');
+                loadingDone();
+              }}
+              onSkip={() => {
+                guide('skip');
+                loadingDone();
+              }}
               onDone={loadingDone}
               onFallback2D={fallback2D}
             />
@@ -398,6 +414,10 @@ export function AntarcticaApp() {
             />
           )}
         </Suspense>
+      )}
+      {/* On the map the notice waits for the loading screen, which tells the error itself while it is up. */}
+      {(failed3D || sceneFailed) && !failNoticeClosed && (screen !== 'map' || map3dLoaderDismissed) && (
+        <Failed3DNotice onClose={() => setFailNoticeClosed(true)} />
       )}
     </div>
   );

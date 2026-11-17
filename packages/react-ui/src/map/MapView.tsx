@@ -1,14 +1,15 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import {
-  DOUBLE_TAP_ZOOM, DRAG_THRESHOLD, EXPEDITION_POINT, HOME, KEY_PAN, MAP_2D_ENABLED, MIN_K, ONE_FINGER_IDLE, PONCHO_POINT, PONCHO_TRANSPORT, PTS, TRANSPORTS, VOYAGE_POINT, VOYAGE_POINTS, ZOOM_MS,
-  afterExpedition, buildMarkers, diveView, focusWorld, freeArea, needsFraming, markerPress, geometry, isWheelNotch, keyView, nextExpedition, oneFingerDown, oneFingerMove, oneFingerUp, panBy, resumeDetail, welcomeView, wheelFactor, zoomAround, zoomCenter,
-  type ArrivalId, type MapPoint, type Marker, type OneFingerZoomState, type ResumePoint, type SeaPoint, type Size, type TransportId, type View, type ClaimsCoverage,
+  DOUBLE_TAP_ZOOM, DRAG_THRESHOLD, EXPEDITION_POINT, HOME, KEY_PAN, LIST_BUTTON_LABEL, MAP_2D_ENABLED, MAX_K, MIN_K, ONE_FINGER_IDLE, PONCHO_POINT, PONCHO_TRANSPORT, PTS, TRANSPORTS, VOYAGE_POINTS, ZOOM_MS,
+  afterExpedition, buildMarkers, isGuideOpen, diveView, focusWorld, freeArea, needsFraming, markerPress, geometry, isWheelNotch, keyView, nextExpedition, oneFingerDown, oneFingerMove, oneFingerUp, panBy, resumeDetail, welcomeView, wheelFactor, zoomAround, zoomCenter,
+  type ArrivalId, type FirstVisitEvent, type FirstVisitState, type MapPoint, type Marker, type OneFingerZoomState, type ResumePoint, type SeaPoint, type Size, type TransportId, type View, type ClaimsCoverage, type ZoomAvailability,
 } from '@antartida/core';
-import { useBackLayer, usePageSettled, useReducedMotion, useTimers } from '../hooks.ts';
+import { useBackLayer, useReducedMotion, useTimers } from '../hooks.ts';
 import { useVoyage, type VoyageBus } from '../voyage/useVoyage.ts';
 import { Icon } from '../ui.tsx';
 import { CompassRose } from '../Cartography.tsx';
 import { ExplorationLog } from './ExplorationLog.tsx';
+import { Guide } from './Guide.tsx';
 import { Legend } from './Legend.tsx';
 import { ClaimsControl, ClaimsDetails, type ClaimsSelection, type ClaimsStatus } from './ClaimsControl.tsx';
 import { ListView } from './ListView.tsx';
@@ -17,6 +18,7 @@ import { PointSheet } from './PointSheet.tsx';
 import { KindChip } from '../orcadas/KindChip.tsx';
 import { OrcadasIntro } from '../orcadas/OrcadasIntro.tsx';
 import { ViewToggle } from './ViewToggle.tsx';
+import { ZoomControls } from './ZoomControls.tsx';
 import { Map2DLayer, type LayerProps } from './Map2DLayer.tsx';
 import { ctrlZoomWheelDelta, dispatchWheelAtCenter } from '../keyboardWheel.ts';
 
@@ -32,7 +34,7 @@ const WHEEL_MS = 200;
 const CLAIMS_POINT_ID = 'polo';
 
 /**
- * A request from the shared controls (buttons, keys, cluster clicks) to the 3D camera. In 3D the
+ * A request from the shared controls (buttons, keys) to the 3D camera. In 3D the
  * orbit camera owns zoom and pan, so the controls ask it to move instead of rewriting `view`.
  */
 export type Camera3DCommand =
@@ -50,8 +52,10 @@ export type Layer3DProps = LayerProps & {
   arrival?: ArrivalId;
   /** `n` grows with every request so repeating the same command still fires. */
   command: { n: number; cmd: Camera3DCommand } | null;
-  /** The camera came to rest: the 2D-style view it shows, for clustering and the 2D switch. */
+  /** The camera came to rest: the 2D-style view it shows, for fanning out the markers and the 2D switch. */
   onCameraRest: (view: View) => void;
+  /** The effective zoom limits, also updated while the camera is moving. */
+  onZoomAvailabilityChange: (availability: ZoomAvailability) => void;
   /** The trip from Ushuaia while it is under way: the scene draws the vehicle and follows it. */
   voyage: VoyageBus | null;
   /** The trip opens on the vehicle picker (Ushuaia): the camera goes to the departure before one is picked (#190). */
@@ -78,10 +82,10 @@ export interface MapViewProps {
   legend: boolean;
   /** Move focus to the expedition marker on mount (coming back from the expedition). */
   focusExpedition: boolean;
-  /** First visit (#115): come close to «Desde Ushuaia», show its label and say to start there. */
-  welcome?: boolean;
-  /** The welcome is on screen: it must not show again. */
-  onWelcomeShown?: () => void;
+  /** First-visit flow (#256, #258): the guide shows while it is `guide1`, `guide2` or `guide3`. */
+  guideStep?: FirstVisitState;
+  /** Events of the guide: «Siguiente», closing it, the «?» button (`open`), its final action (`finish`). */
+  onGuide?: (event: FirstVisitEvent) => void;
   mode?: ViewMode;
   showToggle?: boolean;
   /** False without WebGL: «Relieve 3D» explains how to turn it on (#123). */
@@ -158,8 +162,8 @@ export function MapView({
   onTravelIrizar,
   legend,
   focusExpedition,
-  welcome = false,
-  onWelcomeShown,
+  guideStep = 'done',
+  onGuide,
   mode = '2d',
   resume = null,
   showToggle = false,
@@ -180,6 +184,7 @@ export function MapView({
   const markersRef = useRef<Marker[]>([]);
   const [size, setSize] = useState<Size>({ vw: 390, vh: 844 });
   const [view, setView] = useState<View>(HOME);
+  const [zoom3D, setZoom3D] = useState<ZoomAvailability>({ canZoomIn: false, canZoomOut: false });
   const [anim, setAnim] = useState<Anim>('');
   const [touched, setTouched] = useState(false);
   const [sheet, setSheet] = useState<MapPoint | SeaPoint | null>(null);
@@ -187,8 +192,6 @@ export function MapView({
   // Key of the marker whose label a first touch brought into view.
   const [shown, setShown] = useState<string | null>(null);
   const [list, setList] = useState(false);
-  // Points of a group that zooming no longer separates, while the visitor picks one of them.
-  const [picking, setPicking] = useState<readonly MapPoint[] | null>(null);
   const [claimsEnabled, setClaimsEnabled] = useState(false);
   const [claimsSelection, setClaimsSelection] = useState<ClaimsSelection>('all');
   const [claimsCoverage, setClaimsCoverage] = useState<ClaimsCoverage>('sectors');
@@ -246,7 +249,6 @@ export function MapView({
 
   // Browser «back» closes the top layer instead of leaving the app (#185).
   useBackLayer(list, () => setList(false));
-  useBackLayer(!!picking, () => setPicking(null));
   useBackLayer(!!sheet, () => setSheet(null));
   useBackLayer(!!pendingOrcadas && phase === 'idle', () => setPendingOrcadas(null));
   useBackLayer(voyaging, () => onEndVoyage?.(false));
@@ -353,7 +355,7 @@ export function MapView({
         id = requestAnimationFrame(frame);
         return;
       }
-      const marker = markersRef.current.find((k) => (k.kind === 'point' && k.next) || (k.kind === 'cluster' && k.hasNext));
+      const marker = markersRef.current.find((k) => k.kind === 'point' && k.next);
       if (!marker) return;
       const sz = live.current.size;
       const next = focusWorld(sz, marker.x, marker.y, live.current.view.k, ((free.top + free.bottom) / 2) / sz.vh, ((free.left + free.right) / 2) / sz.vw);
@@ -366,8 +368,8 @@ export function MapView({
 
   // A sheet, the list or the Orcadas intro replaces the card.
   useEffect(() => {
-    if (finished && (sheet || list || picking || pendingOrcadas)) onDismissFinished?.();
-  }, [finished, sheet, list, picking, pendingOrcadas]);
+    if (finished && (sheet || list || pendingOrcadas)) onDismissFinished?.();
+  }, [finished, sheet, list, pendingOrcadas]);
 
   useEffect(() => {
     if (phase !== 'dive' && phase !== 'fade') return;
@@ -389,33 +391,31 @@ export function MapView({
     setTouched(true);
   };
 
-  // First visit (#115): once the page has loaded and stopped stuttering, the map comes close to
-  // «Desde Ushuaia», its label opens (one more touch starts the trip) and the hint says to start
-  // there. The move is not the user's, so it does not count as `touched`; anything the user does
-  // afterwards ends the welcome. Someone who already moved the map while it loaded gets no welcome.
-  const [welcoming, setWelcoming] = useState(false);
-  const settled = usePageSettled(welcome);
-  const welcomeMove = () => {
-    const next = welcomeView(live.current.size);
-    if (live.current.is3D) queue3D({ type: 'focus', view: next });
-    else glide(next);
+  // First visit (#256, #258): «Exploración guiada» (or the «?» button) brings the map close to the
+  // suggested expedition, and the first step of the guide points at its pin. The move is not the
+  // user's, so it does not count as `touched`. The user may move the map during the step: it is
+  // what the step teaches. With a trip or a transition under way the guide closes.
+  const guideOpen = isGuideOpen(guideStep);
+  const welcomeMove = (point: Pick<MapPoint, 'x' | 'y'>) => {
+    const target = welcomeView(live.current.size, point);
+    if (live.current.is3D) queue3D({ type: 'focus', view: target });
+    else glide(target);
   };
+  const guideAtPin = guideStep === 'guide1';
   useEffect(() => {
-    if (!welcome || !settled) return;
-    if (touched || phase !== 'idle' || voyaging) return void onWelcomeShown?.();
-    welcomeMove();
-    setShown(VOYAGE_POINT.id);
-    setWelcoming(true);
-    onWelcomeShown?.();
-  }, [welcome, settled]);
-  // The map can still switch between 3D and 2D during the welcome: the starting view changes once
-  // reduced motion is read (useReducedMotion), and the user may switch it. Stay close to Ushuaia.
+    if (!guideAtPin || !next) return;
+    welcomeMove(next);
+    setShown(next.id);
+  }, [guideAtPin]);
+  // The map can still switch between 3D and 2D during the first step: the starting view changes once
+  // reduced motion is read (useReducedMotion), and the user may switch it. Stay close to the target.
   useEffect(() => {
-    if (welcoming) welcomeMove();
+    if (guideAtPin && next) welcomeMove(next);
   }, [is3D]);
+  // Anything that opens over the map ends the guide.
   useEffect(() => {
-    if (touched || voyaging || phase !== 'idle') setWelcoming(false);
-  }, [touched, voyaging, phase]);
+    if (guideOpen && (voyaging || phase !== 'idle' || sheet || list || pendingOrcadas)) onGuide?.('close');
+  }, [guideOpen, voyaging, phase, sheet, list, pendingOrcadas]);
 
   const rel = (e: { clientX: number; clientY: number }) => {
     const r = vpRef.current!.getBoundingClientRect();
@@ -622,13 +622,7 @@ export function MapView({
 
   const onPick = (m: Marker, touch: boolean) => {
     if (gesture.current.dragged) return;
-    setWelcoming(false);
-    if (m.kind === 'cluster') {
-      setShown(null);
-      if (m.pick) setPicking(m.points);
-      else if (is3D) send3D({ type: 'focus', view: m.target });
-      else animateTo(m.target);
-    } else if (markerPress(shown, m.key, touch) === 'show') setShown(m.key);
+    if (markerPress(shown, m.key, touch) === 'show') setShown(m.key);
     else {
       setShown(null);
       openPoint(m.point);
@@ -636,9 +630,15 @@ export function MapView({
   };
 
   const next = useMemo(() => nextExpedition(explored), [explored]);
-  // The welcome, «Continuar» and a trip already point somewhere: no suggestion then (S6).
-  const suggest = !welcome && !welcoming && !resume && !voyaging;
-  const markers = useMemo(() => buildMarkers(size, view, explored, PTS, undefined, suggest ? next?.id : undefined), [size, view, explored, next, suggest]);
+  // Step 3 explains the orange button: without a suggested expedition there is nothing to explain.
+  useEffect(() => {
+    if (guideStep === 'guide3' && !next) onGuide?.('close');
+  }, [guideStep, next]);
+  // The guide, «Continuar» and a trip already point somewhere: no suggestion then (S6). «Continuar» has its own halo.
+  const suggest = !guideOpen && !resume && !voyaging;
+  // The orange button waits for step 3, which explains it.
+  const hideNextBtn = guideStep === 'guide1' || guideStep === 'guide2';
+  const markers = useMemo(() => buildMarkers(size, view, explored, PTS, undefined, suggest ? next?.id : undefined, !guideOpen && !voyaging ? resume?.id : undefined), [size, view, explored, next, suggest, guideOpen, voyaging, resume]);
   markersRef.current = markers;
   const after = finished ? afterExpedition(finished.id, explored) : null;
   const geo = geometry(size);
@@ -678,6 +678,7 @@ export function MapView({
               onPick={onPick}
               command={command}
               onCameraRest={setView}
+              onZoomAvailabilityChange={setZoom3D}
               voyage={voyaging ? voyage.bus : null}
               voyagePicker={!voyageTransport}
               claims={claimsEnabled && !voyaging ? { selection: claimsSelection, coverage: claimsCoverage } : null}
@@ -705,13 +706,27 @@ export function MapView({
             <h1>Antártida por descubrir</h1>
             <p>cuaderno de campo · desde Ushuaia</p>
           </div>
-          <ExplorationLog explored={explored} />
+          <ExplorationLog explored={explored} onPick={openPoint} />
+          {!voyaging && phase === 'idle' && !sheet && !list && (
+            <button type="button" className="iconbtn help-btn" aria-label="Cómo se usa el mapa" onClick={() => onGuide?.('open')}>?</button>
+          )}
         </header>
 
-        {welcoming ? (
-          <div className="hint" role="status">Tocá <strong>Desde Ushuaia</strong> para empezar</div>
+        {guideOpen ? (
+          <Guide
+            step={guideStep === 'guide1' ? 1 : guideStep === 'guide2' ? 2 : 3}
+            next={next}
+            onNext={() => onGuide?.('next')}
+            onClose={() => onGuide?.('close')}
+            onFinish={() => onGuide?.('finish')}
+            onStart={() => {
+              onGuide?.('finish');
+              if (next) openPoint(next);
+            }}
+            fallbackFocus={() => vpRef.current}
+          />
         ) : (
-          !touched && !voyaging && phase === 'idle' && <div className="hint">arrastrá para mover · pellizcá para acercar</div>
+          !touched && !voyaging && guideStep !== 'loading' && guideStep !== 'ready' && phase === 'idle' && <div className="hint">arrastrá para mover · pellizcá para acercar</div>
         )}
         {/* Always mounted, so a screen reader reads the card's text when it changes. */}
         <div className="next-live" role="status">
@@ -722,30 +737,23 @@ export function MapView({
         <div className="bottom">
           {voyaging ? <span /> : (
           <div className="leftcol">
-            <Legend open={legend} onToggle={onToggleLegend} mode={mode} />
-            {/* Off, the claims open from the South Pole sheet; on, this control turns them off. */}
-            {is3D && claimsEnabled && <ClaimsControl enabled details={claimsDetails} onDetails={setClaimsDetails}
-              switchRef={claimsSwitch} detailsRef={claimsDetailsButton}
-              onToggle={() => {
-                setClaimsEnabled(false);
-                setClaimsStatus('loading');
-                vpRef.current?.focus();
-              }} />}
+            {/* «Siguiente» / «Continuar» go first: Leyenda and «Actividades» stay together, same size (#248). */}
             {(() => {
-              const resumePoint = resume && phase === 'idle' && !voyaging && !welcome && !welcoming
+              const resumePoint = resume && phase === 'idle' && !voyaging
                 ? PTS.find((p) => p.id === resume.id)
                 : null;
               const detail = resumePoint && resume ? resumeDetail(resumePoint.id, resume.step, resume.sub) : null;
-              // The welcome already points at Ushuaia; «Continuar» wins over the suggestion (S6).
-              const nextPoint = !resumePoint && next && phase === 'idle' && !voyaging && !welcome && !welcoming && !showCard ? next : null;
+              // «Continuar» wins over the suggestion (S6).
+              const nextPoint = !resumePoint && next && phase === 'idle' && !voyaging && !hideNextBtn && !showCard ? next : null;
               if (nextPoint) {
                 return (
                   <button type="button" className="btn resume next-btn" aria-label={`Siguiente: ${nextPoint.title}`} onClick={() => { setSheet(null); setPendingOrcadas(null); openPoint(nextPoint); }}>
                     <span className="lbl">Siguiente: </span>{nextPoint.title}
+                    {Icon.next}
                   </button>
                 );
               }
-              return resumePoint ? (
+              return resumePoint && !hideNextBtn ? (
                 <button
                   type="button"
                   className="btn resume"
@@ -762,12 +770,22 @@ export function MapView({
                   }}
                 >
                   Continuar: {resumePoint.title}{detail && <span className="rdetail">{` · ${detail}`}</span>}
+                  {Icon.next}
                 </button>
               ) : null;
             })()}
+            <Legend open={legend} onToggle={onToggleLegend} mode={mode} />
+            {/* Off, the claims open from the South Pole sheet; on, this control turns them off. */}
+            {is3D && claimsEnabled && <ClaimsControl enabled details={claimsDetails} onDetails={setClaimsDetails}
+              switchRef={claimsSwitch} detailsRef={claimsDetailsButton}
+              onToggle={() => {
+                setClaimsEnabled(false);
+                setClaimsStatus('loading');
+                vpRef.current?.focus();
+              }} />}
             <button type="button" className="btn" onClick={() => { setSheet(null); setPendingOrcadas(null); setList(true); }}>
               {Icon.list}
-              Ver como lista
+              {LIST_BUTTON_LABEL}
             </button>
             {/* With the 2D map off (#227) there is no toggle: only the note on why the 3D map is not showing. */}
             {showToggle && onToggleMode && (MAP_2D_ENABLED || !available3D) && (
@@ -775,11 +793,12 @@ export function MapView({
             )}
           </div>
           )}
-          <div className="zoom">
-            <button type="button" className="iconbtn" onClick={() => (is3D ? send3D({ type: 'zoom', factor: 1.6 }) : animateTo(zoomCenter(size, view, 1.6)))} aria-label="Acercar">{Icon.plus}</button>
-            <button type="button" className="iconbtn" onClick={() => (is3D ? send3D({ type: 'zoom', factor: 1 / 1.6 }) : animateTo(zoomCenter(size, view, 1 / 1.6)))} aria-label="Alejar">{Icon.minus}</button>
-            <button type="button" className="iconbtn" onClick={() => (is3D ? send3D({ type: 'home' }) : animateTo(HOME))} aria-label="Ver todo el continente">{Icon.reset}</button>
-          </div>
+          <ZoomControls
+            availability={is3D ? zoom3D : { canZoomIn: view.k < MAX_K, canZoomOut: view.k > MIN_K }}
+            mapRef={vpRef}
+            onZoom={(factor) => is3D ? send3D({ type: 'zoom', factor }) : animateTo(zoomCenter(size, view, factor))}
+            onReset={() => is3D ? send3D({ type: 'home' }) : animateTo(HOME)}
+          />
         </div>
         )}
         {phase === 'travel' && <OrcadasTravelBar arrival={arrival} onSkip={onSkipTravel} />}
@@ -789,14 +808,6 @@ export function MapView({
             explored={explored}
             onClose={() => setList(false)}
             onPick={(p) => { setList(false); openPoint(p); }}
-          />
-        )}
-        {picking && (
-          <ListView
-            explored={explored}
-            points={picking}
-            onClose={() => setPicking(null)}
-            onPick={(p) => { setPicking(null); openPoint(p); }}
           />
         )}
         {showCard && finished && after && (

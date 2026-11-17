@@ -1,0 +1,46 @@
+/* Interface components: the one definition of each (.agents/rules/project/40-componentes-ui.md).
+   Colors come from tokens.css. The sheet of a screen lays a component out (size, spacing, type);
+   it does not change its color, background, border or hover. test/styles.test.ts guards it. */
+
+/* ---------- Button ---------- */
+.btn{min-height:48px;padding:0 18px;border-radius:var(--chart-button-radius);border:var(--btn-border);background:var(--btn-bg);color:var(--btn-fg);font-family:'Fraunces',Georgia,serif;font-weight:500;font-size:18px;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn:hover:not(:disabled){background:var(--btn-hover-bg)}
+/* The one main action of a screen, last on the right (#177). */
+.btn.primary{background:var(--btn-primary-bg);color:var(--btn-primary-fg)}
+.btn.primary:hover:not(:disabled){background:var(--btn-primary-hover-bg)}
+/* Resume an unfinished expedition (#186): keep the expedition marker color distinct. */
+.btn.resume{background:var(--btn-resume-bg)}
+.btn.resume:hover:not(:disabled){background:var(--btn-resume-hover-bg)}
+.btn[disabled]{opacity:.55;cursor:not-allowed}
+.btn.ghost{background:transparent;border-width:1px}
+.btn.ghost:hover:not(:disabled){background:var(--btn-hover-bg)}
+/* Option of a question once answered: the right one, and the wrong one that was chosen. */
+.btn.right{background:color-mix(in srgb,var(--glacier) 45%,var(--chart-paper));border-color:var(--deep)}
+.btn.right::after{content:' ✓';font-weight:700}
+.btn.wrong{background:color-mix(in srgb,var(--oxide) 22%,var(--chart-paper));border-color:var(--oxide)}
+
+/* ---------- Round icon button ---------- */
+.iconbtn{width:48px;height:48px;border-radius:50%;border:var(--btn-border);background:var(--chart-paper);display:flex;align-items:center;justify-content:center;padding:0}
+.iconbtn svg{width:22px;height:22px}
+/* Keep the zoom controls in place when one direction reaches its limit (#237). */
+.iconbtn.zoom-step:disabled{visibility:hidden}
+
+/* ---------- Pill: a small button of a top bar ---------- */
+.pill{min-height:44px;padding:0 14px;border-radius:var(--chart-button-radius);border:var(--btn-border);background:var(--chart-paper);font-family:'Fraunces',Georgia,serif;font-weight:500;font-size:15px;display:inline-flex;align-items:center;gap:6px}
+.pill[aria-expanded="true"]{background:var(--chart-ink);color:var(--ice)}
+
+/* ---------- Chip: something offered to open, with a label (.vchipk) before its name (#157) ---------- */
+.vchip{display:inline-flex;align-items:center;gap:6px;max-width:100%;min-height:36px;padding:4px 12px 4px 4px;border-radius:18px;border:var(--btn-border);background:var(--chip-bg);font:inherit;font-size:13px;font-weight:700;color:var(--btn-fg);cursor:pointer;text-align:left}
+.vchipk{flex:none;padding:3px 8px;border-radius:14px;background:var(--ocre);color:var(--ink);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+.vchip.read{border-color:var(--pencil);background:transparent;color:var(--pencil);font-weight:400}
+.vchip.read .vchipk{background:color-mix(in srgb,var(--pencil) 30%,var(--paper))}
+.vchip.ask{padding:4px 12px;border-style:dashed;background:transparent;color:var(--deep)}
+.vchip:hover{background:var(--btn-hover-bg)}
+
+/* ---------- Note: an entry of a notebook, solid once seen and dashed if missed ---------- */
+.vnote{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:4px 10px;border-radius:2px;border:1.5px solid var(--chart-ink);background:var(--chart-wash);font-size:13px;font-weight:700;color:var(--chart-ink)}
+.vnote svg{width:18px;height:18px;color:var(--deep)}
+/* The pin of a milestone, gold as on the map (#233). */
+.vnote .vpinicon{flex:none;color:var(--ocre)}
+.vnote.missed{border-style:dashed;border-color:var(--chart-muted);background:transparent;color:var(--chart-muted);font-weight:400}
+.vnote.missed svg{color:var(--chart-muted);opacity:.6}

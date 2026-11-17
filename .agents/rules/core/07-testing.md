@@ -7,7 +7,7 @@ description: Pruebas automatizadas.
 
 > **Por qué:** Una verificación concreta es lo que permite al agente iterar solo.
 
-1. Escribe pruebas para todo código nuevo con lógica (proyecciones, cálculos de cámara, clustering, persistencia).
+1. Escribe pruebas para todo código nuevo con lógica (proyecciones, cálculos de cámara, separación de marcadores, persistencia).
 2. Para un bug, escribe primero la prueba que falla y luego el arreglo.
 3. Corre solo las pruebas del módulo tocado durante el desarrollo; corre la suite completa antes de entregar.
 4. Mantén pruebas deterministas: sin red real, sin reloj real, independientes del orden de ejecución.

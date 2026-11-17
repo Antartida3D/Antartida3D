@@ -16,6 +16,7 @@ import {
   generateSeaLifeInstances,
   groundTarget,
   homeDistance3D,
+  cameraZoomAvailability,
   voyageMaxDistance3D,
   loadOceanDepth,
   poseFromView,
@@ -32,6 +33,10 @@ import {
   screenPx,
   ICE_MIN_DISTANCE,
   irizarStateAtTime,
+  fanOffsets,
+  guideLine,
+  markerGap,
+  markerLift,
   SEA_POINTS,
   type Geometry,
   type MapPoint,
@@ -41,10 +46,12 @@ import {
   type SeaMarker,
   type Size,
   type View,
+  type ZoomAvailability,
   map3dLoadingStore,
 } from '@antartida/core';
 import { MarkerButton } from '../map/Markers.tsx';
 import { useLoadingStore, useReducedMotion } from '../hooks.ts';
+import { CanvasGuard } from '../CanvasGuard.tsx';
 import type { Layer3DProps, Phase } from '../map/MapView.tsx';
 import { ShaderWarmup } from './ShaderWarmup.tsx';
 import { Ocean } from './Ocean.tsx';
@@ -77,6 +84,7 @@ function SceneContent({
   geo,
   command,
   onCameraRest,
+  onZoomAvailabilityChange,
   markers,
   overlayRef,
   enablePost,
@@ -96,6 +104,7 @@ function SceneContent({
   geo: Geometry;
   command: Layer3DProps['command'];
   onCameraRest: (view: View) => void;
+  onZoomAvailabilityChange: Layer3DProps['onZoomAvailabilityChange'];
   markers: Marker[];
   overlayRef: RefObject<HTMLDivElement | null>;
   enablePost: boolean;
@@ -171,6 +180,7 @@ function SceneContent({
         geo={geo}
         command={command}
         onCameraRest={onCameraRest}
+        onZoomAvailabilityChange={onZoomAvailabilityChange}
         voyaging={Boolean(voyage)}
       />
       <ProjectMarkers
@@ -216,6 +226,7 @@ function ControlsBridge({
   geo,
   command,
   onCameraRest,
+  onZoomAvailabilityChange,
   voyaging,
 }: {
   phase: Phase;
@@ -225,6 +236,7 @@ function ControlsBridge({
   geo: Geometry;
   command: Layer3DProps['command'];
   onCameraRest: (view: View) => void;
+  onZoomAvailabilityChange: Layer3DProps['onZoomAvailabilityChange'];
   /** On a trip the target follows the vehicle, up in the air with the plane. */
   voyaging: boolean;
 }) {
@@ -234,8 +246,9 @@ function ControlsBridge({
   const gl = useThree((s) => s.gl);
   const initialized = useRef(false);
   const approach = useRef<{ from: CameraPose; to: CameraPose; startMs: number } | null>(null);
-  const live = useRef({ size, geo, onCameraRest });
-  live.current = { size, geo, onCameraRest };
+  const live = useRef({ size, geo, onCameraRest, onZoomAvailabilityChange });
+  live.current = { size, geo, onCameraRest, onZoomAvailabilityChange };
+  const lastZoomAvailability = useRef<ZoomAvailability | null>(null);
   // Boundary box enclosing continent and surrounding ocean navigation area
   const boundary = useMemo(
     () => new Box3(new Vector3(-PAN_LIMIT, -50, -PAN_LIMIT), new Vector3(PAN_LIMIT, 2500, PAN_LIMIT)),
@@ -295,7 +308,7 @@ function ControlsBridge({
     else approach.current = null;
   });
 
-  // Report where the camera settled, so clustering and the 2D view follow the orbit camera.
+  // Report where the camera settled, so the markers and the 2D view follow the orbit camera.
   useEffect(() => {
     const cc = controlsRef.current;
     if (!cc) return;
@@ -320,7 +333,7 @@ function ControlsBridge({
     };
   }, []);
 
-  // Buttons, keys and cluster clicks move the camera from where it is now; they never rebuild
+  // Buttons and keys move the camera from where it is now; they never rebuild
   // a pose from the 2D view, which used to undo the user's orbit and zoom.
   useEffect(() => {
     const cc = controlsRef.current;
@@ -329,7 +342,7 @@ function ControlsBridge({
     const { cmd } = command;
     const aspect = size.vw / size.vh;
     const clampDistance = (d: number) => Math.min(cc.maxDistance, Math.max(cc.minDistance, d));
-    // Where the camera ends up; reported right away so clusters split as soon as you zoom,
+    // Where the camera ends up; reported right away so markers separate as soon as you zoom,
     // without waiting for the 'rest' event (instant moves under reduced motion may not fire it).
     let endDistance = cc.distance;
     if (cmd.type === 'zoom') {
@@ -408,6 +421,14 @@ function ControlsBridge({
     if (heading < cc.minDistance - 0.01) void cc.dollyTo(cc.minDistance, !reduced);
     // A narrower window has a farther overview: come back in when the window gets wider.
     if (heading > cc.maxDistance + 0.01) void cc.dollyTo(cc.maxDistance, !reduced);
+    // The destination determines whether more zoom is available. Waiting for the rendered
+    // distance would leave the button visible throughout the tail of the damped animation.
+    const zoom = cameraZoomAvailability(cc.getSpherical(sphere.current, true).radius, cc.minDistance, cc.maxDistance);
+    const previous = lastZoomAvailability.current;
+    if (!previous || zoom.canZoomIn !== previous.canZoomIn || zoom.canZoomOut !== previous.canZoomOut) {
+      lastZoomAvailability.current = zoom;
+      live.current.onZoomAvailabilityChange(zoom);
+    }
     const near = cc.distance < NEAR_FROM ? NEAR_CLOSE : NEAR;
     if (camera.near !== near) {
       camera.near = near;
@@ -458,10 +479,20 @@ function ProjectMarkers({
     // WebGLRenderer.render() updates it later, so project() here would lag behind the rendered frame.
     camera.updateMatrixWorld();
 
-    // 1. Position expedition & fossil markers
+    // 1. Position expedition markers. Those that crowd each other on screen fan out around their
+    // places, each with a line back to its own (#238): the spread is worked out here, from where the
+    // camera really puts them, since the tilt and the turn change how close they look. Sea markers
+    // stay out of it, and go behind: a moving ship must not push the points around.
+    const gap = markerGap(size.width);
+    // A marker just out of the screen is hidden but still takes its room, up to a gap past the edge:
+    // if it stopped counting the moment it left, its neighbours would jump back (#253).
+    const roomX = 1.1 + (2 * gap) / size.width;
+    const roomY = 1.1 + (2 * gap) / size.height;
+    const placed: { btn: HTMLElement; guide: HTMLElement | null; left: number; top: number; visible: boolean }[] = [];
     for (const m of markers) {
       const btn = el.querySelector<HTMLElement>(`[data-key="${m.key}"]`);
       if (!btn) continue;
+      const guide = el.querySelector<HTMLElement>(`[data-guide="${m.key}"]`);
 
       const elevM = heightAt(m.x, m.y);
       const groundH = worldHeight(elevM);
@@ -472,14 +503,26 @@ function ProjectMarkers({
       const visible = p.z < 1.0 && p.x >= -1.1 && p.x <= 1.1 && p.y >= -1.1 && p.y <= 1.1;
       if (!visible) {
         btn.style.display = 'none';
-        continue;
+        if (guide) guide.style.display = 'none';
       }
-
-      btn.style.display = '';
-      const sx = ((p.x + 1) * size.width) / 2;
-      const sy = ((-p.y + 1) * size.height) / 2;
-      btn.style.transform = `translate3d(${sx.toFixed(1)}px, ${sy.toFixed(1)}px, 0px) translate(-50%, -50%)`;
+      if (p.z >= 1.0 || Math.abs(p.x) > roomX || Math.abs(p.y) > roomY) continue;
+      placed.push({ btn, guide, left: ((p.x + 1) * size.width) / 2, top: ((-p.y + 1) * size.height) / 2, visible });
     }
+    const offsets = fanOffsets(placed, gap);
+    placed.forEach(({ btn, guide, left, top, visible }, i) => {
+      if (!visible) return;
+      const { dx, dy } = offsets[i];
+      const lift = markerLift(dx, dy);
+      btn.style.display = '';
+      btn.style.transform = `translate3d(${(left + dx).toFixed(1)}px, ${(top + dy).toFixed(1)}px, 0px) translate(-50%, -50%)`;
+      btn.style.setProperty('--lift', `${lift.toFixed(1)}px`);
+      if (!guide) return;
+      // From the head of the marker down to its place.
+      const { length, angle } = guideLine(dx, dy, lift);
+      guide.style.display = '';
+      guide.style.height = `${length.toFixed(1)}px`;
+      guide.style.transform = `translate3d(${(left + dx).toFixed(1)}px, ${(top + dy - lift).toFixed(1)}px, 0px) rotate(${angle.toFixed(3)}rad)`;
+    });
 
     // 2. Position sea markers
     const uTime = timeUniform.value;
@@ -569,6 +612,7 @@ export function Map3DLayer({
   onPick,
   command,
   onCameraRest,
+  onZoomAvailabilityChange,
   voyage,
   voyagePicker,
   claims,
@@ -607,73 +651,76 @@ export function Map3DLayer({
 
   return (
     <>
-      <Canvas
-        style={{
-          position: 'absolute',
-          inset: 0,
-          zIndex: 0,
-          background: 'var(--paper, #EAE0D0)',
-        }}
-        frameloop="demand"
-        dpr={dpr}
-        gl={{
-          antialias: true,
-          powerPreference: 'high-performance',
-          alpha: true,
-          preserveDrawingBuffer: true,
-        }}
-        camera={{
-          fov: 40,
-          near: NEAR,
-          far: 20000,
-          position: [homeStart.pos.x, homeStart.pos.y, homeStart.pos.z],
-        }}
-        aria-hidden="true"
-      >
-        <PerformanceMonitor
-          bounds={() => performanceBounds(lowQuality)}
-          onIncline={() => {
-            setLowQuality(false);
-            if (!enablePost) setEnablePost(true);
-            else if (dpr < 1.5) setDpr(1.5);
+      <CanvasGuard onFail={() => map3dLoadingStore.setError('El navegador no pudo dibujar el relieve 3D.')}>
+        <Canvas
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 0,
+            background: 'var(--paper, #EAE0D0)',
           }}
-          onDecline={() => {
-            setLowQuality(true);
-            if (dpr > 1) setDpr(1);
-            else if (enablePost) setEnablePost(false);
+          frameloop="demand"
+          dpr={dpr}
+          gl={{
+            antialias: true,
+            powerPreference: 'high-performance',
+            alpha: true,
+            preserveDrawingBuffer: true,
           }}
-          onFallback={() => {
-            setLowQuality(true);
-            setDpr(1);
-            setEnablePost(false);
+          camera={{
+            fov: 40,
+            near: NEAR,
+            far: 20000,
+            position: [homeStart.pos.x, homeStart.pos.y, homeStart.pos.z],
           }}
-        />
-        <ShaderWarmup
-          ready={shadersReady}
-          onCompiled={() => map3dLoadingStore.markStepDone('shaders')}
-          onError={(msg) => map3dLoadingStore.setError(msg)}
-        />
-        <SceneContent
-          wide={size.vw > 820}
-          lowQuality={lowQuality}
-          phase={phase}
-          arrival={arrival}
-          diveTarget={diveTarget}
-          reduced={reduced}
-          size={size}
-          geo={geo}
-          command={command}
-          onCameraRest={onCameraRest}
-          markers={markers}
-          overlayRef={overlayRef}
-          enablePost={enablePost}
-          voyage={voyage}
-          voyagePicker={voyagePicker}
-          seaMarkers={seaMarkers}
-          claims={claims}
-          onClaimsStatus={onClaimsStatus}
-        />
-      </Canvas>
+          aria-hidden="true"
+        >
+          <PerformanceMonitor
+            bounds={() => performanceBounds(lowQuality)}
+            onIncline={() => {
+              setLowQuality(false);
+              if (!enablePost) setEnablePost(true);
+              else if (dpr < 1.5) setDpr(1.5);
+            }}
+            onDecline={() => {
+              setLowQuality(true);
+              if (dpr > 1) setDpr(1);
+              else if (enablePost) setEnablePost(false);
+            }}
+            onFallback={() => {
+              setLowQuality(true);
+              setDpr(1);
+              setEnablePost(false);
+            }}
+          />
+          <ShaderWarmup
+            ready={shadersReady}
+            onCompiled={() => map3dLoadingStore.markStepDone('shaders')}
+            onError={(msg) => map3dLoadingStore.setError(msg)}
+          />
+          <SceneContent
+            wide={size.vw > 820}
+            lowQuality={lowQuality}
+            phase={phase}
+            arrival={arrival}
+            diveTarget={diveTarget}
+            reduced={reduced}
+            size={size}
+            geo={geo}
+            command={command}
+            onCameraRest={onCameraRest}
+            onZoomAvailabilityChange={onZoomAvailabilityChange}
+            markers={markers}
+            overlayRef={overlayRef}
+            enablePost={enablePost}
+            voyage={voyage}
+            voyagePicker={voyagePicker}
+            seaMarkers={seaMarkers}
+            claims={claims}
+            onClaimsStatus={onClaimsStatus}
+          />
+        </Canvas>
+      </CanvasGuard>
       <div
         className={'ov' + (phase === 'dive' || phase === 'approach' || phase === 'travel' ? ' hide' : '')}
         ref={overlayRef}
@@ -719,8 +766,10 @@ export function Map3DLayer({
             >
               60° S
             </span>
+            {/* The stick of each expedition point, under every marker: no line covers another one's dot (#238). */}
+            {markers.map((m) => (m.kind === 'point' ? <span key={'g:' + m.key} data-guide={m.key} className="guide" aria-hidden="true" style={{ zIndex: 0 }} /> : null))}
             {markers.map((m) => {
-              const zIndex = m.kind === 'cluster' ? 3 : m.kind === 'point' && m.point.tier === 'A' ? 2 : 1;
+              const zIndex = m.kind === 'point' && m.point.tier === 'A' ? 2 : 1;
               return (
                 <div
                   key={m.key}

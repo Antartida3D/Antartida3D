@@ -1,11 +1,11 @@
 import { expect, test, type CDPSession, type Locator, type Page } from '@playwright/test';
 import { MARAMBIO_SPOTS } from '../../core/src/content/marambio.ts';
 import { ORCADAS_GUIDING_QUESTION } from '../../core/src/content/orcadas.ts';
-import { AVAILABLE_COUNT } from '../../core/src/content/points.ts';
+import { AVAILABLE_COUNT, LIST_BUTTON_LABEL } from '../../core/src/content/points.ts';
 import { EXPLORED_KEY } from '../../core/src/storage.ts';
 import { clearStorage } from '../storage.ts';
 import { mockOpenMeteo } from './weather-helpers.ts';
-import { MAP_2D_ENABLED, show3D } from './map-helpers.ts';
+import { show3D } from './map-helpers.ts';
 
 let consoleErrors: string[] = [];
 
@@ -33,7 +33,7 @@ async function touchDrag(cdp: CDPSession, from: Locator, dx: number, dy: number)
 }
 
 async function completeFossilsFromList(page: Page) {
-  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
   await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Fósiles/ }).click();
   await expect(page.getByRole('heading', { name: 'Las rocas recuerdan' })).toBeVisible();
   for (let i = 0; i < 13; i++) {
@@ -44,7 +44,7 @@ async function completeFossilsFromList(page: Page) {
 }
 
 async function completeMarambioFromList(page: Page) {
-  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
   await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Base Marambio/ }).click();
   await expect(page.locator('.mar').getByRole('heading', { level: 2, name: MARAMBIO_SPOTS[0].label })).toBeVisible();
   await page.waitForFunction(() => (window as unknown as { __marambioReady?: boolean }).__marambioReady === true);
@@ -55,23 +55,6 @@ async function completeMarambioFromList(page: Page) {
   await expect(primary).toHaveText('Terminar la visita');
   await primary.click();
   await expect(page.locator('.next-sheet')).toBeVisible();
-}
-
-async function openGroupPicker(page: Page) {
-  if (MAP_2D_ENABLED) await page.getByRole('group', { name: 'Modo de vista' }).getByRole('button', { name: 'Mapa 2D' }).click();
-  else await show3D(page);
-  const group = page.locator('.vp .mk.cluster[aria-label*="Fósiles"]');
-  for (let i = 0; i < 6; i++) {
-    await expect(group).toHaveCount(1);
-    const label = (await group.getAttribute('aria-label')) ?? '';
-    if (label.includes('Tocá para elegir uno.')) break;
-    await group.click();
-    await expect(group).not.toHaveAttribute('aria-label', label);
-  }
-  await group.click();
-  const picker = page.getByRole('dialog', { name: 'Puntos en este lugar' });
-  await expect(picker).toBeVisible();
-  return picker;
 }
 
 test.beforeEach(async ({ page }) => {
@@ -96,16 +79,54 @@ test('with nothing explored, shows Siguiente: Desde Ushuaia and marks its marker
   const marker = page.locator('.vp .mk.next');
   await expect(marker).toHaveCount(1);
   await expect(marker).toHaveAttribute('aria-label', /Desde Ushuaia.*Expedición sugerida para seguir\. Empezar\./);
-  await expect(marker.locator('.mnext')).toHaveText('Siguiente');
+  // No «Siguiente» tag over it (it crowded the fan): the halo and its name say it.
+  await expect(marker.locator('.mnext')).toHaveCount(0);
+  await expect(marker.locator('.dot')).toHaveCSS('box-shadow', /rgb/);
 });
 
-test('with campana explored, suggests Base Marambio and announces it on its cluster', async ({ page }) => {
+test('the exploration log drops down the six expeditions with their state and opens the one chosen (#235)', async ({ page }) => {
+  await seedExplored(page, ['campana']);
+  const log = page.getByRole('button', { name: /Registro de exploración/ });
+  await expect(log).toHaveAttribute('aria-expanded', 'false');
+  // Narrower than 820 px (a phone held upright) it stays a small «1/6» pill (#249).
+  if (page.viewportSize()!.width < 820) await expect(page.locator('.reg .unit')).toBeHidden();
+
+  await log.click();
+  await expect(log).toHaveAttribute('aria-expanded', 'true');
+  const items = page.getByRole('list', { name: 'Expediciones' }).getByRole('button');
+  await expect(items).toHaveCount(AVAILABLE_COUNT);
+  // Explored: a tick instead of its number and its title struck through, said in its name.
+  await expect(items.nth(0)).toHaveAccessibleName('Desde Ushuaia, explorada');
+  await expect(items.nth(0).locator('.num svg')).toBeVisible();
+  await expect(items.nth(0).locator('strong')).toHaveCSS('text-decoration-line', 'line-through');
+  // The suggested next one keeps its tag; the rest show only number and title.
+  await expect(items.nth(1)).toHaveAccessibleName('Base Marambio, siguiente sugerida');
+  await expect(items.nth(1)).toContainText('Siguiente sugerida');
+  await expect(items.nth(1).locator('.num')).toHaveText('2');
+  await expect(items.nth(1).locator('strong')).toHaveCSS('text-decoration-line', 'none');
+  await expect(items.nth(2)).toHaveAccessibleName('Fósiles');
+  await expect(items.nth(2)).not.toContainText('Empezar expedición');
+  // Only expeditions: no point of interest.
+  await expect(page.locator('.reg-menu')).not.toContainText('Volcán');
+
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.reg-menu')).toHaveCount(0);
+  await expect(log).toBeFocused();
+
+  await log.click();
+  await items.filter({ hasText: 'Fósiles' }).click();
+  await expect(page.getByRole('heading', { name: 'Las rocas recuerdan' })).toBeVisible();
+});
+
+test('with campana explored, suggests Base Marambio and tags its own marker', async ({ page }) => {
   await seedExplored(page, ['campana']);
   await expect(page.locator('.btn.next-btn')).toHaveText('Siguiente: Base Marambio');
-  const cluster = page.locator('.vp .mk.has-next');
-  await expect(cluster).toHaveCount(1);
-  await expect(cluster).toHaveAttribute('aria-label', /Incluye la siguiente sugerida: Base Marambio/);
-  await expect(cluster.locator('.mnext')).toHaveText('Siguiente');
+  const marker = page.locator('.vp .mk.next');
+  await expect(marker).toHaveCount(1);
+  await expect(marker).toHaveAttribute('aria-label', /^Base Marambio, .*Expedición sugerida para seguir\. Empezar\.$/);
+  // No «Siguiente» tag over it (it crowded the fan): the halo and its name say it.
+  await expect(marker.locator('.mnext')).toHaveCount(0);
+  await expect(marker.locator('.dot')).toHaveCSS('box-shadow', /rgb/);
 });
 
 test('in 3D relief, the suggested marker carries the next class', async ({ page }) => {
@@ -113,7 +134,9 @@ test('in 3D relief, the suggested marker carries the next class', async ({ page 
   await expect(page.locator('.ld')).toHaveCount(0, { timeout: 10_000 });
   const marker = page.locator('.vp .mk.next');
   await expect(marker).toHaveCount(1);
-  await expect(marker.locator('.mnext')).toHaveText('Siguiente');
+  // No «Siguiente» tag over it (it crowded the fan): the halo and its name say it.
+  await expect(marker.locator('.mnext')).toHaveCount(0);
+  await expect(marker.locator('.dot')).toHaveCSS('box-shadow', /rgb/);
 });
 
 test('finishing Fósiles opens the next card with log count and starts the Poncho voyage', async ({ page }) => {
@@ -239,7 +262,7 @@ test('browser back closes the next card and keeps the app on the map', async ({ 
   await page.goBack();
   await expect(card).toHaveCount(0);
   expect(page.url()).not.toBe('about:blank');
-  await expect(page.getByRole('button', { name: 'Ver como lista' })).toBeVisible();
+  await expect(page.getByRole('button', { name: LIST_BUTTON_LABEL })).toBeVisible();
 });
 
 test('dragging the map moves it while the next card stays open', async ({ page }) => {
@@ -248,21 +271,57 @@ test('dragging the map moves it while the next card stays open', async ({ page }
   await expect(card).toBeVisible();
   const vp = page.locator('.vp');
   const marker = page.locator('.vp .mk.next, .vp .mk.has-next').first();
-  const before = (await marker.boundingBox())!;
+  await expect(page.locator('section.ld')).toHaveCount(0);
+  await expect(vp).toBeVisible();
+  await expect(marker).toBeVisible();
+  // Framing waits for ten stable frames before it may pan again. Twelve consecutive samples
+  // of the visible marker and settled camera avoid measuring the temporary pose before that pan.
+  await page.waitForFunction(() => {
+    const el = document.querySelector<HTMLElement>('.vp .mk.next, .vp .mk.has-next');
+    if (!el) return false;
+    const rect = el.getBoundingClientRect();
+    const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
+    const cc = document.querySelector('.stage.m3d') ? (window as any).__cameraControls : null;
+    (window as any).__invalidate?.();
+    const cameraStill = !cc || (!cc.active &&
+      cc.getPosition(undefined, false).distanceTo(cc.getPosition(undefined, true)) < 1e-4 &&
+      cc.getTarget(undefined, false).distanceTo(cc.getTarget(undefined, true)) < 1e-4);
+    const state = (window as any).__nextCardDragReady ??= { x: NaN, y: NaN, frames: 0 };
+    const stable = rect.width > 0 && rect.height > 0 && hit?.closest('.mk.next, .mk.has-next') === el &&
+      cameraStill && Math.abs(rect.x - state.x) + Math.abs(rect.y - state.y) < 0.5;
+    state.frames = stable ? state.frames + 1 : 0;
+    state.x = rect.x;
+    state.y = rect.y;
+    if (state.frames < 12) return false;
+    delete (window as any).__nextCardDragReady;
+    return true;
+  }, null, { polling: 'raf', timeout: 15_000 });
+  const before = await marker.boundingBox();
+  expect(before).not.toBeNull();
 
-  const vpBox = (await vp.boundingBox())!;
-  const startX = vpBox.x + vpBox.width * 0.35;
-  const startY = vpBox.y + vpBox.height * 0.45;
-  await page.mouse.move(startX, startY);
+  const start = await vp.evaluate((el) => {
+    const rect = el.getBoundingClientRect();
+    for (const y of [0.2, 0.3, 0.4, 0.5, 0.6]) for (const x of [0.15, 0.3, 0.45, 0.6]) {
+      const point = { x: rect.x + rect.width * x, y: rect.y + rect.height * y };
+      const free = Array.from({ length: 7 }, (_, step) => {
+        const hit = document.elementFromPoint(point.x + 100 * step / 6, point.y + 50 * step / 6);
+        return hit && el.contains(hit) && !hit.closest('button') && (hit.tagName === 'CANVAS' || hit.closest('.layer'));
+      }).every(Boolean);
+      if (free) return point;
+    }
+    return null;
+  });
+  expect(start, 'the complete drag path is on the map, clear of cards and markers').not.toBeNull();
+  await page.mouse.move(start!.x, start!.y);
   await page.mouse.down();
-  await page.mouse.move(startX + 100, startY + 50, { steps: 6 });
+  await page.mouse.move(start!.x + 100, start!.y + 50, { steps: 6 });
   await page.mouse.up();
 
   // The 3D camera eases into place after the drag: wait for the marker to follow.
   await expect
     .poll(async () => {
-      const after = (await marker.boundingBox())!;
-      return Math.hypot(after.x - before.x, after.y - before.y);
+      const after = await marker.boundingBox();
+      return after ? Math.hypot(after.x - before!.x, after.y - before!.y) : 0;
     })
     .toBeGreaterThan(30);
   await expect(card).toBeVisible();
@@ -270,7 +329,7 @@ test('dragging the map moves it while the next card stays open', async ({ page }
 
 test('list view shows expeditions ordered 1 to 6 and labels the next suggested one', async ({ page }) => {
   await seedExplored(page, ['campana']);
-  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
   const dialog = page.getByRole('dialog', { name: 'Todos los puntos' });
   const section = dialog.locator('section', { has: page.locator('#g-a') });
   await expect(section.locator('h3')).toContainText('Expediciones · orden sugerido');
@@ -285,19 +344,4 @@ test('list view shows expeditions ordered 1 to 6 and labels the next suggested o
   await expect(items.nth(0).locator('.go')).toHaveText('Explorado · volver a entrar');
   await expect(items.nth(1).locator('.go.next')).toHaveText('Siguiente sugerida');
   await expect(items.nth(2).locator('.go')).toHaveText('Empezar expedición');
-});
-
-test('group picker closes when tapping the map around it and when dragged down on narrow phones', async ({ page }) => {
-  const picker = await openGroupPicker(page);
-  await page.locator('.scrim.clear').click({ position: { x: 20, y: 20 } });
-  await expect(picker).toHaveCount(0);
-
-  if (page.viewportSize()!.width < 820) {
-    const reopened = await openGroupPicker(page);
-    const handle = reopened.locator('.sheet-handle');
-    await expect(handle).toBeVisible();
-    const cdp = await page.context().newCDPSession(page);
-    await touchDrag(cdp, handle, 0, 200);
-    await expect(reopened).toHaveCount(0);
-  }
 });

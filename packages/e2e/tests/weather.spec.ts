@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { clearStorage } from '../storage.ts';
 import { mockOpenMeteo } from './weather-helpers.ts';
+import { LIST_BUTTON_LABEL } from '../../core/src/content/points.ts';
 
 let consoleErrors: string[] = [];
 let ignoreOpenMeteoAbortLog = false;
@@ -27,7 +28,7 @@ test.afterEach(() => {
 });
 
 async function openPointFromList(page: Page, buttonName: RegExp, sheetName: string) {
-  await page.getByRole('button', { name: 'Ver como lista', exact: true }).click();
+  await page.getByRole('button', { name: LIST_BUTTON_LABEL, exact: true }).click();
   await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: buttonName }).click();
   const sheet = page.getByRole('dialog', { name: sheetName });
   await expect(sheet).toBeVisible();
@@ -39,7 +40,7 @@ test('no requests to open-meteo before opening a point sheet', async ({ page }) 
   await page.goto('/');
   await clearStorage(page);
   await page.reload();
-  await expect(page.getByRole('button', { name: 'Ver como lista', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: LIST_BUTTON_LABEL, exact: true })).toBeVisible();
   expect(mock.getRequestCount()).toBe(0);
 });
 

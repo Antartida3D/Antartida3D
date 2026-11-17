@@ -167,6 +167,8 @@ Cada PR declara su impacto documental y registra las decisiones nuevas o reempla
 
 En cumplimiento con las bases de la hackatón, se declara el uso de herramientas de inteligencia artificial en el desarrollo de los prototipos:
 
+- **Botones de zoom en sus límites (#237):**
+  > Implementación y pruebas con asistencia de Codex, a partir del pedido del usuario de ocultar «+» al máximo acercamiento y «−» al máximo alejamiento. Los botones conservan su espacio, reaparecen al salir del límite y trasladan el foco si corresponde. El comportamiento cubre el relieve 3D y el respaldo 2D; se documenta en [DEC-237](docs/decisiones/DEC-237-botones-zoom.md). No se agregaron datos ni fuentes.
 - **Sistema visual cartográfico y migración local de la UI:**
   > Orquestación y revisión de root; Codex Luna High implementó el lenguaje visual, Codex Luna XHigh realizó la interacción y las pruebas, y Codex Luna Medium mantiene la documentación y la evidencia. La dirección parte de las referencias aportadas por el usuario: composición cartográfica ocre de la primera y soporte claro de la segunda, refinada hasta el Pergamino claro aprobado en la ficha «Océano». El sistema se documentó en [DESIGN.md](DESIGN.md), con el formato de Google Labs solicitado. Se reutilizan las costas de Natural Earth, las fuentes tipográficas y la textura de papel del proyecto; la rosa y la retícula son decorativas. La migración se entrega en la rama `202-ui-pergamino-claro` (issue #202), con la ficha aprobada versionada. La E2E global terminó con 366 casos: 322 pasaron, 44 se omitieron y no hubo fallos. La evidencia visual revisada sigue siendo acotada a los estados documentados.
 - **Pulido general: bienvenida, «Desde Ushuaia» y toques en el celular (#190):**
@@ -250,3 +252,13 @@ En cumplimiento con las bases de la hackatón, se declara el uso de herramientas
   > Lectura y verificación de fuentes, plan, implementación, pruebas y revisión con capturas con Claude Code (modelo Claude Opus 5.5), a partir de la investigación y el encargo preparados por quien lleva el issue. Cada frase y cada flecha de la red cita su fuente con el lugar del estudio; la escena, los tamaños, las profundidades y los tiempos son ilustrativos y la interfaz lo dice. No se agregaron porcentajes de dieta ni simulaciones de población.
 - **Mapa 2D deshabilitado (#227):**
   > Relevamiento de los archivos afectados, redacción del issue, implementación, pruebas y documentación con Claude Code (modelo Claude Opus 5.5), a pedido de quien lleva el issue. No se agregaron datos ni fuentes.
+- **Componentes de interfaz: una sola definición, primario azul y sin líneas dobles (#234, #231, #232, #233):**
+  > Relevamiento de las hojas de estilo, redacción de los issues, implementación, pruebas, capturas y documentación con asistencia de IA, con revisión en pantalla de quien lleva los issues. No se agregaron datos ni fuentes.
+- **Pines que se estiraban al mover el mapa en el celular (#253):**
+  > Reproducción a partir de un video, diagnóstico, redacción del issue, arreglo, pruebas, capturas y documentación con asistencia de IA, a pedido de quien lleva el issue. No se agregaron datos ni fuentes.
+- **Aviso cuando el 3D falla, en vez de página en blanco (#242):**
+  > Reproducción del fallo, redacción del issue, implementación, prueba e2e, capturas y documentación con asistencia de IA, a pedido de quien lleva el issue. No se agregaron datos ni fuentes.
+- **Guía de primera visita de tres pasos (#256):**
+  > Diseño de la guía con Claude Design; plan, implementación, pruebas e2e, capturas y documentación con Claude Code (modelo Claude Sonnet 5.5), con revisión de quien lleva el issue. Los textos salen del diseño y se verificaron contra el comportamiento de la aplicación; el del tercer paso (el botón naranja) lo pidió quien lleva el issue y afirma solo lo que hacen `nextExpedition` y «Continuar». No se agregaron datos ni fuentes.
+- **Pantalla de carga con el mapa dibujándose (#258):**
+  > Diseño de la pantalla con Claude Design; plan, script del póster, implementación, pruebas, capturas y documentación con Claude Code (modelo Claude Sonnet 5.5), con revisión de quien lleva el issue. El póster es una imagen de la propia aplicación, no un dato. El «Dato real» cita sin reescribir la primera oración de una ficha que ya tiene fuentes verificadas y nombra todas sus fuentes; no se agregaron datos ni fuentes nuevas.

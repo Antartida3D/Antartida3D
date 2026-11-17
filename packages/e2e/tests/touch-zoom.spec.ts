@@ -1,5 +1,6 @@
 import { expect, test, type CDPSession, type Page } from '@playwright/test';
 import { MAP_2D_ENABLED, NO_2D, show3D } from './map-helpers.ts';
+import { LIST_BUTTON_LABEL } from '../../core/src/content/points.ts';
 
 /**
  * One-finger zoom on a phone (#165): a double tap zooms in one step around the tapped point, and
@@ -157,10 +158,10 @@ for (const mode of ['Mapa 2D', 'Relieve 3D'] as const) {
     } else {
       await show3D(page);
     }
-    // A point marker free to tap, other than the trip from Ushuaia (it opens its own panel, not a sheet).
+    // A point of interest free to tap: it opens a sheet (an expedition opens its own panel, not a sheet).
     const freeMarker = () =>
       page.evaluate(() => {
-        for (const el of document.querySelectorAll('.vp .mk:not(.cluster)')) {
+        for (const el of document.querySelectorAll('.vp .mk.tc')) {
           if (/Ushuaia|Orcadas/.test(el.getAttribute('aria-label') ?? '')) continue;
           const r = el.getBoundingClientRect();
           const x = r.left + r.width / 2;
@@ -228,6 +229,6 @@ test('the map and what lies over it cannot be selected, and what is there to rea
       return style.userSelect || style.getPropertyValue('-webkit-user-select');
     }, selector);
   for (const selector of ['.vp', '.brand h1', '.hint', '.mk']) expect(await selectable(selector), selector).toBe('none');
-  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
   expect(await selectable('.listview .inner')).toBe('text');
 });

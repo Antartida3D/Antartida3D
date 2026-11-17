@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "fraunces",
+        "createdAt": "2026-11-16T22:51:36.494Z",
+        "reason": "project design system: DESIGN.md names Fraunces as the display face; rules moved verbatim from painted.css on main"
+      }
+    ]
+  }
+}

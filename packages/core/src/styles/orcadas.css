@@ -564,7 +564,7 @@
 .orc-panel-head {
   margin-bottom:12px;
 
-  border-bottom:3px double var(--chart-rule);
+  border-bottom:1px solid var(--chart-rule);
   padding-bottom:12px;}
 
 .orc-kicker {
@@ -1331,7 +1331,7 @@ details.orc-more > summary:focus-visible {
   position: static;
   padding: 7px 14px 9px;
   background: var(--chart-paper);
-  border-top:3px double var(--chart-rule);
+  border-top:1px solid var(--chart-rule);
   display: flex;
   gap: 8px;
   align-items: center;
@@ -1605,7 +1605,7 @@ details.orc-more > summary:focus-visible {
     justify-content: space-between;
     gap: 10px;
 
-  border-bottom:3px double var(--chart-rule);
+  border-bottom:1px solid var(--chart-rule);
   padding-bottom:12px;
   margin-bottom:12px;}
 

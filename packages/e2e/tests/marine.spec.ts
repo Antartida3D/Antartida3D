@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
-import { AVAILABLE_COUNT } from '../../core/src/content/points.ts';
+import { AVAILABLE_COUNT, LIST_BUTTON_LABEL } from '../../core/src/content/points.ts';
 import { MARINE_STOPS } from '../../core/src/content/marine.ts';
+import { clearStorage } from '../storage.ts';
 
 const log = (page: Page) => page.locator('.reg');
 const expedition = (page: Page) => page.getByRole('region', { name: 'Expedición Océano' });
@@ -20,10 +21,10 @@ test.afterEach(() => {
 
 async function openFromList(page: Page) {
   await page.goto('/');
-  await page.evaluate(() => localStorage.clear());
+  await clearStorage(page);
   await page.reload();
   await expect(log(page)).toContainText(`0/${AVAILABLE_COUNT}`);
-  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
   await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Océano/ }).click();
   await expect(expedition(page)).toBeVisible();
   await expect(page.getByRole('heading', { level: 2, name: MARINE_STOPS[0].title })).toBeVisible();

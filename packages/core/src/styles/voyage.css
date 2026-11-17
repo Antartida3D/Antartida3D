@@ -11,11 +11,11 @@
 .sheet.voyage p{margin:8px 0}
 /* The actions stay in view at the bottom of the sheet however long its content is. */
 .vactions{position:sticky;bottom:-24px;margin:12px 0 -24px;padding:8px 0 24px;background:var(--chart-paper);
-  border-top:3px double var(--chart-rule);justify-content:flex-end}
+  border-top:1px solid var(--chart-rule);justify-content:flex-end}
 .vstep{display:block;font-size:12px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--chart-muted);
   font-family:'Fraunces', Georgia, serif;}
 .vpick{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
-.vopt{flex:1 1 104px;min-height:48px;padding:8px 10px;text-align:left;border:3px double var(--chart-ink);border-radius:var(--chart-button-radius);
+.vopt{flex:1 1 104px;min-height:48px;padding:8px 10px;text-align:left;border:var(--btn-border);border-radius:var(--chart-button-radius);
   background:var(--chart-wash);}
 .vopt small{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--chart-muted)}
 .vopt strong{display:block;font-size:17px;line-height:1.15;
@@ -48,12 +48,6 @@
 .vcount svg{width:18px;height:18px}
 /* The milestone just passed and its question: offered as chips, opened only if touched (#157). */
 .vsuggest{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 0}
-.vchip{display:inline-flex;align-items:center;gap:6px;max-width:100%;min-height:36px;padding:4px 12px 4px 4px;border-radius:18px;border:1.5px solid var(--ink);background:var(--ice);font:inherit;font-size:13px;font-weight:700;color:var(--ink);cursor:pointer;text-align:left}
-.vchipk{flex:none;padding:3px 8px;border-radius:14px;background:var(--ocre);color:var(--ink);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
-.vchip.read{border-color:var(--pencil);background:transparent;color:var(--pencil);font-weight:400}
-.vchip.read .vchipk{background:color-mix(in srgb,var(--pencil) 30%,var(--paper))}
-.vchip.ask{padding:4px 12px;border-style:dashed;background:transparent;color:var(--deep)}
-.vchip:hover,.vchip:focus-visible{border-color:var(--ocre)}
 .vask{width:100%;justify-content:flex-start}
 /* Touch target over the head of a pin passed: the pin is drawn under it, the ring shows on focus. */
 .vpin{width:44px;height:44px;padding:0;border:0;border-radius:50%;background:transparent;pointer-events:auto;cursor:pointer}
@@ -99,17 +93,10 @@
 .vquiz legend{padding:0;margin-bottom:6px;font-weight:700}
 .vquiz .btn{width:100%;min-height:48px;height:auto;padding:8px 14px;justify-content:flex-start;text-align:left;white-space:normal}
 .vquiz .btn:disabled{opacity:1;cursor:default}
-.vquiz .btn.right{background:color-mix(in srgb,var(--glacier) 45%,var(--chart-paper));border-color:var(--deep)}
-.vquiz .btn.right::after{content:' ✓';font-weight:700}
-.vquiz .btn.wrong{background:color-mix(in srgb,var(--oxide) 22%,var(--chart-paper));border-color:var(--oxide)}
 .vquiz .vsmall{margin:2px 0 0;min-height:1.2em}
 .vnotebook{margin:10px 0;padding:10px 12px;border:0;border-radius:0;}
 .vnotebook p{margin:0 0 8px}
 .vnotebook ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
-.vnote{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:4px 10px;border-radius:2px;border:1.5px solid var(--chart-ink);background:var(--chart-wash);font-size:13px;font-weight:700;color:var(--chart-ink)}
-.vnote svg{width:18px;height:18px;color:var(--deep)}
-.vnote.missed{border-style:dashed;border-color:var(--chart-muted);background:transparent;color:var(--chart-muted);font-weight:400}
-.vnote.missed svg{color:var(--chart-muted);opacity:.6}
 @media (prefers-reduced-motion:reduce){.vspot{animation:none}}
 /* Wide screens: every panel of the trip sits on the same corner, beside the zoom buttons, so the pointer does not cross the map. */
 @media (min-width:821px){

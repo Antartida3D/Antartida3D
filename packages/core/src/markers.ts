@@ -1,8 +1,8 @@
 import { PTS, TIER, type MapPoint } from './content/points.ts';
 import type { SeaPoint } from './content/sea.ts';
-import { centroid, clusterPoints, separationZoom } from './clustering.ts';
+import { fanOffsets, markerGap } from './fan.ts';
 import { labelSide, type LabelSide } from './labels.ts';
-import { MAX_K, focusWorld, geometry, toScreen, type Size, type View } from './viewport.ts';
+import { geometry, toScreen, type Size, type View } from './viewport.ts';
 
 /**
  * What a press on a marker does. Labels are closed: a finger has no hover, so its first press
@@ -28,6 +28,12 @@ interface MarkerBase {
 export interface PointMarker extends MarkerBase {
   kind: 'point';
   point: MapPoint;
+  /**
+   * `left` and `top` are where the marker is drawn. When markers crowd each other it is moved from its
+   * real place by (dx, dy) px, with a thin line back to it (#238); both are 0 when it stands alone.
+   */
+  dx: number;
+  dy: number;
   pulse: boolean;
   check: boolean;
   next: boolean;
@@ -40,24 +46,7 @@ export interface SeaMarker extends MarkerBase {
   label: { title: string; sub: string; side: LabelSide } | null;
 }
 
-export interface ClusterMarker extends MarkerBase {
-  kind: 'cluster';
-  count: number;
-  /** View that separates the cluster when tapped. */
-  target: View;
-  /** The points in it. */
-  points: readonly MapPoint[];
-  /**
-   * Zooming no longer separates it: the view is already at the closest zoom, or its points are so
-   * close (Base Marambio, Fósiles and Poncho, #7) that they stay together even there. Tapping it lets
-   * the visitor pick one of its points instead.
-   */
-  pick: boolean;
-  hasNext: boolean;
-  nextPoint: MapPoint | null;
-}
-
-export type Marker = PointMarker | SeaMarker | ClusterMarker;
+export type Marker = PointMarker | SeaMarker;
 
 export type ScreenProjector = (x: number, y: number) => { left: number; top: number; visible?: boolean };
 
@@ -70,54 +59,33 @@ export function buildMarkers(
   points: readonly MapPoint[] = PTS,
   toScreenFn?: ScreenProjector,
   /** Id of the suggested next expedition. */
-  next?: string
+  next?: string,
+  /** Id of the unfinished expedition «Continuar» offers: it gets the same halo as `next`. */
+  resume?: string
 ): Marker[] {
   const geo = geometry(size);
   const projector: ScreenProjector = toScreenFn || ((x, y) => toScreen(geo, view, x, y));
   const markers: Marker[] = [];
 
-  for (const group of clusterPoints(points, projector)) {
-    if (group.length > 1) {
-      const c = centroid(group);
-      const pos = projector(c.x, c.y);
-      if (pos.visible === false) continue;
-      const apart = separationZoom(group, geo.S);
-      const nk = Math.max(view.k * 1.8, apart);
-      // Zooming in all the way would not split it (Base Marambio, Fósiles and, on a phone, Poncho): pick instead.
-      const pick = view.k >= MAX_K || clusterPoints(group, (geo.S * MAX_K) / 1000).length === 1;
-      const nextPoint = next ? (group.find((g) => g.id === next) ?? null) : null;
-      const hasNext = nextPoint !== null;
-      markers.push({
-        kind: 'cluster',
-        key: 'c:' + group.map((g) => g.id).join(','),
-        left: pos.left,
-        top: pos.top,
-        x: c.x,
-        y: c.y,
-        count: group.length,
-        cls: 'mk cluster' + (group.some((g) => g.tier === 'A') ? ' has-a' : '') + (hasNext ? ' has-next' : ''),
-        aria: 'Grupo de ' + group.length + ' puntos: ' + group.map((g) => g.title).join(', ') +
-          (nextPoint ? '. Incluye la siguiente sugerida: ' + nextPoint.title : '') +
-          (pick ? '. Tocá para elegir uno.' : '. Tocá para acercar.'),
-        target: focusWorld(size, c.x, c.y, nk),
-        points: group,
-        pick,
-        hasNext,
-        nextPoint,
-      });
-      continue;
-    }
-    const p = group[0];
+  // Markers that crowd each other fan out (#238); a marker the projector hides takes no room.
+  const shown = points.flatMap((p) => {
     const pos = projector(p.x, p.y);
-    if (pos.visible === false) continue;
+    return pos.visible === false ? [] : [{ p, pos }];
+  });
+  const offsets = fanOffsets(shown.map((s) => s.pos), markerGap(size.vw));
+  shown.forEach(({ p, pos }, i) => {
+    const { dx, dy } = offsets[i];
     const isA = p.tier === 'A';
     const done = isA && explored.includes(p.id);
-    const isNext = next !== undefined && p.id === next;
+    const isResume = resume !== undefined && p.id === resume && !done;
+    const isNext = (next !== undefined && p.id === next) || isResume;
     markers.push({
       kind: 'point',
       key: p.id,
-      left: pos.left,
-      top: pos.top,
+      left: pos.left + dx,
+      top: pos.top + dy,
+      dx,
+      dy,
       x: p.x,
       y: p.y,
       point: p,
@@ -130,18 +98,20 @@ export function buildMarkers(
         (isA
           ? (done
               ? 'Expedición explorada. Volver a recorrerla.'
-              : isNext
+              : isResume
+                ? 'Expedición a medias. Continuar.'
+                : isNext
                 ? 'Expedición sugerida para seguir. Empezar.'
                 : 'Expedición disponible. Empezar.')
           : TIER[p.tier] + '. Ver ficha.'),
     });
-  }
+  });
 
   // Every marker carries its label; the interface shows one at a time (markerPress).
   for (const m of markers) {
     if (m.kind !== 'point') continue;
     const sub = m.point.tier === 'A'
-      ? (m.check ? 'Explorado · ' + m.point.place : m.next ? 'Siguiente · ' + m.point.place : m.point.place)
+      ? (m.check ? 'Explorado · ' + m.point.place : m.next ? (resume === m.key ? 'Continuar · ' : 'Siguiente · ') + m.point.place : m.point.place)
       : TIER[m.point.tier];
     const side = labelSide(m.left, m.point.title, sub, size.vw);
     m.label = { title: m.point.title, sub, side };

@@ -228,7 +228,7 @@ test('on a phone the trip picker grows when its handle is dragged up, shrinks ba
   await expect(page.getByRole('button', { name: LIST_BUTTON_LABEL })).toBeVisible();
 });
 
-test('closed legend is a round button beside «Actividades», and the suggestion sits above both (#248)', async ({ page, isMobile }) => {
+test('closed legend is a rounded square beside «Actividades», and the suggestion sits below both, as wide as both together (#248)', async ({ page, isMobile }) => {
   test.skip(!isMobile, 'on wide screens the legend starts open');
   const legend = page.locator('.legend');
   const list = page.getByRole('button', { name: LIST_BUTTON_LABEL });
@@ -241,8 +241,9 @@ test('closed legend is a round button beside «Actividades», and the suggestion
   const next = page.locator('.btn.next-btn');
   if (await next.count()) {
     const n = (await next.boundingBox())!;
-    expect(n.y).toBeLessThan(a.y);
-    expect(n.width).toBeGreaterThanOrEqual(b.width - 1);
+    expect(n.y).toBeGreaterThan(a.y + a.height - 1);
+    expect(Math.abs(n.x - b.x)).toBeLessThan(1);
+    expect(Math.abs(n.x + n.width - (a.x + a.width))).toBeLessThan(1);
     expect(n.height).toBeGreaterThanOrEqual(b.height - 1);
   }
 });

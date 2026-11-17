@@ -1,4 +1,5 @@
 export * from './content/points.ts';
+export * from './content/intro.ts';
 export * from './content/malvinas.ts';
 export * from './content/claims.ts';
 export * from './claims.ts';

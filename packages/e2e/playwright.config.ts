@@ -29,7 +29,7 @@ export default defineConfig({
   reporter: [['list']],
   use: {
     baseURL: `http://localhost:${port}`,
-    // The first-visit welcome (#115) already seen: tests start from the overview of the map.
+    // The first-visit intro letter (#256) already seen: tests start from the overview of the map.
     storageState: welcomeSeen(`http://localhost:${port}`),
     reducedMotion: 'reduce',
     trace: 'retain-on-failure',

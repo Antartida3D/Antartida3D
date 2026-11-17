@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import {
-  DOUBLE_TAP_ZOOM, DRAG_THRESHOLD, EXPEDITION_POINT, HOME, KEY_PAN, LIST_BUTTON_LABEL, MAP_2D_ENABLED, MAX_K, MIN_K, ONE_FINGER_IDLE, PONCHO_POINT, PONCHO_TRANSPORT, PTS, TRANSPORTS, VOYAGE_POINT, VOYAGE_POINTS, ZOOM_MS,
+  DOUBLE_TAP_ZOOM, DRAG_THRESHOLD, EXPEDITION_POINT, HOME, KEY_PAN, LIST_BUTTON_LABEL, MAP_2D_ENABLED, MAX_K, MIN_K, ONE_FINGER_IDLE, PONCHO_POINT, PONCHO_TRANSPORT, PTS, TRANSPORTS, VOYAGE_POINTS, ZOOM_MS,
   afterExpedition, buildMarkers, diveView, focusWorld, freeArea, needsFraming, markerPress, geometry, isWheelNotch, keyView, nextExpedition, oneFingerDown, oneFingerMove, oneFingerUp, panBy, resumeDetail, welcomeView, wheelFactor, zoomAround, zoomCenter,
   type ArrivalId, type MapPoint, type Marker, type OneFingerZoomState, type ResumePoint, type SeaPoint, type Size, type TransportId, type View, type ClaimsCoverage, type ZoomAvailability,
 } from '@antartida/core';
@@ -9,11 +9,13 @@ import { useVoyage, type VoyageBus } from '../voyage/useVoyage.ts';
 import { Icon } from '../ui.tsx';
 import { CompassRose } from '../Cartography.tsx';
 import { ExplorationLog } from './ExplorationLog.tsx';
+import { IntroLetter } from './IntroLetter.tsx';
 import { Legend } from './Legend.tsx';
 import { ClaimsControl, ClaimsDetails, type ClaimsSelection, type ClaimsStatus } from './ClaimsControl.tsx';
 import { ListView } from './ListView.tsx';
 import { NextCard } from './NextCard.tsx';
 import { PointSheet } from './PointSheet.tsx';
+import { StartHere } from './StartHere.tsx';
 import { KindChip } from '../orcadas/KindChip.tsx';
 import { OrcadasIntro } from '../orcadas/OrcadasIntro.tsx';
 import { ViewToggle } from './ViewToggle.tsx';
@@ -81,10 +83,10 @@ export interface MapViewProps {
   legend: boolean;
   /** Move focus to the expedition marker on mount (coming back from the expedition). */
   focusExpedition: boolean;
-  /** First visit (#115): come close to «Desde Ushuaia», show its label and say to start there. */
-  welcome?: boolean;
-  /** The welcome is on screen: it must not show again. */
-  onWelcomeShown?: () => void;
+  /** First visit (#256): the intro letter opens once the page settles. */
+  intro?: boolean;
+  /** The letter was closed (any way out): it must not show again. */
+  onIntroSeen?: () => void;
   mode?: ViewMode;
   showToggle?: boolean;
   /** False without WebGL: «Relieve 3D» explains how to turn it on (#123). */
@@ -160,8 +162,8 @@ export function MapView({
   onTravelIrizar,
   legend,
   focusExpedition,
-  welcome = false,
-  onWelcomeShown,
+  intro = false,
+  onIntroSeen,
   mode = '2d',
   resume = null,
   showToggle = false,
@@ -383,29 +385,37 @@ export function MapView({
     setTouched(true);
   };
 
-  // First visit (#115): once the page has loaded and stopped stuttering, the map comes close to
-  // «Desde Ushuaia», its label opens (one more touch starts the trip) and the hint says to start
-  // there. The move is not the user's, so it does not count as `touched`; anything the user does
-  // afterwards ends the welcome. Someone who already moved the map while it loaded gets no welcome.
+  // First visit (#256): once the page has loaded and stopped stuttering, the intro letter opens.
+  // «Empezar en…» then brings the map close to the suggested expedition and the «Empezá acá» card
+  // points at its pin. The move is not the user's, so it does not count as `touched`; anything the
+  // user does afterwards ends the card. With a trip or a transition under way the letter waits
+  // for the next visit (it is not marked as seen).
+  const [introOpen, setIntroOpen] = useState(false);
   const [welcoming, setWelcoming] = useState(false);
-  const settled = usePageSettled(welcome);
-  const welcomeMove = () => {
-    const next = welcomeView(live.current.size);
-    if (live.current.is3D) queue3D({ type: 'focus', view: next });
-    else glide(next);
+  const settled = usePageSettled(intro);
+  const welcomeMove = (point: Pick<MapPoint, 'x' | 'y'>) => {
+    const target = welcomeView(live.current.size, point);
+    if (live.current.is3D) queue3D({ type: 'focus', view: target });
+    else glide(target);
   };
   useEffect(() => {
-    if (!welcome || !settled) return;
-    if (touched || phase !== 'idle' || voyaging) return void onWelcomeShown?.();
-    welcomeMove();
-    setShown(VOYAGE_POINT.id);
+    if (intro && settled && phase === 'idle' && !voyaging) setIntroOpen(true);
+  }, [intro, settled]);
+  const closeIntro = () => {
+    setIntroOpen(false);
+    onIntroSeen?.();
+  };
+  const startFromIntro = () => {
+    closeIntro();
+    if (!next) return;
+    welcomeMove(next);
+    setShown(next.id);
     setWelcoming(true);
-    onWelcomeShown?.();
-  }, [welcome, settled]);
+  };
   // The map can still switch between 3D and 2D during the welcome: the starting view changes once
-  // reduced motion is read (useReducedMotion), and the user may switch it. Stay close to Ushuaia.
+  // reduced motion is read (useReducedMotion), and the user may switch it. Stay close to the target.
   useEffect(() => {
-    if (welcoming) welcomeMove();
+    if (welcoming && next) welcomeMove(next);
   }, [is3D]);
   useEffect(() => {
     if (touched || voyaging || phase !== 'idle') setWelcoming(false);
@@ -625,8 +635,8 @@ export function MapView({
   };
 
   const next = useMemo(() => nextExpedition(explored), [explored]);
-  // The welcome, «Continuar» and a trip already point somewhere: no suggestion then (S6).
-  const suggest = !welcome && !welcoming && !resume && !voyaging;
+  // The «Empezá acá» card, «Continuar» and a trip already point somewhere: no suggestion then (S6).
+  const suggest = !(intro && !settled) && !introOpen && !welcoming && !resume && !voyaging;
   const markers = useMemo(() => buildMarkers(size, view, explored, PTS, undefined, suggest ? next?.id : undefined), [size, view, explored, next, suggest]);
   markersRef.current = markers;
   const after = finished ? afterExpedition(finished.id, explored) : null;
@@ -696,13 +706,17 @@ export function MapView({
             <p>cuaderno de campo · desde Ushuaia</p>
           </div>
           <ExplorationLog explored={explored} onPick={openPoint} />
+          {!voyaging && phase === 'idle' && !sheet && !list && (
+            <button type="button" className="iconbtn help-btn" aria-label="Cómo se usa el mapa" onClick={() => { setWelcoming(false); setIntroOpen(true); }}>?</button>
+          )}
         </header>
 
-        {welcoming ? (
-          <div className="hint" role="status">Tocá <strong>Desde Ushuaia</strong> para empezar</div>
+        {welcoming && next ? (
+          <StartHere point={next} onDone={() => setWelcoming(false)} />
         ) : (
-          !touched && !voyaging && phase === 'idle' && <div className="hint">arrastrá para mover · pellizcá para acercar</div>
+          !touched && !voyaging && !(intro && !settled) && !introOpen && phase === 'idle' && <div className="hint">arrastrá para mover · pellizcá para acercar</div>
         )}
+        {introOpen && <IntroLetter target={next} onClose={closeIntro} onStart={startFromIntro} fallbackFocus={() => vpRef.current} />}
         {/* Always mounted, so a screen reader reads the card's text when it changes. */}
         <div className="next-live" role="status">
           {showCard && finished ? `${finished.line}. ${after?.next ? `Siguiente sugerida: ${after.next.title}.` : 'Exploraste las seis expediciones.'}` : ''}
@@ -714,12 +728,12 @@ export function MapView({
           <div className="leftcol">
             {/* «Siguiente» / «Continuar» go first: Leyenda and «Actividades» stay together, same size (#248). */}
             {(() => {
-              const resumePoint = resume && phase === 'idle' && !voyaging && !welcome && !welcoming
+              const resumePoint = resume && phase === 'idle' && !voyaging && !welcoming
                 ? PTS.find((p) => p.id === resume.id)
                 : null;
               const detail = resumePoint && resume ? resumeDetail(resumePoint.id, resume.step, resume.sub) : null;
-              // The welcome already points at Ushuaia; «Continuar» wins over the suggestion (S6).
-              const nextPoint = !resumePoint && next && phase === 'idle' && !voyaging && !welcome && !welcoming && !showCard ? next : null;
+              // The «Empezá acá» card already points somewhere; «Continuar» wins over the suggestion (S6).
+              const nextPoint = !resumePoint && next && phase === 'idle' && !voyaging && !welcoming && !showCard ? next : null;
               if (nextPoint) {
                 return (
                   <button type="button" className="btn resume next-btn" aria-label={`Siguiente: ${nextPoint.title}`} onClick={() => { setSheet(null); setPendingOrcadas(null); openPoint(nextPoint); }}>
@@ -748,6 +762,7 @@ export function MapView({
                   }}
                 >
                   Continuar: {resumePoint.title}{detail && <span className="rdetail">{` · ${detail}`}</span>}
+                  {Icon.next}
                 </button>
               ) : null;
             })()}

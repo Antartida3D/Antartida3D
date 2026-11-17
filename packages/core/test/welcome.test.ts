@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  SETTLE_FRAMES, SETTLE_MAX_MS, SETTLE_MIN_MS, VOYAGE_POINT, WELCOME_K, geometry, settleTracker, showsWelcome, toScreen, welcomeView,
+  SETTLE_FRAMES, SETTLE_MAX_MS, SETTLE_MIN_MS, VOYAGE_POINT, WELCOME_K, geometry, START_HERE_MARGIN, nextExpedition, settleTracker, startHerePlacement, toScreen, welcomeView,
 } from '../src/index.ts';
 
 // The e2e sizes (phone and desktop) and the compact and landscape phones of the Orcadas tests.
@@ -25,11 +25,43 @@ describe('first-visit welcome', () => {
     }
   });
 
-  it('shows only on the first visit, and not once the trip from Ushuaia is done', () => {
-    expect(showsWelcome(false, [])).toBe(true);
-    expect(showsWelcome(false, ['orcadas'])).toBe(true);
-    expect(showsWelcome(true, [])).toBe(false);
-    expect(showsWelcome(false, [VOYAGE_POINT.id])).toBe(false);
+  it('comes close to another destination too', () => {
+    const next = nextExpedition([VOYAGE_POINT.id])!;
+    for (const size of SIZES) {
+      const view = welcomeView(size, next);
+      const { left, top } = toScreen(geometry(size), view, next.x, next.y);
+      expect(left, `${size.vw}x${size.vh}`).toBeGreaterThan(0);
+      expect(left, `${size.vw}x${size.vh}`).toBeLessThan(size.vw);
+      expect(top, `${size.vw}x${size.vh}`).toBeGreaterThan(0);
+      expect(top, `${size.vw}x${size.vh}`).toBeLessThan(size.vh);
+    }
+  });
+});
+
+describe('the «Empezá acá» card', () => {
+  const view = { vw: 390, vh: 844 };
+  const card = { w: 300, h: 160 };
+
+  it('goes below a centred pin, with the arrow on it', () => {
+    const p = startHerePlacement({ left: 195, top: 300 }, card, view);
+    expect(p.visible).toBe(true);
+    expect(p.left).toBe(45);
+    expect(p.top).toBeGreaterThan(300);
+    expect(p.arrowX).toBe(150);
+  });
+
+  it('stays inside the margin near the edges and the arrow follows the pin', () => {
+    const l = startHerePlacement({ left: 20, top: 300 }, card, view);
+    expect(l.left).toBe(START_HERE_MARGIN);
+    expect(l.arrowX).toBe(START_HERE_MARGIN);
+    const r = startHerePlacement({ left: 350, top: 300 }, card, view);
+    expect(r.left).toBe(view.vw - card.w - START_HERE_MARGIN);
+    expect(r.left + r.arrowX).toBeCloseTo(350, 0);
+  });
+
+  it('hides when the pin is off the screen', () => {
+    expect(startHerePlacement({ left: -10, top: 300 }, card, view).visible).toBe(false);
+    expect(startHerePlacement({ left: 200, top: 900 }, card, view).visible).toBe(false);
   });
 });
 

@@ -28,7 +28,6 @@ export function MarkerButton({ m, style, shown, onPick }: {
         {m.kind === 'point' && m.check && Icon.check}
         {m.kind === 'sea' && Icon.sea}
       </span>
-      {m.kind === 'point' && m.next && <span className="mnext" aria-hidden="true">Siguiente</span>}
       {m.kind === 'point' && m.label && (
         <span className="mlabel"><strong>{m.label.title}</strong><span>{m.label.sub}</span></span>
       )}

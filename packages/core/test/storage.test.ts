@@ -5,9 +5,9 @@ import {
   saveExplored,
   loadViewMode,
   saveViewMode,
-  loadWelcomeSeen,
-  saveWelcomeSeen,
-  WELCOME_KEY,
+  loadIntroSeen,
+  saveIntroSeen,
+  INTRO_KEY,
   LAST_EXPEDITION_KEY,
   loadLastExpedition,
   saveLastExpedition,
@@ -59,14 +59,14 @@ describe('storage', () => {
     expect(loadViewMode()).toBe('2d');
   });
 
-  it('remembers that the welcome was shown', () => {
-    expect(loadWelcomeSeen()).toBe(false);
-    saveWelcomeSeen();
-    expect(loadWelcomeSeen()).toBe(true);
-    expect(mem.get(WELCOME_KEY)).toBe('1');
+  it('remembers that the intro was shown', () => {
+    expect(loadIntroSeen()).toBe(false);
+    saveIntroSeen();
+    expect(loadIntroSeen()).toBe(true);
+    expect(mem.get(INTRO_KEY)).toBe('1');
   });
 
-  it('reads the welcome as not seen when storage throws', () => {
+  it('reads the intro as not seen when storage throws', () => {
     (globalThis as { localStorage?: unknown }).localStorage = {
       getItem: () => {
         throw new Error('blocked');
@@ -75,8 +75,8 @@ describe('storage', () => {
         throw new Error('blocked');
       },
     };
-    expect(loadWelcomeSeen()).toBe(false);
-    expect(() => saveWelcomeSeen()).not.toThrow();
+    expect(loadIntroSeen()).toBe(false);
+    expect(() => saveIntroSeen()).not.toThrow();
   });
 
   it('persists and clears the last opened expedition', () => {

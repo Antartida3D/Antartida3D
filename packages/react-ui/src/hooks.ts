@@ -1,5 +1,30 @@
-import { useEffect, useRef, useState, useSyncExternalStore, type RefObject } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent, type RefObject } from 'react';
 import { prefersReducedMotion, settleTracker, type LoadingSnapshot, type LoadingStore } from '@antartida/core';
+
+/** Tab stays inside `container` while it is open (dialogs). */
+const FOCUSABLE_SELECTOR =
+  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+export function trapTab(e: KeyboardEvent<HTMLElement>, container: HTMLElement | null) {
+  if (e.key !== 'Tab' || !container) return;
+  const focusables = Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
+    (el) => el.getClientRects().length > 0
+  );
+  if (focusables.length === 0) return;
+  const first = focusables[0];
+  const last = focusables[focusables.length - 1];
+  const active = document.activeElement as HTMLElement | null;
+  if (!active || !container.contains(active)) {
+    e.preventDefault();
+    first.focus();
+  } else if (e.shiftKey && active === first) {
+    e.preventDefault();
+    last.focus();
+  } else if (!e.shiftKey && active === last) {
+    e.preventDefault();
+    first.focus();
+  }
+}
 
 /**
  * While `open`, focuses the first element matching `initial` inside the container.
@@ -26,7 +51,7 @@ export function useFocusReturn(
 
 /**
  * True once the page has loaded and stopped stuttering (settleTracker), only while `active`.
- * The first-visit welcome waits for it (#115).
+ * The first-visit intro letter waits for it (#115, #256).
  */
 export function usePageSettled(active: boolean): boolean {
   const [settled, setSettled] = useState(false);

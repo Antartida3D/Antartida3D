@@ -1,0 +1,160 @@
+/* First-visit intro letter (#256), the «Empezá acá» card and the «?» button. Components keep their look in components.css. */
+.intro, .starthere {
+  background: var(--chart-surface);
+  border: 1px solid var(--chart-rule);
+  box-shadow: var(--chart-shadow);
+  color: var(--chart-ink);
+}
+.intro {
+  position: absolute;
+  z-index: 20;
+  box-sizing: border-box;
+  max-height: calc(100dvh - 24px);
+  overflow: auto;
+  padding: 32px 36px 24px;
+  font-family: 'Atkinson Hyperlegible', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  animation: up .32s cubic-bezier(.2, .8, .3, 1) both;
+}
+.intro-wide {
+  inset: 0;
+  margin: auto;
+  width: min(760px, calc(100% - 32px));
+  height: fit-content;
+  border-radius: var(--chart-radius);
+}
+.intro-sheet {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 24px 20px 20px;
+  border-radius: var(--chart-radius) var(--chart-radius) 0 0;
+}
+.intro .intro-close { position: absolute; top: 10px; right: 10px; }
+.intro-body > * { margin: 0 0 14px; }
+.intro-kicker {
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--chart-muted);
+}
+.intro-title {
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 500;
+  font-size: 30px;
+  line-height: 1.1;
+  letter-spacing: -.01em;
+  padding-right: 40px;
+}
+.intro-title:focus { outline: none; }
+.intro-wide .intro-title { font-size: 40px; }
+.intro-lead {
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 500;
+  font-style: italic;
+  font-size: 20px;
+  line-height: 1.3;
+}
+.intro-wide .intro-lead { font-size: 21px; }
+.intro-steps { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
+.intro-steps li { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.intro-steps p { margin: 0; }
+.intro-steps b, .intro-rows b { font-weight: 700; }
+.intro-step-head { display: flex; align-items: baseline; gap: 10px; }
+.intro-step-head h3 { margin: 0; font-family: 'Fraunces', Georgia, serif; font-weight: 700; font-size: 17px; line-height: 1.2; white-space: nowrap; }
+.intro-num { font-family: 'Caveat', cursive; font-weight: 700; font-size: 30px; line-height: 1; color: var(--oxide); }
+.intro-art, .intro-tile { background: var(--chart-wash); border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+.intro-art { height: 80px; gap: 26px; }
+.intro-art svg { height: 28px; width: auto; }
+.intro-mouse svg { height: 32px; }
+.intro-plus svg { height: 28px; }
+.intro-log { display: block; padding: 7px 14px 8px; border: 1px solid var(--chart-rule); border-radius: 9px; background: var(--chart-paper); text-align: left; }
+.intro-log small { display: block; font-family: 'Fraunces', Georgia, serif; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--chart-muted); }
+.intro-log b { display: block; font-family: 'Fraunces', Georgia, serif; font-size: 16px; }
+.intro-pin { position: relative; display: block; width: 18px; height: 34px; }
+.intro-pin i { display: block; width: 18px; height: 18px; border-radius: 50%; box-sizing: border-box; }
+.intro-pin::after { content: ''; position: absolute; left: 50%; top: 18px; width: 2px; height: 14px; margin-left: -1px; background: var(--chart-ink); }
+.intro-pin.a i { background: var(--ocre); border: 2px solid var(--chart-ink); }
+.intro-pin.c i { border: 1.5px dashed var(--chart-muted); }
+.intro-pin.c::after { background: var(--chart-muted); }
+.intro-tile .intro-pin { transform: scale(.9); }
+.intro-sources, .intro-stat { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--chart-muted); }
+.intro-sources { margin: 0; padding: 10px 12px; background: var(--chart-wash); border-radius: 10px; }
+.intro-stat { padding: 10px 12px; background: var(--chart-wash); border-radius: 10px; }
+.intro-sico svg { width: 18px; height: 18px; display: block; }
+.intro-chip { flex: none; padding: 4px 10px; border: 1px solid var(--chart-rule); border-radius: 8px; background: var(--chart-paper); font-family: 'Fraunces', Georgia, serif; font-weight: 700; font-size: 15px; color: var(--chart-ink); }
+.intro-rows { list-style: none; padding: 0; margin: 0 0 12px; border-top: 1px solid var(--chart-rule); }
+.intro-rows li { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--chart-rule); }
+.intro-tile { flex: none; width: 44px; height: 44px; }
+.intro-tile svg { width: 26px; height: 26px; }
+.intro-note { font-size: 13px; color: var(--chart-muted); }
+.intro-foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 8px; padding-top: 16px; }
+.intro-wide .intro-foot { border-top: 1px solid var(--chart-rule); }
+.intro-foot .intro-note { margin: 0; flex: 1 1 0; }
+.intro-actions { display: flex; align-items: center; gap: 10px; flex: none; }
+.intro-actions.stacked { flex-direction: column; align-items: stretch; width: 100%; }
+.intro-sheet .intro-foot:has(.stacked) { flex-direction: column; gap: 14px; }
+.intro .btn { min-height: 44px; white-space: nowrap; }
+.intro .btn svg { width: 18px; height: 18px; margin-left: 6px; vertical-align: -3px; }
+.intro-dots { display: flex; gap: 6px; align-items: center; }
+.intro-dots i { width: 6px; height: 6px; border-radius: 3px; background: var(--chart-rule); }
+.intro-dots i.on { width: 18px; background: var(--chart-ink); }
+
+/* «Empezá acá» card and the ring that circles the pin. Both move with transform (a frame loop sets it). */
+.starthere-ring {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 15;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 3px solid color-mix(in srgb, var(--chart-paper) 85%, transparent);
+  box-shadow: 0 0 0 7px color-mix(in srgb, var(--chart-paper) 28%, transparent);
+  pointer-events: none;
+  visibility: hidden;
+}
+.starthere {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 16;
+  box-sizing: border-box;
+  width: min(300px, calc(100% - 32px));
+  padding: 14px 16px 16px;
+  border-radius: var(--chart-radius);
+  font-size: 15px;
+  line-height: 1.4;
+  visibility: hidden;
+}
+.starthere::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: calc(var(--arrow-x, 50%) - 8px);
+  width: 14px;
+  height: 14px;
+  background: inherit;
+  border: inherit;
+  border-right: 0;
+  border-bottom: 0;
+  transform: rotate(45deg);
+}
+.starthere-kicker { display: block; font-family: 'Caveat', cursive; font-weight: 700; font-size: 26px; line-height: 1; color: var(--oxide); }
+.starthere b { display: block; font-family: 'Fraunces', Georgia, serif; font-weight: 500; font-size: 18px; margin-top: 2px; }
+.starthere p { margin: 4px 0 10px; }
+.starthere .btn { min-height: 44px; display: block; margin-left: auto; }
+
+@media (min-width: 820px) {
+  .top .help-btn { order: 1; margin-left: 10px; }
+  .top .reg-wrap { order: 2; margin-left: auto; }
+}
+.stage.voyaging .help-btn { display: none; }
+.help-btn { font-family: 'Fraunces', Georgia, serif; font-weight: 700; font-size: 22px; flex: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .intro { animation: none; }
+}

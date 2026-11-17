@@ -16,12 +16,11 @@ import {
   saveExplored,
   loadViewMode,
   saveViewMode,
-  loadWelcomeSeen,
-  saveWelcomeSeen,
+  loadIntroSeen,
+  saveIntroSeen,
   loadLastExpedition,
   saveLastExpedition,
   isValidResume,
-  showsWelcome,
   map3dLoadingStore,
   initialViewMode,
   MAP_2D_ENABLED,
@@ -122,7 +121,7 @@ export function AntarcticaApp() {
   const sceneFailed = useSyncExternalStore(scene3DFailure.subscribe, scene3DFailure.getSnapshot, () => false);
   const [failNoticeClosed, setFailNoticeClosed] = useState(false);
   // First visit: the map comes close to «Desde Ushuaia» (#115). True until MapView has shown it.
-  const [welcome, setWelcome] = useState(false);
+  const [intro, setIntro] = useState(false);
   const [map3dLoaderDismissed, setMap3dLoaderDismissed] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const [map2dReady, setMap2dReady] = useState(false);
@@ -157,12 +156,12 @@ export function AntarcticaApp() {
 
   // Decided once, in the same render as the starting view above, so MapView zooms in the right mode.
   useEffect(() => {
-    setWelcome(showsWelcome(loadWelcomeSeen(), loadExplored()));
+    setIntro(!loadIntroSeen());
   }, []);
 
-  const welcomeShown = () => {
-    saveWelcomeSeen();
-    setWelcome(false);
+  const introSeen = () => {
+    saveIntroSeen();
+    setIntro(false);
   };
 
   const map2DReady = useCallback(() => setMap2dReady(true), []);
@@ -341,9 +340,9 @@ export function AntarcticaApp() {
             onTravelIrizar={() => travelFromMarambio(false)}
             legend={legend}
             focusExpedition={returned}
-            // The loading screen covers the map while the shared loader settles; the welcome waits for it to close (#190).
-            welcome={welcome && map3dLoaderDismissed}
-            onWelcomeShown={welcomeShown}
+            // The loading screen covers the map while the shared loader settles; the intro letter waits for it to close (#190).
+            intro={intro && map3dLoaderDismissed}
+            onIntroSeen={introSeen}
             mode={mode}
             showToggle={webglSupported !== null}
             available3D={can3D}

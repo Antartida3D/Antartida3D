@@ -1,4 +1,4 @@
-import { VOYAGE_POINT } from './content/points.ts';
+import { VOYAGE_POINT, type MapPoint } from './content/points.ts';
 import { focusWorld, type Size, type View } from './viewport.ts';
 
 /**
@@ -12,13 +12,40 @@ export const WELCOME_K = 3;
  * where to start (#115). On a phone the overview does not even show it. The map edge keeps
  * Ushuaia a little left of the centre (clampView).
  */
-export function welcomeView(size: Size): View {
-  return focusWorld(size, VOYAGE_POINT.x, VOYAGE_POINT.y, WELCOME_K);
+export function welcomeView(size: Size, point: Pick<MapPoint, 'x' | 'y'> = VOYAGE_POINT): View {
+  return focusWorld(size, point.x, point.y, WELCOME_K);
 }
 
-/** Only on the first visit, and never once the trip from Ushuaia is done. */
-export function showsWelcome(seen: boolean, explored: readonly string[]): boolean {
-  return !seen && !explored.includes(VOYAGE_POINT.id);
+/** Gap kept between the card and the viewport edges, and between the pin and the card. */
+export const START_HERE_MARGIN = 16;
+export const START_HERE_GAP = 30;
+
+export interface StartHerePlacement {
+  /** Top-left corner of the card, in viewport pixels. */
+  left: number;
+  top: number;
+  /** Horizontal position of the arrow inside the card, so it keeps pointing at the pin. */
+  arrowX: number;
+  /** False while the pin is off the screen: the card hides instead of pointing at nothing. */
+  visible: boolean;
+}
+
+/**
+ * Where the «Empezá acá» card (#256) goes: below the pin, kept START_HERE_MARGIN inside the
+ * viewport, with its arrow aligned to the pin.
+ */
+export function startHerePlacement(pin: { left: number; top: number }, card: CardSize, view: Size): StartHerePlacement {
+  const m = START_HERE_MARGIN;
+  const left = Math.max(m, Math.min(view.vw - card.w - m, pin.left - card.w / 2));
+  const top = Math.max(m, Math.min(view.vh - card.h - m, pin.top + START_HERE_GAP));
+  const arrowX = Math.max(m, Math.min(card.w - m, pin.left - left));
+  const visible = pin.left >= 0 && pin.left <= view.vw && pin.top >= 0 && pin.top <= view.vh;
+  return { left, top, arrowX, visible };
+}
+
+interface CardSize {
+  w: number;
+  h: number;
 }
 
 /**

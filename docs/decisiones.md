@@ -263,6 +263,8 @@ Plan: `.agents/plans/plan-helipuerto-orcadas.md`.
 
 ### Bienvenida: la primera visita empieza en «Desde Ushuaia» (#115, 14-11-2026)
 
+> **Reemplazada en parte por [DEC-256](decisiones/DEC-256-carta-de-presentacion.md) (17-11-2026):** la pista «Tocá Desde Ushuaia para empezar», la clave `antartida:welcome` y `showsWelcome` pasaron a la carta de presentación (clave `antartida:intro`). El acercamiento y la espera a que la página se asiente siguen vigentes. Lo que sigue es el registro histórico.
+
 Pedido de quien lleva el issue: quien entra por primera vez se queda perdido y no sabe a dónde ir. Propuesta: que al entrar la cámara se acerque a «Desde Ushuaia», la primera expedición del orden sugerido (#75), para dejar claro que hay que tocar ahí.
 
 - **Diagnóstico:** en el celular (390 px), en 3D, la vista general encuadra solo el continente y el marcador de «Desde Ushuaia» queda fuera de la pantalla: no se ve. En 2D queda pegado al borde izquierdo. En escritorio se ve en los dos modos, pero chico y en una esquina.

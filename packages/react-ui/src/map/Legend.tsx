@@ -69,14 +69,14 @@ export function Legend({ open, onToggle, mode = '2d' }: { open: boolean; onToggl
 
   return (
     <div
-      className={'legend' + (offset ? ' swiping' : '')}
+      className={'legend' + (open ? ' open' : '') + (offset ? ' swiping' : '')}
       ref={ref}
       tabIndex={mode === '3d' ? 0 : undefined}
       style={offset ? { transform: `translate3d(${offset.x}px, ${offset.y}px, 0)` } : undefined}
     >
       <button type="button" className="lt" onClick={onToggle} aria-expanded={open}>
         {Icon.legend}
-        Leyenda
+        <span className="lt-label">Leyenda</span>
       </button>
       {open && (
         <>

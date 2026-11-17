@@ -63,6 +63,11 @@ export const Icon = {
       <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2.4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   ),
+  next: (
+    <svg className="ico" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 12h15M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
   check: (
     <svg viewBox="0 0 14 14" aria-hidden="true">
       <path d="M2.5,7.5 L5.8,10.5 L11.5,3.5" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />

@@ -13,21 +13,18 @@ import {
   erebusSummit,
   flagCloth,
   flagSwing,
-  flipperWave,
   huddleTurn,
   lavaBomb,
   PLUME_PUFFS,
   plumePuff,
   POINT_MODELS,
   POLO_FLAGS,
-  SNOW_HILL_WAVE,
   STEAM_PER_TOWER,
   thwaitesFront,
   towerSteam,
   type ErebusSummit,
   type PointFlag,
   type PointModel,
-  WAVE_RAISED,
 } from '../voyage/pointModels.ts';
 import { buildPolyGeometry, resolveRelief, type Tri, type Vec3 } from '../voyage/lowPoly.ts';
 import { vehicleMaterial } from '../voyage/vehicles.ts';
@@ -133,25 +130,6 @@ function HuddlePart({ parts }: { parts: MutableRefObject<Part[]> }) {
   return (
     <group ref={pivot} position={EMPEROR_HUDDLE_CENTER as [number, number, number]}>
       <mesh geometry={geometry} material={vehicleMaterial} />
-    </group>
-  );
-}
-
-/**
- * The emperor in front of Cerro Nevado waves one flipper (flipperWave, #206); with reduced motion it
- * keeps it raised. ILLUSTRATIVE: emperors do not wave.
- */
-function WavePart({ parts, reduced }: { parts: MutableRefObject<Part[]>; reduced: boolean }) {
-  const geometry = usePolyGeometry(SNOW_HILL_WAVE.flipper);
-  const arm = useRef<Group>(null);
-  // Out from the body is +z of the emperor: a turn towards -y round its front axis.
-  const move = useMemo(() => (t: number) => void (arm.current && (arm.current.rotation.x = -(reduced ? WAVE_RAISED : flipperWave(t)))), [reduced]);
-  usePart(parts, move);
-  return (
-    <group position={SNOW_HILL_WAVE.shoulder as [number, number, number]} rotation-y={SNOW_HILL_WAVE.facing}>
-      <group ref={arm}>
-        <mesh geometry={geometry} material={vehicleMaterial} />
-      </group>
     </group>
   );
 }
@@ -271,7 +249,6 @@ function PointModelMesh({ id, point, model, reduced }: Placed & { reduced: boole
       {/* The moving parts, in model units on the pad: this group carries the model's turn and width. */}
       <group rotation-y={model.heading ?? 0} scale={width}>
         {id === 'emperador' && <HuddlePart parts={parts} />}
-        {id === 'cerronevado' && <WavePart parts={parts} reduced={reduced} />}
         {id === 'polo' && <Flags flags={POLO_FLAGS} parts={parts} />}
         {id === 'belgrano' && <Flags flags={BELGRANO_FLAGS} parts={parts} />}
       </group>

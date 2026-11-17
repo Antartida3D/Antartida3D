@@ -3,7 +3,7 @@ import { PTS } from '@antartida/core';
 import { normalOf, POLY_MIN_COLORS, POLY_MIN_TRIS } from '../src/voyage/lowPoly.ts';
 import { POINT_MODEL_IDS } from '../src/voyage/pointModelIds.ts';
 import { emperor, emperorChick, emperorFlipper, emperorWithFlippers } from '../src/voyage/lowPoly.ts';
-import { BOMBS, calvingPose, erebusSummit, flipperWave, SNOW_HILL_WAVE, huddleTurn, lavaBomb, PLUME_PUFFS, plumePuff, POINT_MODELS, thwaitesFront, WAVE_RAISED } from '../src/voyage/pointModels.ts';
+import { BOMBS, calvingPose, erebusSummit, flipperWave, huddleTurn, lavaBomb, PLUME_PUFFS, plumePuff, POINT_MODELS, thwaitesFront, WAVE_RAISED } from '../src/voyage/pointModels.ts';
 
 describe('point models (#58, docs/diseno/estilo-voxel.md)', () => {
   it('gives models only to points of the map, and the card knows which', () => {
@@ -133,18 +133,6 @@ describe('moving parts of the point models', () => {
     }
     // Continuous: no jump between frames a sixtieth of a second apart.
     for (let t = 0; t < 10; t += 1 / 60) expect(Math.abs(at(t + 1 / 60) - at(t))).toBeLessThan(0.25);
-  });
-
-  it('puts the waving flipper of Cerro Nevado at the shoulder of an emperor at the edge of the fast ice (#206)', () => {
-    const [x, y, z] = SNOW_HILL_WAVE.shoulder;
-    expect(SNOW_HILL_WAVE.flipper.length).toBe(emperorFlipper(1).length);
-    // On the fast ice, near its edge towards the sea (+z, about 0.2), at shoulder height of an
-    // emperor a tenth of the model tall.
-    expect(Math.hypot(x, z)).toBeLessThan(0.5);
-    expect(z).toBeGreaterThan(0.08);
-    expect(z).toBeLessThan(0.17);
-    expect(y).toBeGreaterThan(0.05);
-    expect(y).toBeLessThan(0.08);
   });
 });
 

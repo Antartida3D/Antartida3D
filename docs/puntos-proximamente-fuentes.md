@@ -115,6 +115,20 @@ La aurora ya no se dibuja en el mapa 3D (#117): de día se leía como rayas verd
 
 ## `cerronevado` — Pingüinos de Cerro Nevado (#206)
 
+El punto abre una escena propia con cuatro puntos (`packages/core/src/content/cerro-nevado.ts`). Sus textos reparten las mismas oraciones de la ficha y suman estas, con su cita:
+
+| Texto de la escena | Fuente | Cita |
+|---|---|---|
+| Estimaron unas 1.200 parejas a partir de fotografías. | Coria y Montalti 2000 | "The population was estimated as 1200 pairs [...] based on counts obtained from photographs." |
+| El hielo fijo es hielo marino agarrado a la costa: no se mueve con el viento ni con las corrientes. | [NSIDC · fast ice](https://nsidc.org/learn/cryosphere-glossary/fast-ice) | "is defined by the fact that it does not move with the winds or currents" |
+| A fines de diciembre de 2018 los pingüinos estaban repartidos a lo largo del borde del hielo fijo, en una franja de unos 3 km, casi todos en zonas planas. | Schiel et al. 2019 | "distributed over an area of approximately three kilometers in length and a few hundred meters in width, along the edge of the fast ice. Almost all penguins were observed on level areas." |
+| Delante del borde había una franja angosta de hielo suelto, con grupos chicos de pichones sobre los témpanos. | Schiel et al. 2019 | "the narrow pack ice belt in front of the fast ice" / "small groups of recently fledged chicks (20 at most) in the pack ice and on ice floes" |
+| La guardería más grande que se vio en 2018 tenía 144 pichones, al reparo de un témpano. | Schiel et al. 2019 | "The largest gathering was a crèche of 144 chicks seen on the lee side of an iceberg" |
+| Mientras cambian el plumón por las plumas, casi todos conservan la máscara blanca de la cara. | Schiel et al. 2019 | "The white face mask of the juvenile plumage was preserved in almost all chicks." |
+| Las guarderías se forman hacia fines de septiembre: unos pocos adultos cuidan a los pichones mientras los demás van al mar a buscar comida. | IAA (Libertelli) | epígrafe: "Pequeñas guarderías de pichones de emperador se forman hacia finales del mes de septiembre." / "unos pocos adultos se encargan de cuidar a todos los pichones de la colonia mientras los demás adultos se adentran al mar en busca de comida" |
+| Primero sobrevuelan la colonia en un Twin Otter. | IAA (Libertelli) | "La primera actividad que se realiza al arribar a Base Marambio es programar un vuelo con Twin Otter para sobrevolar ambas colonias" |
+| La temperatura puede bajar de -45 °C y el viento pasar los 130 km/h. | IAA (Libertelli) | "las temperaturas pueden ser inferiores a los -45°C y los vientos superiores a los 130 km/hora" |
+
 > Frente a la costa sur de la isla Cerro Nevado, sobre el hielo marino fijo, está la colonia de pingüino emperador más al norte que se conoce. La descubrieron científicos del Instituto Antártico Argentino desde un avión Twin Otter, el 20 de julio de 1997. Desde 2013 la estudian en campañas de agosto y septiembre: salen de Base Marambio, a unos 65 km, cruzan el hielo en motos de nieve y trineos, y acampan junto a un témpano. Según el año, los censos publicados van de 1.200 a unas 4.000 parejas. Está en una zona donde el clima cambia rápido: por eso seguirla es clave.
 
 Consulta: 17 nov 2026. Las tres fuentes son PDF que se descargaron y se leyeron completos.

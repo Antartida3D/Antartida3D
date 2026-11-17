@@ -49,7 +49,7 @@ const POINTS: readonly MapPoint[] = [
 ];
 
 /** Close-up camera distance of the points with a model (closeUp). Erebus is a whole summit, seen from farther. */
-const CLOSE_UP: Readonly<Record<string, number>> = { polo: 2.6, testigos: 2.6, vostok: 3.2, belgrano: 2.8, thwaites: 4.5, emperador: 2.2, cerronevado: 2.2, erebus: 7 };
+const CLOSE_UP: Readonly<Record<string, number>> = { polo: 2.6, testigos: 2.6, vostok: 3.2, belgrano: 2.8, thwaites: 4.5, emperador: 2.2, erebus: 7 };
 
 export const PTS: readonly MapPoint[] = POINTS.map((p) => ({ ...p, ...POINT_DETAILS[p.id], ...(CLOSE_UP[p.id] ? { closeUp: CLOSE_UP[p.id] } : {}) }));
 

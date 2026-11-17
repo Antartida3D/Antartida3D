@@ -16,7 +16,7 @@ import {
   ZINC,
 } from './sightingModels.ts';
 import { ICEBERG_TABULAR_POLY } from './icebergs.ts';
-import { block, chunk, emperor, emperorChick, emperorFlipper, emperorWithFlippers, EMPEROR_SHOULDER, extrude, groundField, lathe, ngon, normalOf, prism, quad, rect, RELIEF_ICE, RELIEF_ROCK, reliefColor, resolveRelief, scaled, shift, turn, type Tri, type Vec3 } from './lowPoly.ts';
+import { block, chunk, emperor, emperorChick, emperorWithFlippers, extrude, groundField, lathe, ngon, normalOf, prism, quad, rect, RELIEF_ICE, RELIEF_ROCK, reliefColor, resolveRelief, scaled, shift, turn, type Tri, type Vec3 } from './lowPoly.ts';
 
 // Approximate colors. Every model here is an illustration, not to scale (docs/diseno/estilo-voxel.md).
 // Erebus: its snow and rock take the colors of the painted relief (reliefColor); here only the lava lake.
@@ -820,16 +820,11 @@ const SNOW_HILL_CHICK = 0.046;
 /** Where an emperor stands: position, height and turn (emperor()). */
 interface Stand { x: number; z: number; k: number; facing: number }
 
-/** The emperor that waves on the map: in front of the colony, a little bigger so it is seen in the close-up. */
+/** The emperor in front of the colony on the map. */
 const MAP_WAVER: Stand = { x: 0.18, z: 0.13, k: 0.1, facing: -0.97 };
 /** The emperor in front of the card. */
 const CARD_WAVER: Stand = { x: 0.06, z: 0.12, k: 0.3, facing: -0.97 };
 
-/** An emperor with only its -z flipper: the +z one is a moving part (SNOW_HILL_WAVE). */
-const waverBody = ({ x, z, k, facing }: Stand): Tri[] => [
-  ...emperor(x, z, k, facing),
-  ...shift(scaled(turn(shift(emperorFlipper(-1), EMPEROR_SHOULDER[0], EMPEROR_SHOULDER[1], -EMPEROR_SHOULDER[2]), facing), k), x, 0, z),
-];
 
 /** A tent as a low pyramid. */
 const tent = (x: number, z: number, r: number, h: number, color: number): Tri[] => lathe(x, z, [[0, r], [h, 0]], 4, color, Math.PI / 4);
@@ -855,7 +850,7 @@ const floe = (x: number, z: number, r: number, seed: number): Tri[] => {
  * with a crèche on the lee side of an iceberg held in the ice. A tent of the Argentine camp stands
  * by another iceberg (IAA: "Campamento realizado sobre el pack marino a 300 metros de la colonia,
  * protegido por témpano"). In front of the edge, a narrow belt of pack ice with a chick on a floe
- * (Schiel et al.). Without the emperor that waves (MAP_WAVER). Illustration, not to scale or a count.
+ * (Schiel et al.). Without the emperor in front (MAP_WAVER). Illustration, not to scale or a count.
  */
 const SNOW_HILL_BASE: Tri[] = [
   // The fast ice, with its guano stain along the edge: on the map the relief here is sea. Its edge
@@ -926,18 +921,6 @@ const SNOW_HILL_CARD: Tri[] = [
   ...emperorWithFlippers(CARD_WAVER.x, CARD_WAVER.z, CARD_WAVER.k, CARD_WAVER.facing),
 ];
 
-/**
- * The flipper that waves on the map at Cerro Nevado: the faces of emperorFlipper() at the size of
- * the emperor, the shoulder they hang from and the turn of the emperor, all in model units.
- */
-export const SNOW_HILL_WAVE = {
-  flipper: scaled(emperorFlipper(1), MAP_WAVER.k),
-  shoulder: ((): Vec3 => {
-    const [[at]] = shift(scaled(turn([[EMPEROR_SHOULDER, EMPEROR_SHOULDER, EMPEROR_SHOULDER, 0]], MAP_WAVER.facing), MAP_WAVER.k), MAP_WAVER.x, 0, MAP_WAVER.z);
-    return at;
-  })(),
-  facing: MAP_WAVER.facing,
-} as const;
 
 // ---------------------------------------------------------------------------------------------
 
@@ -1012,9 +995,9 @@ export const POINT_MODELS: Readonly<Record<string, PointModel>> = {
     width: 0.6,
     pad: 0.48,
   },
-  // The colony stands still; on the map the emperor in front waves (SNOW_HILL_WAVE).
+  // The colony on the map; the point opens its own scene (cerronevado/), where an emperor waves.
   cerronevado: {
-    map: [...SNOW_HILL_BASE, ...waverBody(MAP_WAVER)],
+    map: [...SNOW_HILL_BASE, ...emperorWithFlippers(MAP_WAVER.x, MAP_WAVER.z, MAP_WAVER.k, MAP_WAVER.facing)],
     preview: { tris: card(SNOW_HILL_CARD, 0, true), motion: 'still', lift: 0.1 },
     width: 0.6,
     pad: 0.48,
@@ -1080,7 +1063,7 @@ export function calvingPose(t: number): { tilt: number; sink: number; visible: b
 /** Turn of the emperor huddle: the birds take turns at the warm centre (AAD). One turn in about 2.5 min. */
 export const huddleTurn = (t: number) => t * 0.04;
 
-/** Seconds of one wave: raise, wave three times, lower, rest. ILLUSTRATIVE: emperors do not wave. */
+/** Seconds of one wave of the emperor of Cerro Nevado (cerronevado/): raise, wave three times, lower, rest. ILLUSTRATIVE: emperors do not wave. */
 const WAVE_SECONDS = 5;
 /** Turn of the raised flipper (radians, out from its rest on the body); with reduced motion it stays here. */
 export const WAVE_RAISED = 2.3;

@@ -4,10 +4,3 @@
  */
 export const POINT_MODEL_IDS: ReadonlySet<string> = new Set(['polo', 'testigos', 'belgrano', 'erebus', 'thwaites', 'vostok', 'emperador', 'cerronevado']);
 
-/**
- * What the card says about a model that does more than illustrate the place, instead of the plain
- * «Ilustración representativa, no a escala.».
- */
-export const POINT_MODEL_NOTES: Readonly<Record<string, string>> = {
-  cerronevado: 'Ilustración, no a escala: la cantidad de pingüinos no es un conteo, y el saludo con la aleta es un recurso del dibujo, no algo que hagan los emperadores.',
-};

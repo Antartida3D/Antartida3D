@@ -12,7 +12,7 @@ import {
 } from '@antartida/core';
 import { BottomSheet } from '../BottomSheet.tsx';
 import { useFocusReturn } from '../hooks.ts';
-import { POINT_MODEL_IDS, POINT_MODEL_NOTES } from '../voyage/pointModelIds.ts';
+import { POINT_MODEL_IDS } from '../voyage/pointModelIds.ts';
 import { CompassRose } from '../Cartography.tsx';
 import { useCurrentTemperatures } from './useCurrentTemperatures.ts';
 
@@ -177,7 +177,7 @@ export function PointSheet({ point, onClose, fallbackFocus, preview = false, onM
             </div>
             <p className="sheet-desc">{point.desc}</p>
             <SourceList sources={point.sources} />
-            {hasModel && <p className="anno">{POINT_MODEL_NOTES[point.id] ?? 'Ilustración representativa, no a escala.'}</p>}
+            {hasModel && <p className="anno">Ilustración representativa, no a escala.</p>}
             {point.tier === 'B' && <p className="anno">Esta expedición todavía no está disponible. Se suma en una próxima etapa.</p>}
           </>
         ) : (

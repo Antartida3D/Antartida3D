@@ -3,7 +3,8 @@ import type { Group } from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import { fuegiaWorldHeight, heightAt, inFuegia, loadFuegiaMesh, sightingNote, worldHeight, type SightingSpot } from '@antartida/core';
-import { Fact } from './Fact.tsx';
+import { SourcesContext } from '../sheet/SourcesContext.ts';
+import { Fact, tripSourcesContext } from './Fact.tsx';
 import { heldOnScreen } from './screenEdge.ts';
 import { SightingIcon } from './SightingIcon.tsx';
 import { WING_ROOT, buildSightingGeometry, moveSighting } from './sightingModels.ts';
@@ -107,7 +108,9 @@ export function Sighting3D({ spot, turn, seen, open, wide, bus, reduced, overlay
             <button type="button" className="vpopclose" onClick={bus.closeSighting} aria-label="Cerrar ficha">×</button>
             <h3>{sighting.name}</h3>
             <p className="vlatin">{sighting.latin}</p>
-            <ul className="vfacts"><Fact fact={sighting.fact} onSource={bus.openSource} /></ul>
+            <SourcesContext.Provider value={tripSourcesContext(bus.state?.transport, bus.openSource)}>
+              <ul className="vfacts"><Fact fact={sighting.fact} /></ul>
+            </SourcesContext.Provider>
             {sightingNote(sighting) && <p className="vsmall">{sightingNote(sighting)}</p>}
           </section>
         )}

@@ -1,49 +1,31 @@
-import { createContext, useContext } from 'react';
+import type { TransportId, VoyageFact, VoyageSourceCode } from '@antartida/core';
+import { PONCHO_PHOTO_SOURCES, VOYAGE_SOURCE_CODES, tripSources, voyageCited } from '@antartida/core';
+import { findTransport } from '@antartida/core';
 import { Quoted } from '../ui.tsx';
-import { VOYAGE_SOURCES, citationLabel, tripSourceNumber, voyageSourceNumber, type TransportId, type VoyageFact, type VoyageSourceCode } from '@antartida/core';
+import { Cites } from '../sheet/Cite.tsx';
+import type { SourcesContextValue } from '../sheet/SourcesContext.ts';
 
-/** The trip whose sources list numbers the citations (Poncho lists only what it cites); without it, the global numbering. */
-export const TripContext = createContext<TransportId | undefined>(undefined);
-
-/** Opens the sources page at one source. */
+/** Opens the sources view at one source of the trip. */
 export type OpenSources = (code: VoyageSourceCode) => void;
 
+const isDogs = (trip: TransportId) => findTransport(trip).kind === 'dogs';
+
+/**
+ * The sources of a trip as the sources view lists them, and how to open it. The trips from Ushuaia
+ * list the whole registry; the team of Poncho lists only what it cites, numbered from 1 (`tripSources`).
+ */
+export const tripSourcesContext = (trip: TransportId | undefined, open: OpenSources): SourcesContextValue => ({
+  list: [...(trip ? tripSources(trip) : VOYAGE_SOURCE_CODES).map(voyageCited), ...(trip && isDogs(trip) ? PONCHO_PHOTO_SOURCES : [])],
+  open: (id) => open(id as VoyageSourceCode),
+});
+
 /** One statement, followed by the numbers of its sources. A source with a page links straight to that page of the document. */
-export function Fact({ fact, onSource }: { fact: VoyageFact; onSource: OpenSources }) {
-  const trip = useContext(TripContext);
+export function Fact({ fact }: { fact: VoyageFact }) {
   return (
     <li className="vfact">
       <span>
         <Quoted text={fact.text} />
-        {fact.sources.map((code) => {
-          const number = trip ? tripSourceNumber(trip, code) : voyageSourceNumber(code);
-          const page = fact.pages?.[code];
-          if (page === undefined) {
-            return (
-              <button
-                key={code}
-                type="button"
-                className="vref"
-                onClick={() => onSource(code)}
-                aria-label={`Fuente ${number}: ${VOYAGE_SOURCES[code].org}`}
-              >
-                [{number}]
-              </button>
-            );
-          }
-          return (
-            <a
-              key={code}
-              className="vref"
-              href={`${VOYAGE_SOURCES[code].url}#page=${page}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={`Fuente ${number}, página ${page}: ${VOYAGE_SOURCES[code].org}`}
-            >
-              [{citationLabel(code, number, page)}]
-            </a>
-          );
-        })}
+        <Cites ids={fact.sources} pages={fact.pages} />
       </span>
     </li>
   );

@@ -1,7 +1,8 @@
 import { lazy, Suspense, useEffect, useReducer, useRef, useState, type CSSProperties } from 'react';
 import {
-  FOSSIL_CHAPTERS, FOSSIL_CLEAN_STEPS, FOSSIL_HABITATS, FOSSIL_PHOTOS, FOSSIL_QUESTION, FOSSIL_SOURCES, FOSSIL_STOPS, FOSSIL_STORY,
-  INITIAL_FOSSILS, fossilsReducer, type FossilPhotoId, type FossilSourceId,
+  FOSSIL_CHAPTERS, FOSSIL_CLEAN_STEPS, FOSSIL_HABITATS, FOSSIL_PHOTOS, FOSSIL_QUESTION, FOSSIL_STOPS, FOSSIL_STORY,
+  INITIAL_FOSSILS, fossilsReducer, type FossilPhotoId,
+  FOSSIL_CITED,
 } from '@antartida/core';
 import oliveroPhoto from '@antartida/core/assets/fossils/olivero-campana.webp';
 import ammonitePhoto from '@antartida/core/assets/fossils/amonite-archivo.webp';
@@ -24,6 +25,12 @@ import { CanvasGuard } from '../CanvasGuard.tsx';
 import { KindChip } from '../orcadas/KindChip.tsx';
 import { useSceneFrame } from '../sceneFrame.tsx';
 import { Icon, Quoted } from '../ui.tsx';
+import { Cites } from '../sheet/Cite.tsx';
+import { MoreFold } from '../sheet/MoreFold.tsx';
+import { SheetActions } from '../sheet/SheetActions.tsx';
+import { SheetHeader } from '../sheet/SheetHeader.tsx';
+import { SourcesContext } from '../sheet/SourcesContext.ts';
+import { SourcesView } from '../sheet/SourcesView.tsx';
 
 const Scene = lazy(() => import('./FossilScene.tsx').then((m) => ({ default: m.FossilScene })));
 const PHOTO_URL: Readonly<Record<FossilPhotoId, string>> = {
@@ -36,12 +43,9 @@ const CHAPTER_PHOTO = {
   camp: 'olivero', ammonites: 'ammonite-outcrop', plesiosaur: 'plesio-site', dinosaur: 'dino-remains', stars: 'stars', past: 'trunk',
 } as const satisfies Record<string, FossilPhotoId>;
 
-function SourceLink({ id }: { id: FossilSourceId }) {
-  const source = FOSSIL_SOURCES[id];
-  return source.url ? <a href={source.url} target="_blank" rel="noopener noreferrer">{source.title} ↗</a> : <span>{source.title}</span>;
-}
+const SOURCES = FOSSIL_CITED;
 
-type Modal = { kind: 'sources' } | { kind: 'story' } | { kind: 'photo'; id: FossilPhotoId } | null;
+type Modal = { kind: 'sources'; id: string | null } | { kind: 'story' } | { kind: 'photo'; id: FossilPhotoId } | null;
 
 export function FossilExpedition({ reduced, webgl, resume, onProgress, onLeave }: {
   reduced: boolean; webgl: boolean; resume?: { step: number; sub?: number }; onProgress?: (step: number, sub?: number) => void; onLeave: (done: boolean) => void;
@@ -64,9 +68,7 @@ export function FossilExpedition({ reduced, webgl, resume, onProgress, onLeave }
   const root = useRef<HTMLElement>(null);
   const panel = useRef<HTMLElement>(null);
   const top = useRef<HTMLElement>(null);
-  const title = useRef<HTMLHeadingElement>(null);
   const scroll = useRef<HTMLDivElement>(null);
-  const dialog = useRef<HTMLDialogElement>(null);
   const desktop = useIsDesktop();
   const stop = FOSSIL_STOPS[state.stop];
   const chapter = FOSSIL_CHAPTERS.findIndex((c) => c.id === stop.chapter);
@@ -79,7 +81,7 @@ export function FossilExpedition({ reduced, webgl, resume, onProgress, onLeave }
     : stop.id === 'environments' ? `${FOSSIL_HABITATS.find((h) => h.id === state.habitat)?.age} · reconstrucción` : stop.place;
 
   useEffect(() => {
-    title.current?.focus({ preventScroll: true });
+    root.current?.querySelector<HTMLElement>('#fossil-title')?.focus({ preventScroll: true });
     if (scroll.current) scroll.current.scrollTop = 0;
     setSheetSize('small');
   }, [state.stop]);
@@ -94,21 +96,22 @@ export function FossilExpedition({ reduced, webgl, resume, onProgress, onLeave }
     return () => el?.removeEventListener('webglcontextlost', lost, true);
   }, []);
 
-  useEffect(() => {
-    const el = dialog.current;
-    if (modal && el && !el.open) el.showModal();
-    else if (!modal && el?.open) el.close();
-  }, [modal]);
+  const dialog = useRef<HTMLElement>(null);
+  const sourcesBtn = useRef<HTMLButtonElement>(null);
+  const openSource = (id: string | null) => setModal({ kind: 'sources', id });
 
   const content = <>
     <div className="orc-panel-scroll fossil-panel-content" ref={scroll}>
-      <div className="orc-panel-head"><div className="orc-panel-head-title">
-        <span className="orc-kicker">{FOSSIL_CHAPTERS[chapter].label} · parada {state.stop + 1} de {FOSSIL_STOPS.length}</span>
-        <h2 id="fossil-title" className="orc-chapter-h2" ref={title} tabIndex={-1}>{stop.title}</h2>
-      </div></div>
+      <SheetHeader
+        label={<>{FOSSIL_CHAPTERS[chapter].label} · parada {state.stop + 1} de {FOSSIL_STOPS.length}</>}
+        title={stop.title}
+        titleId="fossil-title"
+        titleClass="orc-chapter-h2"
+        titleFocusable
+      />
       <FossilTimeline state={state} />
       <p className="fossil-eyebrow">{stop.eyebrow}</p>
-      <p className="fossil-line" aria-live="polite">{stop.line}</p>
+      <p className="fossil-line" aria-live="polite">{stop.line}<Cites ids={stop.sources} /></p>
 
       {stop.id === 'spiral' && <div className="fossil-interaction">
         <div className="fossil-rubbing" role="group" aria-label="Limpieza ilustrativa del amonite">
@@ -156,8 +159,7 @@ export function FossilExpedition({ reduced, webgl, resume, onProgress, onLeave }
         <li><span>✓</span>Recorriste {state.visited.length} de {FOSSIL_STOPS.length} paradas</li>
       </ul>}
 
-      <div className="fossil-source-line"><span>Fuente</span>{stop.sources.map((id) => <SourceLink key={id} id={id} />)}</div>
-      <details className="fossil-more" key={stop.id}><summary>Saber más</summary><p>{stop.more}</p></details>
+      <MoreFold key={stop.id}><p>{stop.more}</p></MoreFold>
       {stop.id === FOSSIL_STORY.stop && <button className="fossil-note" onClick={() => setModal({ kind: 'story' })} aria-label={`Abrir nota: ${FOSSIL_STORY.title}`}>
         <small>Nota de campo · relato de Eduardo</small><b>{FOSSIL_STORY.title}</b><span>Leer la anécdota ↗</span>
       </button>}
@@ -170,14 +172,14 @@ export function FossilExpedition({ reduced, webgl, resume, onProgress, onLeave }
         })}
       </div>}
     </div>
-    <div className="orc-bar ebar">
-      {state.stop > 0 && <button type="button" className="btn ghost fossil-prev" onClick={() => dispatch({ type: 'prev' })}>Atrás</button>}
+    <SheetActions>
+      {state.stop > 0 && <button type="button" className="btn fossil-prev" onClick={() => dispatch({ type: 'prev' })}>Atrás</button>}
       <button type="button" className="btn primary fossil-next" onClick={() => last ? onLeave(true) : dispatch({ type: 'next' })}>{last ? 'Terminar expedición' : 'Siguiente'}</button>
-    </div>
+    </SheetActions>
   </>;
 
   const photo = FOSSIL_PHOTOS[shown];
-  return <section className={`orc fossil-expedition${!desktop && sheetSize === 'tall' ? ' is-panel-expanded' : ''}${!desktop && sheetSize === 'peek' ? ' is-panel-peek' : ''}`} ref={root} aria-label="Expedición Fósiles">
+  return <SourcesContext.Provider value={{ list: SOURCES, open: openSource }}><section className={`orc fossil-expedition${!desktop && sheetSize === 'tall' ? ' is-panel-expanded' : ''}${!desktop && sheetSize === 'peek' ? ' is-panel-peek' : ''}`} ref={root} aria-label="Expedición Fósiles">
     <div className="fossil-stage">
       {use3D ? <CanvasGuard onFail={() => setGraphicsLost(true)}><Suspense fallback={<div className="fossil-loading" role="status">Abriendo el cuaderno de campo…</div>}><Scene view={stop.view} state={state} reduced={reduced} reset={reset} shift={shift} /></Suspense></CanvasGuard> : <figure className="fossil-fallback"><img src={PHOTO_URL[fallbackId]} alt={fallback.alt} /><figcaption>{fallback.caption}<br />{fallback.credit}{fallback.note && <span>{fallback.note}</span>}<span>Recorrido en fotografías · todas las paradas e interacciones siguen disponibles.</span>{stop.id === 'animal' && state.reconstructed && <span>Reconstrucción ilustrativa: un dinosaurio herbívoro, de cuerpo bajo y protegido por placas óseas.</span>}</figcaption></figure>}
     </div>
@@ -197,7 +199,7 @@ export function FossilExpedition({ reduced, webgl, resume, onProgress, onLeave }
       <div className="orc-top-r1">
         <button type="button" className="pill orc-top-btn" aria-label="Volver al mapa" onClick={() => onLeave(false)}>{Icon.back}<span>Mapa</span></button>
         <div className="orc-top-title"><strong>Fósiles</strong><span>{FOSSIL_QUESTION}</span></div>
-        <button type="button" className="pill orc-top-btn" aria-haspopup="dialog" onClick={() => setModal({ kind: 'sources' })}>Fuentes</button>
+        <button type="button" className="pill orc-top-btn" aria-haspopup="dialog" ref={sourcesBtn} onClick={() => openSource(null)}>Fuentes</button>
       </div>
       <nav className="orc-steps-nav" aria-label="Capítulos de Fósiles">
         <ol className="orc-steps">
@@ -213,16 +215,21 @@ export function FossilExpedition({ reduced, webgl, resume, onProgress, onLeave }
       </nav>
     </header>
     {desktop ? <section className="orc-panel fossil-panel" ref={panel} aria-labelledby="fossil-title">{content}</section> : <BottomSheet className="orc-panel fossil-panel" labelledBy="fossil-title" sheetRef={panel} floor="peek" size={sheetSize} onSize={setSheetSize}>{content}</BottomSheet>}
-    <dialog className="fossil-dialog" ref={dialog} aria-labelledby="fossil-dialog-title" onClose={() => setModal(null)} onClick={(e) => { if (e.target === e.currentTarget) setModal(null); }}>
-      <div className="fossil-dialog-heading"><h2 id="fossil-dialog-title">{modal?.kind === 'sources' ? 'Fuentes del recorrido' : modal?.kind === 'story' ? FOSSIL_STORY.title : 'Archivo de campo'}</h2><button className="iconbtn" aria-label="Cerrar" onClick={() => setModal(null)}>{Icon.close}</button></div>
-      {modal?.kind === 'sources' ? <>
-        <p>{FOSSIL_QUESTION}</p><p>Las escenas son ilustrativas. Cada parada identifica la fuente de su relato y de sus evidencias.</p>
-        {Object.entries(FOSSIL_SOURCES).map(([id, source]) => <article className="fossil-source-entry" key={id}><h3><SourceLink id={id as FossilSourceId} /></h3><p>{source.org}</p><p>{source.detail}</p><small>Consultado: {source.date.split('-').reverse().join('/')}</small></article>)}
-        <p className="fossil-pending">Para seguir completando con Eduardo: especie y medidas de los amonites elegidos, relato de su hallazgo, fecha y lugar de cada fotografía del archivo y nuevos testimonios. Los modelos de los animales son una primera interpretación visual.</p>
-      </> : modal?.kind === 'story' ? <article className="fossil-story">
+    {modal?.kind === 'sources' && <SourcesView list={SOURCES} highlight={modal.id} place={FOSSIL_QUESTION}
+      notice={['Las escenas son ilustrativas. Cada parada identifica la fuente de su relato y de sus evidencias.', 'Para seguir completando con Eduardo: especie y medidas de los amonites elegidos, relato de su hallazgo, fecha y lugar de cada fotografía del archivo y nuevos testimonios. Los modelos de los animales son una primera interpretación visual.']}
+      onClose={() => setModal(null)} fallbackFocus={() => sourcesBtn.current} />}
+    {modal?.kind === 'story' && <BottomSheet className="voyage fossil-sheet" labelledBy="fossil-story-title" sheetRef={dialog} onClose={() => setModal(null)}>
+      <SheetHeader label="Nota de campo · relato de Eduardo" title={FOSSIL_STORY.title} titleId="fossil-story-title" />
+      <article className="fossil-story">
         {FOSSIL_STORY.paragraphs.map((text) => <p key={text}><Quoted text={text} /></p>)}
-        <footer><span>{FOSSIL_STORY.credit}</span><SourceLink id={FOSSIL_STORY.source} /></footer>
-      </article> : <figure className="fossil-archive-full"><img src={PHOTO_URL[shown]} alt={photo.alt} /><figcaption><b>{photo.caption}</b>{photo.note && <span className="fossil-photo-note">{photo.note}</span>}<span>{photo.credit}</span><SourceLink id={photo.source} /></figcaption></figure>}
-    </dialog>
-  </section>;
+        <footer><span>{FOSSIL_STORY.credit}</span><Cites ids={[FOSSIL_STORY.source]} /></footer>
+      </article>
+      <SheetActions><button type="button" className="btn primary" onClick={() => setModal(null)}>Volver</button></SheetActions>
+    </BottomSheet>}
+    {modal?.kind === 'photo' && <BottomSheet className="voyage fossil-sheet" labelledBy="fossil-photo-title" sheetRef={dialog} onClose={() => setModal(null)}>
+      <SheetHeader title="Archivo de campo" titleId="fossil-photo-title" />
+      <figure className="fossil-archive-full"><img src={PHOTO_URL[shown]} alt={photo.alt} /><figcaption><b>{photo.caption}</b>{photo.note && <span className="fossil-photo-note">{photo.note}</span>}<span>{photo.credit}<Cites ids={[photo.source]} /></span></figcaption></figure>
+      <SheetActions><button type="button" className="btn primary" onClick={() => setModal(null)}>Volver</button></SheetActions>
+    </BottomSheet>}
+  </section></SourcesContext.Provider>;
 }

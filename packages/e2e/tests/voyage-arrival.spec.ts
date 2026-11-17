@@ -42,7 +42,7 @@ test('a quotation in a fact and the title of a source go between “ ” and in 
 
   await page.locator('.vfact', { hasText: 'el buque insignia' }).getByRole('button', { name: /^Fuente / }).click();
   const sources = page.getByRole('dialog', { name: 'Fuentes' });
-  const title = sources.locator('[data-source="U4"] em');
+  const title = sources.locator('[data-source-id="U4"] em');
   await expect(title).toHaveText('“La evolución del turismo antártico y su relación con las políticas públicas nacionales y provinciales”');
   await expect(title).toHaveCSS('font-style', 'italic');
   await expect(sources).not.toContainText(/[«»]/);
@@ -112,7 +112,7 @@ test.describe('arrival at Base Marambio on the trip from Ushuaia', () => {
     await expect(card.getByText(/frente a la isla es ilustrativo/)).toBeVisible();
     await expect(card.getByText(/respondiste 1 de 3 y acertaste 1/)).toBeVisible();
     // The helicopter hop is an animation of the 3D map: with reduced motion the card ends the trip at once.
-    await expect(card.getByRole('button', { name: 'Terminar el viaje' })).toBeVisible();
+    await expect(card.getByRole('button', { name: 'Terminar expedición' })).toBeVisible();
     await expect(card.getByRole('button', { name: 'Continuar' })).toHaveCount(0);
   });
 
@@ -127,7 +127,7 @@ test.describe('arrival at Base Marambio on the trip from Ushuaia', () => {
     const card = await arriveAtMarambio(page, /Irízar/);
     // Before the hop the card asks its question and has one way on: «Continuar». No summary yet.
     await expect(card.getByRole('group', { name: /¿Cómo pasan del Irízar a la base/ })).toBeVisible();
-    await expect(card.locator('.vactions').getByRole('button')).toHaveText(['Continuar']);
+    await expect(card.locator('.sheet-actions').getByRole('button')).toHaveText(['Continuar']);
     await expect(card.getByText('Hitos del viaje')).toHaveCount(0);
     await expect(card.getByRole('button', { name: 'Continuar' })).toBeFocused();
     // Left unanswered: the hop shows the answer.
@@ -146,7 +146,7 @@ test.describe('arrival at Base Marambio on the trip from Ushuaia', () => {
     await expect(card.getByText(/un Sea King va y viene/)).toBeVisible();
     await expect(card.locator('fieldset')).toHaveCount(0);
     await expect(card.getByText('Hitos del viaje')).toBeVisible();
-    await expect(card.getByRole('button', { name: 'Terminar el viaje' })).toBeFocused();
+    await expect(card.getByRole('button', { name: 'Terminar expedición' })).toBeFocused();
     await expect(card.getByRole('button', { name: 'Continuar' })).toHaveCount(0);
   });
 
@@ -179,7 +179,7 @@ test.describe('optional milestones on the trip from Ushuaia (#157)', () => {
     const card = page.getByRole('dialog', { name: 'Ushuaia y el Canal Beagle' });
     await expect(card.getByRole('button', { name: 'Responder una pregunta' })).toBeVisible();
     // One way on: the card had two «Seguir viaje», and it tells all it has at once, with no «Saber más» (#190).
-    await expect(card.locator('.vactions').getByRole('button')).toHaveText(['Seguir viaje']);
+    await expect(card.locator('.sheet-actions').getByRole('button')).toHaveText(['Seguir viaje']);
     await card.getByRole('button', { name: 'Seguir viaje' }).click();
     await expect(card).toHaveCount(0);
     // Read once, it says so, and it can be read again.

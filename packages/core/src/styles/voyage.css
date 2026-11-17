@@ -1,17 +1,11 @@
 /* Trip from Ushuaia (issue #4): panel laid over the live map. */
 .sheet.voyage{z-index:20}
 /* The Orcadas intro sheet and its scrim cover the bottom bar (.bottom, z-index 10) on phones. */
-.sheet.voyage.orc-intro,.vscrim.orc-intro{z-index:20}
+.sheet.voyage.orc-intro {z-index:20}
 .orc-intro-recon{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:4px 0 10px}
 .orc-intro-recon .vsmall{margin:0}
 .orc-intro .orc-facts-list{margin:10px 0 4px}
-.orc-intro-sources .orc-scrim{z-index:22}
-.orc-intro-sources .orc-sources{z-index:23}
-.vscrim{z-index:19}
 .sheet.voyage p{margin:8px 0}
-/* The actions stay in view at the bottom of the sheet however long its content is. */
-.vactions{position:sticky;bottom:-24px;margin:12px 0 -24px;padding:8px 0 24px;background:var(--chart-paper);
-  border-top:1px solid var(--chart-rule);justify-content:flex-end}
 .vstep{display:block;font-size:12px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--chart-muted);
   font-family:'Fraunces', Georgia, serif;}
 .vpick{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
@@ -28,12 +22,6 @@
 .vfacts{list-style:none;margin:8px 0;padding:0;display:flex;flex-direction:column;gap:10px}
 .vfact{line-height:1.35}
 .vref{position:relative;top:-.4em;margin-left:3px;padding:2px 3px;border:0;background:none;color:var(--deep);font-weight:700;font-size:12px;line-height:1;text-decoration:underline;cursor:pointer}
-.listview.vsources{z-index:22}
-.vsrclist{margin:12px 0 0;padding-left:28px;display:flex;flex-direction:column;gap:12px}
-.vsrclist li{padding:6px 8px;border-radius:var(--chart-radius)}
-.vsrclist li.on{background:var(--ice);outline:2px solid var(--ocre)}
-.vsrclist strong,.vsrclist span,.vsrclist a{display:block;overflow-wrap:anywhere}
-.vsrclist a{color:var(--deep);font-weight:700;min-height:28px}
 .vsmall{margin:6px 0 0;font-size:12px;color:var(--chart-muted)}
 .vbar{position:absolute;left:12px;right:12px;bottom:12px;z-index:5;padding:10px 12px 12px;border:2px solid var(--chart-ink);border-radius:var(--chart-radius)}
 .vprog{height:4px;border-radius:0;background:var(--chart-rule);overflow:hidden}
@@ -48,7 +36,7 @@
 .vcount svg{width:18px;height:18px}
 /* The milestone just passed and its question: offered as chips, opened only if touched (#157). */
 .vsuggest{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 0}
-.vask{width:100%;justify-content:flex-start}
+.vask{width:100%}
 /* Touch target over the head of a pin passed: the pin is drawn under it, the ring shows on focus. */
 .vpin{width:44px;height:44px;padding:0;border:0;border-radius:50%;background:transparent;pointer-events:auto;cursor:pointer}
 .vpin:hover,.vpin:focus-visible{outline:3px solid var(--ocre);outline-offset:-6px}
@@ -118,8 +106,6 @@
 .pdio-stage{position:absolute;inset:0 0 var(--scene-sheet,0px) 0}
 .pdio-top{position:absolute;left:0;right:0;top:0;height:0}
 .pdio-canvas{display:block;touch-action:none}
-/* The sources page opens over the diorama. */
-.pdio ~ .listview.vsources{z-index:22}
 .pdio-map{position:absolute;left:12px;top:12px;z-index:8;display:inline-flex;align-items:center;gap:6px;padding:0 12px 0 8px;min-height:40px}
 .pdio-map .ico{width:18px;height:18px}
 .pdio-badge{position:absolute;left:12px;top:60px;max-width:min(360px,calc(100% - 24px));display:flex;flex-direction:column;align-items:flex-start;gap:6px;z-index:7;pointer-events:none}
@@ -133,13 +119,9 @@
   .pdio .orc-panel{top:auto;max-height:calc(100dvh - 16px)}
 }
 .poncho-panel button{cursor:pointer}
-.poncho-panel button:focus-visible,.poncho-panel summary:focus-visible,.poncho-panel a:focus-visible,.poncho-dialog button:focus-visible{outline:3px solid var(--deep);outline-offset:4px}
-.poncho-panel .orc-bar .btn{border-radius:var(--chart-button-radius)}
+.poncho-panel button:focus-visible, .poncho-panel summary:focus-visible, .poncho-panel a:focus-visible {outline:3px solid var(--deep);outline-offset:4px}
 .poncho-line{margin:0 0 16px;font-size:16px;line-height:1.55}
 .poncho-line .vfact{list-style:none;margin:0 0 10px}
-.poncho-more{margin-top:17px;border-bottom:1px solid color-mix(in srgb,var(--ink) 18%,transparent);padding-bottom:18px}
-.poncho-more summary{cursor:pointer;font-size:14px}
-.poncho-more .vfacts{margin:14px 0 0;font-size:14px;line-height:1.6}
 /* The arrows of the bar: «‹» goes back, «›» goes forward (the same arrow, turned). */
 .poncho-next .ico,.poncho-prev .ico{width:18px;height:18px}
 .poncho-next,.poncho-prev{display:inline-flex;align-items:center;justify-content:center;gap:6px}
@@ -151,11 +133,6 @@
 .poncho-archive small{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--pencil)}
 .poncho-archive b{font-size:14px;font-weight:400}
 .poncho-archive span>span{font-size:11px;text-decoration:underline;text-underline-offset:3px}
-.poncho-dialog{width:min(650px,calc(100vw - 32px));max-height:calc(100dvh - 40px);padding:25px;border:1px solid var(--ink);border-radius:var(--chart-radius);background:var(--paper);color:var(--ink);box-sizing:border-box;font-family:'Atkinson Hyperlegible',sans-serif}
-.poncho-dialog::backdrop{background:color-mix(in srgb,var(--ink) 55%,transparent)}
-.poncho-dialog-head{display:flex;align-items:center;justify-content:space-between;gap:15px}
-.poncho-dialog h2{font:28px 'Fraunces',serif;margin:0}
-.poncho-dialog a{color:var(--deep);text-underline-offset:3px}
 .poncho-photo{margin:20px 0 0}
 .poncho-photo img{display:block;width:100%;max-height:63dvh;object-fit:contain}
 .poncho-photo figcaption{display:flex;flex-direction:column;gap:7px;margin-top:15px;font-size:12px;line-height:1.5}

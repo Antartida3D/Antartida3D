@@ -1,3 +1,4 @@
+import { MoreFold } from '../sheet/MoreFold.tsx';
 import { useEffect, useRef, useState } from 'react';
 import { CONTOUR_M, FUEGIA_VERTICAL_EXAGGERATION, MALVINAS_FLAG, VERTICAL_EXAGGERATION, legendSwipe, legendSwipeStarts } from '@antartida/core';
 import { Icon } from '../ui.tsx';
@@ -89,23 +90,22 @@ export function Legend({ open, onToggle, mode = '2d' }: { open: boolean; onToggl
             )}
           </ul>
           {/* Sources and what is only an illustration: folded, so the legend stays short (#114). */}
-          <details>
-            <summary>Fuentes y aclaraciones</summary>
+          <MoreFold summary="Fuentes y aclaraciones">
             {/* In 3D this is the list that can outgrow its height and scroll: reachable by keyboard (#108). */}
             <ul tabIndex={mode === '3d' ? 0 : undefined} aria-label="Fuentes y aclaraciones">
-              <li className="leg-note" style={{ fontStyle: 'italic', fontSize: '0.82em', opacity: 0.9 }}>{MALVINAS_FLAG.description}</li>
+              <li className="leg-note">{MALVINAS_FLAG.description}</li>
               {mode === '3d' && (
                 <>
-                  <li className="leg-note" style={{ fontStyle: 'italic', fontSize: '0.82em', opacity: 0.9 }}>
+                  <li className="leg-note">
                     Relieve real: Bedmap3 (BAS) ×{VERTICAL_EXAGGERATION}, curvas cada {CONTOUR_M} m · Tierra del Fuego y Malvinas: IBCSO v2 ×{FUEGIA_VERTICAL_EXAGGERATION}, color según altura · Profundidad: IBCSO v2 (SCAR) · Resto del mundo, hasta 60° N: Natural Earth II, plano y sin relieve
                   </li>
-                  <li className="leg-note" style={{ fontStyle: 'italic', fontSize: '0.82em', opacity: 0.9 }}>
+                  <li className="leg-note">
                     Fauna y témpanos: ilustración, no posiciones reales
                   </li>
                 </>
               )}
             </ul>
-          </details>
+          </MoreFold>
         </>
       )}
     </div>

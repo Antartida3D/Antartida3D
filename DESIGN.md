@@ -216,6 +216,10 @@ La ficha abre con «Cuaderno de campo» y un cierre con nombre accesible. Una ac
 
 Las acciones secundarias usan contorno simple y papel o fondo transparente. Las opciones seleccionadas combinan tinta oscura, papel claro y un borde distinto, conservando `aria-pressed` o `aria-current`. Los controles deshabilitados conservan su estado semántico y reducen el énfasis. El foco es visible tanto en reposo como sobre un control seleccionado.
 
+### Modales
+
+Todo modal de contenido usa el mismo contenedor (`BottomSheet`), con fondo propio, foco atrapado y devuelto, y cierre con Escape, tocando afuera o arrastrando hacia abajo. Comparten un encabezado (`SheetHeader`: etiqueta, título, lugar o pregunta y «Cerrar»), un texto (`SheetText`, con bajada y `**negrita**`), un plegable (`MoreFold`, con la flechita que gira) y una sola fila de acciones (`SheetActions`: botones del mismo alto y ancho, un solo primario, último a la derecha en escritorio y abajo en celular). Las citas son `[N]` (`Cite`) y todas abren la misma vista de fuentes (`SourcesView`). Toda expedición abre un modal previo con el mismo formato y un modelo 3D que gira. Solo se marca lo que no es real. Un modal con botón de cierre no lleva cruz. Detalle en [DEC-264](docs/decisiones/DEC-264-modales-normalizados.md).
+
 ### Mapa, lista y navegación
 
 La cabecera toma forma editorial de atlas; el registro, de bitácora; la leyenda, de clave cartográfica. El índice de expediciones usa filas, títulos y divisores. Los controles 2D/3D, zoom y selección comparten acciones y foco, manteniendo sus etiquetas y alternativas por teclado.

@@ -60,6 +60,8 @@ export function KindChip({
   label?: string;
   className?: string;
 }) {
+  // Only what is not a real datum is marked: a real one goes without a label, with its citation.
+  if (kind === 'real') return null;
   const text = label ?? FACT_KIND_LABEL[kind];
   return (
     <span className={`orc-chip orc-chip-${kind}${className ? ' ' + className : ''}`}>

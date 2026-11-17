@@ -1,30 +1,8 @@
-import { createContext, useContext } from 'react';
-import { panelFacts, sourcesOf, type OrcadasFact } from '@antartida/core';
+import { panelFacts, type OrcadasFact } from '@antartida/core';
 import { Quoted } from '../ui.tsx';
+import { MoreFold } from '../sheet/MoreFold.tsx';
+import { Cites } from '../sheet/Cite.tsx';
 import { KindChip } from './KindChip.tsx';
-
-export const SourceContext = createContext<((sourceId: string) => void) | null>(null);
-
-export function FactSources({ fact }: { fact: OrcadasFact }) {
-  const onOpenSource = useContext(SourceContext);
-  const srcs = sourcesOf(fact);
-  if (srcs.length === 0) return null;
-  return (
-    <div className="orc-fact-srcs">
-      <span className="orc-src-prefix">Fuente:</span>
-      {srcs.map((src) => (
-        <button
-          key={src.id}
-          type="button"
-          className="orc-src-link"
-          onClick={() => onOpenSource?.(src.id)}
-        >
-          {src.short}
-        </button>
-      ))}
-    </div>
-  );
-}
 
 export function FactCard({ fact }: { fact: OrcadasFact }) {
   return (
@@ -33,8 +11,10 @@ export function FactCard({ fact }: { fact: OrcadasFact }) {
         <KindChip kind={fact.kind} />
         {fact.title && <strong className="orc-fact-title">{fact.title}</strong>}
       </div>
-      <p className="orc-fact-text"><Quoted text={fact.text} /></p>
-      <FactSources fact={fact} />
+      <p className="orc-fact-text">
+        <Quoted text={fact.text} />
+        <Cites ids={fact.sourceIds} />
+      </p>
     </article>
   );
 }
@@ -46,7 +26,7 @@ export function FactList({
 }: {
   facts: readonly OrcadasFact[];
   fold?: boolean;
-  /** When set, all panel-filtered facts render inside a single folded <details className="orc-more">. */
+  /** When set, all panel-filtered facts render inside a single folded block with this summary. */
   summary?: string;
 }) {
   if (facts.length === 0) return null;
@@ -65,16 +45,12 @@ export function FactList({
   if (visible.length === 0 && more.length === 0) return null;
 
   if (summary) {
-    const all = [...visible, ...more];
     return (
-      <details className="orc-more">
-        <summary>{summary}</summary>
-        <div className="orc-more-facts">
-          {all.map((fact) => (
-            <FactCard key={fact.id} fact={fact} />
-          ))}
-        </div>
-      </details>
+      <MoreFold summary={summary}>
+        {[...visible, ...more].map((fact) => (
+          <FactCard key={fact.id} fact={fact} />
+        ))}
+      </MoreFold>
     );
   }
 
@@ -84,14 +60,11 @@ export function FactList({
         <FactCard key={fact.id} fact={fact} />
       ))}
       {more.length > 0 && (
-        <details className="orc-more">
-          <summary>Saber más ({more.length})</summary>
-          <div className="orc-more-facts">
-            {more.map((fact) => (
-              <FactCard key={fact.id} fact={fact} />
-            ))}
-          </div>
-        </details>
+        <MoreFold>
+          {more.map((fact) => (
+            <FactCard key={fact.id} fact={fact} />
+          ))}
+        </MoreFold>
       )}
     </div>
   );

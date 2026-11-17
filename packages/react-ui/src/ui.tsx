@@ -1,5 +1,5 @@
-import { SVG_DEFS, quoteParts } from '@antartida/core';
-import type { ReactNode } from 'react';
+import { SVG_DEFS, richParts } from '@antartida/core';
+import { Fragment, type ReactNode } from 'react';
 
 export type ChipKind = 'real' | 'sim' | 'art' | 'prov';
 
@@ -7,9 +7,16 @@ export function Chip({ kind, children }: { kind: ChipKind; children: ReactNode }
   return <span className={'chip ' + kind}>{children}</span>;
 }
 
-/** A text with its “quoted” passages in italics: a quotation keeps its marks and leans (#190). */
+/** A text with its “quoted” passages in italics (a quotation keeps its marks and leans, #190) and its `**bold**` passages in bold. */
 export function Quoted({ text }: { text: string }) {
-  return <>{quoteParts(text).map((part, i) => (part.quoted ? <em key={i}>{part.text}</em> : part.text))}</>;
+  return (
+    <>
+      {richParts(text).map((part, i) => {
+        const node = part.quoted ? <em>{part.text}</em> : part.text;
+        return part.strong ? <strong key={i}>{node}</strong> : <Fragment key={i}>{node}</Fragment>;
+      })}
+    </>
+  );
 }
 
 /** Shared painted filters and gradients, referenced by url(#id) everywhere. */

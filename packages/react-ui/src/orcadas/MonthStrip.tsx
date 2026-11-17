@@ -1,3 +1,4 @@
+import { MoreFold } from '../sheet/MoreFold.tsx';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   MONTH_NAMES,
@@ -280,10 +281,7 @@ export function MonthStrip({
         <span className={`orc-month-legend-ice${place.stripeClass ? ` ${place.stripeClass}` : ''}`} /> {place.stripeLegend}
       </p>
 
-      <details className="orc-month-details">
-        <summary className="orc-month-summary-toggle">
-          Saber más
-        </summary>
+      <MoreFold className="orc-month-details">
         <div className="orc-month-details-body">
           <div className="orc-month-info-row">
             <span className="orc-month-daylight-text">
@@ -297,7 +295,7 @@ export function MonthStrip({
 
           {place.details(normMonth, monthName)}
         </div>
-      </details>
+      </MoreFold>
     </>
   );
 

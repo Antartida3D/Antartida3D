@@ -56,7 +56,7 @@ test('explores the four fossils and three habitats, opens sources and records co
   await expect(said).toHaveText('“Lo ocultamos hasta tenerlo publicado.”');
   await expect(said).toHaveCSS('font-style', 'italic');
   await expect(note).not.toContainText(/[«»]/);
-  await expect(note.getByRole('link', { name: /Eduardo Olivero cuenta el hallazgo/ })).toBeVisible();
+  await expect(note.getByRole('button', { name: /^Fuente / })).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(note).not.toBeVisible();
   await page.locator('.fossil-next').click();
@@ -87,7 +87,7 @@ test('explores the four fossils and three habitats, opens sources and records co
   await page.keyboard.press('Escape');
 
   await page.getByRole('button', { name: 'Fuentes', exact: true }).click();
-  await expect(dialog).toContainText('Consultado: 14/11/2026');
+  await expect(dialog).toContainText('Consultado el 14 de noviembre de 2026');
   await expect(dialog).toContainText('López Cabrera');
   await expect(dialog).toContainText('Raffi');
   await page.keyboard.press('Escape');
@@ -138,7 +138,7 @@ test('fits the screen and the phone panel can expand and return to peek', async 
   await expect(page.locator('.reg')).toContainText(`0/${AVAILABLE_COUNT}`);
 });
 
-test('Fósiles and Base Marambio each have their own marker, apart on screen, and the Fósiles one opens its expedition (#238)', async ({ page }) => {
+test('Fósiles and Base Marambio each have their own marker, apart on screen, and the Fósiles one opens its expedition (#238)', async ({ page, isMobile }) => {
   await page.goto('/');
   await show3D(page);
   const marambio = page.getByRole('button', { name: /^Base Marambio, Isla Marambio/ });
@@ -148,6 +148,11 @@ test('Fósiles and Base Marambio each have their own marker, apart on screen, an
   const [a, b] = [(await marambio.boundingBox())!, (await fosiles.boundingBox())!];
   expect(Math.hypot(a.x + a.width / 2 - b.x - b.width / 2, a.y + a.height / 2 - b.y - b.height / 2)).toBeGreaterThan(40);
   await expect(page.locator('.mk', { hasText: /^\d+$/ })).toHaveCount(0);
-  await fosiles.click();
+  // Other markers can sit over it on a phone: it opens with the keyboard (a touch screen shows its label first).
+  await fosiles.focus();
+  await page.keyboard.press('Enter');
+  const start = page.getByRole('button', { name: 'Comenzar expedición' });
+  if (isMobile && !(await start.isVisible())) await page.keyboard.press('Enter');
+  await start.click();
   await expect(page.getByRole('region', { name: 'Expedición Fósiles' })).toBeVisible();
 });

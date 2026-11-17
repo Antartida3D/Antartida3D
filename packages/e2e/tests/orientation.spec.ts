@@ -68,6 +68,7 @@ test.describe('resume last expedition', () => {
     await page.goto('/');
     await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
     await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Base Marambio/ }).click();
+    await page.getByRole('button', { name: 'Comenzar expedición' }).click();
 
     const section = page.getByRole('region', { name: 'Expedición Base Marambio' });
     await expect(section).toBeVisible();
@@ -92,7 +93,7 @@ test.describe('resume last expedition', () => {
     await expect(section).toBeVisible();
     await expect(section).toContainText(`Punto 3 de ${MARAMBIO_SPOTS.length}`);
 
-    const primary = section.locator('.ebar .btn.primary');
+    const primary = section.locator('.sheet-actions .btn.primary');
     for (let i = 2; i < MARAMBIO_SPOTS.length; i++) {
       await primary.click();
     }
@@ -106,6 +107,7 @@ test.describe('resume last expedition', () => {
     await page.goto('/');
     await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
     await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Fósiles/ }).click();
+    await page.getByRole('button', { name: 'Comenzar expedición' }).click();
 
     const section = page.getByRole('region', { name: 'Expedición Fósiles' });
     await expect(section).toBeVisible();
@@ -160,6 +162,7 @@ test.describe('resume last expedition', () => {
     await page.goto('/');
     await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
     await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Océano/ }).click();
+    await page.getByRole('button', { name: 'Comenzar expedición' }).click();
 
     const section = page.getByRole('region', { name: 'Expedición Océano' });
     await expect(section).toBeVisible();

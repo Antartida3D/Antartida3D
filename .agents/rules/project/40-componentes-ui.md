@@ -12,9 +12,10 @@
 6. **Sin líneas dobles** (`border: … double`) ni marcos interiores: botones, paneles y separadores llevan una sola línea.
 7. Un botón nuevo usa `.btn` y sus variantes. No se crea una clase propia que repita el aspecto de un botón.
 8. Un color nuevo se agrega como token en `tokens.css`, no suelto en una regla.
+9. Los modales de contenido usan los componentes de `packages/react-ui/src/sheet/` y `BottomSheet`, no una solución propia: `SheetHeader` (encabezado), `SheetText` (texto), `MoreFold` («Saber más»), `SheetActions` (fila de botones, un solo `.btn.primary`), `Cite` (cita `[N]`) y `SourcesView` (vista de fuentes única). No se agrega un `<dialog>`, un fondo ni una fila de botones propios, ni estilos en línea en un modal.
 
 ## Guardián
 Prueba de las reglas 1, 2, 3, 5 y 6.
 
 - Prueba: `pnpm --filter @antartida/core test` (`packages/core/test/styles.test.ts`). Falla si una hoja de pantalla da color, fondo o borde a un componente, si un hover pinta de azul, si aparece una línea doble o si suben los colores hex fuera de `tokens.css`.
-- Decisión: `docs/decisiones/DEC-234-componentes-de-interfaz.md`. Sistema visual: `DESIGN.md`.
+- Decisiones: `docs/decisiones/DEC-234-componentes-de-interfaz.md` y `docs/decisiones/DEC-264-modales-normalizados.md`. Sistema visual: `DESIGN.md`.

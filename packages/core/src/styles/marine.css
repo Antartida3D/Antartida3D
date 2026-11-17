@@ -14,7 +14,6 @@
 .marine-scene-note small { padding: 2px 6px; font-size: 11px; color: var(--chart-ink); background: color-mix(in srgb, var(--chart-paper) 88%, transparent); border-radius: 4px; }
 .marine-found { position: absolute; z-index: 4; bottom: calc(var(--scene-sheet, 0px) + 80px); left: calc((100% - var(--scene-side, 0px)) / 2); transform: translateX(-50%) rotate(-2deg); padding: 10px 16px; font: 22px 'Caveat', cursive; background: var(--paper); white-space: nowrap; box-shadow: 1px 2px 0 color-mix(in srgb, var(--ink) 20%, transparent); pointer-events: none; }
 .marine-found small { display: block; font: 10px 'Atkinson Hyperlegible', sans-serif; margin-top: 4px; }
-.marine-panel .orc-bar .btn { border-radius: var(--chart-button-radius); }
 .marine-eyebrow { font-size: 12px; color: var(--pencil); margin: 0 0 8px; line-height: 1.5; }
 .marine-line { font-size: 16px; line-height: 1.55; margin: 0 0 20px; }
 @media (max-width: 899px) and (min-height: 501px) {
@@ -33,14 +32,8 @@
   .marine-scene-note small { display: none; }
   .marine-line { font-size: 14px; }
 }
-.marine-expedition button, .marine-dialog button { cursor: pointer; }
-.marine-expedition button:focus-visible, .marine-dialog button:focus-visible, .marine-expedition summary:focus-visible, .marine-expedition a:focus-visible { outline: 3px solid var(--deep); outline-offset: 4px; }
-.marine-source-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 5px 10px; font-size: 11px; color: var(--pencil); line-height: 1.6; }
-.marine-source-line > span:first-child { text-transform: uppercase; font-size: 10px; letter-spacing: .08em; }
-.marine-source-line a, .marine-dialog a { color: var(--deep); text-underline-offset: 3px; }
-.marine-more { margin-top: 17px; border-bottom: 1px solid color-mix(in srgb, var(--ink) 18%, transparent); padding-bottom: 18px; }
-.marine-more summary { cursor: pointer; font-size: 14px; }
-.marine-more p { font-size: 14px; line-height: 1.6; margin: 14px 0 0; }
+.marine-expedition button { cursor: pointer; }
+.marine-expedition button:focus-visible, .marine-expedition summary:focus-visible, .marine-expedition a:focus-visible { outline: 3px solid var(--deep); outline-offset: 4px; }
 .marine-expedition button:disabled { cursor: default; opacity: .48; }
 .marine-interaction { border-left: 2px solid var(--ocre); padding: 3px 0 3px 15px; margin: 0 0 22px; }
 .marine-interaction .marine-action { display: block; border-radius: var(--chart-button-radius); font-size: 13px; margin: 8px 0; padding: 10px 13px; }
@@ -50,11 +43,6 @@
 .marine-checklist li { display: flex; gap: 10px; }
 .marine-checklist li span { color: var(--deep); }
 .marine-loading { display: grid; place-items: center; height: 100%; font: 24px 'Caveat', cursive; }
-.marine-dialog { width: min(650px, calc(100vw - 32px)); max-height: calc(100dvh - 40px); padding: 25px; border: 1px solid var(--ink); border-radius: var(--chart-radius); background: var(--paper); color: var(--ink); box-sizing: border-box; }
-.marine-dialog::backdrop { background: color-mix(in srgb, var(--ink) 55%, transparent); }
-.marine-dialog-heading { display: flex; align-items: center; justify-content: space-between; gap: 15px; }
-.marine-dialog h2 { font: 28px 'Fraunces', serif; margin: 0; }
-.marine-dialog p { font-size: 14px; line-height: 1.6; }
 .marine-source-entry { border-top: 1px solid color-mix(in srgb, var(--ink) 20%, transparent); margin-top: 20px; padding-top: 15px; }
 .marine-source-entry h3 { font-size: 16px; margin: 0 0 7px; }
 .marine-source-entry p { margin: 7px 0; }
@@ -63,7 +51,7 @@
 .marine-fallback > p { margin: 0; padding: 70px 34px 0; max-width: 560px; font: 26px/1.35 "Caveat", cursive; }
 .marine-fallback figcaption { position: absolute; bottom: 70px; left: 20px; right: 20px; padding: 12px; background: var(--paper); font-size: 11px; line-height: 1.5; border: 1px dashed color-mix(in srgb, var(--ink) 50%, transparent); }
 .marine-fallback figcaption span { display: block; margin-top: 7px; }
-@media (prefers-reduced-motion: reduce) { .marine-expedition *, .marine-dialog * { scroll-behavior: auto; transition: none !important; animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .marine-expedition * { scroll-behavior: auto; transition: none !important; animation: none !important; } }
 /* Océano (#8): pieces of its own. The stage turns from paper to deep water when the scene is under the ice. */
 .marine-stage.is-under { background: color-mix(in srgb, var(--deep) 70%, var(--glacier)); }
 .marine-steps { margin: 10px 0 6px; padding-left: 18px; font-size: 13px; line-height: 1.5; display: flex; flex-direction: column; gap: 4px; }

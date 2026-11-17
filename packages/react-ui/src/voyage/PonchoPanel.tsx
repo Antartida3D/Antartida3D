@@ -7,7 +7,11 @@ import sanMartinUrl from '@antartida/core/assets/poncho/san-martin.jpg';
 import { BottomSheet } from '../BottomSheet.tsx';
 import { useIsDesktop } from '../hooks.ts';
 import { Icon, Quoted } from '../ui.tsx';
-import { Fact, type OpenSources } from './Fact.tsx';
+import { MoreFold } from '../sheet/MoreFold.tsx';
+import { Cite } from '../sheet/Cite.tsx';
+import { SheetActions } from '../sheet/SheetActions.tsx';
+import { SheetHeader } from '../sheet/SheetHeader.tsx';
+import { Fact } from './Fact.tsx';
 import type { DioramaTour } from './PonchoDiorama.tsx';
 import type { VoyageController } from './useVoyage.ts';
 
@@ -40,49 +44,38 @@ export function HitoNav({ voyage }: { voyage: VoyageController }) {
   );
 }
 
-/** The source of a photograph and, when it has a free license, its author and license: shown wherever the photograph is. */
+/** The author and license of a photograph, when it has a free one, and the citation of its source: shown wherever the photograph is. */
 export function PhotoCredit({ photo }: { photo: PonchoPhoto }) {
   return (
     <>
       {photo.credit && (
         <span>Foto: {photo.credit.author}. Licencia <a href={photo.credit.licenseUrl} target="_blank" rel="noreferrer">{photo.credit.license}</a>.</span>
       )}
-      <span>Fuente: <a href={photo.source.url} target="_blank" rel="noreferrer">{photo.source.publisher}</a>, consultada el {photo.source.accessed}.</span>
+      <Cite id={`photo:${photo.file}`} />
     </>
   );
 }
 
-/** The photograph of a stop in a modal, big, with its caption and its source (the format of the photographs of Fósiles). */
+/** The photograph of a stop in a modal, big, with its caption and source (the format of the photographs of Fósiles). */
 function PhotoDialog({ photo, onClose }: { photo: PonchoPhoto; onClose: () => void }) {
-  const dialog = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
-    const el = dialog.current;
-    if (el && !el.open) el.showModal();
-    return () => el?.close();
-  }, []);
+  const ref = useRef<HTMLElement>(null);
   return (
-    <dialog
-      ref={dialog}
-      className="poncho-dialog"
-      aria-labelledby="poncho-photo-title"
-      onClose={onClose}
-      // Escape and the arrows are the dialog's: the diorama behind it does not leave or change step with them.
-      onKeyDown={(e) => e.stopPropagation()}
-      // A press on the dark behind it closes it.
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div className="poncho-dialog-head">
-        <h2 id="poncho-photo-title">Archivo fotográfico</h2>
-        <button type="button" className="iconbtn" aria-label="Cerrar" onClick={onClose}>{Icon.close}</button>
-      </div>
-      <figure className="poncho-photo">
-        <img src={PONCHO_PHOTO_URL[photo.file]} alt={photo.alt} />
-        <figcaption>
-          <Quoted text={photo.caption} />
-          <PhotoCredit photo={photo} />
-        </figcaption>
-      </figure>
-    </dialog>
+    // Escape and arrows are the modal's: the diorama behind does not leave or change step with them.
+    <div className="sheet-isolate" onKeyDown={(e) => e.stopPropagation()}>
+      <BottomSheet className="voyage poncho-photo-sheet" labelledBy="poncho-photo-title" sheetRef={ref} onClose={onClose} layer="top">
+        <SheetHeader title="Archivo fotográfico" titleId="poncho-photo-title" />
+        <figure className="poncho-photo">
+          <img src={PONCHO_PHOTO_URL[photo.file]} alt={photo.alt} />
+          <figcaption>
+            <Quoted text={photo.caption} />
+            <PhotoCredit photo={photo} />
+          </figcaption>
+        </figure>
+        <SheetActions>
+          <button type="button" className="btn primary" onClick={onClose}>Volver</button>
+        </SheetActions>
+      </BottomSheet>
+    </div>
   );
 }
 
@@ -92,12 +85,11 @@ function PhotoDialog({ photo, onClose }: { photo: PonchoPhoto; onClose: () => vo
  * story of the stop, which grows a sentence at each «Siguiente» while the scene shows something new; at the last one come
  * «Saber más» (it unfolds in place) and the photograph. «Atrás» goes back a sentence, or into the stop before.
  */
-export function PonchoPanel({ voyage, tour, onSource }: { voyage: VoyageController; tour: DioramaTour; onSource: OpenSources }) {
+export function PonchoPanel({ voyage, tour }: { voyage: VoyageController; tour: DioramaTour }) {
   const state = voyage.state!;
   const desktop = useIsDesktop();
   const panel = tour.panelRef;
   const scroll = useRef<HTMLDivElement>(null);
-  const title = useRef<HTMLHeadingElement>(null);
   // The photograph open in its modal, or null.
   const [photoOpen, setPhotoOpen] = useState<PonchoPhoto | null>(null);
   const stops = voyageStops(state.kind);
@@ -111,7 +103,7 @@ export function PonchoPanel({ voyage, tour, onSource }: { voyage: VoyageControll
 
   // A new stop or sentence starts at the top of the panel, and the title takes the focus (as the stops of Fósiles do).
   useEffect(() => {
-    title.current?.focus({ preventScroll: true });
+    document.getElementById('poncho-title')?.focus({ preventScroll: true });
     if (scroll.current) scroll.current.scrollTop = 0;
   }, [state.card, view.step]);
 
@@ -119,15 +111,16 @@ export function PonchoPanel({ voyage, tour, onSource }: { voyage: VoyageControll
   const content = (
     <>
       <div className="orc-panel-scroll poncho-panel-content" ref={scroll}>
-        <div className="orc-panel-head">
-          <div className="orc-panel-head-title">
-            <span className="orc-kicker">{act ? `Acto ${act.number} · ` : ''}hito {state.card + 1} de {stops.length}</span>
-            <h2 id="poncho-title" className="orc-chapter-h2" ref={title} tabIndex={-1}>{milestone.title}</h2>
-          </div>
-        </div>
+        <SheetHeader
+        label={`${act ? `Acto ${act.number} · ` : ''}hito ${state.card + 1} de ${stops.length}`}
+        title={milestone.title}
+        titleId="poncho-title"
+        titleClass="orc-chapter-h2"
+        titleFocusable
+      />
         <ul className="vfacts poncho-line" aria-live="polite">
           {told.map((text, i) => (
-            <Fact key={text} fact={{ ...milestone.essential, text, sources: i === told.length - 1 ? milestone.essential.sources : [] }} onSource={onSource} />
+            <Fact key={text} fact={{ ...milestone.essential, text, sources: i === told.length - 1 ? milestone.essential.sources : [] }} />
           ))}
         </ul>
         {view.showsHook && milestone.hook && <p className="vhook">{milestone.hook}</p>}
@@ -139,23 +132,23 @@ export function PonchoPanel({ voyage, tour, onSource }: { voyage: VoyageControll
           </button>
         ))}
         {view.last && milestone.more.length > 0 && (
-          <details className="poncho-more" key={milestone.id}>
-            <summary>Saber más</summary>
-            <ul className="vfacts">{milestone.more.map((f) => <Fact key={f.text} fact={f} onSource={onSource} />)}</ul>
-          </details>
+          <MoreFold key={milestone.id}>
+            <ul className="vfacts">{milestone.more.map((f) => <Fact key={f.text} fact={f} />)}</ul>
+          </MoreFold>
         )}
       </div>
-      <div className="orc-bar ebar">
+      <SheetActions>
         {tour.onBack && (
-          <button type="button" className="btn ghost poncho-prev" onClick={tour.onBack}>
+          <button type="button" className="btn poncho-prev" onClick={tour.onBack}>
             <span className="poncho-prev-arrow" aria-hidden="true">{Icon.back}</span>Atrás
           </button>
         )}
         <button type="button" className="btn primary poncho-next" onClick={tour.onNext}>
-          {leaves ? (last ? 'Terminar el viaje' : 'Seguir con Poncho') : 'Siguiente'}
+          {leaves ? (last ? 'Terminar expedición' : 'Seguir con Poncho') : 'Siguiente'}
           <span className="poncho-arrow" aria-hidden="true">{Icon.back}</span>
         </button>
-      </div>
+      </SheetActions>
+
       {photoOpen && <PhotoDialog photo={photoOpen} onClose={() => setPhotoOpen(null)} />}
     </>
   );

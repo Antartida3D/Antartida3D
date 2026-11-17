@@ -6,13 +6,14 @@ import { ORCADAS_GUIDING_QUESTION } from '../../core/src/content/orcadas.ts';
 import { mockOpenMeteo } from './weather-helpers.ts';
 
 const log = (page: Page) => page.locator('.reg');
-const primary = (page: Page) => page.locator('.mar .ebar .btn.primary');
+const primary = (page: Page) => page.locator('.mar .sheet-actions .btn.primary');
 const heading = (page: Page, name: string) => page.locator('.mar').getByRole('heading', { level: 2, name });
 
 async function openMarambio(page: Page) {
   await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
   const list = page.getByRole('dialog', { name: 'Todos los puntos' });
   await list.getByRole('button', { name: /Base Marambio/ }).click();
+  await page.getByRole('button', { name: 'Comenzar expedición' }).click();
   await expect(heading(page, MARAMBIO_SPOTS[0].label)).toBeVisible();
   await page.waitForFunction(() => (window as unknown as { __marambioReady?: boolean }).__marambioReady === true);
 }
@@ -52,7 +53,7 @@ test.describe('with WebGL', () => {
 
     for (const [i, spot] of MARAMBIO_SPOTS.entries()) {
       await expect(heading(page, spot.label)).toBeVisible();
-      await expect(section.locator('.orc-kicker')).toHaveText(`Punto ${i + 1} de ${MARAMBIO_SPOTS.length}`);
+      await expect(section.locator('.orc-panel .sheet-label')).toHaveText(`Punto ${i + 1} de ${MARAMBIO_SPOTS.length}`);
       for (const fact of marambioFacts(spot.id)) await expect(section.locator('.orc-panel')).toContainText(fact.text);
       await expect(section.getByRole('button', { name: `Punto de interés: ${spot.label}` })).toHaveAttribute('aria-pressed', 'true');
       if (i < MARAMBIO_SPOTS.length - 1) {
@@ -62,15 +63,16 @@ test.describe('with WebGL', () => {
     }
 
     // A source link under a fact opens the list of sources, and the list goes back to the base.
-    await section.locator('.orc-panel .orc-src-link').first().click();
-    await expect(heading(page, 'De dónde sale cada dato')).toBeFocused();
-    await expect(section.locator('.mar-source.is-highlight')).toHaveCount(1);
-    await expect(section.locator('.mar-sources')).toContainText('OpenStreetMap');
-    await expect(section.locator('.mar-sources')).toContainText('Consultado el');
+    await section.locator('.orc-panel .vref').first().click();
+    const sources = page.getByRole('dialog', { name: 'Fuentes' });
+    await expect(sources.locator('[aria-current]')).toHaveCount(1);
+    await expect(sources).toContainText('OpenStreetMap');
+    await expect(sources).toContainText('Consultado el');
     await page.keyboard.press('Escape');
+    await expect(sources).toHaveCount(0);
     await expect(heading(page, MARAMBIO_SPOTS[MARAMBIO_SPOTS.length - 1].label)).toBeVisible();
 
-    await expect(primary(page)).toHaveText('Terminar la visita');
+    await expect(primary(page)).toHaveText('Terminar expedición');
     await primary(page).click();
     await expect(log(page)).toContainText(`1/${AVAILABLE_COUNT}`);
     await expect(page.locator('.next-card .next-done')).toHaveText(`Base Marambio quedó explorado. Registro de exploración: 1/${AVAILABLE_COUNT}`);
@@ -109,7 +111,7 @@ test.describe('with WebGL', () => {
     await expect(dialog.getByRole('img', { name: photos[0].alt })).toBeVisible();
     await expect(dialog).toContainText(`Fecha de la cámara: ${photos[0].date}`);
     await expect(dialog).toContainText('Eduardo Olivero');
-    await expect(dialog.getByRole('button', { name: 'Cerrar' })).toBeFocused();
+    await expect(dialog.getByRole('button', { name: 'Volver' })).toBeFocused();
     await page.keyboard.press('Escape');
     await expect(dialog).toHaveCount(0);
     await expect(card).toBeFocused();
@@ -118,9 +120,9 @@ test.describe('with WebGL', () => {
 
     // The family archive is listed with the sources.
     await section.getByRole('button', { name: 'Fuentes', exact: true }).click();
-    await expect(section.locator('.mar-sources')).toContainText('Archivo fotográfico de E. B. Olivero');
+    await expect(page.getByRole('dialog', { name: 'Fuentes' })).toContainText('Archivo fotográfico de E. B. Olivero');
     // The tower has no photograph.
-    await section.getByRole('button', { name: 'Volver a la base' }).click();
+    await page.getByRole('dialog', { name: 'Fuentes' }).getByRole('button', { name: 'Volver' }).click();
     await section.getByRole('button', { name: 'Atrás' }).click();
     await expect(heading(page, 'La torre de control')).toBeVisible();
     await expect(section.getByRole('group', { name: 'Archivo fotográfico' })).toHaveCount(0);
@@ -137,9 +139,9 @@ test.describe('with WebGL', () => {
     // It blows in the month with most days of «ventisca alta».
     await expect(section.locator('.orc-month-strip-wrap')).toContainText(/jul/i);
     // A source link opens the list on that source, and the list goes back to the blizzard.
-    await section.locator('.orc-panel .orc-src-link').first().click();
-    await expect(section.locator('.mar-source.is-highlight')).toContainText('Ventisca alta');
-    await section.getByRole('button', { name: 'Volver a la ventisca' }).click();
+    await section.locator('.orc-panel .vref').first().click();
+    await expect(page.getByRole('dialog', { name: 'Fuentes' }).locator('[aria-current]')).toContainText('Ventisca alta');
+    await page.getByRole('dialog', { name: 'Fuentes' }).getByRole('button', { name: 'Volver' }).click();
     await expect(heading(page, '¿Qué es una ventisca?')).toBeVisible();
     // Escape calms it, and the visit is where it was.
     await page.keyboard.press('Escape');
@@ -191,8 +193,8 @@ test.describe('with WebGL', () => {
     // The scene keeps drawing in the month with most blizzards.
     await expect(page.locator('.mar canvas')).toBeVisible();
     // The source link of a month fact opens the list of sources on the SMN normals.
-    await strip.getByRole('button', { name: 'SMN, normales 1991-2020' }).first().click();
-    await expect(page.locator('.mar-source.is-highlight')).toContainText('Estadísticas Climatológicas Normales');
+    await strip.getByRole('button', { name: /^Fuente / }).first().click();
+    await expect(page.getByRole('dialog', { name: 'Fuentes' }).locator('[aria-current]')).toContainText('Estadísticas Climatológicas Normales');
   });
 
   test.describe('the diorama moves with the same gestures as the map', () => {

@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
 import type { MapPoint } from '@antartida/core';
 import { BottomSheet } from '../BottomSheet.tsx';
+import { SheetActions } from '../sheet/SheetActions.tsx';
+import { SheetHeader } from '../sheet/SheetHeader.tsx';
 
 /**
  * Card shown on the map after an expedition ends (#75): says what was explored and offers the
@@ -30,7 +32,7 @@ export function NextCard({ doneLine, doneId, next, offerIrizar, onStart, onIriza
   return (
     <BottomSheet className="half next-sheet" labelledBy="next-title" sheetRef={ref} onClose={onClose} modal={false}>
       <div id="next-card" className="next-card">
-        <h2 id="next-title" className="next-done">{doneLine}</h2>
+        <SheetHeader title={doneLine} titleId="next-title" titleClass="next-done" />
         {next ? (
           <>
             <p className="next-kicker">Siguiente sugerida</p>
@@ -40,7 +42,7 @@ export function NextCard({ doneLine, doneId, next, offerIrizar, onStart, onIriza
         ) : (
           <p className="next-name"><strong>Exploraste las seis expediciones</strong></p>
         )}
-        <div className={'next-actions n' + ((offerIrizar ? 1 : 0) + 1 + (next ? 1 : 0))}>
+        <SheetActions>
           {offerIrizar && (
             <button type="button" className="btn next-irizar" onClick={onIrizar}>Viajar a Orcadas en el Irízar</button>
           )}
@@ -50,7 +52,7 @@ export function NextCard({ doneLine, doneId, next, offerIrizar, onStart, onIriza
               {irizarMain ? 'Viajar a Orcadas en el Irízar' : next.title}
             </button>
           )}
-        </div>
+        </SheetActions>
       </div>
     </BottomSheet>
   );

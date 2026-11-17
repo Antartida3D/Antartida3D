@@ -54,6 +54,7 @@ test('back closes a point sheet opened from the list, not the whole app (#185)',
 test('back leaves an expedition for the map (#185)', async ({ page }) => {
   await openList(page);
   await list(page).getByRole('button', { name: /Base Marambio/ }).click();
+  await page.getByRole('button', { name: 'Comenzar expedición' }).click();
   await expect(page.locator('.mar')).toBeVisible();
   await page.goBack();
   await expect(page.locator('.mar')).toHaveCount(0);

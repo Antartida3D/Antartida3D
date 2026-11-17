@@ -1,3 +1,4 @@
+import { MoreFold } from '../sheet/MoreFold.tsx';
 import { useMemo, type ReactNode } from 'react';
 import { ORCADAS_FIRST_YEAR, recordSpanText } from '@antartida/core';
 import { CenturySvg } from './century/CenturySvg.tsx';
@@ -71,13 +72,12 @@ export function Journey({
           onSelectYear={onYear}
         />
 
-        <details className="orc-more orc-century-details">
-          <summary>Cómo leer el gráfico</summary>
+        <MoreFold summary="Cómo leer el gráfico" className="orc-century-details">
           <div className="orc-century-legend-block">
             <div className="orc-century-legend-items" aria-label="Referencias del gráfico anual">
               <span className="orc-legend-item">
                 <i className="orc-swatch orc-swatch-annual" aria-hidden="true" />
-                Media de cada año (dato real; la línea se corta en los años incompletos)
+                Media de cada año (la línea se corta en los años incompletos)
               </span>
               <span className="orc-legend-item">
                 <i className="orc-swatch orc-swatch-ma11" aria-hidden="true" />
@@ -106,7 +106,7 @@ export function Journey({
               </div>
             )}
           </div>
-        </details>
+        </MoreFold>
       </div>
     </div>
   );

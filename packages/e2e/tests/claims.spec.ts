@@ -105,7 +105,7 @@ test('claims start off, toggle areas and flags together, and keep the map camera
   await expect(countries.getByRole('button', { name: 'Argentina', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect.poll(() => page.evaluate(() => (window as any).__scene.getObjectByName('antarctic-claims')
     .children.filter((group: any) => group.visible).map((group: any) => group.name))).toEqual(['claim-ar']);
-  await expect(page.getByRole('link', { name: /Fuente: Ministerio/ })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Reclamos antárticos' }).getByRole('button', { name: /^Fuente .*Ministerio/ })).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('region', { name: 'Reclamos antárticos' })).not.toBeVisible();
   await expect(page.getByRole('button', { name: 'Detalles de reclamos', exact: true })).toBeFocused();

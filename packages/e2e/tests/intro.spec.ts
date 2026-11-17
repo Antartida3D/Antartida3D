@@ -180,7 +180,7 @@ test('touching the pin during step 1 opens the trip and the guide goes (#256)', 
   await expect(guide(page)).toHaveCount(0);
 });
 
-test('«?» opens the guide again at step 1, and it is not there during a trip (#256)', async ({ page, isMobile }) => {
+test('«?» opens the guide again at step 1, and it is not there during a trip (#256)', async ({ page }) => {
   await page.addInitScript((k) => localStorage.setItem(k, '1'), INTRO_KEY);
   await page.addInitScript((k) => localStorage.setItem(k, '3d'), VIEW_MODE_KEY);
   await page.goto('/');
@@ -204,10 +204,8 @@ test('«?» opens the guide again at step 1, and it is not there during a trip (
   // A trip hides it.
   await historySettled(page);
   await page.goto('/');
-  await pin(page).focus();
-  await page.keyboard.press('Enter');
-  // A touch screen shows the label first and opens on the second press.
-  if (isMobile) await page.keyboard.press('Enter');
+  // On a phone the pin of Ushuaia can be out of the first view of the camera (#267): the suggestion button opens it from anywhere.
+  await page.getByRole('button', { name: /^Siguiente: / }).click();
   await expect(page.locator('.sheet.voyage')).toBeVisible();
   await expect(help).toBeHidden();
 });

@@ -35,6 +35,7 @@ async function touchDrag(cdp: CDPSession, from: Locator, dx: number, dy: number)
 async function completeFossilsFromList(page: Page) {
   await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
   await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Fósiles/ }).click();
+  await page.getByRole('button', { name: 'Comenzar expedición' }).click();
   await expect(page.getByRole('heading', { name: 'Las rocas recuerdan' })).toBeVisible();
   for (let i = 0; i < 13; i++) {
     await page.locator('.fossil-next').click();
@@ -46,13 +47,14 @@ async function completeFossilsFromList(page: Page) {
 async function completeMarambioFromList(page: Page) {
   await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
   await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Base Marambio/ }).click();
+  await page.getByRole('button', { name: 'Comenzar expedición' }).click();
   await expect(page.locator('.mar').getByRole('heading', { level: 2, name: MARAMBIO_SPOTS[0].label })).toBeVisible();
   await page.waitForFunction(() => (window as unknown as { __marambioReady?: boolean }).__marambioReady === true);
-  const primary = page.locator('.mar .ebar .btn.primary');
+  const primary = page.locator('.mar .sheet-actions .btn.primary');
   for (let i = 0; i < MARAMBIO_SPOTS.length - 1; i++) {
     await primary.click();
   }
-  await expect(primary).toHaveText('Terminar la visita');
+  await expect(primary).toHaveText('Terminar expedición');
   await primary.click();
   await expect(page.locator('.next-sheet')).toBeVisible();
 }
@@ -115,6 +117,7 @@ test('the exploration log drops down the six expeditions with their state and op
 
   await log.click();
   await items.filter({ hasText: 'Fósiles' }).click();
+  await page.getByRole('button', { name: 'Comenzar expedición' }).click();
   await expect(page.getByRole('heading', { name: 'Las rocas recuerdan' })).toBeVisible();
 });
 

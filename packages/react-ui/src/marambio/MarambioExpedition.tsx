@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import {
   MARAMBIO_GUIDING_QUESTION,
   MARAMBIO_LAT,
@@ -6,25 +6,29 @@ import {
   marambioBlizzard,
   marambioClimate,
   MARAMBIO_OSM_SOURCE_ID,
-  MARAMBIO_PHOTO_ARCHIVE,
   MARAMBIO_PHOTO_CREDIT,
-  MARAMBIO_SOURCES,
   MARAMBIO_SPOTS,
   MARAMBIO_STORM_MONTH,
   MARAMBIO_TITLE,
   marambioFacts,
   marambioPhotos,
-  marambioSourcesOf,
   type MarambioFact,
   type MarambioPhoto,
   type MarambioPhotoId,
   type MarambioSpotId,
+  MARAMBIO_CITED,
 } from '@antartida/core';
 import { BottomSheet, type OpenSheetSize } from '../BottomSheet.tsx';
-import { useFocusReturn, useIsDesktop } from '../hooks.ts';
+import { useIsDesktop } from '../hooks.ts';
 import { KindChip } from '../orcadas/KindChip.tsx';
 import { MonthStrip, type MonthStripSeason } from '../orcadas/MonthStrip.tsx';
 import { Icon, Quoted } from '../ui.tsx';
+import { Cite, Cites } from '../sheet/Cite.tsx';
+import { SheetActions } from '../sheet/SheetActions.tsx';
+import { SheetHeader } from '../sheet/SheetHeader.tsx';
+import { SheetText } from '../sheet/SheetText.tsx';
+import { SourcesContext } from '../sheet/SourcesContext.ts';
+import { SourcesView } from '../sheet/SourcesView.tsx';
 import { MarambioScene } from './MarambioScene.tsx';
 import { IRIZAR_DOT, SPOT_VIEWS } from './spots.ts';
 import herculesRunway from '@antartida/core/assets/marambio/hercules-pista.webp';
@@ -40,26 +44,18 @@ const PHOTO_URL: Readonly<Record<MarambioPhotoId, string>> = {
   'hangar-cargo': hangarCargo, 'polar-depot': polarDepot, 'historic-house': historicHouse, 'field-helicopter': fieldHelicopter,
 };
 
-const sourceAnchor = (id: string) => `mar-source-${id}`;
+const SOURCES = MARAMBIO_CITED;
 
-function FactCard({ fact, onOpenSource }: { fact: MarambioFact; onOpenSource: (id: string) => void }) {
-  const sources = marambioSourcesOf(fact);
+function FactCard({ fact }: { fact: MarambioFact }) {
   return (
     <article className="orc-fact-card">
       <div className="orc-fact-top">
         <KindChip kind={fact.kind} />
       </div>
-      <p className="orc-fact-text"><Quoted text={fact.text} /></p>
-      {sources.length > 0 && (
-        <div className="orc-fact-srcs">
-          <span className="orc-src-prefix">Fuente:</span>
-          {sources.map((src) => (
-            <button key={src.id} type="button" className="orc-src-link" onClick={() => onOpenSource(src.id)}>
-              {src.short}
-            </button>
-          ))}
-        </div>
-      )}
+      <p className="orc-fact-text">
+        <Quoted text={fact.text} />
+        <Cites ids={fact.sourceIds} />
+      </p>
     </article>
   );
 }
@@ -70,7 +66,7 @@ const decimal = (n: number) => n.toLocaleString('es-AR', { maximumFractionDigits
  * The strip of months of Marambio: daylight at its latitude and, under each month, its days with
  * «ventisca alta» (SMN normals 1991-2020). The details hold the month facts with their sources.
  */
-function marambioSeason(onOpenSource: (id: string) => void): MonthStripSeason {
+function marambioSeason(): MonthStripSeason {
   return {
     latitude: MARAMBIO_LAT,
     stripe: marambioBlizzard,
@@ -87,7 +83,7 @@ function marambioSeason(onOpenSource: (id: string) => void): MonthStripSeason {
     details: () => (
       <div className="orc-facts-list">
         {marambioFacts('months').map((fact) => (
-          <FactCard key={fact.id} fact={fact} onOpenSource={onOpenSource} />
+          <FactCard key={fact.id} fact={fact} />
         ))}
       </div>
     ),
@@ -95,6 +91,8 @@ function marambioSeason(onOpenSource: (id: string) => void): MonthStripSeason {
     asideLabel: 'Control estacional de la base',
   };
 }
+
+const SEASON = marambioSeason();
 
 /** Always-visible label of the scene: it is an illustrated reconstruction, and what that means. */
 function SceneBadge({ onOpenSource, storm, onStorm }: { onOpenSource: (id: string) => void; storm: boolean; onStorm: () => void }) {
@@ -145,45 +143,25 @@ function SceneBadge({ onOpenSource, storm, onStorm }: { onOpenSource: (id: strin
   );
 }
 
-/** A photograph of the archive, full size with its caption and credit. Escape or «Cerrar» close it. */
+/** A photograph of the archive, full size with its caption and credit. Escape, a tap outside or «Cerrar» close it. */
 function PhotoDialog({ photo, onClose }: { photo: MarambioPhoto; onClose: () => void }) {
-  const ref = useRef<HTMLDivElement>(null);
-  // Focus goes to the close button, and back to the photo card when it closes.
-  useFocusReturn(true, ref, '.iconbtn');
+  const ref = useRef<HTMLElement>(null);
   return (
-    <div className="mar-trip-scrim" onClick={onClose}>
-      <div
-        ref={ref}
-        className="mar-photo"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="mar-photo-title"
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => {
-          if (e.key === 'Escape') {
-            e.stopPropagation();
-            onClose();
-          }
-          // The close button is the only stop: Tab stays on it.
-          if (e.key === 'Tab') e.preventDefault();
-        }}
-      >
-        <div className="mar-photo-head">
-          <h2 id="mar-photo-title">Archivo fotográfico</h2>
-          <button type="button" className="iconbtn" aria-label="Cerrar" onClick={onClose}>
-            {Icon.close}
-          </button>
-        </div>
-        <figure>
-          <img src={PHOTO_URL[photo.id]} alt={photo.alt} />
-          <figcaption>
-            <b>{photo.caption}</b>
-            <span>{photo.date ? `Fecha de la cámara: ${photo.date}` : 'Sin fecha ni lugar registrados'}</span>
-            <span>{MARAMBIO_PHOTO_CREDIT}</span>
-          </figcaption>
-        </figure>
-      </div>
-    </div>
+    <BottomSheet className="voyage mar-photo" labelledBy="mar-photo-title" sheetRef={ref} onClose={onClose} layer="top">
+      <SheetHeader title="Archivo fotográfico" titleId="mar-photo-title" />
+      <figure>
+        <img src={PHOTO_URL[photo.id]} alt={photo.alt} />
+        <figcaption>
+          <b>{photo.caption}</b>
+          <span>{photo.date ? `Fecha de la cámara: ${photo.date}` : 'Sin fecha ni lugar registrados'}</span>
+          <span>{MARAMBIO_PHOTO_CREDIT}</span>
+          <Cite id="photo-archive" />
+        </figcaption>
+      </figure>
+      <SheetActions>
+        <button type="button" className="btn primary" onClick={onClose}>Volver</button>
+      </SheetActions>
+    </BottomSheet>
   );
 }
 
@@ -191,51 +169,25 @@ function PhotoDialog({ photo, onClose }: { photo: MarambioPhoto; onClose: () => 
  * Base Marambio: a diorama of the base to walk round, one point of interest at a time. First
  * delivery of the expedition (#74): no chapters yet, the visit ends at the last point.
  */
-/** Asks whether to sail to Orcadas on the Irízar. A dialog: Escape or «Seguir en Marambio» close it. */
+/** Asks whether to sail to Orcadas on the Irízar. A dialog: Escape, a tap outside or «Seguir en Marambio» close it. */
 function TripDialog({ onTravel, onClose }: { onTravel: () => void; onClose: () => void }) {
-  const ref = useRef<HTMLDivElement>(null);
-  // Focus goes to the trip button, and back to whatever opened the dialog when it closes.
-  useFocusReturn(true, ref, '.btn.primary');
+  const ref = useRef<HTMLElement>(null);
   return (
-    <div className="mar-trip-scrim" onClick={onClose}>
-      <div
-        ref={ref}
-        className="mar-trip"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="mar-trip-title"
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => {
-          if (e.key === 'Escape') {
-            e.stopPropagation();
-            onClose();
-          }
-          // Tab stays inside the dialog.
-          if (e.key === 'Tab') {
-            const buttons = [...(ref.current?.querySelectorAll<HTMLElement>('button') ?? [])];
-            const i = buttons.indexOf(document.activeElement as HTMLElement);
-            const next = e.shiftKey ? (i <= 0 ? buttons.length - 1 : i - 1) : (i + 1) % buttons.length;
-            e.preventDefault();
-            buttons[next]?.focus();
-          }
-        }}
-      >
-        <span className="orc-kicker hand">El Irízar</span>
-        <h2 id="mar-trip-title">¿Querés empezar el viaje a la Estación Orcadas?</h2>
-        <p>El rompehielos ARA Almirante Irízar espera frente a la base. Si subís, salís de Marambio y navegás hasta las Islas Orcadas del Sur.</p>
-        <p className="mar-trip-note">
-          <KindChip kind="recon" label="Recorrido ilustrativo" /> El camino del barco en el mapa es un dibujo: no hay una fuente pública de su derrota.
-        </p>
-        <div className="mar-trip-bar">
-          <button type="button" className="btn ghost" onClick={onClose}>
-            Seguir en Marambio
-          </button>
-          <button type="button" className="btn primary" onClick={onTravel}>
-            Viajar a Orcadas
-          </button>
-        </div>
-      </div>
-    </div>
+    <BottomSheet className="voyage mar-trip" labelledBy="mar-trip-title" sheetRef={ref} onClose={onClose} layer="top">
+      <SheetHeader label="El Irízar" title="¿Querés empezar el viaje a la Estación Orcadas?" titleId="mar-trip-title" />
+      <SheetText text="El rompehielos ARA Almirante Irízar espera frente a la base. Si subís, salís de Marambio y navegás hasta las Islas Orcadas del Sur." />
+      <p className="mar-trip-note">
+        <KindChip kind="recon" label="Recorrido ilustrativo" /> El camino del barco en el mapa es un dibujo: no hay una fuente pública de su derrota.
+      </p>
+      <SheetActions>
+        <button type="button" className="btn" onClick={onClose}>
+          Seguir en Marambio
+        </button>
+        <button type="button" className="btn primary" onClick={onTravel}>
+          Viajar a Orcadas
+        </button>
+      </SheetActions>
+    </BottomSheet>
   );
 }
 
@@ -274,7 +226,8 @@ export function MarambioExpedition({
   const [sheetSize, setSheetSize] = useState<OpenSheetSize>('small');
   const overlayRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLElement>(null);
-  const headingRef = useRef<HTMLHeadingElement>(null);
+  const rootRef = useRef<HTMLElement>(null);
+  const sourcesBtn = useRef<HTMLButtonElement>(null);
   const moved = useRef(false);
 
   const spot = MARAMBIO_SPOTS[index];
@@ -286,95 +239,55 @@ export function MarambioExpedition({
   // After a change of point or of view, the heading takes the focus so a screen reader reads on from it.
   useEffect(() => {
     if (!moved.current) return;
-    headingRef.current?.focus({ preventScroll: true });
-  }, [index, showSources, storm]);
-
-  useEffect(() => {
-    if (!showSources || !highlight) return;
-    document.getElementById(sourceAnchor(highlight))?.scrollIntoView({ block: 'nearest' });
-  }, [showSources, highlight]);
+    rootRef.current?.querySelector<HTMLElement>('#mar-panel-title')?.focus({ preventScroll: true });
+  }, [index, storm]);
 
   const go = (next: number) => {
     moved.current = true;
     setStorm(false);
-    setShowSources(false);
-    setHighlight(null);
     setIndex(next);
     // A sheet folded down to its title opens again on the new point.
     setSheetSize((size) => (size === 'peek' ? 'small' : size));
   };
   const openSources = (id: string | null) => {
-    moved.current = true;
     setHighlight(id);
     setShowSources(true);
-    setSheetSize((size) => (size === 'peek' ? 'small' : size));
-  };
-  const closeSources = () => {
-    moved.current = true;
-    setShowSources(false);
-    setHighlight(null);
-    setSheetSize((size) => (size === 'peek' ? 'small' : size));
   };
   const toggleStorm = () => {
     moved.current = true;
-    setShowSources(false);
-    setHighlight(null);
     // It blows in the month with most days of «ventisca alta», the one its facts speak of.
     if (!storm) setMonth(MARAMBIO_STORM_MONTH);
     setStorm(!storm);
     setSheetSize((size) => (size === 'peek' ? 'small' : size));
   };
-  // One season for the whole visit: its source links reach the latest openSources through a ref.
-  const openSourcesRef = useRef(openSources);
-  openSourcesRef.current = openSources;
-  const season = useMemo(() => marambioSeason((id) => openSourcesRef.current(id)), []);
+  const closeSources = () => {
+    setShowSources(false);
+    setHighlight(null);
+  };
 
   const panelBody = (
     <>
       <div className="orc-panel-scroll">
-        <div className="orc-panel-head">
-          <span id="mar-panel-label" className="orc-kicker hand">
-            {showSources ? 'Fuentes de la base' : storm ? 'Ventisca en la base' : `Punto ${index + 1} de ${MARAMBIO_SPOTS.length}`}
-          </span>
-          <h2 className="orc-chapter-h2" ref={headingRef} tabIndex={-1}>
-            {showSources ? 'De dónde sale cada dato' : storm ? '¿Qué es una ventisca?' : spot.label}
-          </h2>
-        </div>
-        {showSources ? (
-          <ul className="mar-sources">
-            {MARAMBIO_SOURCES.map((src) => (
-              <li key={src.id} id={sourceAnchor(src.id)} className={`mar-source${src.id === highlight ? ' is-highlight' : ''}`}>
-                <strong>{src.label}</strong>
-                <span>{src.org}</span>
-                <span>
-                  Consultado el {src.consulted}
-                  {src.license ? ` · ${src.license}` : ''}
-                </span>
-                <a href={src.url} target="_blank" rel="noreferrer">
-                  Abrir la fuente
-                </a>
-              </li>
-            ))}
-            <li className="mar-source">
-              <strong>{MARAMBIO_PHOTO_ARCHIVE.label}</strong>
-              <span>{MARAMBIO_PHOTO_ARCHIVE.org}</span>
-              <span>{MARAMBIO_PHOTO_ARCHIVE.detail}</span>
-              <span>Consultado el {MARAMBIO_PHOTO_ARCHIVE.consulted} · archivo familiar, sin enlace público</span>
-            </li>
-          </ul>
-        ) : storm ? (
+        <SheetHeader
+          label={storm ? 'Ventisca en la base' : `Punto ${index + 1} de ${MARAMBIO_SPOTS.length}`}
+          title={storm ? '¿Qué es una ventisca?' : spot.label}
+          titleId="mar-panel-title"
+          titleClass="orc-chapter-h2"
+          titleFocusable
+        />
+        {storm ? (
           <div className="orc-facts-list">
             {marambioFacts('storm').map((fact) => (
-              <FactCard key={fact.id} fact={fact} onOpenSource={openSources} />
+              <FactCard key={fact.id} fact={fact} />
             ))}
           </div>
         ) : (
-          <div className="orc-chapter-content">
+        <div className="orc-chapter-content">
             {index === 0 && <p className="orc-question">{MARAMBIO_GUIDING_QUESTION}</p>}
             <p className="orc-lead">{spot.subtitle}</p>
             <div className="orc-facts-list">
               {facts.map((fact) => (
-                <FactCard key={fact.id} fact={fact} onOpenSource={openSources} />
+                <FactCard key={fact.id} fact={fact} />
               ))}
             </div>
             {photos.length > 0 && (
@@ -402,38 +315,35 @@ export function MarambioExpedition({
           </div>
         )}
       </div>
-      <div className="orc-bar ebar">
-        {showSources ? (
-          <button type="button" className="btn primary" onClick={closeSources}>
-            {storm ? 'Volver a la ventisca' : 'Volver a la base'}
-          </button>
-        ) : storm ? (
+      <SheetActions>
+        {storm ? (
           <button type="button" className="btn primary" onClick={toggleStorm}>
             Calmar la ventisca
           </button>
         ) : (
           <>
             {index > 0 && (
-              <button type="button" className="btn ghost" onClick={() => go(index - 1)}>
+              <button type="button" className="btn" onClick={() => go(index - 1)}>
                 Atrás
               </button>
             )}
             <button type="button" className="btn primary" onClick={() => (last ? onLeave(true) : go(index + 1))}>
-              {last ? 'Terminar la visita' : 'Siguiente'}
+              {last ? 'Terminar expedición' : 'Siguiente'}
             </button>
           </>
         )}
-      </div>
+      </SheetActions>
     </>
   );
 
   return (
+    <SourcesContext.Provider value={{ list: SOURCES, open: openSources }}>
     <section
       className={`orc mar${!isDesktop && sheetSize === 'tall' ? ' is-panel-expanded' : ''}${!isDesktop && sheetSize === 'peek' ? ' is-panel-peek' : ''}`}
       aria-label={`Expedición ${MARAMBIO_TITLE}`}
+      ref={rootRef}
       onKeyDown={(e) => {
-        if (e.key === 'Escape' && showSources) closeSources();
-        else if (e.key === 'Escape' && storm) toggleStorm();
+        if (e.key === 'Escape' && storm) toggleStorm();
       }}
     >
       <MarambioScene
@@ -447,7 +357,7 @@ export function MarambioExpedition({
         storm={storm}
       />
 
-      <MonthStrip month={month} onMonth={setMonth} season={season} />
+      <MonthStrip month={month} onMonth={setMonth} season={SEASON} />
 
       <SceneBadge onOpenSource={openSources} storm={storm} onStorm={toggleStorm} />
 
@@ -497,24 +407,26 @@ export function MarambioExpedition({
             <strong>{MARAMBIO_TITLE}</strong>
             <span>{MARAMBIO_GUIDING_QUESTION}</span>
           </div>
-          <button type="button" className="pill orc-top-btn" aria-pressed={showSources} onClick={() => (showSources ? closeSources() : openSources(null))}>
+          <button type="button" className="pill orc-top-btn" ref={sourcesBtn} aria-haspopup="dialog" onClick={() => openSources(null)}>
             Fuentes
           </button>
         </div>
       </header>
 
       {isDesktop ? (
-        <div className="orc-panel" role="region" aria-labelledby="mar-panel-label">
+        <div className="orc-panel" role="region" aria-labelledby="mar-panel-title">
           {panelBody}
         </div>
       ) : (
-        <BottomSheet className="orc-panel" labelledBy="mar-panel-label" sheetRef={panelRef} floor="peek" size={sheetSize} onSize={setSheetSize}>
+        <BottomSheet className="orc-panel" labelledBy="mar-panel-title" sheetRef={panelRef} floor="peek" size={sheetSize} onSize={setSheetSize}>
           {panelBody}
         </BottomSheet>
       )}
 
+      {showSources && <SourcesView list={SOURCES} kinds highlight={highlight} onClose={closeSources} place={MARAMBIO_GUIDING_QUESTION} fallbackFocus={() => sourcesBtn.current} />}
       {photo && <PhotoDialog photo={photo} onClose={() => setPhoto(null)} />}
       {trip && <TripDialog onClose={() => setTrip(false)} onTravel={() => onTravelToOrcadas(reachedEnd.current)} />}
     </section>
+    </SourcesContext.Provider>
   );
 }

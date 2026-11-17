@@ -1,5 +1,9 @@
-import { useRef, type RefObject } from 'react';
-import { ANTARCTIC_CLAIMS, ANTARCTIC_CLAIMS_CONTEXT, type ClaimId, type ClaimsCoverage } from '@antartida/core';
+import { Cite } from '../sheet/Cite.tsx';
+import { SheetHeader } from '../sheet/SheetHeader.tsx';
+import { SourcesContext } from '../sheet/SourcesContext.ts';
+import { SourcesView } from '../sheet/SourcesView.tsx';
+import { useMemo, useRef, useState, type RefObject } from 'react';
+import { ANTARCTIC_CLAIMS, ANTARCTIC_CLAIMS_CONTEXT, CLAIMS_CONTEXT_SOURCE_ID, claimsCited, type ClaimId, type ClaimsCoverage } from '@antartida/core';
 import { BottomSheet } from '../BottomSheet.tsx';
 
 export type ClaimsStatus = 'loading' | 'ready' | 'error';
@@ -46,11 +50,14 @@ export function ClaimsDetails({ selection, coverage, status, onSelect, onCoverag
 }) {
   const ref = useRef<HTMLElement>(null);
   const selected = ANTARCTIC_CLAIMS.find((claim) => claim.id === selection);
+  const list = useMemo(() => claimsCited(), []);
+  const [openSource, setOpenSource] = useState<string | null>(null);
   return (
+    <SourcesContext.Provider value={{ list, open: setOpenSource }}>
     <BottomSheet className="half claims-sheet" labelledBy="claims-title" sheetRef={ref} onClose={onClose} modal={false}>
       {/* Escape hides only the details, not the map's own Escape (MapView). */}
       <div id="claims-details" onKeyDown={(event) => { if (event.key === 'Escape') { event.stopPropagation(); onClose(); } }}>
-        <h2 id="claims-title" className="claims-heading">Reclamos antárticos</h2>
+        <SheetHeader title="Reclamos antárticos" titleId="claims-title" titleClass="claims-heading" onClose={onClose} />
         <p>Siete países mantienen reclamos. Existen superposiciones; no son fronteras acordadas.</p>
         <label className="claims-coverage">Superficie visible
           <select value={coverage} onChange={(event) => onCoverage(event.target.value as ClaimsCoverage)}>
@@ -72,12 +79,14 @@ export function ClaimsDetails({ selection, coverage, status, onSelect, onCoverag
         <p className="claims-status" role="status">
           {status === 'loading' ? 'Cargando áreas y banderas…' : status === 'error'
             ? 'No se pudieron cargar los datos de los reclamos. Apagá y volvé a encender la capa para reintentar.'
-            : selected ? selected.description : 'Argentina, Chile y Reino Unido se superponen. Elegí un país para distinguir su extensión.'}
+              : selected ? selected.description : 'Argentina, Chile y Reino Unido se superponen. Elegí un país para distinguir su extensión.'}
+          {selected && status === 'ready' && <Cite id={`claim-${selected.id}`} />}
         </p>
         <p className="claims-note">{ANTARCTIC_CLAIMS_CONTEXT.cartography} Noruega incluye Tierra de la Reina Maud y la isla Pedro I.</p>
-        {selected && <p><a href={selected.source.url} target="_blank" rel="noreferrer">Fuente: {selected.source.organization}</a></p>}
-        <p className="claims-note"><a href={ANTARCTIC_CLAIMS_CONTEXT.source.url} target="_blank" rel="noreferrer">Tratado Antártico, artículos IV y VI</a>: preserva las posiciones sobre soberanía y los derechos relativos a la alta mar. Consulta: 14/11/2026.</p>
+        <p className="claims-note">Tratado Antártico, artículos IV y VI: preserva las posiciones sobre soberanía y los derechos relativos a la alta mar.<Cite id={CLAIMS_CONTEXT_SOURCE_ID} /></p>
       </div>
     </BottomSheet>
+    {openSource && <SourcesView list={list} highlight={openSource} onClose={() => setOpenSource(null)} />}
+    </SourcesContext.Provider>
   );
 }

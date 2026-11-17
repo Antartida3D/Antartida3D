@@ -1,3 +1,4 @@
+import { MoreFold } from '../../sheet/MoreFold.tsx';
 import {
   MONTH_NAMES,
   TOLERANCE,
@@ -460,8 +461,7 @@ export function Observation({
         />
       )}
 
-      <details className="orc-obs-details orc-obs-fine">
-        <summary>Ajuste fino</summary>
+      <MoreFold summary="Ajuste fino" className="orc-obs-fine">
         <div className="orc-obs-fine-body">
           <FineSliderRow
             kind="temp"
@@ -472,11 +472,10 @@ export function Observation({
             onNumericKey={handleNumericTyping}
           />
         </div>
-      </details>
+      </MoreFold>
 
       {/* Optional instruments: pressure, wind, clouds */}
-      <details className="orc-obs-details orc-obs-more">
-        <summary>Mirá también</summary>
+      <MoreFold summary="Mirá también" className="orc-obs-more">
         <div className="orc-obs-more-body">
           <div
             className="orc-obs-tabs"
@@ -591,7 +590,7 @@ export function Observation({
             )}
           </div>
         </div>
-      </details>
+      </MoreFold>
     </div>
   );
 }

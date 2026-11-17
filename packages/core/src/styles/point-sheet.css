@@ -48,14 +48,8 @@
   stroke-width: 1.6;
 }
 
-.point-sheet-heading {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 112px;
-  align-items: center;
-  gap: 10px;
-  min-height: 132px;
-  margin-bottom: 12px;
-}
+
+.point-sheet-heading { margin-bottom: 12px; }
 
 .point-sheet .tag {
   display: inline;
@@ -84,53 +78,6 @@
   font-size: 16px;
   color: var(--chart-muted);
 }
-
-.point-sheet-atlas {
-  position: relative;
-  width: 112px;
-  height: 126px;
-}
-
-.point-sheet-chart {
-  display: block;
-  width: 112px;
-  height: 112px;
-  overflow: hidden;
-}
-
-.point-sheet-ocean { fill: var(--chart-wash); }
-
-.point-sheet-graticule {
-  fill: none;
-  stroke: var(--chart-ink);
-  stroke-width: 4;
-  stroke-dasharray: 8 9;
-  opacity: .42;
-}
-
-.point-sheet-coast {
-  fill: var(--chart-paper);
-  stroke: var(--chart-ink);
-  stroke-width: 5;
-  stroke-linejoin: round;
-}
-
-.point-sheet-chart-rim {
-  fill: none;
-  stroke: var(--chart-ink);
-  stroke-width: 4;
-}
-
-.point-sheet-compass {
-  position: absolute;
-  right: -6px;
-  bottom: -2px;
-  width: 60px;
-  height: 60px;
-  color: var(--chart-ink);
-  background: radial-gradient(closest-side, var(--chart-paper) 70%, transparent);
-}
-
 
 .point-sheet .q {
   margin: 0;
@@ -168,31 +115,6 @@
   color: var(--chart-muted);
 }
 
-.point-sheet-footer { margin-top: 18px; }
-
-.point-sheet-rule {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 0 0 18px;
-  color: var(--chart-muted);
-  font-size: 18px;
-  line-height: 1;
-}
-
-.point-sheet-rule::before,
-.point-sheet-rule::after {
-  content: '';
-  height: 1px;
-  flex: 1;
-  background: var(--chart-rule);
-}
-
-.point-sheet-footer .btn {
-  width: 100%;
-  gap: 10px;
-}
-
 .point-sheet .point-sheet-close:hover { background: var(--chart-wash); }
 
 .point-sheet button:focus-visible {
@@ -200,14 +122,6 @@
   outline-offset: 3px;
   border-radius: 2px;
 }
-
-.point-sheet .sheet-sources {
-  border-color: var(--chart-rule);
-  overflow-wrap: anywhere;
-}
-
-.point-sheet .sheet-sources li,
-.point-sheet .sheet-sources small { color: var(--chart-muted); }
 
 /* BottomSheet's small point state is half-height; .full/.dragging keep the shared 92% and inline drag limits. */
 @media (max-width: 819.98px) {
@@ -227,17 +141,12 @@
   }
 }
 
-@media (max-width: 480px) {
-  .point-sheet-heading {
-    grid-template-columns: minmax(0, 1fr) 96px;
-    min-height: 112px;
-  }
-  .point-sheet-atlas { width: 96px; height: 108px; }
-  .point-sheet-chart { width: 96px; height: 96px; }
-  .point-sheet-compass { width: 52px; height: 52px; }
-}
 
 @media (max-width: 380px) {
   .sheet.point-sheet { padding-inline: 20px; }
   .point-sheet .q p { font-size: 20px; }
 }
+
+/* «Cuaderno de campo · Punto de interés»: the kind of point goes in the masthead, highlighted. */
+.point-sheet-masthead .point-sheet-kind { color: var(--deep); font-weight: 700; }
+.point-sheet-masthead .point-sheet-kind .tag { color: inherit; font: inherit; letter-spacing: inherit; background: none; border: 0; padding: 0; }

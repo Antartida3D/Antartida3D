@@ -6,6 +6,7 @@ import {
   ORCADAS_CLIMATE,
   ORCADAS_FAUNA,
   ORCADAS_GUIDING_QUESTION,
+  orcadasUsedCited,
   arrivalMonth,
   chapterIndex,
   eraAt,
@@ -29,13 +30,16 @@ import { BottomSheet, type OpenSheetSize } from '../BottomSheet.tsx';
 import { useFocusReturn, useIsDesktop, useMediaQuery } from '../hooks.ts';
 import { Icon } from '../ui.tsx';
 import { Answer } from './Answer.tsx';
-import { FactCard, FactList, SourceContext } from './FactList.tsx';
+import { SheetActions } from '../sheet/SheetActions.tsx';
+import { SheetHeader } from '../sheet/SheetHeader.tsx';
+import { SourcesContext } from '../sheet/SourcesContext.ts';
+import { SourcesView } from '../sheet/SourcesView.tsx';
+import { FactCard, FactList } from './FactList.tsx';
 import { HOTSPOTS, Hotspots, type HotspotId } from './Hotspots.tsx';
 import { Journey } from './Journey.tsx';
 import { KindChip } from './KindChip.tsx';
 import { MonthStrip } from './MonthStrip.tsx';
 import { Observation } from './observation/Observation.tsx';
-import { SourcesPanel } from './SourcesPanel.tsx';
 import { StationScene } from './StationScene.tsx';
 import { TourCard } from './TourCard.tsx';
 
@@ -244,10 +248,11 @@ export function OrcadasExpedition({
   useFocusReturn(
     Boolean(openSpot && !isDesktop),
     mobileCardRef,
-    'button',
+    '.btn.primary',
     () => hotspotsRef.current?.querySelector<HTMLElement>(`[data-hotspot="${openSpot ?? ''}"]`)
   );
 
+  const sourcesList = useMemo(() => orcadasUsedCited(), []);
   const handleOpenSource = (sourceId: string) => {
     setOpenSpot(null);
     setHighlightSource(sourceId);
@@ -255,6 +260,8 @@ export function OrcadasExpedition({
       dispatch({ type: 'togglePanel' });
     }
   };
+
+  const sourcesContext = { list: sourcesList, open: handleOpenSource };
 
   const climate = useMemo(
     () => ORCADAS_CLIMATE[(s.month - 1 + 12) % 12] ?? ORCADAS_CLIMATE[0],
@@ -329,14 +336,19 @@ export function OrcadasExpedition({
             }
           }}
         >
-          <div className="orc-spot-head">
-            <div>
-              <span className="orc-kicker">Punto de exploración</span>
-              <h3>{activeSpotDef.label}</h3>
-            </div>
+          <SheetHeader
+            label="Punto de exploración"
+            title={activeSpotDef.label}
+            titleId="orc-spot-title"
+            place={activeSpotDef.subtitle}
+          />
+          <div className="orc-spot-facts">
+            {activeSpotFact && <FactCard fact={activeSpotFact} />}
+          </div>
+          <SheetActions>
             <button
               type="button"
-              className="btn ghost orc-btn-return"
+              className="btn primary orc-btn-return"
               onClick={() => {
                 setOpenSpot(null);
                 setFocus(defaultFocus);
@@ -344,11 +356,7 @@ export function OrcadasExpedition({
             >
               Volver al capítulo
             </button>
-          </div>
-          <p className="orc-spot-sub">{activeSpotDef.subtitle}</p>
-          <div className="orc-spot-facts">
-            {activeSpotFact && <FactCard fact={activeSpotFact} />}
-          </div>
+          </SheetActions>
         </section>
       ) : (
         <>
@@ -420,14 +428,14 @@ export function OrcadasExpedition({
               />
             )}
 
-            <FactList facts={chapterFacts} summary="Saber más del capítulo" />
+            <FactList facts={chapterFacts} summary="Saber más" />
           </div>
 
-          <div className="orc-bar ebar">
+          <SheetActions>
             {(idx > 0 || s.tourIndex > 0) && (
               <button
                 type="button"
-                className="btn ghost orc-btn-back"
+                className="btn orc-btn-back"
                 onClick={() => dispatch({ type: s.tourIndex > 0 ? 'tourPrev' : 'back' })}
               >
                 Atrás
@@ -449,14 +457,14 @@ export function OrcadasExpedition({
             >
               {atTourEnd ? primaryButtonText(s.chapter) : 'Siguiente'}
             </button>
-          </div>
+          </SheetActions>
         </>
       )}
     </>
   );
 
   return (
-    <SourceContext.Provider value={handleOpenSource}>
+    <SourcesContext.Provider value={sourcesContext}>
       <section
         className={`orc${panelExpanded ? ' is-panel-expanded' : ''}${!isDesktop && sheetSize === 'peek' ? ' is-panel-peek' : ''}`}
         aria-label="Expedición Estación Orcadas"
@@ -568,8 +576,7 @@ export function OrcadasExpedition({
                 dispatch({ type: 'togglePanel' });
               }}
               aria-expanded={s.panel}
-              aria-controls="orc-sources-panel"
-            >
+                          >
               Fuentes
             </button>
           </div>
@@ -640,9 +647,12 @@ export function OrcadasExpedition({
         )}
 
         {s.panel && (
-          <SourcesPanel
-            chapter={s.chapter}
-            highlightSource={highlightSource}
+          <SourcesView
+            list={sourcesList}
+            kinds
+            title="Fuentes"
+            place={ORCADAS_GUIDING_QUESTION}
+            highlight={highlightSource}
             onClose={() => {
               dispatch({ type: 'closePanel' });
               setHighlightSource(null);
@@ -651,6 +661,6 @@ export function OrcadasExpedition({
           />
         )}
       </section>
-    </SourceContext.Provider>
+    </SourcesContext.Provider>
   );
 }

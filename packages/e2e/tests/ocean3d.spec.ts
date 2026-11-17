@@ -189,7 +189,7 @@ test.describe('Ocean 3D animation efficiency', () => {
     const sheet = page.locator('.sheet[role="dialog"]');
     await expect(sheet).toBeVisible();
     const sheetText = await sheet.innerText();
-    const hasSource = sheetText.includes('Fuente') || sheetText.includes('fuente') || sheetText.includes('[Fuente a definir]');
+    const hasSource = /\[\d+\]/.test(sheetText) || sheetText.includes('Fuente') || sheetText.includes('fuente') || sheetText.includes('[Fuente a definir]');
     expect(hasSource).toBe(true);
 
     // Close sheet

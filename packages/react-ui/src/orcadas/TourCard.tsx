@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { factById, stopMoreFacts, type OrcadasTourStop } from '@antartida/core';
-import { FactCard, FactSources } from './FactList.tsx';
+import { Cites } from '../sheet/Cite.tsx';
+import { MoreFold } from '../sheet/MoreFold.tsx';
+import { FactCard } from './FactList.tsx';
 import { KindChip } from './KindChip.tsx';
 
 /**
@@ -71,18 +73,14 @@ export function TourCard({
 
       <p className="orc-tour-line" aria-live="polite">
         {stop.line}
+        <Cites ids={fact.sourceIds} />
       </p>
 
-      <FactSources fact={fact} />
-
-      <details ref={more} className="orc-more orc-tour-more" hidden={moreFacts.length === 0}>
-        <summary>Saber más</summary>
-        <div className="orc-more-facts">
-          {moreFacts.map((f) => (
-            <FactCard key={f.id} fact={f} />
-          ))}
-        </div>
-      </details>
+      <MoreFold className="orc-tour-more" detailsRef={more} hidden={moreFacts.length === 0}>
+        {moreFacts.map((f) => (
+          <FactCard key={f.id} fact={f} />
+        ))}
+      </MoreFold>
     </article>
   );
 }

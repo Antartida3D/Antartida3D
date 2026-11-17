@@ -8,7 +8,7 @@ import { mockOpenMeteo } from './weather-helpers.ts';
 import { MAP_2D_ENABLED, show3D } from './map-helpers.ts';
 
 const log = (page: Page) => page.locator('.reg');
-const primary = (page: Page) => page.locator('.ebar .btn.primary');
+const primary = (page: Page) => page.locator('.sheet-actions .btn.primary');
 
 function formatTempC(val: number): string {
   const numVal = Number(val.toFixed(1));
@@ -83,7 +83,7 @@ test('completes all chapters and stops of Orcadas with the keyboard only (deskto
   // Chapter 1: Llegar (4 stops). Verify Tab/Enter and ArrowRight/ArrowLeft inside TourCard.
   await expect(page.locator('.orc-tour-count')).toHaveText('1 de 4');
   await expect(primary(page)).toHaveText('Siguiente');
-  await tabTo(page, /^Cancillería$/);
+  await tabTo(page, /^Fuente \d+:/);
   await page.keyboard.press('ArrowRight');
   await expect(page.locator('.orc-tour-count')).toHaveText('2 de 4');
   await page.keyboard.press('ArrowLeft');
@@ -141,7 +141,7 @@ test('completes all chapters and stops of Orcadas with the keyboard only (deskto
   const sourcesDialog = page.getByRole('dialog', { name: 'Fuentes' });
   await expect(sourcesDialog).toBeVisible();
   await expect(sourcesDialog).toContainText('Consultado');
-  await expectFocused(page, 'Cerrar fuentes');
+  await expectFocused(page, 'Volver');
   await page.keyboard.press('Escape');
   await expect(sourcesDialog).toHaveCount(0);
   await expectFocused(page, 'Fuentes');
@@ -534,9 +534,10 @@ test('B7: opening Fuentes closes the hotspot dialog card and vice versa', async 
   const sourcesPanel = page.getByRole('dialog', { name: 'Fuentes' });
   await expect(sourcesPanel).toBeVisible();
 
-  // Select a hotspot while sources panel is open: sources panel closes, hotspot dialog opens
-  await spotBtn.click();
+  // The sources view is a modal: Escape closes it, and then the hotspot opens
+  await page.keyboard.press('Escape');
   await expect(sourcesPanel).toHaveCount(0);
+  await spotBtn.click();
   await expect(page.getByRole('dialog', { name: 'Abrigo meteorológico' })).toBeVisible();
 });
 
@@ -591,18 +592,18 @@ test('D4/D5: clicking a source reference opens Sources highlighted and clicking 
   await openOrcadasFromMap(page);
   await expect(page.getByRole('heading', { level: 2, name: ORCADAS_GUIDING_QUESTION })).toBeVisible();
 
-  const srcBtn = page.locator('.orc-panel .orc-src-link').first();
+  const srcBtn = page.locator('.orc-panel .vref').first();
   await expect(srcBtn).toBeVisible();
   await srcBtn.click();
 
   const sourcesDialog = page.getByRole('dialog', { name: 'Fuentes' });
   await expect(sourcesDialog).toBeVisible();
 
-  const highlightedCard = page.locator('.orc-source-card[data-highlight]');
+  const highlightedCard = page.locator('.sources-card[aria-current]');
   await expect(highlightedCard).toBeVisible();
   await expect(highlightedCard).toHaveAttribute('aria-current', 'true');
 
-  const scrim = page.locator('.orc-scrim');
+  const scrim = page.locator('.sheet-scrim.sheet-top');
   await expect(scrim).toBeVisible();
   await scrim.click({ position: { x: 5, y: 5 } });
 
@@ -616,12 +617,7 @@ test('D5: each source link card in Sources panel has height >= 44 px', async ({ 
   const sourcesDialog = page.getByRole('dialog', { name: 'Fuentes' });
   await expect(sourcesDialog).toBeVisible();
 
-  const toggleBtn = page.getByRole('button', { name: /Ver todas las fuentes/ });
-  if (await toggleBtn.isVisible()) {
-    await toggleBtn.click();
-  }
-
-  const links = page.locator('.orc-source-card');
+  const links = page.locator('.sources-card');
   const count = await links.count();
   expect(count).toBeGreaterThan(0);
 
@@ -643,7 +639,7 @@ test('D2 (mobile): opening non-stop hotspot shows card in bottom panel with Volv
   const panel = page.locator('.orc-panel');
   const returnBtn = panel.getByRole('button', { name: 'Volver al capítulo' });
   await expect(returnBtn).toBeVisible();
-  await expect(panel.getByRole('heading', { level: 3, name: 'Abrigo meteorológico' })).toBeVisible();
+  await expect(panel.getByRole('heading', { level: 2, name: 'Abrigo meteorológico' })).toBeVisible();
 
   await returnBtn.click();
   await expect(returnBtn).toHaveCount(0);
@@ -836,7 +832,7 @@ test('Orcadas intro modal opens from marker and list, traps focus, returns focus
   await expect(intro.locator('.vpreview')).toHaveCount(MAP_2D_ENABLED ? 0 : 1);
 
   await expect(intro.getByText('El registro mensual de temperatura empieza en abril de 1903 y sigue hasta hoy.')).toBeVisible();
-  const readerBtn = intro.getByRole('button', { name: 'SCAR READER' });
+  const readerBtn = intro.getByRole('button', { name: /^Fuente / }).first();
   await expect(readerBtn).toBeVisible();
   await readerBtn.click();
   const sourcesDialog = page.getByRole('dialog', { name: 'Fuentes' });

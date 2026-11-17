@@ -17,6 +17,7 @@ import { NextCard } from './NextCard.tsx';
 import { PointSheet } from './PointSheet.tsx';
 import { KindChip } from '../orcadas/KindChip.tsx';
 import { OrcadasIntro } from '../orcadas/OrcadasIntro.tsx';
+import { PointIntro } from './PointIntro.tsx';
 import { ViewToggle } from './ViewToggle.tsx';
 import { ZoomControls } from './ZoomControls.tsx';
 import { Map2DLayer, type LayerProps } from './Map2DLayer.tsx';
@@ -188,7 +189,7 @@ export function MapView({
   const [anim, setAnim] = useState<Anim>('');
   const [touched, setTouched] = useState(false);
   const [sheet, setSheet] = useState<MapPoint | SeaPoint | null>(null);
-  const [pendingOrcadas, setPendingOrcadas] = useState<MapPoint | null>(null);
+  const [pendingIntro, setPendingIntro] = useState<MapPoint | null>(null);
   // Key of the marker whose label a first touch brought into view.
   const [shown, setShown] = useState<string | null>(null);
   const [list, setList] = useState(false);
@@ -250,7 +251,7 @@ export function MapView({
   // Browser «back» closes the top layer instead of leaving the app (#185).
   useBackLayer(list, () => setList(false));
   useBackLayer(!!sheet, () => setSheet(null));
-  useBackLayer(!!pendingOrcadas && phase === 'idle', () => setPendingOrcadas(null));
+  useBackLayer(!!pendingIntro && phase === 'idle', () => setPendingIntro(null));
   useBackLayer(voyaging, () => onEndVoyage?.(false));
   useBackLayer(showCard, dismissCard);
   useBackLayer(is3D && claimsEnabled && claimsDetails && !sheet, closeClaimsDetails);
@@ -368,8 +369,8 @@ export function MapView({
 
   // A sheet, the list or the Orcadas intro replaces the card.
   useEffect(() => {
-    if (finished && (sheet || list || pendingOrcadas)) onDismissFinished?.();
-  }, [finished, sheet, list, pendingOrcadas]);
+    if (finished && (sheet || list || pendingIntro)) onDismissFinished?.();
+  }, [finished, sheet, list, pendingIntro]);
 
   useEffect(() => {
     if (phase !== 'dive' && phase !== 'fade') return;
@@ -414,8 +415,8 @@ export function MapView({
   }, [is3D]);
   // Anything that opens over the map ends the guide.
   useEffect(() => {
-    if (guideOpen && (voyaging || phase !== 'idle' || sheet || list || pendingOrcadas)) onGuide?.('close');
-  }, [guideOpen, voyaging, phase, sheet, list, pendingOrcadas]);
+    if (guideOpen && (voyaging || phase !== 'idle' || sheet || list || pendingIntro)) onGuide?.('close');
+  }, [guideOpen, voyaging, phase, sheet, list, pendingIntro]);
 
   const rel = (e: { clientX: number; clientY: number }) => {
     const r = vpRef.current!.getBoundingClientRect();
@@ -594,10 +595,8 @@ export function MapView({
         // One sheet at a time: the intro replaces the trip from Ushuaia, as starting Orcadas did before.
         if (voyaging) onEndVoyage?.(false);
         setSheet(null);
-        // Orcadas first shows its intro, where the visitor picks how to arrive (#125, #135); any
-        // other expedition starts at once.
-        if (p.id === EXPEDITION_POINT.id) setPendingOrcadas(p);
-        else onStart(p);
+        // Every expedition first shows its modal (#264); Orcadas' is where the visitor picks how to arrive (#125, #135).
+        setPendingIntro(p);
       }
     } else {
       if (is3D && 'closeUp' in p && p.closeUp) send3D({ type: 'visit', id: p.id, distance: p.closeUp });
@@ -748,7 +747,7 @@ export function MapView({
               const nextPoint = !resumePoint && next && phase === 'idle' && !voyaging && !hideNextBtn && !showCard ? next : null;
               if (nextPoint) {
                 return (
-                  <button type="button" className="btn resume next-btn" aria-label={`Siguiente: ${nextPoint.title}`} onClick={() => { setSheet(null); setPendingOrcadas(null); openPoint(nextPoint); }}>
+                  <button type="button" className="btn resume next-btn" aria-label={`Siguiente: ${nextPoint.title}`} onClick={() => { setSheet(null); setPendingIntro(null); openPoint(nextPoint); }}>
                     <span className="lbl">Siguiente: </span>{nextPoint.title}
                     {Icon.next}
                   </button>
@@ -761,7 +760,7 @@ export function MapView({
                   aria-label={`Continuar: ${resumePoint.title}${detail ? ` · ${detail}` : ''}`}
                   onClick={() => {
                     setSheet(null);
-                    setPendingOrcadas(null);
+                    setPendingIntro(null);
                     if (VOYAGE_POINTS.some((v) => v.id === resumePoint.id)) {
                       if (resume && resume.step >= 1) resumeVoyage(resume);
                       onStartVoyage?.(resumePoint, resume ?? undefined);
@@ -784,7 +783,7 @@ export function MapView({
                 setClaimsStatus('loading');
                 vpRef.current?.focus();
               }} />}
-            <button type="button" className="btn" onClick={() => { setSheet(null); setPendingOrcadas(null); setList(true); }}>
+            <button type="button" className="btn" onClick={() => { setSheet(null); setPendingIntro(null); setList(true); }}>
               {Icon.list}
               {LIST_BUTTON_LABEL}
             </button>
@@ -836,14 +835,28 @@ export function MapView({
         {sheet && <PointSheet point={sheet} onClose={() => setSheet(null)} fallbackFocus={() => vpRef.current} preview={is3D} reduced={reduced}
           onMap={is3D && 'closeUp' in sheet && !!sheet.closeUp}
           action={is3D && sheet.id === CLAIMS_POINT_ID ? { label: claimsEnabled ? 'Ver reclamos en el mapa' : 'Ver reclamos territoriales', onClick: showClaims } : undefined} />}
-        {pendingOrcadas && phase === 'idle' && (
+        {pendingIntro && pendingIntro.id !== EXPEDITION_POINT.id && phase === 'idle' && (
+          <PointIntro
+            point={pendingIntro}
+            onStart={() => {
+              const point = pendingIntro;
+              setPendingIntro(null);
+              onStart(point);
+            }}
+            onExit={() => setPendingIntro(null)}
+            fallbackFocus={() => vpRef.current}
+            preview={is3D}
+            reduced={reduced}
+          />
+        )}
+        {pendingIntro && pendingIntro.id === EXPEDITION_POINT.id && phase === 'idle' && (
           <OrcadasIntro
             onStart={(arrival) => {
-              const point = pendingOrcadas;
-              setPendingOrcadas(null);
+              const point = pendingIntro;
+              setPendingIntro(null);
               onStart(point, arrival);
             }}
-            onExit={() => setPendingOrcadas(null)}
+            onExit={() => setPendingIntro(null)}
             fallbackFocus={() => vpRef.current}
             preview={is3D}
             reduced={reduced}

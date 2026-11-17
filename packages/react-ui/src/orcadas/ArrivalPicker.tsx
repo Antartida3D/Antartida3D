@@ -1,6 +1,7 @@
 import { lazy, Suspense, useMemo } from 'react';
 import { arrivalMonth, factById, MONTH_NAMES, type ArrivalId } from '@antartida/core';
-import { FactList } from './FactList.tsx';
+import { Quoted } from '../ui.tsx';
+import { Cites } from '../sheet/Cite.tsx';
 import { KindChip } from './KindChip.tsx';
 // Its own chunk: it needs WebGL, which the 2D map does not.
 // Its own chunk: it needs WebGL, which the 2D map does not.
@@ -69,7 +70,11 @@ export function ArrivalPicker({
         <KindChip kind="recon" label="Reconstrucción ilustrada" />
       </p>
       <p className="vsmall">La expedición arranca en {MONTH_NAMES[arrivalMonth(value) - 1]}, temporada de visitas.</p>
-      {transportFact && <FactList facts={[transportFact]} fold={false} />}
+      {transportFact && (
+        <ul className="vfacts">
+          <li className="vfact"><span><Quoted text={transportFact.text} /><Cites ids={transportFact.sourceIds} /></span></li>
+        </ul>
+      )}
     </div>
   );
 }

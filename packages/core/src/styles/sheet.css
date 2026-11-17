@@ -1,0 +1,72 @@
+/*
+ * The parts every modal shares (#264): header, text, «Saber más», actions, citations and the sources view.
+ * They lay things out and use the tokens; the look of buttons and chips stays in components.css.
+ */
+.sheet.sheet-top,.sheet.voyage.sheet-top,.sheet.grows.sheet-top{z-index:30}
+.scrim.sheet-top{z-index:29}
+
+.sheet-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.sheet-header-text{min-width:0;flex:1}
+.sheet-label{display:block;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--chart-muted)}
+.sheet-header .iconbtn{flex:none}
+
+.sheet-text{display:flex;flex-direction:column;gap:10px}
+.sheet-text p{margin:0;line-height:1.5}
+.sheet-text .sheet-lead{font-size:1.08em}
+.sheet-text strong{font-weight:700}
+
+.sheet-more{margin-top:4px;padding:8px 0;border-top:1px solid var(--chart-ink)}
+.sheet-more > summary{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--deep);cursor:pointer;user-select:none;list-style:none}
+.sheet-more > summary::-webkit-details-marker{display:none}
+.sheet-more > summary::before{content:'▸';display:inline-block;font-size:12px;transition:transform .2s ease}
+.sheet-more[open] > summary::before{transform:rotate(90deg)}
+.sheet-more > summary:focus-visible{outline:2px solid var(--deep);outline-offset:2px}
+.sheet-more-body{margin-top:8px;display:flex;flex-direction:column;gap:8px}
+@media (prefers-reduced-motion:reduce){.sheet-more > summary::before{transition:none}}
+
+/* The row sticks to the foot of the sheet, so the main button is in view without scrolling. Two buttons go side by side, on a phone too; three or more stack, the main one last. */
+.sheet-actions{position:sticky;bottom:-24px;z-index:3;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:10px;margin:14px -20px -24px;padding:10px 20px 24px;background:var(--chart-paper);border-top:1px solid var(--chart-rule)}
+.sheet-actions .btn{width:100%;font-size:16px;min-height:44px;box-sizing:border-box;padding-inline:10px;white-space:normal;text-align:center;line-height:1.15}
+@media (max-width:819.98px){
+  .sheet-actions:has(> :nth-child(3)){grid-auto-flow:row;grid-auto-columns:auto;gap:8px}
+}
+/* In the panel of an expedition the row is a foot under the text that scrolls, on the paper of the panel. */
+.orc-panel .sheet-actions{position:static;margin:0;padding:7px 14px 9px;gap:8px}
+.orc-panel .sheet-actions .btn{font-size:15px}
+
+.sources-defs{margin:8px 0;display:flex;flex-direction:column;gap:6px;font-size:13px}
+.sources-defs > div{display:flex;align-items:center;gap:8px}
+.sources-defs dt,.sources-defs dd{margin:0}
+.sources-list{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.sources-card{display:flex;gap:10px;padding:8px 0;border-top:1px solid var(--chart-ink)}
+.sources-card[aria-current]{background:color-mix(in srgb,var(--glacier) 35%,transparent)}
+.sources-card > div{display:flex;flex-direction:column;gap:3px;min-width:0}
+.sources-card a{color:var(--deep);overflow-wrap:anywhere}
+.sources-num{flex:none;font-weight:700;color:var(--deep)}
+.sources-org,.sources-detail{font-size:13px}
+.sources-card small{color:var(--chart-muted)}
+.sheet:focus{outline:none}
+
+/* In the panel of an expedition the header is the head of the panel, with its label in the same hand as «orc-kicker». */
+.orc-panel .sheet-header{margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--chart-rule)}
+.orc-panel .sheet-label{font-family:'Fraunces',Georgia,serif;font-size:12px;font-weight:400;letter-spacing:.08em;line-height:1.4;text-transform:none}
+.sheet-header .place{margin-bottom:10px}
+.orc-panel .sheet-header .place{margin-bottom:0}
+.sheet-kinds{margin:4px 0 8px;display:flex;flex-wrap:wrap;gap:6px}
+.sources-notice{margin:6px 0;font-size:13px}
+
+/* Wraps a modal opened over a screen that handles keys of its own, so they do not reach it. */
+.sheet-isolate{display:contents}
+.next-sheet .sheet-actions .btn{font-size:15px;min-height:44px}
+
+/* The last card of a fold has no line under it: the row of actions, or the edge of the sheet, already has one. */
+.sheet-more-body > .orc-fact-card:last-child,
+.sheet-more-body > .orc-facts-list > .orc-fact-card:last-child{border-bottom:0}
+.sheet-more-body{gap:0}
+details.sheet-more.orc-month-details{padding:10px 12px}
+details.sheet-more.orc-month-details > .sheet-more-body{margin-top:10px;gap:10px}
+@media (max-height:500px){
+  .sheet.next-sheet{padding-bottom:0}
+  .next-sheet .sheet-actions{margin:6px -20px 0;padding:6px 20px 8px;gap:8px}
+  .next-sheet .sheet-actions .btn{min-height:40px;padding-inline:6px;font-size:14px}
+}

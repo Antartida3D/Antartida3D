@@ -443,16 +443,14 @@
   }
 }
 
-.orc-spot-head,
-.orc-sources-head {
+.orc-spot-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 10px;
 }
 
-.orc-spot-head h3,
-.orc-sources-head h3 {
+.orc-spot-head h3 {
   margin: 0;
   font-family: 'Fraunces', Georgia, serif;
   font-size: 19px;
@@ -495,7 +493,6 @@
   z-index: 6;
 
   border-top: 2px solid var(--chart-ink);
-
 
   display: flex;
   flex-direction: column;
@@ -549,7 +546,7 @@
   overflow: hidden;
 }
 
-.orc-panel.peek .orc-panel-scroll > :not(.orc-panel-head),
+.orc-panel.peek .orc-panel-scroll > :not(.orc-panel-head):not(.sheet-header),
 .orc-panel.peek .orc-chapter-h2 {
   display: none;
 }
@@ -656,10 +653,6 @@
   font-family:'Fraunces', Georgia, serif;
   font-weight:500;}
 
-.orc-tour-card .orc-fact-srcs {
-  margin-top: 0;
-}
-
 .orc-tour-more {
   margin-top: 0;
 }
@@ -699,97 +692,6 @@
   font-size: 13px;
   line-height: 1.35;
   color: var(--chart-ink);
-}
-
-.orc-fact-srcs {
-  margin-top: 6px;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-}
-
-.orc-src-prefix {
-  color: var(--chart-muted);
-  font-size: 12px;
-}
-
-.orc-src-link {
-  appearance: none;
-  background: none;
-  border: none;
-  padding: 4px 8px;
-  margin: 1px 0;
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--deep);
-  text-decoration: underline;
-  text-decoration-thickness: 1.5px;
-  text-underline-offset: 3px;
-  cursor: pointer;
-  border-radius: 4px;
-}
-
-.orc-src-link:hover {
-  color: var(--chart-ink);
-}
-
-.orc-src-link:focus-visible {
-  outline: 2px solid var(--deep);
-  outline-offset: 2px;
-  border-radius: 2px;
-}
-
-details.orc-more {
-  margin-top: 4px;
-  border: 1px dashed color-mix(in srgb, var(--chart-ink) 30%, transparent);
-  border-radius:var(--chart-radius);
-  padding: 8px 10px;
-  background: color-mix(in srgb, var(--chart-paper) 60%, transparent);
-}
-
-details.orc-more > summary {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--deep);
-  cursor: pointer;
-  user-select: none;
-  list-style: none;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-details.orc-more > summary::-webkit-details-marker {
-  display: none;
-}
-
-details.orc-more > summary::before {
-  content: '▸';
-  display: inline-block;
-  transition: transform 0.2s ease;
-  font-size: 12px;
-}
-
-details.orc-more[open] > summary::before {
-  transform: rotate(90deg);
-}
-
-details.orc-more > summary:focus-visible {
-  outline: 2px solid var(--deep);
-  outline-offset: 2px;
-}
-
-.orc-more-facts {
-  margin-top: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
 }
 
 /* Activity blocks */
@@ -881,7 +783,6 @@ details.orc-more > summary:focus-visible {
   gap: 8px;
 
   border: 1.5px solid var(--chart-ink);
-
 
   cursor: pointer;
   font-family: 'Fraunces', Georgia, serif;
@@ -1182,10 +1083,6 @@ details.orc-more > summary:focus-visible {
   color: var(--chart-ink);
 }
 
-.orc-answer-cta-row {
-  margin: 2px 0;
-}
-
 .orc-btn-goto-obs {
   font-size: 12px;
   font-weight: 700;
@@ -1326,173 +1223,15 @@ details.orc-more > summary:focus-visible {
   opacity: 0.8;
 }
 
-/* Bottom bar inside panel */
-.orc-panel .orc-bar {
-  position: static;
-  padding: 7px 14px 9px;
-  background: var(--chart-paper);
-  border-top:1px solid var(--chart-rule);
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.orc-panel .orc-bar .btn {
-  min-height: 44px;
-  font-size: 15px;
-  padding: 0 14px;
-}
-
-/* The primary button fills the bar, so it is centred whether «Atrás» is there or not. */
-.orc-panel .orc-bar .btn.primary {
-  flex: 1 1 auto;
-  width: auto;
-  max-width: none;
-}
-
-.orc-scrim {
-  position: fixed;
-  inset: 0;
-  background: color-mix(in srgb, var(--chart-ink) 45%, transparent);
-  backdrop-filter: blur(1.5px);
-  z-index: 10;
-  animation: orc-fade-in 0.2s ease-out both;
-}
-
 @keyframes orc-fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
-}
-
-/* Sources dialog panel */
-.orc-sources {
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: 12px;
-  max-height: 44dvh;
-  z-index: 20;
-
-  border: 2px solid var(--chart-ink);
-
-  padding: 14px 16px;
-
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  overflow-y: auto;
-  animation: orc-card-in 0.24s cubic-bezier(0.2, 0.8, 0.3, 1) both;
 }
 
 .orc-close-btn {
   width: 44px;
   height: 44px;
   flex: none;
-}
-
-.orc-sources-defs {
-  margin: 4px 0 8px;
-  padding: 8px 10px;
-  background: color-mix(in srgb, var(--chart-paper) 70%, transparent);
-  border: 1px dashed color-mix(in srgb, var(--chart-ink) 30%, transparent);
-  border-radius:var(--chart-radius);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.orc-sources-def {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  font-size: 12px;
-  line-height: 1.35;
-}
-
-.orc-sources-def dt {
-  flex-shrink: 0;
-}
-
-.orc-sources-def dd {
-  margin: 0;
-  color: var(--chart-muted);
-}
-
-.orc-sources-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.orc-source-item {
-  margin: 0;
-  padding: 0;
-}
-
-.orc-source-card {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-height: 44px;
-  padding: 8px 10px;
-  background: var(--chart-paper);
-  border: 1px solid color-mix(in srgb, var(--chart-ink) 32%, transparent);
-  border-radius:var(--chart-radius);
-  text-decoration: none;
-  color: inherit;
-  box-sizing: border-box;
-}
-
-.orc-source-card:hover {
-  border-color: var(--deep);
-  background: var(--chart-wash);
-}
-
-.orc-source-card:focus-visible {
-  outline: 2px solid var(--deep);
-  outline-offset: 2px;
-}
-
-.orc-source-card[data-highlight] {
-  outline: 2.5px solid var(--ocre);
-  outline-offset: 2px;
-}
-
-.orc-source-label {
-  font-weight: 700;
-  font-size: 14px;
-  color: var(--deep);
-  line-height: 1.25;
-}
-
-.orc-source-org {
-  font-size: 12.5px;
-  color: var(--chart-ink);
-  line-height: 1.25;
-}
-
-.orc-source-meta {
-  font-size: 11px;
-  color: var(--chart-muted);
-}
-
-.orc-sources-footer {
-  margin-top: 6px;
-  padding-top: 8px;
-  border-top: 1px dashed color-mix(in srgb, var(--chart-ink) 25%, transparent);
-  display: flex;
-  justify-content: center;
-}
-
-.orc-sources-toggle-btn {
-  font-size: 13px;
-  padding: 6px 14px;
-  min-height: 44px;
 }
 
 /* Desktop layout (>= 900px): side notebook column */
@@ -1586,7 +1325,6 @@ details.orc-more > summary:focus-visible {
     border: 2px solid var(--chart-ink);
     border-radius: var(--chart-radius);
 
-
     transform: translate3d(0, 0, 0);
     visibility: visible;
     transition: transform 0.28s cubic-bezier(0.2, 0.85, 0.3, 1), visibility 0s linear 0s;
@@ -1635,7 +1373,6 @@ details.orc-more > summary:focus-visible {
     border-right: 0;
     border-radius: var(--chart-radius) 0 0 var(--chart-radius);
 
-
     font-family: inherit;
     font-size: 14px;
     font-weight: 700;
@@ -1674,14 +1411,6 @@ details.orc-more > summary:focus-visible {
     max-width: 320px;
     width: 320px;
     max-height: 60dvh;
-  }
-
-  .orc-sources {
-    left: 24px;
-    right: auto;
-    bottom: 24px;
-    width: 440px;
-    max-height: calc(100dvh - 120px);
   }
 }
 
@@ -1760,7 +1489,6 @@ details.orc-more > summary:focus-visible {
     border: 2px solid var(--chart-ink);
     border-radius: var(--chart-radius);
 
-
   }
 
   .orc-panel-scroll {
@@ -1780,10 +1508,6 @@ details.orc-more > summary:focus-visible {
   line-height:1.4;
   color:var(--chart-muted);}
 
-  .orc-bar.ebar {
-    padding: 6px 10px;
-  }
-
   .orc-month-strip-wrap {
     top: 58px;
     z-index: 15;
@@ -1793,16 +1517,6 @@ details.orc-more > summary:focus-visible {
   .orc-month-popover {
     width: calc(54vw - 24px);
     max-height: calc(100dvh - 116px);
-  }
-
-  /* Fuentes takes the place of the chapter panel, so the scene and its dots stay usable. */
-  .orc-sources {
-    top: 52px;
-    right: 8px;
-    bottom: 8px;
-    left: auto;
-    width: 46%;
-    max-height: none;
   }
 
   .orc-scene-badge {
@@ -1822,14 +1536,7 @@ details.orc-more > summary:focus-visible {
     animation: none;
     display: none;
   }
-  .orc-panel,
-  .orc-panel.is-hidden,
-  .orc-panel-show,
-  .orc-spot-card,
-  .orc-sources,
-  .orc-step-btn,
-  .orc-month-popover,
-  .orc-month-chip-caret {
+  .orc-panel, .orc-panel.is-hidden, .orc-panel-show, .orc-spot-card, .orc-step-btn, .orc-month-popover, .orc-month-chip-caret {
     animation: none;
     transition: none;
   }

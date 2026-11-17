@@ -16,12 +16,15 @@ const NO_SHIFT: ViewShiftPx = { x: 0, y: 0 };
  * covers as `--scene-top`, `--scene-sheet` and `--scene-side` on the root, so a phone stage sits
  * between the bar and the sheet and the labels on the scene stay clear of both; with a side panel the stage
  * fills the screen and the returned shift centres the view in the free part, left of the panel.
+ * With `fullBleed` the stage fills the screen on a phone too, and the shift centres the view between
+ * the bar and the sheet (Cerro Nevado, #206).
  */
 export function useSceneFrame(
   root: RefObject<HTMLElement | null>,
   top: RefObject<HTMLElement | null>,
   panel: RefObject<HTMLElement | null>,
   sidePanel: boolean,
+  fullBleed = false,
 ): ViewShiftPx {
   const [shift, setShift] = useState<ViewShiftPx>(NO_SHIFT);
   useEffect(() => {
@@ -36,7 +39,11 @@ export function useSceneFrame(
       host.style.setProperty('--scene-top', `${barBottom}px`);
       host.style.setProperty('--scene-sheet', sidePanel ? '0px' : `${box.bottom - panelBox.top}px`);
       host.style.setProperty('--scene-side', sidePanel ? `${box.right - panelBox.left}px` : '0px');
-      const next = sidePanel ? { x: Math.round((box.right - panelBox.left) / 2), y: -Math.round(barBottom / 2) } : NO_SHIFT;
+      const next = sidePanel
+        ? { x: Math.round((box.right - panelBox.left) / 2), y: -Math.round(barBottom / 2) }
+        : fullBleed
+          ? { x: 0, y: Math.round((box.bottom - panelBox.top) / 2 - barBottom / 2) }
+          : NO_SHIFT;
       setShift((s) => (s.x === next.x && s.y === next.y ? s : next));
     };
     const observer = new ResizeObserver(measure);
@@ -45,7 +52,7 @@ export function useSceneFrame(
     observer.observe(side);
     measure();
     return () => observer.disconnect();
-  }, [root, top, panel, sidePanel]);
+  }, [root, top, panel, sidePanel, fullBleed]);
   return shift;
 }
 

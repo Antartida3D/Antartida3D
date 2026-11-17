@@ -16,7 +16,7 @@ import {
   ZINC,
 } from './sightingModels.ts';
 import { ICEBERG_TABULAR_POLY } from './icebergs.ts';
-import { block, chunk, emperor, extrude, groundField, lathe, ngon, normalOf, prism, quad, rect, RELIEF_ICE, RELIEF_ROCK, reliefColor, resolveRelief, scaled, shift, turn, type Tri, type Vec3 } from './lowPoly.ts';
+import { block, chunk, emperor, emperorChick, emperorWithFlippers, extrude, groundField, lathe, ngon, normalOf, prism, quad, rect, RELIEF_ICE, RELIEF_ROCK, reliefColor, resolveRelief, scaled, shift, turn, type Tri, type Vec3 } from './lowPoly.ts';
 
 // Approximate colors. Every model here is an illustration, not to scale (docs/diseno/estilo-voxel.md).
 // Erebus: its snow and rock take the colors of the painted relief (reliefColor); here only the lava lake.
@@ -809,6 +809,120 @@ export const EMPEROR_HUDDLE: readonly Tri[] = Array.from({ length: 19 }, (_, i) 
 }).flat();
 
 // ---------------------------------------------------------------------------------------------
+// Emperor colony of Cerro Nevado (Snow Hill Island, #206)
+// ---------------------------------------------------------------------------------------------
+
+// The tent of the Argentine field camp: its colour is not in the sources, the orange of the map.
+const CAMP_TENT = ORANGE;
+const SNOW_HILL_ADULT = 0.075;
+const SNOW_HILL_CHICK = 0.046;
+
+/** Where an emperor stands: position, height and turn (emperor()). */
+interface Stand { x: number; z: number; k: number; facing: number }
+
+/** The emperor in front of the colony on the map. */
+const MAP_WAVER: Stand = { x: 0.18, z: 0.13, k: 0.1, facing: -0.97 };
+/** The emperor in front of the card. */
+const CARD_WAVER: Stand = { x: 0.06, z: 0.12, k: 0.3, facing: -0.97 };
+
+
+/** A tent as a low pyramid. */
+const tent = (x: number, z: number, r: number, h: number, color: number): Tri[] => lathe(x, z, [[0, r], [h, 0]], 4, color, Math.PI / 4);
+
+/** Where the fast ice ends towards the sea (model z, +z is south), at model x. */
+const fastIceEdge = (x: number) => 0.2 + Math.sin(x * 9 + 0.6) * 0.025 + Math.sin(x * 23) * 0.01;
+
+/** A small floe of the pack ice in front of the fast ice: a flat slab just over the sea. */
+const floe = (x: number, z: number, r: number, seed: number): Tri[] => {
+  const ring = Array.from({ length: 6 }, (_, i) => {
+    const a = (i / 6) * Math.PI * 2 + seed;
+    const k = r * (0.75 + 0.25 * Math.sin(seed * 3.1 + i * 1.7));
+    return [x + Math.cos(a) * k, z + Math.sin(a) * k * 0.8] as const;
+  });
+  return prism(ring, 0.001, 0.007, ICE_SHADE, ICE);
+};
+
+/**
+ * The colony on the fast ice off the south coast of Snow Hill Island. Fast ice is sea ice held to
+ * the shore that does not drift (NSIDC): here a thin, flat sheet from the coast (-z) to its edge
+ * towards the sea (+z, fastIceEdge). The emperors stand along that edge, on the flat ice, in
+ * groups (Schiel et al. 2019: "along the edge of the fast ice", "almost all [...] on level areas"),
+ * with a crèche on the lee side of an iceberg held in the ice. A tent of the Argentine camp stands
+ * by another iceberg (IAA: "Campamento realizado sobre el pack marino a 300 metros de la colonia,
+ * protegido por témpano"). In front of the edge, a narrow belt of pack ice with a chick on a floe
+ * (Schiel et al.). Without the emperor in front (MAP_WAVER). Illustration, not to scale or a count.
+ */
+const SNOW_HILL_BASE: Tri[] = [
+  // The fast ice, with its guano stain along the edge: on the map the relief here is sea. Its edge
+  // stands a hair over the sea (a negative sink), a step and not a wall.
+  ...groundField(
+    16,
+    16,
+    0.062,
+    2206,
+    // Rounded at its sides, where it runs on along the coast beyond the model.
+    (u, v, noise) => (v * 0.5 < fastIceEdge(u * 0.5) && Math.hypot(u, v * 0.7 + 0.25) + (noise - 0.5) * 0.12 < 1.02 ? 0.005 + noise * 0.002 : null),
+    (u, v, _h, _steep, noise) => {
+      const [x, z] = [u * 0.5, v * 0.5];
+      // Stains in patches where the groups stand, not one band.
+      const stain = Math.abs(z - (fastIceEdge(x) - 0.08)) < 0.035 && x > -0.3 && x < 0.36 && noise > 0.35;
+      return stain ? GUANO : noise > 0.85 ? ICE_SHADE : ICE;
+    },
+    -0.002,
+  ),
+  // The iceberg of the crèche, held in the fast ice behind the colony, and the one of the camp.
+  ...prism([[0.02, -0.06], [-0.14, -0.08], [-0.2, -0.01], [-0.13, 0.05], [0.0, 0.03]], 0, 0.12, ICE_WALL, WHITE),
+  ...prism([[-0.3, -0.22], [-0.42, -0.24], [-0.45, -0.15], [-0.35, -0.12]], 0, 0.08, ICE_WALL, WHITE),
+  ...tent(-0.36, -0.06, 0.035, 0.04, CAMP_TENT),
+  ...tent(-0.28, -0.05, 0.028, 0.032, CAMP_TENT),
+  // The crèche, packed on the lee side of the iceberg, towards the edge.
+  ...Array.from({ length: 11 }, (_, i) => {
+    const a = i * 2.4;
+    const r = 0.02 + (i % 4) * 0.014;
+    return emperorChick(-0.07 + Math.cos(a) * r * 1.4, 0.1 + Math.sin(a) * r * 0.7, SNOW_HILL_CHICK * (0.9 + (i % 3) * 0.06), a * 0.3);
+  }).flat(),
+  // Groups of chicks with a few adults, strung along the edge.
+  ...[[0.08, 0.14], [0.27, 0.12]].flatMap(([cx, cz], g) =>
+    Array.from({ length: 5 }, (_, i) => {
+      const a = i * 2.1 + g;
+      return emperorChick(cx + Math.cos(a) * 0.03, cz + Math.sin(a) * 0.018, SNOW_HILL_CHICK * (0.92 + (i % 2) * 0.08), a * 0.4);
+    }).flat(),
+  ),
+  ...emperorWithFlippers(0.04, 0.09, SNOW_HILL_ADULT, 2.2),
+  ...emperorWithFlippers(0.32, 0.08, SNOW_HILL_ADULT * 0.95, 2.9),
+  ...emperorWithFlippers(-0.17, 0.12, SNOW_HILL_ADULT, -0.4),
+  ...emperorWithFlippers(-0.24, 0.1, SNOW_HILL_ADULT * 0.95, 0.6),
+  // The narrow belt of pack ice in front of the edge, one floe with a chick on it.
+  ...floe(-0.32, 0.3, 0.05, 1),
+  ...floe(-0.15, 0.34, 0.035, 2),
+  ...floe(0.02, 0.29, 0.03, 3),
+  ...floe(0.12, 0.38, 0.05, 4),
+  ...floe(0.3, 0.32, 0.04, 5),
+  ...floe(0.42, 0.42, 0.03, 6),
+  ...floe(-0.4, 0.44, 0.035, 7),
+  // On the floe, not at sea level: what touches y = 0 is set into the ground on the map.
+  ...shift(emperorChick(0.12, 0.38, SNOW_HILL_CHICK, -1.2), 0, 0.007, 0),
+];
+
+/**
+ * The card of the point, closer than the map: three emperors and their chicks in front, the
+ * iceberg of the crèche and the ice cliff of the island behind (-z). Illustration, not to scale.
+ */
+const SNOW_HILL_CARD: Tri[] = [
+  ...prism([[0.5, -0.36], [0.22, -0.4], [-0.05, -0.37], [-0.3, -0.42], [-0.5, -0.39], [-0.5, -0.5], [0.5, -0.5]], 0, 0.05, ROCK, ROCK),
+  ...prism([[0.5, -0.38], [0.22, -0.42], [-0.05, -0.39], [-0.3, -0.44], [-0.5, -0.41], [-0.5, -0.5], [0.5, -0.5]], 0.05, 0.2, ICE_WALL, WHITE),
+  ...prism([[-0.02, -0.2], [-0.2, -0.24], [-0.28, -0.17], [-0.2, -0.1], [-0.05, -0.12]], 0, 0.14, ICE_WALL, WHITE),
+  ...tent(0.38, -0.22, 0.05, 0.06, CAMP_TENT),
+  ...emperorWithFlippers(-0.36, -0.08, 0.28, -0.5),
+  ...emperorWithFlippers(0.3, 0.0, 0.27, -1.6),
+  ...emperorChick(-0.08, 0.24, 0.17, -0.8),
+  ...emperorChick(0.22, 0.2, 0.16, -1.3),
+  ...emperorChick(-0.36, 0.16, 0.15, -0.4),
+  ...emperorWithFlippers(CARD_WAVER.x, CARD_WAVER.z, CARD_WAVER.k, CARD_WAVER.facing),
+];
+
+
+// ---------------------------------------------------------------------------------------------
 
 /**
  * Low-poly model of a map point that has no expedition yet (tier B and C in points.ts). Every
@@ -881,6 +995,16 @@ export const POINT_MODELS: Readonly<Record<string, PointModel>> = {
     width: 0.6,
     pad: 0.48,
   },
+  // The colony on the map; the point opens its own scene (cerronevado/), where an emperor waves.
+  cerronevado: {
+    map: [...SNOW_HILL_BASE, ...emperorWithFlippers(MAP_WAVER.x, MAP_WAVER.z, MAP_WAVER.k, MAP_WAVER.facing)],
+    preview: { tris: card(SNOW_HILL_CARD, 0, true), motion: 'still', lift: 0.1 },
+    width: 0.6,
+    pad: 0.48,
+    // The point is the colony at the south coast (Coria & Montalti 2000): the model stands just off
+    // it, on the sea ice to the south, not on the slope of the island that rises behind.
+    offset: [0, 0.35],
+  },
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -938,6 +1062,20 @@ export function calvingPose(t: number): { tilt: number; sink: number; visible: b
 
 /** Turn of the emperor huddle: the birds take turns at the warm centre (AAD). One turn in about 2.5 min. */
 export const huddleTurn = (t: number) => t * 0.04;
+
+/** Seconds of one wave of the emperor of Cerro Nevado (cerronevado/): raise, wave three times, lower, rest. ILLUSTRATIVE: emperors do not wave. */
+const WAVE_SECONDS = 5;
+/** Turn of the raised flipper (radians, out from its rest on the body); with reduced motion it stays here. */
+export const WAVE_RAISED = 2.3;
+
+/** Turn of the waving flipper of Cerro Nevado at time `t` (s): 0 hanging, WAVE_RAISED up. */
+export function flipperWave(t: number): number {
+  const p = ((t % WAVE_SECONDS) + WAVE_SECONDS) % WAVE_SECONDS;
+  if (p < 0.5) return WAVE_RAISED * smooth(0, 0.5, p);
+  if (p < 2.3) return WAVE_RAISED + Math.sin(((p - 0.5) / 1.8) * Math.PI * 6) * 0.3;
+  if (p < 2.8) return WAVE_RAISED * (1 - smooth(2.3, 2.8, p));
+  return 0;
+}
 
 /** Swing of a flag cloth round its pole. */
 export const flagSwing = (i: number, t: number) => 0.45 * Math.sin(t * 2.2 + i * 1.3) + 0.15 * Math.sin(t * 5.1 + i);

@@ -27,6 +27,7 @@ import {
   initialViewMode,
   MAP_2D_ENABLED,
   PTS,
+  CERRO_NEVADO_ID,
   type ArrivalId,
   type FirstVisitEvent,
   type FirstVisitState,
@@ -52,9 +53,12 @@ const FossilExpedition = lazy(() => loadFossils().then((m) => ({ default: m.Foss
 
 const loadMarine = () => import('./marine/MarineExpedition.tsx');
 const MarineExpedition = lazy(() => loadMarine().then((m) => ({ default: m.MarineExpedition })));
+const loadCerroNevado = () => import('./cerronevado/CerroNevadoExpedition.tsx');
+const CerroNevadoExpedition = lazy(() => loadCerroNevado().then((m) => ({ default: m.CerroNevadoExpedition })));
 
 /** Expeditions with a screen of their own, by the id of their point on the map. */
-const EXPEDITIONS = { orcadas: loadOrcadas, marambio: loadMarambio, fosiles: loadFossils, oceano: loadMarine } as const;
+/** The screens a map point opens. Cerro Nevado is a point of interest with a scene of its own (#206), not an expedition. */
+const EXPEDITIONS = { orcadas: loadOrcadas, marambio: loadMarambio, fosiles: loadFossils, oceano: loadMarine, cerronevado: loadCerroNevado } as const;
 type ExpeditionId = keyof typeof EXPEDITIONS;
 const isExpedition = (id: string): id is ExpeditionId => id in EXPEDITIONS;
 /** `?expedicion=fosiles` or `?expedicion=oceano` opens that expedition directly, to share it or review it. */
@@ -203,7 +207,8 @@ export function AntarcticaApp() {
     setFinished(null);
     setActivePoint(point);
     setResuming(isResuming);
-    if (!isResuming || lastExpedition?.id !== id) {
+    // A scene that is not an expedition is not offered again with «Continuar».
+    if (id !== CERRO_NEVADO_ID && (!isResuming || lastExpedition?.id !== id)) {
       const fresh: ResumePoint = { id, step: 0 };
       setLastExpedition(fresh);
       saveLastExpedition(fresh);
@@ -305,7 +310,7 @@ export function AntarcticaApp() {
     setPhase('ret');
     setReturned(true);
     setResuming(false);
-    if (done) complete(activePoint);
+    if (done && activePoint.id !== CERRO_NEVADO_ID) complete(activePoint);
     else setFinished(null);
     later('ret', () => setPhase('idle'), RETURN_MS);
   };
@@ -396,6 +401,8 @@ export function AntarcticaApp() {
               onProgress={(step, sub) => recordProgress('fosiles', step, sub)}
               onLeave={leave}
             />
+          ) : screen === 'cerronevado' ? (
+            <CerroNevadoExpedition reduced={reduced} onLeave={() => leave(false)} />
           ) : screen === 'oceano' ? (
             <MarineExpedition
               reduced={reduced}

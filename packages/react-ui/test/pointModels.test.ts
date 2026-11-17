@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { PTS } from '@antartida/core';
 import { normalOf, POLY_MIN_COLORS, POLY_MIN_TRIS } from '../src/voyage/lowPoly.ts';
 import { POINT_MODEL_IDS } from '../src/voyage/pointModelIds.ts';
-import { BOMBS, calvingPose, erebusSummit, huddleTurn, lavaBomb, PLUME_PUFFS, plumePuff, POINT_MODELS, thwaitesFront } from '../src/voyage/pointModels.ts';
+import { emperor, emperorChick, emperorFlipper, emperorWithFlippers } from '../src/voyage/lowPoly.ts';
+import { BOMBS, calvingPose, erebusSummit, flipperWave, huddleTurn, lavaBomb, PLUME_PUFFS, plumePuff, POINT_MODELS, thwaitesFront, WAVE_RAISED } from '../src/voyage/pointModels.ts';
 
 describe('point models (#58, docs/diseno/estilo-voxel.md)', () => {
   it('gives models only to points of the map, and the card knows which', () => {
@@ -113,5 +114,50 @@ describe('moving parts of the point models', () => {
   it('keeps everything still at time 0 (reduced motion)', () => {
     expect(huddleTurn(0)).toBe(0);
     expect(calvingPose(0).tilt).toBe(0);
+    expect(flipperWave(0)).toBe(0);
+  });
+
+  it('waves the flipper of Cerro Nevado: up, three swings, down, a rest, and again (#206)', () => {
+    const at = (t: number) => flipperWave(t);
+    expect(at(0.5)).toBeCloseTo(WAVE_RAISED, 5);
+    const swing = Array.from({ length: 90 }, (_, i) => at(0.5 + i * 0.02));
+    expect(Math.max(...swing)).toBeGreaterThan(WAVE_RAISED + 0.2);
+    expect(Math.min(...swing)).toBeLessThan(WAVE_RAISED - 0.2);
+    expect(at(2.3)).toBeCloseTo(WAVE_RAISED, 5);
+    expect(at(3)).toBe(0);
+    expect(at(5.5)).toBeCloseTo(at(0.5), 10);
+    // Never through the body or over the head: between hanging and a little past horizontal-up.
+    for (let t = 0; t < 10; t += 0.01) {
+      expect(at(t)).toBeGreaterThanOrEqual(0);
+      expect(at(t)).toBeLessThan(2.7);
+    }
+    // Continuous: no jump between frames a sixtieth of a second apart.
+    for (let t = 0; t < 10; t += 1 / 60) expect(Math.abs(at(t + 1 / 60) - at(t))).toBeLessThan(0.25);
+  });
+});
+
+describe('emperor chick and flippers (#206)', () => {
+  const colors = (tris: readonly (readonly unknown[])[]) => new Set(tris.map((t) => t[3]));
+
+  it('draws the chick grey, with the white face mask and the black crown, smaller than its parent', () => {
+    const chick = emperorChick(0, 0, 0.6);
+    const c = colors(chick);
+    expect(c.has(0xf7fafb)).toBe(true);
+    expect(c.has(0x1f2a36)).toBe(true);
+    expect(c.size).toBeGreaterThanOrEqual(4);
+    expect(c.has(0xf2c14e)).toBe(false);
+    const top = Math.max(...chick.flatMap(([a, b, d]) => [a[1], b[1], d[1]]));
+    expect(top).toBeCloseTo(0.6, 5);
+  });
+
+  it('hangs the flippers at the sides of the emperor without changing emperor()', () => {
+    const body = emperor(0, 0, 1);
+    const both = emperorWithFlippers(0, 0, 1);
+    expect(both.slice(0, body.length)).toEqual(body);
+    const flippers = both.slice(body.length);
+    expect(flippers.length).toBe(emperorFlipper(1).length * 2);
+    const zs = flippers.flatMap(([a, b, c]) => [a[2], b[2], c[2]]);
+    expect(Math.max(...zs)).toBeGreaterThan(0.17);
+    expect(Math.min(...zs)).toBeLessThan(-0.17);
   });
 });

@@ -90,6 +90,22 @@ export function stationMountain(x: number, z: number): number {
   return (foothills + smooth(12, 50, z) * crest) * (1 - smooth(80, 122, z));
 }
 
+/**
+ * The glacier behind a `station` with `backdrop: 'glacier'` (#218, the Base San Martín after its photographs): the rocky
+ * rise of the islet behind the base first, then, farther back, a wide sheet of ice that ends in a front, a steep wall,
+ * with low domes over it; it comes down again far away, into the haze.
+ */
+export function stationGlacier(x: number, z: number): number {
+  const rocks = 1.1 * smooth(4, 11, z) * (0.7 + 0.3 * Math.sin(x * 0.45 + 0.6)) * (1 - smooth(14, 19, z) * 0.6);
+  const front = smooth(19, 23, z) * (7 + 1.2 * Math.sin(x * 0.11 + 0.4));
+  const domes = smooth(26, 60, z) * (3 + 2.5 * (0.5 + 0.5 * Math.sin(x * 0.05 + 1.3)));
+  return (rocks + front + domes) * (1 - smooth(85, 122, z));
+}
+
+/** What rises behind a station: its mountain, or its glacier. */
+const backdropHeight = (scene: SceneDef, x: number, z: number): number =>
+  scene.setting !== 'station' ? 0 : scene.backdrop === 'glacier' ? stationGlacier(x, z) : stationMountain(x, z);
+
 /** A `coast` scene has its sea on +z; a `station` has it on -z, in front of the base as in its photographs (the same coast line, mirrored). */
 const hasSea = (scene: SceneDef): boolean => scene.setting === 'coast' || scene.setting === 'station';
 const seaSide = (scene: SceneDef): 1 | -1 => (scene.setting === 'station' ? -1 : 1);
@@ -105,7 +121,7 @@ export const dioramaOnLand = (scene: SceneDef, x: number, z: number): boolean =>
 
 /** Height of the ground at (x, z) in the world: land, or its cliff and the sea bed on the coast. */
 function worldHeight(scene: SceneDef, x: number, z: number): number {
-  const land = dioramaGround(x, z) + farLand(x, z) + (scene.setting === 'station' ? stationMountain(x, z) : 0);
+  const land = dioramaGround(x, z) + farLand(x, z) + backdropHeight(scene, x, z);
   if (!hasSea(scene)) return land;
   const t = smooth(CLIFF_START, CLIFF_END, seaSide(scene) * z - shoreAt(scene, x));
   return land + (SEA_BED - land) * t;
@@ -166,7 +182,7 @@ function groundFaces(scene: SceneDef, seed: number): Tri[] {
     (c, rng) => {
       const n = normalOf([c[0], c[3], c[1], 0]);
       const low = c.reduce((s, p) => s + p[1], 0) / 4 < -0.02;
-      if (scene.setting === 'station') return stationGroundColor(c, 1 - Math.abs(n[1]), rng);
+      if (scene.setting === 'station') return stationGroundColor(c, 1 - Math.abs(n[1]), rng, scene.backdrop === 'glacier');
       return low || 1 - Math.abs(n[1]) > 0.3 ? ICE_BLUE : RELIEF_ICE;
     },
     seed,
@@ -181,11 +197,16 @@ const GRAVEL_BROWN = 0x6a5f52;
  * A facet of the ground of a station: gravel round the stage with patches of snow (a patch where a slow wave is high),
  * rock where the mountain is steep and snow over its high gentle slopes, with a few facets of bluer ice.
  */
-function stationGroundColor(c: Corners, steep: number, rng: () => number): number {
+function stationGroundColor(c: Corners, steep: number, rng: () => number, glacier = false): number {
   const x = (c[0][0] + c[2][0]) / 2;
   const z = (c[0][2] + c[2][2]) / 2;
   const high = (c[0][1] + c[1][1] + c[2][1] + c[3][1]) / 4;
   const patch = Math.sin(x * 0.55 + 1.1) * Math.cos(z * 0.5 - 0.4) + 0.5 * Math.sin((x - z) * 0.23);
+  // A glacier: its front and steep faces are blue ice, its sheet white snow; the rocks of the islet below it, dark with snow.
+  if (glacier && z > 17) return steep > 0.3 ? (rng() < 0.5 ? ICE_BLUE : WHITE) : rng() < 0.07 ? ICE_BLUE : WHITE;
+  if (glacier && high > 0.5) return steep > 0.2 || patch > 0.3 ? (rng() < 0.6 ? ROCK_DARK : GRAVEL_DARK) : WHITE;
+  // Round a base under a glacier the rock is mostly under snow (its photographs): snow, with the dark rock showing in patches.
+  if (glacier) return patch > -0.2 || rng() < 0.25 ? (rng() < 0.12 ? ICE_BLUE : WHITE) : rng() < 0.5 ? GRAVEL_DARK : ROCK_DARK;
   // The mountain: snow with outcrops of dark rock where a slow wave is high or the slope is steep, and a bluer ice in the hollows.
   if (high > 2.5) {
     const rocky = Math.sin(x * 0.31 + 1.7) * Math.sin(z * 0.23 - 0.6) + 0.5 * Math.sin(x * 0.13 + z * 0.17);

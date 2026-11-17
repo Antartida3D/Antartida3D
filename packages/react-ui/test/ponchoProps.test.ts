@@ -22,7 +22,7 @@ const EXPECTED_BOX: Readonly<Record<PonchoPropId, readonly [number, number, numb
   nansenSled: [2.3, 0.95, 0.75],
   baseHut: [3.7, 1.9, 2.3],
   baseEsperanza: [32, 4.5, 25],
-  baseSanMartin: [14, 4.2, 7],
+  baseSanMartin: [21, 4.5, 10.2],
 };
 
 const heights = (tris: readonly Tri[]) => tris.flatMap(([a, b, c]) => [a[1], b[1], c[1]]);

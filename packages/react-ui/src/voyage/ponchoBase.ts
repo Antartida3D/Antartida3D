@@ -46,7 +46,7 @@ export function buildBaseHut(scale = HUT_SCALE): Tri[] {
 }
 
 /** Turns the faces by `yaw` about y (as three's rotation.y), moves them to (dx, dz) and lifts them `dy`. */
-function placeTris(tris: readonly Tri[], dx: number, dz: number, yaw = 0, dy = 0): Tri[] {
+export function placeTris(tris: readonly Tri[], dx: number, dz: number, yaw = 0, dy = 0): Tri[] {
   const c = Math.cos(yaw);
   const sn = Math.sin(yaw);
   const at = ([x, y, z]: readonly [number, number, number]): [number, number, number] => [dx + x * c + z * sn, y + dy, dz - x * sn + z * c];
@@ -58,8 +58,8 @@ const { RED, CREAM, WHITE: SNOW } = VOXEL_PALETTE;
 /** The huts of Esperanza: a person is one unit, so a hut is about three and a half long and a little over one high. */
 const ESPERANZA_HUT_SCALE = 1.1;
 /** Colors of a hut of the station (named, rule 30.5): dark roof, yellow wooden base, and the blue of the flag. */
-const ROOF_DARK = 0x3a3c40;
-const PLINTH_YELLOW = 0xd9a441;
+export const ROOF_DARK = 0x3a3c40;
+export const PLINTH_YELLOW = 0xd9a441;
 export const FLAG_BLUE = 0x74acdf;
 
 /**
@@ -74,7 +74,7 @@ export function buildStationHut(scale = ESPERANZA_HUT_SCALE): Tri[] {
 }
 
 /** More named colors of the station (rule 30.5): dark glass, the sun of the flag, the ribs of the container and the letters of the sign. */
-const GLASS_DARK = 0x2a2f35;
+export const GLASS_DARK = 0x2a2f35;
 export const FLAG_SUN = 0xf6b40e;
 const CONTAINER_RIB = 0xdfe3e6;
 export const SIGN_INK = 0x4a3a2c;
@@ -84,7 +84,7 @@ const { WOOD, WOOD_LIGHT, ROCK, ROCK_DARK, WINDOW_DAY } = VOXEL_PALETTE;
  * A flat plate on a wall: a rectangle `w` wide (along `u`) and `h` high (along y) round `center`, pushed `offset` out along
  * the wall's outward normal `n` and wound to face it. For windows, doors, letters and the painted flag.
  */
-function plate(center: Vec3, u: Vec3, n: Vec3, w: number, h: number, offset: number, color: number): Tri[] {
+export function plate(center: Vec3, u: Vec3, n: Vec3, w: number, h: number, offset: number, color: number): Tri[] {
   const at = (su: number, sy: number): Vec3 => [center[0] + u[0] * su * w / 2 + n[0] * offset, center[1] + sy * h / 2, center[2] + u[2] * su * w / 2 + n[2] * offset];
   const inside: Vec3 = [center[0] - n[0], center[1], center[2] - n[2]];
   const [a, b, c, d] = [at(-1, -1), at(1, -1), at(1, 1), at(-1, 1)];
@@ -92,7 +92,7 @@ function plate(center: Vec3, u: Vec3, n: Vec3, w: number, h: number, offset: num
 }
 
 /** A window: a white frame and its pane (`pane`) a little in front of it. */
-function windowOn(center: Vec3, u: Vec3, n: Vec3, w: number, h: number, pane = GLASS_DARK): Tri[] {
+export function windowOn(center: Vec3, u: Vec3, n: Vec3, w: number, h: number, pane = GLASS_DARK): Tri[] {
   return [...plate(center, u, n, w + 0.08, h + 0.08, 0.012, SNOW), ...plate(center, u, n, w, h, 0.02, pane)];
 }
 

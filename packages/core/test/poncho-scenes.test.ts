@@ -31,6 +31,10 @@ import {
   sceneStepCount,
   sceneTrack,
   sceneWalk,
+  sceneRest,
+  sceneSameTrack,
+  REST_DOWN_S,
+  REST_UP_S,
   shipWalkwayAt,
   stageProgress,
   stageScale,
@@ -131,7 +135,8 @@ describe('scenes of Poncho: data', () => {
             if (j <= i || !sceneElementsOverlap(a, b, steps)) return;
             // Only walks are checked, not how the still things are laid out; the ones in one file keep their formation.
             if (!a.path && !b.path) return;
-            if (a.path && a.path === b.path) return;
+            // One file: the same path, or paths laid on one another's track (`follows`), walked at different times.
+            if (a.path && b.path && sceneSameTrack(scene, a.path, b.path)) return;
             const ta = sceneTrack(scene, a);
             const tb = sceneTrack(scene, b);
             const need = sceneBodyRadius(a) + sceneBodyRadius(b);
@@ -530,25 +535,64 @@ describe('«Al rescate de un avión» (#220)', () => {
 describe('«Poncho va al frente» (#218)', () => {
   const scene = PONCHO_SCENES['poncho-perro-guia'];
   const at = (step: number) => scene.elements.filter((e) => sceneElementShown(e, step));
+  const path = (id: string) => scene.paths.find((p) => p.id === id)!;
 
-  it('stands in front of the Base San Martín, told in three stages', () => {
+  it('stands by the Base San Martín, between the glacier and the sea, in three stages', () => {
+    expect(scene.setting).toBe('station');
+    expect(scene.backdrop).toBe('glacier');
     expect(sceneStepCount(scene)).toBe(3);
     for (let step = 0; step < 3; step++) expect(at(step).some((e) => e.id === 'baseSanMartin'), `step ${step}`).toBe(true);
   });
 
-  it('shows the whole team of the book (five pairs and a leader: eleven dogs) once it goes', () => {
-    for (const step of [1, 2]) expect(at(step).filter((e) => e.kind === 'dog').length, `step ${step}`).toBeGreaterThanOrEqual(11);
+  it('has the team of the book, five pairs and a leader (eleven dogs), waiting in file in the first sentence and setting off in the second', () => {
+    const team = scene.elements.filter((e) => e.path === 'trail');
+    expect(team.filter((e) => e.kind === 'dog').length).toBe(11);
+    for (const e of team.filter((x) => x.id !== 'poncho')) {
+      expect(e.walkFrom, `${e.kind} ${e.id}`).toBe(1);
+      expect(sceneElementShown(e, 0)).toBe(true);
+    }
+    // In the first sentence Poncho is brought to the front; from the second he leads the team, at the head of the file.
+    expect(at(0).some((e) => e.id === 'poncho' && e.path === 'promoted')).toBe(true);
+    const leader = at(1).find((e) => e.id === 'poncho' && e.path === 'trail')!;
+    expect(leader.lag ?? 0).toBe(0);
   });
 
-  it('keeps nobody at the doors of the base, empty in 1962', () => {
-    for (const e of scene.elements.filter((x) => x.kind === 'person')) expect(e.z, 'a person stays clear of the base').toBeLessThan(2.5);
+  it('has the team follow the trail of the other sled, which goes ahead on the same bends', () => {
+    const ahead = at(1).filter((e) => e.path === 'ahead');
+    expect(ahead.some((e) => e.kind === 'sled')).toBe(true);
+    expect(ahead.filter((e) => e.kind === 'dog').length).toBeGreaterThanOrEqual(2);
+    expect(at(2).some((e) => e.path === 'ahead')).toBe(false);
+    // The other sled starts on the trail itself, ahead, and goes along its bends.
+    const trail = path('trail');
+    const other = path('ahead');
+    for (const q of (trail.via ?? []).slice(2)) expect(other.via, `${q}`).toContainEqual(q);
+    expect((trail.via ?? []).length).toBeGreaterThanOrEqual(3);
   });
 
-  it('has Poncho lie down and look at the driver in the last stage, then dash ahead', () => {
-    const lying = at(2).find((e) => e.id === 'poncho' && e.curled)!;
-    expect(lying).toBeDefined();
-    const dash = scene.paths.find((p) => p.id === lying.path)!;
-    expect(dash.delay).toBeGreaterThan(3);
-    expect(scenePathLength(dash) / dash.duration).toBeGreaterThan(0.5);
+  it('lays the other walks of the team on the track of the trail, and nothing else', () => {
+    for (const id of ['ahead', 'promoted', 'turnBack', 'go']) expect(sceneSameTrack(scene, id, 'trail'), id).toBe(true);
+    expect(sceneSameTrack(PONCHO_SCENES['rescate-ae-205'], 'patrol', 'toDoor')).toBe(false);
+  });
+
+  it('has Poncho walk on, turn round and lie down slowly at the stop, then get up and go forward quickly', () => {
+    const resting = at(2).find((e) => e.id === 'poncho')!;
+    expect(resting.rest?.then).toBe('go');
+    const turn = path('turnBack');
+    // He walks a turn: his last steps go back the way he came (the driver is behind him).
+    const start = sceneWalk(turn, turn.delay);
+    const end = sceneWalk(turn, turn.delay + turn.duration);
+    expect(Math.cos(end.yaw - start.yaw)).toBeLessThan(-0.5);
+    // He lies down over a while, not in one frame, and is up again before he goes.
+    const done = turn.delay + turn.duration + resting.rest!.after;
+    expect(sceneRest(turn, resting.rest!, done + REST_DOWN_S / 2).lying).toBeGreaterThan(0.1);
+    expect(sceneRest(turn, resting.rest!, done + REST_DOWN_S / 2).lying).toBeLessThan(0.9);
+    expect(sceneRest(turn, resting.rest!, done + REST_DOWN_S + 0.1).lying).toBe(1);
+    const up = done + REST_DOWN_S + resting.rest!.hold + REST_UP_S;
+    expect(sceneRest(turn, resting.rest!, up - 0.01).thenT).toBeNull();
+    expect(sceneRest(turn, resting.rest!, up + 0.5).lying).toBe(0);
+    expect(sceneRest(turn, resting.rest!, up + 0.5).thenT).toBeCloseTo(0.5, 6);
+    // And then away, faster than the team walked.
+    const go = path('go');
+    expect(scenePathLength(go) / go.duration).toBeGreaterThan(scenePathLength(path('trail')) / path('trail').duration);
   });
 });

@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { PONCHO_MILESTONES, PONCHO_PHOTOS, ponchoPhotoAt } from '../src/index.ts';
+import { PONCHO_MILESTONES, PONCHO_PHOTOS, ponchoPhotosAt } from '../src/index.ts';
 
 describe('photographs of Poncho stops', () => {
-  it('belong to a real stop, one each', () => {
-    const stops = PONCHO_PHOTOS.map((p) => p.stop);
-    expect(new Set(stops).size).toBe(stops.length);
-    for (const id of stops) expect(PONCHO_MILESTONES.some((m) => m.id === id)).toBe(true);
+  it('belong to a real stop, each file used once', () => {
+    const files = PONCHO_PHOTOS.map((p) => p.file);
+    expect(new Set(files).size).toBe(files.length);
+    for (const p of PONCHO_PHOTOS) expect(PONCHO_MILESTONES.some((m) => m.id === p.stop)).toBe(true);
   });
 
   it('say where they come from, and never claim rights that are not documented', () => {
@@ -18,21 +18,22 @@ describe('photographs of Poncho stops', () => {
     }
   });
 
-  it('only a photograph with a free license shows as licensed, and then it names its author and license', () => {
+  it('only a photograph with a free license (or in the public domain) shows as licensed, and then it names its author and license', () => {
     for (const p of PONCHO_PHOTOS) {
       if (p.rights === 'licensed') {
         expect(p.credit?.author.length).toBeGreaterThan(2);
-        expect(p.credit?.license).toMatch(/^CC /);
-        expect(p.credit?.licenseUrl).toMatch(/^https:\/\/creativecommons\.org\//);
+        expect(p.credit?.license).toMatch(/^(CC |Dominio público$)/);
+        // A Creative Commons license links to its text; a release to the public domain, to the page where the author makes it.
+        expect(p.credit?.licenseUrl).toMatch(p.credit?.license === 'Dominio público' ? /^https:\/\/commons\.wikimedia\.org\/wiki\/File:/ : /^https:\/\/creativecommons\.org\//);
       } else {
         expect(p.credit).toBeUndefined();
       }
     }
   });
 
-  it('are found by stop, and most stops have none', () => {
-    expect(ponchoPhotoAt('poncho-perro-guia')?.file).toBe('poncho-pagina.jpg');
-    expect(ponchoPhotoAt('nacimiento')?.file).toBe('esperanza.jpg');
-    expect(ponchoPhotoAt('adios-a-la-antartida')).toBeUndefined();
+  it('are found by stop, in order, and most stops have none', () => {
+    expect(ponchoPhotosAt('poncho-perro-guia').map((p) => p.file)).toEqual(['poncho-pagina.jpg', 'san-martin.jpg']);
+    expect(ponchoPhotosAt('nacimiento').map((p) => p.file)).toEqual(['esperanza.jpg']);
+    expect(ponchoPhotosAt('adios-a-la-antartida')).toEqual([]);
   });
 });

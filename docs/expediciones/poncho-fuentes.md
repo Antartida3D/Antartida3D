@@ -206,9 +206,9 @@ La parada «Al rescate de un avión» **no lleva foto**: el equipo lo decidió e
 | AviationCorner.net (<https://www.aviationcorner.net/show_photo.asp?id=193979>) | Foto del Cessna 185B AE-205 | Derechos de su autor, sin licencia libre; no es el accidente |
 | Wikimedia Commons (búsqueda «Cessna 185 Antarctica», «AE-205», «Alitas de Cuero») | Nada del AE-205 | — |
 
-### 4.6. Foto de referencia de la Base San Martín (17 nov 2026)
+### 4.6. Foto de la Base San Martín (17 nov 2026)
 
-Una foto con licencia libre que se usó **solo como referencia para modelar** la base de la escena `poncho-perro-guia` (`packages/react-ui/src/voyage/ponchoSanMartin.ts`). No está en el repo ni se muestra en la interfaz. La escena es una ilustración hecha a partir de una foto de hoy, no un plano de la base ni una imagen de 1962.
+Una foto en dominio público que se muestra en el modal de la parada «Poncho va al frente» (`packages/core/src/content/poncho-photos.ts`, `san-martin.jpg`, reducida a 1280 px de ancho), junto a la de la Fundación Marambio, con su autor, la licencia y el enlace. También sirvió de referencia para modelar la base (`packages/react-ui/src/voyage/ponchoSanMartin.ts`), junto con fotos de hoy que aportó el equipo y que no están en el repo ni se muestran. La escena es una ilustración hecha a partir de fotos de hoy, no un plano de la base ni una imagen de 1962; el modal lo aclara.
 
 | Dato | Valor |
 |---|---|
@@ -217,6 +217,6 @@ Una foto con licencia libre que se usó **solo como referencia para modelar** la
 | Fecha de la foto | 26 de agosto de 2008 |
 | Licencia | Dominio público (PD-self, según la página del archivo) |
 | Consultada | 2026-11-17 |
-| Qué se tomó | Tres casas rojas de madera de dos pisos con techos oscuros, un galpón rojo largo, mástiles de antena, una escalera de madera y rocas con nieve sobre un islote; hielo marino plano al frente |
+| Qué se tomó para el modelo | Casas de dos pisos con techos oscuros, mástiles de antena, escaleras de madera y rocas con nieve sobre un islote, el glaciar detrás y el mar al frente |
 
 La base estaba desocupada en 1962 (`[V2]`, de 02/1960 a 03/1976): la escena no pone a nadie en sus puertas. Una foto de Antarctica New Zealand de una línea de perros en una base argentina (1956-1958) **no se usa**: su licencia es CC BY-NC-ND, que no permite obras derivadas, y no confirma que sea San Martín.

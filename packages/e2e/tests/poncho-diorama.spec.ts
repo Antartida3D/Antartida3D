@@ -89,7 +89,9 @@ test('the photograph of a stop opens in a modal and Escape closes it without lea
   await expect(panel.getByRole('heading', { name: stop.title })).toBeVisible();
   // The photograph comes at the end of the story of the stop, with «Saber más».
   while (!(await panel.getByRole('button', { name: 'Seguir con Poncho' }).isVisible())) await panel.getByRole('button', { name: 'Siguiente' }).click();
-  const archive = panel.getByRole('button', { name: 'Abrir fotografía del archivo' });
+  // This stop has two: the page of the Fundación Marambio and the Base San Martín (public domain, #218).
+  await expect(panel.getByRole('button', { name: /^Abrir fotografía del archivo/ })).toHaveCount(2);
+  const archive = panel.getByRole('button', { name: /^Abrir fotografía del archivo: Dos fotos/ });
   await archive.click();
   const modal = page.getByRole('dialog', { name: 'Archivo fotográfico' });
   await expect(modal).toBeVisible();
@@ -98,6 +100,12 @@ test('the photograph of a stop opens in a modal and Escape closes it without lea
   await expect(modal).toHaveCount(0);
   await expect(panel.getByRole('heading', { name: stop.title })).toBeVisible();
   await expect(archive).toBeFocused();
+  const base = panel.getByRole('button', { name: /^Abrir fotografía del archivo: La Base San Martín/ });
+  await base.click();
+  await expect(modal).toContainText('Antartico');
+  await expect(modal.getByRole('link', { name: 'Dominio público' })).toHaveAttribute('href', /^https:\/\/commons\.wikimedia\.org\//);
+  await page.keyboard.press('Escape');
+  await expect(base).toBeFocused();
 });
 
 // #216: the first stop shows the Base Esperanza, and its photograph shows its author and license.

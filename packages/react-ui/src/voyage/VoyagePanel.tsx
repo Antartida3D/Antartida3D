@@ -8,7 +8,7 @@ import {
   nextVoyageCard,
   previousVoyageCard,
   ponchoActOpeningAt,
-  ponchoPhotoAt,
+  ponchoPhotosAt,
   quizScore,
   sceneOf,
   tripSources,
@@ -271,21 +271,21 @@ function MilestoneCard({ voyage, animated, onExit, onSource }: {
   const next = () => (beforeHop ? voyage.startTransfer() : last ? onExit(true) : voyage.closeCard());
   // The trip of Poncho is told in order, in acts: the first stop of each one shows its title above its own.
   const story = storyInOrder(state.kind);
-  const photo = story ? ponchoPhotoAt(milestone.id) : undefined;
+  const photos = story ? ponchoPhotosAt(milestone.id) : [];
   const act = story ? ponchoActOpeningAt(milestone.id) : undefined;
   const body = (
     <>
       {story ? <HitoNav voyage={voyage} /> : <small className="vstep">Hito {state.card + 1} de {stops.length}</small>}
       {act && <small className="vact">Acto {act.number} · {act.act.title}</small>}
       <h2 id="voyage-title">{milestone.title}</h2>
-      {photo && (
-        <figure className="vphoto">
+      {photos.map((photo) => (
+        <figure key={photo.file} className="vphoto">
           <img src={PONCHO_PHOTO_URL[photo.file]} alt={photo.alt} loading="lazy" />
           <figcaption>
             <Quoted text={photo.caption} /> <PhotoCredit photo={photo} />
           </figcaption>
         </figure>
-      )}
+      ))}
       <ul className="vfacts">
         <Fact fact={milestone.essential} onSource={onSource} />
         {/* Whoever opened the card asked to know about the place: all of it at once, with no «Saber más» (#190). */}

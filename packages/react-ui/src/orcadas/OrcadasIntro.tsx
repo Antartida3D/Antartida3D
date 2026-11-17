@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   ORCADAS_GUIDING_QUESTION,
   ORCADAS_INTRO_DESC,
@@ -6,34 +6,10 @@ import {
   type ArrivalId,
 } from '@antartida/core';
 import { BottomSheet } from '../BottomSheet.tsx';
-import { useFocusReturn } from '../hooks.ts';
+import { trapTab, useFocusReturn } from '../hooks.ts';
 import { ArrivalPicker } from './ArrivalPicker.tsx';
 import { FactList, SourceContext } from './FactList.tsx';
 import { SourcesPanel } from './SourcesPanel.tsx';
-
-const FOCUSABLE_SELECTOR =
-  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
-function trapTab(e: KeyboardEvent<HTMLElement>, container: HTMLElement | null) {
-  if (e.key !== 'Tab' || !container) return;
-  const focusables = Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
-    (el) => el.getClientRects().length > 0
-  );
-  if (focusables.length === 0) return;
-  const first = focusables[0];
-  const last = focusables[focusables.length - 1];
-  const active = document.activeElement as HTMLElement | null;
-  if (!active || !container.contains(active)) {
-    e.preventDefault();
-    first.focus();
-  } else if (e.shiftKey && active === first) {
-    e.preventDefault();
-    last.focus();
-  } else if (!e.shiftKey && active === last) {
-    e.preventDefault();
-    first.focus();
-  }
-}
 
 /** Pre-expedition intro sheet for Estación Orcadas, matching the Voyage Picker layout. */
 export function OrcadasIntro({

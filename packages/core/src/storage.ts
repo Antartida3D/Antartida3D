@@ -2,8 +2,8 @@ import { EXPEDITION_POINT } from './content/points.ts';
 
 export const EXPLORED_KEY = 'antartida:explored';
 export const VIEW_MODE_KEY = 'antartida:view';
-/** The first-visit welcome (#115) was already shown. */
-export const WELCOME_KEY = 'antartida:welcome';
+/** The first-visit flow (the «Mapa listo» card and the guide, #256, #258) was already seen. */
+export const INTRO_KEY = 'antartida:intro';
 /** Last opened expedition and step (#186), cleared once completed. */
 export const LAST_EXPEDITION_KEY = 'antartida:last';
 
@@ -50,20 +50,20 @@ export function saveViewMode(mode: '2d' | '3d'): void {
   }
 }
 
-/** Without storage it reads as not seen: the welcome then shows once per visit. */
-export function loadWelcomeSeen(): boolean {
+/** Without storage it reads as not seen: the intro then shows once per visit. */
+export function loadIntroSeen(): boolean {
   try {
-    return localStorage.getItem(WELCOME_KEY) === '1';
+    return localStorage.getItem(INTRO_KEY) === '1';
   } catch {
     return false;
   }
 }
 
-export function saveWelcomeSeen(): void {
+export function saveIntroSeen(): void {
   try {
-    localStorage.setItem(WELCOME_KEY, '1');
+    localStorage.setItem(INTRO_KEY, '1');
   } catch {
-    // Storage unavailable: the welcome shows again on the next visit.
+    // Storage unavailable: the intro shows again on the next visit.
   }
 }
 

@@ -59,7 +59,9 @@ export function buildMarkers(
   points: readonly MapPoint[] = PTS,
   toScreenFn?: ScreenProjector,
   /** Id of the suggested next expedition. */
-  next?: string
+  next?: string,
+  /** Id of the unfinished expedition «Continuar» offers: it gets the same halo as `next`. */
+  resume?: string
 ): Marker[] {
   const geo = geometry(size);
   const projector: ScreenProjector = toScreenFn || ((x, y) => toScreen(geo, view, x, y));
@@ -75,7 +77,8 @@ export function buildMarkers(
     const { dx, dy } = offsets[i];
     const isA = p.tier === 'A';
     const done = isA && explored.includes(p.id);
-    const isNext = next !== undefined && p.id === next;
+    const isResume = resume !== undefined && p.id === resume && !done;
+    const isNext = (next !== undefined && p.id === next) || isResume;
     markers.push({
       kind: 'point',
       key: p.id,
@@ -95,7 +98,9 @@ export function buildMarkers(
         (isA
           ? (done
               ? 'Expedición explorada. Volver a recorrerla.'
-              : isNext
+              : isResume
+                ? 'Expedición a medias. Continuar.'
+                : isNext
                 ? 'Expedición sugerida para seguir. Empezar.'
                 : 'Expedición disponible. Empezar.')
           : TIER[p.tier] + '. Ver ficha.'),
@@ -106,7 +111,7 @@ export function buildMarkers(
   for (const m of markers) {
     if (m.kind !== 'point') continue;
     const sub = m.point.tier === 'A'
-      ? (m.check ? 'Explorado · ' + m.point.place : m.next ? 'Siguiente · ' + m.point.place : m.point.place)
+      ? (m.check ? 'Explorado · ' + m.point.place : m.next ? (resume === m.key ? 'Continuar · ' : 'Siguiente · ') + m.point.place : m.point.place)
       : TIER[m.point.tier];
     const side = labelSide(m.left, m.point.title, sub, size.vw);
     m.label = { title: m.point.title, sub, side };

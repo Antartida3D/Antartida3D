@@ -20,6 +20,7 @@
     "e2e": "pnpm --filter @antartida/dibujado e2e",
     "coastline": "pnpm --filter @antartida/core coastline",
     "map-raster": "pnpm --filter @antartida/core map-raster",
+    "poster": "pnpm --filter @antartida/core poster",
     "bench": "pnpm --filter @antartida/bench bench"
   },
   "devDependencies": {

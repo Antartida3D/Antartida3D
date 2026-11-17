@@ -258,3 +258,7 @@ En cumplimiento con las bases de la hackatón, se declara el uso de herramientas
   > Reproducción a partir de un video, diagnóstico, redacción del issue, arreglo, pruebas, capturas y documentación con asistencia de IA, a pedido de quien lleva el issue. No se agregaron datos ni fuentes.
 - **Aviso cuando el 3D falla, en vez de página en blanco (#242):**
   > Reproducción del fallo, redacción del issue, implementación, prueba e2e, capturas y documentación con asistencia de IA, a pedido de quien lleva el issue. No se agregaron datos ni fuentes.
+- **Guía de primera visita de tres pasos (#256):**
+  > Diseño de la guía con Claude Design; plan, implementación, pruebas e2e, capturas y documentación con Claude Code (modelo Claude Sonnet 5.5), con revisión de quien lleva el issue. Los textos salen del diseño y se verificaron contra el comportamiento de la aplicación; el del tercer paso (el botón naranja) lo pidió quien lleva el issue y afirma solo lo que hacen `nextExpedition` y «Continuar». No se agregaron datos ni fuentes.
+- **Pantalla de carga con el mapa dibujándose (#258):**
+  > Diseño de la pantalla con Claude Design; plan, script del póster, implementación, pruebas, capturas y documentación con Claude Code (modelo Claude Sonnet 5.5), con revisión de quien lleva el issue. El póster es una imagen de la propia aplicación, no un dato. El «Dato real» cita sin reescribir la primera oración de una ficha que ya tiene fuentes verificadas y nombra todas sus fuentes; no se agregaron datos ni fuentes nuevas.

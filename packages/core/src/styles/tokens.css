@@ -36,6 +36,8 @@
   --btn-resume-hover-bg: color-mix(in srgb, var(--btn-resume-bg) 86%, var(--chart-ink));
   /* A chip is on the parchment, like a button: no cold white (#232). */
   --chip-bg: var(--btn-bg);
+  /* Card over the dark blue of the loading screen: a stronger shadow than on paper. */
+  --chart-shadow-dark: inset 0 0 26px rgb(180 145 92 / 12%), 0 12px 34px rgb(8 18 30 / 40%);
   /* No inner frame: a panel has one line around it, like a button (#231). */
   --chart-shadow: inset 0 0 26px rgb(180 145 92 / 12%), 0 9px 26px rgb(64 53 54 / 15%);
 }

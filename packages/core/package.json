@@ -23,7 +23,8 @@
     "sea-atlas": "tsx scripts/build-sea-atlas.ts",
     "test": "vitest run",
     "typecheck": "tsc -p .",
-    "map-raster": "tsx scripts/build-map-raster.ts"
+    "map-raster": "tsx scripts/build-map-raster.ts",
+    "poster": "tsx scripts/build-loader-poster.ts"
   },
   "dependencies": {
     "@fontsource/atkinson-hyperlegible": "5.3.0",

@@ -235,6 +235,19 @@ describe('markers and labels', () => {
     expect(a?.kind === 'point' && a.check && !a.pulse).toBe(true);
   });
 
+  it('gives the unfinished expedition of «Continuar» the same halo and pulse', () => {
+    const size = { vw: 1440, vh: 900 };
+    const markers = buildMarkers(size, HOME, [], PTS, undefined, undefined, 'orcadas');
+    const m = markers.find((k) => k.key === 'orcadas');
+    expect(m?.kind === 'point' && m.next && m.pulse && m.cls.split(' ').includes('next')).toBe(true);
+    if (m?.kind === 'point') {
+      expect(m.aria).toContain('Continuar');
+      expect(m.label?.sub.startsWith('Continuar · ')).toBe(true);
+    }
+    // Other expeditions stay plain.
+    expect(markers.filter((k) => k.kind === 'point' && k.next)).toHaveLength(1);
+  });
+
   it('highlights and pulses only the suggested next expedition', () => {
     const size = { vw: 1440, vh: 900 };
     const markers = buildMarkers(size, HOME, [], PTS, undefined, 'campana');

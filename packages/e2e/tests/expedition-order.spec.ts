@@ -79,7 +79,9 @@ test('with nothing explored, shows Siguiente: Desde Ushuaia and marks its marker
   const marker = page.locator('.vp .mk.next');
   await expect(marker).toHaveCount(1);
   await expect(marker).toHaveAttribute('aria-label', /Desde Ushuaia.*Expedición sugerida para seguir\. Empezar\./);
-  await expect(marker.locator('.mnext')).toHaveText('Siguiente');
+  // No «Siguiente» tag over it (it crowded the fan): the halo and its name say it.
+  await expect(marker.locator('.mnext')).toHaveCount(0);
+  await expect(marker.locator('.dot')).toHaveCSS('box-shadow', /rgb/);
 });
 
 test('the exploration log drops down the six expeditions with their state and opens the one chosen (#235)', async ({ page }) => {
@@ -122,7 +124,9 @@ test('with campana explored, suggests Base Marambio and tags its own marker', as
   const marker = page.locator('.vp .mk.next');
   await expect(marker).toHaveCount(1);
   await expect(marker).toHaveAttribute('aria-label', /^Base Marambio, .*Expedición sugerida para seguir\. Empezar\.$/);
-  await expect(marker.locator('.mnext')).toHaveText('Siguiente');
+  // No «Siguiente» tag over it (it crowded the fan): the halo and its name say it.
+  await expect(marker.locator('.mnext')).toHaveCount(0);
+  await expect(marker.locator('.dot')).toHaveCSS('box-shadow', /rgb/);
 });
 
 test('in 3D relief, the suggested marker carries the next class', async ({ page }) => {
@@ -130,7 +134,9 @@ test('in 3D relief, the suggested marker carries the next class', async ({ page 
   await expect(page.locator('.ld')).toHaveCount(0, { timeout: 10_000 });
   const marker = page.locator('.vp .mk.next');
   await expect(marker).toHaveCount(1);
-  await expect(marker.locator('.mnext')).toHaveText('Siguiente');
+  // No «Siguiente» tag over it (it crowded the fan): the halo and its name say it.
+  await expect(marker.locator('.mnext')).toHaveCount(0);
+  await expect(marker.locator('.dot')).toHaveCSS('box-shadow', /rgb/);
 });
 
 test('finishing Fósiles opens the next card with log count and starts the Poncho voyage', async ({ page }) => {

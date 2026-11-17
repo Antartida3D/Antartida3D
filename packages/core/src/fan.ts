@@ -1,6 +1,6 @@
-/** Smallest distance in screen px between the centres of two markers: more room on a wide screen. */
-export const MARKER_GAP_PX = 60;
-export const MARKER_GAP_WIDE_PX = 80;
+/** Smallest distance in screen px between the centres of two markers: more room on a wide screen. Kept small so the poles move little when the camera does. */
+export const MARKER_GAP_PX = 46;
+export const MARKER_GAP_WIDE_PX = 58;
 export const markerGap = (vw: number) => (vw > 820 ? MARKER_GAP_WIDE_PX : MARKER_GAP_PX);
 
 /** Height in px of the stick that holds a marker over its place in the 3D map (`--lift` in painted.css). */

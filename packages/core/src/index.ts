@@ -1,4 +1,5 @@
 export * from './content/points.ts';
+export * from './content/guide.ts';
 export * from './content/malvinas.ts';
 export * from './content/claims.ts';
 export * from './claims.ts';
@@ -41,6 +42,7 @@ export * from './storage.ts';
 export * from './view-mode.ts';
 export * from './resume.ts';
 export * from './welcome.ts';
+export * from './first-visit.ts';
 export * from './motion.ts';
 export * from './svg/filters.ts';
 export * from './svg/map.ts';

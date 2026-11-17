@@ -2,7 +2,7 @@ import type { Page } from '@playwright/test';
 import { INTRO_KEY } from '@antartida/core/storage';
 
 /**
- * Saved state with the first-visit intro letter (#256) already seen. A first visit opens the letter;
+ * Saved state with the first-visit flow (#256, #258) already seen. A first visit waits on «Mapa listo» and then shows the guide;
  * tests that are not about it start without it. `playwright.config.ts` gives it to every test;
  * `intro.spec.ts` starts from empty storage.
  */

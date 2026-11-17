@@ -16,31 +16,28 @@ export function welcomeView(size: Size, point: Pick<MapPoint, 'x' | 'y'> = VOYAG
   return focusWorld(size, point.x, point.y, WELCOME_K);
 }
 
-/** Gap kept between the card and the viewport edges, and between the pin and the card. */
-export const START_HERE_MARGIN = 16;
-export const START_HERE_GAP = 30;
+/** Gap kept between the card and the viewport edges, and between the anchor and the card. */
+export const GUIDE_MARGIN = 16;
+export const GUIDE_GAP = 14;
 
-export interface StartHerePlacement {
+/** Box of the element a guide step points at, in viewport pixels. A pin is a small box. */
+export interface AnchorBox {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
+export interface GuidePlacement {
   /** Top-left corner of the card, in viewport pixels. */
   left: number;
   top: number;
-  /** Horizontal position of the arrow inside the card, so it keeps pointing at the pin. */
+  /** Horizontal position of the arrow inside the card, so it keeps pointing at the anchor. */
   arrowX: number;
-  /** False while the pin is off the screen: the card hides instead of pointing at nothing. */
-  visible: boolean;
-}
-
-/**
- * Where the «Empezá acá» card (#256) goes: below the pin, kept START_HERE_MARGIN inside the
- * viewport, with its arrow aligned to the pin.
- */
-export function startHerePlacement(pin: { left: number; top: number }, card: CardSize, view: Size): StartHerePlacement {
-  const m = START_HERE_MARGIN;
-  const left = Math.max(m, Math.min(view.vw - card.w - m, pin.left - card.w / 2));
-  const top = Math.max(m, Math.min(view.vh - card.h - m, pin.top + START_HERE_GAP));
-  const arrowX = Math.max(m, Math.min(card.w - m, pin.left - left));
-  const visible = pin.left >= 0 && pin.left <= view.vw && pin.top >= 0 && pin.top <= view.vh;
-  return { left, top, arrowX, visible };
+  /** False without an anchor: no arrow, and the ring hides. */
+  anchored: boolean;
+  /** True when the arrow and the ring are drawn on the anchor; the card then sits `above` it or below it. */
+  side: 'above' | 'below';
 }
 
 interface CardSize {
@@ -49,28 +46,26 @@ interface CardSize {
 }
 
 /**
- * The welcome waits for the page to settle (#115): while the 3D layer, the textures and the
- * meshes load, the page stutters, and a camera move then jumps instead of easing. After the
- * page's `load`, it waits for SETTLE_FRAMES smooth frames in a row (each under SMOOTH_FRAME_MS),
- * and at least SETTLE_MIN_MS. On a slow device the frames may never get smooth: SETTLE_MAX_MS
- * after `load` it goes anyway.
+ * Where a guide step (#256) goes: below (or `above`) its anchor, kept GUIDE_MARGIN inside the
+ * viewport, with the arrow aligned to the anchor's centre. Without an anchor, or while the anchor
+ * is off the screen, the card goes at the bottom centre with no arrow, so it never disappears.
  */
-export const SETTLE_FRAMES = 12;
-export const SMOOTH_FRAME_MS = 50;
-export const SETTLE_MIN_MS = 600;
-export const SETTLE_MAX_MS = 4000;
-
-/** Counts smooth frames; `frame` returns true once the page has settled. */
-export function settleTracker() {
-  let smooth = 0;
-  let last = NaN;
-  return {
-    /** `now`: milliseconds since the page's `load` (the rAF timestamp minus that moment). */
-    frame(now: number): boolean {
-      smooth = now - last < SMOOTH_FRAME_MS ? smooth + 1 : 0;
-      last = now;
-      if (now >= SETTLE_MAX_MS) return true;
-      return now >= SETTLE_MIN_MS && smooth >= SETTLE_FRAMES;
-    },
-  };
+export function guidePlacement(
+  anchor: AnchorBox | null,
+  card: CardSize,
+  view: Size,
+  side: 'above' | 'below' = 'below',
+): GuidePlacement {
+  const m = GUIDE_MARGIN;
+  const cx = anchor ? anchor.left + anchor.width / 2 : 0;
+  const cy = anchor ? anchor.top + anchor.height / 2 : 0;
+  const onScreen = anchor !== null && cx >= 0 && cx <= view.vw && cy >= 0 && cy <= view.vh;
+  if (!anchor || !onScreen) {
+    return { left: Math.max(m, (view.vw - card.w) / 2), top: Math.max(m, view.vh - card.h - m), arrowX: card.w / 2, anchored: false, side: 'below' };
+  }
+  const left = Math.max(m, Math.min(view.vw - card.w - m, cx - card.w / 2));
+  const wanted = side === 'above' ? anchor.top - GUIDE_GAP - card.h : anchor.top + anchor.height + GUIDE_GAP;
+  const top = Math.max(m, Math.min(view.vh - card.h - m, wanted));
+  const arrowX = Math.max(m, Math.min(card.w - m, cx - left));
+  return { left, top, arrowX, anchored: true, side };
 }

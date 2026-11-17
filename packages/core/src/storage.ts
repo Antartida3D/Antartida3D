@@ -2,7 +2,7 @@ import { EXPEDITION_POINT } from './content/points.ts';
 
 export const EXPLORED_KEY = 'antartida:explored';
 export const VIEW_MODE_KEY = 'antartida:view';
-/** The first-visit intro letter (#256) was already shown. */
+/** The first-visit flow (the «Mapa listo» card and the guide, #256, #258) was already seen. */
 export const INTRO_KEY = 'antartida:intro';
 /** Last opened expedition and step (#186), cleared once completed. */
 export const LAST_EXPEDITION_KEY = 'antartida:last';

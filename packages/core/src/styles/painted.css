@@ -505,7 +505,8 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
 }
 /* On a phone «Continuar» is one short line: the step (chapter, point) is left out, its full text stays in the accessible name. */
 @media (max-width:819.98px){
-  .btn.resume:not(.next-btn){white-space:nowrap;min-height:48px;padding-block:6px;font-size:18px}
+  .btn.resume:not(.next-btn){white-space:nowrap;min-height:48px;padding-block:6px;padding-inline:10px;font-size:15px}
+  .btn.resume:not(.next-btn) .ico{margin-left:6px}
   .btn.resume .rdetail{display:none}
 }
 

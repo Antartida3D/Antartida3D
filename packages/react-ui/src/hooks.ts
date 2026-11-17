@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent, type RefObject } from 'react';
-import { prefersReducedMotion, settleTracker, type LoadingSnapshot, type LoadingStore } from '@antartida/core';
+import { prefersReducedMotion, type LoadingSnapshot, type LoadingStore } from '@antartida/core';
 
 /** Tab stays inside `container` while it is open (dialogs). */
 const FOCUSABLE_SELECTOR =
@@ -47,34 +47,6 @@ export function useFocusReturn(
       target?.focus();
     };
   }, [open, container, initial]);
-}
-
-/**
- * True once the page has loaded and stopped stuttering (settleTracker), only while `active`.
- * The first-visit intro letter waits for it (#115, #256).
- */
-export function usePageSettled(active: boolean): boolean {
-  const [settled, setSettled] = useState(false);
-  useEffect(() => {
-    if (!active || settled) return;
-    let id = 0;
-    const watch = () => {
-      const tracker = settleTracker();
-      const start = performance.now();
-      const tick = (t: number) => {
-        if (tracker.frame(t - start)) setSettled(true);
-        else id = requestAnimationFrame(tick);
-      };
-      id = requestAnimationFrame(tick);
-    };
-    if (document.readyState === 'complete') watch();
-    else window.addEventListener('load', watch, { once: true });
-    return () => {
-      window.removeEventListener('load', watch);
-      cancelAnimationFrame(id);
-    };
-  }, [active, settled]);
-  return settled;
 }
 
 export function useReducedMotion(): boolean {

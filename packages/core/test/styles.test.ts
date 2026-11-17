@@ -13,7 +13,7 @@ const COMPONENTS = ['btn', 'iconbtn', 'pill', 'vchip', 'vnote'];
 /** Properties that make the look. Size, spacing, type and layout stay free for each screen. */
 const LOOK = ['background', 'background-color', 'color', 'border', 'border-color'];
 /** Hex colors written by hand outside `tokens.css` (illustrations, charts). It may go down, not up. */
-const HEX_CAP = 69;
+const HEX_CAP = 45;
 
 const HEX = /#(?:[0-9a-f]{8}|[0-9a-f]{6}|[0-9a-f]{3,4})\b/gi;
 const COMPONENT = new RegExp(`\\.(?:${COMPONENTS.join('|')})(?![\\w-])`);

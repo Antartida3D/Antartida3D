@@ -21,6 +21,7 @@ import { ICEBERG_DRAFT, ICEBERG_PEAKS_POLY, ICEBERG_TABULAR_POLY, waterline, wat
 import { boxShade, buildPolyGeometry, scaled, shift, turn, type Tri, type Vec3 } from '../voyage/lowPoly.ts';
 import { buildVehicleGeometry, vehicleMaterial } from '../voyage/vehicles.ts';
 import { canUseWebGL, CONTEXT_RESTORE_MS } from '../webgl.ts';
+import { CanvasGuard } from '../CanvasGuard.tsx';
 import { buildHangarTris, buildMarambioWalkwaysTris, buildTerminalTris } from './lowPolyMarambio.ts';
 import { buildMarambioGroundTris, buildMarambioRocksTris, buildMarambioSurfacesTris } from './marambioGround.ts';
 import { MarambioFallback } from './MarambioFallback.tsx';
@@ -388,38 +389,40 @@ export const MarambioScene = memo(function MarambioScene(props: MarambioScenePro
   const start = poseForSpot(props.focus, false, false, props.sidePanel);
   return (
     <div className="orc-scene-wrap" aria-hidden="true">
-      <Canvas
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', background: 'var(--paper, #F3EBDD)' }}
-        // Nothing moves but the camera: frames are drawn only when it does.
-        frameloop="demand"
-        dpr={[1, 1.5]}
-        shadows={false}
-        gl={{ antialias: true, powerPreference: 'high-performance', alpha: false, preserveDrawingBuffer: true }}
-        camera={{ fov: 42, near: 0.5, far: 900, position: [start.pos[0], start.pos[1], start.pos[2]] }}
-        onCreated={({ gl, invalidate }) => {
-          const dom = gl.domElement;
-          let fallbackTimer = 0;
-          dom.addEventListener('webglcontextlost', (e) => {
-            e.preventDefault();
-            fallbackTimer = window.setTimeout(() => setWebglOk(false), CONTEXT_RESTORE_MS);
-          });
-          // Nothing else draws a frame on its own: without this the canvas would stay empty.
-          dom.addEventListener('webglcontextrestored', () => {
-            window.clearTimeout(fallbackTimer);
-            invalidate();
-          });
-        }}
-      >
-        <Sky month={props.month} />
-        <Sea />
-        <Irizar onSelect={props.onIrizar} />
-        <Stage />
-        <Blizzard month={props.month} reduced={props.reduced} />
-        <EffectComposer multisampling={0}>
-          <InkEffect />
-        </EffectComposer>
-        <CameraAndDots {...props} />
-      </Canvas>
+      <CanvasGuard onFail={() => setWebglOk(false)}>
+        <Canvas
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', background: 'var(--paper, #F3EBDD)' }}
+          // Nothing moves but the camera: frames are drawn only when it does.
+          frameloop="demand"
+          dpr={[1, 1.5]}
+          shadows={false}
+          gl={{ antialias: true, powerPreference: 'high-performance', alpha: false, preserveDrawingBuffer: true }}
+          camera={{ fov: 42, near: 0.5, far: 900, position: [start.pos[0], start.pos[1], start.pos[2]] }}
+          onCreated={({ gl, invalidate }) => {
+            const dom = gl.domElement;
+            let fallbackTimer = 0;
+            dom.addEventListener('webglcontextlost', (e) => {
+              e.preventDefault();
+              fallbackTimer = window.setTimeout(() => setWebglOk(false), CONTEXT_RESTORE_MS);
+            });
+            // Nothing else draws a frame on its own: without this the canvas would stay empty.
+            dom.addEventListener('webglcontextrestored', () => {
+              window.clearTimeout(fallbackTimer);
+              invalidate();
+            });
+          }}
+        >
+          <Sky month={props.month} />
+          <Sea />
+          <Irizar onSelect={props.onIrizar} />
+          <Stage />
+          <Blizzard month={props.month} reduced={props.reduced} />
+          <EffectComposer multisampling={0}>
+            <InkEffect />
+          </EffectComposer>
+          <CameraAndDots {...props} />
+        </Canvas>
+      </CanvasGuard>
     </div>
   );
 });

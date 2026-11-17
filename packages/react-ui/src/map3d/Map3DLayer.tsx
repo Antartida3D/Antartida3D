@@ -51,6 +51,7 @@ import {
 } from '@antartida/core';
 import { MarkerButton } from '../map/Markers.tsx';
 import { useLoadingStore, useReducedMotion } from '../hooks.ts';
+import { CanvasGuard } from '../CanvasGuard.tsx';
 import type { Layer3DProps, Phase } from '../map/MapView.tsx';
 import { ShaderWarmup } from './ShaderWarmup.tsx';
 import { Ocean } from './Ocean.tsx';
@@ -645,74 +646,76 @@ export function Map3DLayer({
 
   return (
     <>
-      <Canvas
-        style={{
-          position: 'absolute',
-          inset: 0,
-          zIndex: 0,
-          background: 'var(--paper, #EAE0D0)',
-        }}
-        frameloop="demand"
-        dpr={dpr}
-        gl={{
-          antialias: true,
-          powerPreference: 'high-performance',
-          alpha: true,
-          preserveDrawingBuffer: true,
-        }}
-        camera={{
-          fov: 40,
-          near: NEAR,
-          far: 20000,
-          position: [homeStart.pos.x, homeStart.pos.y, homeStart.pos.z],
-        }}
-        aria-hidden="true"
-      >
-        <PerformanceMonitor
-          bounds={() => performanceBounds(lowQuality)}
-          onIncline={() => {
-            setLowQuality(false);
-            if (!enablePost) setEnablePost(true);
-            else if (dpr < 1.5) setDpr(1.5);
+      <CanvasGuard onFail={() => map3dLoadingStore.setError('El navegador no pudo dibujar el relieve 3D.')}>
+        <Canvas
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 0,
+            background: 'var(--paper, #EAE0D0)',
           }}
-          onDecline={() => {
-            setLowQuality(true);
-            if (dpr > 1) setDpr(1);
-            else if (enablePost) setEnablePost(false);
+          frameloop="demand"
+          dpr={dpr}
+          gl={{
+            antialias: true,
+            powerPreference: 'high-performance',
+            alpha: true,
+            preserveDrawingBuffer: true,
           }}
-          onFallback={() => {
-            setLowQuality(true);
-            setDpr(1);
-            setEnablePost(false);
+          camera={{
+            fov: 40,
+            near: NEAR,
+            far: 20000,
+            position: [homeStart.pos.x, homeStart.pos.y, homeStart.pos.z],
           }}
-        />
-        <ShaderWarmup
-          ready={shadersReady}
-          onCompiled={() => map3dLoadingStore.markStepDone('shaders')}
-          onError={(msg) => map3dLoadingStore.setError(msg)}
-        />
-        <SceneContent
-          wide={size.vw > 820}
-          lowQuality={lowQuality}
-          phase={phase}
-          arrival={arrival}
-          diveTarget={diveTarget}
-          reduced={reduced}
-          size={size}
-          geo={geo}
-          command={command}
-          onCameraRest={onCameraRest}
-          onZoomAvailabilityChange={onZoomAvailabilityChange}
-          markers={markers}
-          overlayRef={overlayRef}
-          enablePost={enablePost}
-          voyage={voyage}
-          voyagePicker={voyagePicker}
-          seaMarkers={seaMarkers}
-          claims={claims}
-          onClaimsStatus={onClaimsStatus}
-        />
-      </Canvas>
+          aria-hidden="true"
+        >
+          <PerformanceMonitor
+            bounds={() => performanceBounds(lowQuality)}
+            onIncline={() => {
+              setLowQuality(false);
+              if (!enablePost) setEnablePost(true);
+              else if (dpr < 1.5) setDpr(1.5);
+            }}
+            onDecline={() => {
+              setLowQuality(true);
+              if (dpr > 1) setDpr(1);
+              else if (enablePost) setEnablePost(false);
+            }}
+            onFallback={() => {
+              setLowQuality(true);
+              setDpr(1);
+              setEnablePost(false);
+            }}
+          />
+          <ShaderWarmup
+            ready={shadersReady}
+            onCompiled={() => map3dLoadingStore.markStepDone('shaders')}
+            onError={(msg) => map3dLoadingStore.setError(msg)}
+          />
+          <SceneContent
+            wide={size.vw > 820}
+            lowQuality={lowQuality}
+            phase={phase}
+            arrival={arrival}
+            diveTarget={diveTarget}
+            reduced={reduced}
+            size={size}
+            geo={geo}
+            command={command}
+            onCameraRest={onCameraRest}
+            onZoomAvailabilityChange={onZoomAvailabilityChange}
+            markers={markers}
+            overlayRef={overlayRef}
+            enablePost={enablePost}
+            voyage={voyage}
+            voyagePicker={voyagePicker}
+            seaMarkers={seaMarkers}
+            claims={claims}
+            onClaimsStatus={onClaimsStatus}
+          />
+        </Canvas>
+      </CanvasGuard>
       <div
         className={'ov' + (phase === 'dive' || phase === 'approach' || phase === 'travel' ? ' hide' : '')}
         ref={overlayRef}

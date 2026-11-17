@@ -42,7 +42,7 @@ export const PONCHO_PHOTOS: readonly PonchoPhoto[] = [
     credit: { author: 'Antartico', license: 'Dominio público', licenseUrl: 'https://commons.wikimedia.org/wiki/File:San_Mart%C3%ADn_Base,_Antarctica.jpg' },
   },
   {
-    stop: 'patrulla-paralelo-82',
+    stop: 'paracaidas',
     file: 'perros-trineo.jpg',
     alt: 'Una persona en un trineo, abrigada de rojo, tirado por una jauría de perros sobre una llanura de nieve bajo el cielo azul.',
     caption: 'Un equipo de perros polares tirando de un trineo, de la página “El perro polar”. Fotografía ilustrativa: no indica autor ni fecha, y no es de esta patrulla.',

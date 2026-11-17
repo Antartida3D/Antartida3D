@@ -12,7 +12,7 @@
  * Source codes point to VOYAGE_SOURCES.
  */
 import type { Milestone, Transport, VoyageFact, VoyageSourceCode } from './ushuaia.ts';
-import { BELGRANO_AREA, BELGRANO_RETURN, DUSE_BAY, ESPERANZA, FOCA_NUNATAKS, SAN_MARTIN, SANTA_FE_PEAK, USHUAIA } from './poncho-route.ts';
+import { BELGRANO_AREA, BELGRANO_RETURN, DUSE_BAY, ESPERANZA, FOCA_NUNATAKS, SAN_MARTIN, USHUAIA } from './poncho-route.ts';
 
 /** The only warning of the trip: shown once, on the start panel and on the sources page. */
 export const PONCHO_NOTICE = 'El recorrido y los modelos son una ilustración, no una ruta real.';
@@ -142,32 +142,23 @@ export const PONCHO_MILESTONES: readonly Milestone[] = [
     ],
   },
   {
-    id: 'patrulla-paralelo-82',
-    year: 1965,
-    segment: 2,
-    title: 'La patrulla Paralelo 82',
-    anchor: SANTA_FE_PEAK,
-    kinds: ['dogs'],
-    essential: book(15, 'La gran marcha sigue su camino, y Poncho guía a la patrulla Paralelo 82, formada por trineos de perros. Va por delante, para detectar los peligros que puedan frenar a los tractores que buscan el Polo Sur. Cuando los tractores se separan, sin el ruido ni el humo de los motores, Poncho conduce a la patrulla por portezuelos y valles helados de las montañas Santa Fe.'),
-    hook: 'Y todavía le esperaba una aventura por el aire.',
-    more: [
-      real('La expedición al Polo salió de la Base Belgrano el 26 de octubre de 1965.', 'O12'),
-      book(15, 'El 18 de noviembre el grupo de tractores se separó de la patrulla de perros. La patrulla hizo tareas de cartografía y geología, y llegó más allá de los 83 grados de latitud sur.'),
-      book(16, 'Frente al pico Santa Fe el trineo de Poncho desapareció tras un filo de nieve, al borde de un barranco de unos 200 metros. Poncho esperaba tranquilo, comiendo nieve, hasta que le dieron la orden y tiró hacia arriba.'),
-      real('El pico Santa Fe está a unos 82°03′ S y 41°20′ O.', 'P3'),
-      book(17, 'Poncho no llegó al Polo Sur. Lo alcanzó el grupo de tractores el 10 de diciembre de 1965, después de 66 días de marcha.', 'O12'),
-    ],
-  },
-  {
     id: 'paracaidas',
     year: 1966,
     segment: 2,
-    title: 'Poncho paracaidista',
+    title: 'De la patrulla al salto en paracaídas',
     anchor: BELGRANO_RETURN,
     kinds: ['dogs'],
-    essential: book(19, 'La aventura es por el aire: en un helicóptero se abre la puerta y entra de golpe el aire helado. Los perros saltan con paracaídas y, mientras bajan, mueven las patas como si nadaran. Aterrizan en el hielo y en pocos minutos Poncho ya sale al frente del trineo, a rescatar a una patrulla perdida.'),
+    essential: book(19, 'La gran marcha sigue su camino: Poncho guía a la patrulla Paralelo 82 por las montañas Santa Fe y hasta tira hacia arriba de un trineo que cayó a un barranco; después, la aventura es por el aire: en un helicóptero se abre la puerta y entra de golpe el aire helado. Los perros saltan con paracaídas y, mientras bajan, mueven las patas como si nadaran. Aterrizan en el hielo y en pocos minutos Poncho ya sale al frente del trineo, a rescatar a una patrulla perdida.'),
     hook: 'Pero otra tormenta ya lo esperaba.',
     more: [
+      // The patrol of the Paralelo 82 (book p. 15-17), told here since it is no longer a stop of its own (#221, DEC-221).
+      real('La expedición al Polo salió de la Base Belgrano el 26 de octubre de 1965.', 'O12'),
+      book(15, 'La patrulla Paralelo 82 estaba formada por trineos de perros, y Poncho iba como líder de uno. Iba por delante de los tractores para detectar los peligros que pudieran frenarlos.'),
+      book(15, 'El 18 de noviembre el grupo de tractores se separó de la patrulla de perros. Sin el ruido ni el humo de los motores, Poncho condujo a la patrulla por portezuelos y valles helados de las montañas Santa Fe. La patrulla hizo tareas de cartografía y geología, y llegó más allá de los 83 grados de latitud sur.'),
+      book(16, 'Frente al pico Santa Fe el trineo de Poncho desapareció tras un filo de nieve, al borde de un barranco de unos 200 metros. Poncho esperaba tranquilo, comiendo nieve, hasta que le dieron la orden y tiró hacia arriba.'),
+      real('El pico Santa Fe está a unos 82°03′ S y 41°20′ O.', 'P3'),
+      book(17, 'Poncho no llegó al Polo Sur. Lo alcanzó el grupo de tractores el 10 de diciembre de 1965, después de 66 días de marcha.', 'O12'),
+      // The jump (book p. 18-19).
       book(18, 'Poncho iba con otros dos perros polares, Pato y Bucky, envuelto en un arnés distinto al del trineo. Gimió bajito, y el suboficial a cargo del lanzamiento, que sentía un afecto especial por él, le apoyó la mano en el lomo.'),
       book(18, 'Junto con los perros se lanzaron un trineo desarmable, víveres y elementos de supervivencia. Dos oficiales saltaron antes desde otro helicóptero.'),
       book(18, 'El helicóptero era uno de los dos S-55 del rompehielos General San Martín. Nunca antes se había hecho algo así en la Antártida argentina.'),

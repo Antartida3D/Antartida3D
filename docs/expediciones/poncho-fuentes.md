@@ -2,7 +2,7 @@
 
 Fuentes citadas en [poncho.md](./poncho.md), conforme a las reglas del eje 2 de `AGENTS.md`: referencia o URL, organismo o autor que la publica y fecha de consulta (formato DD/MM/YYYY).
 
-- **Estado (issue #145):** el recorrido tiene 10 paradas en cuatro actos, con ganchos y diario de ruta. Cada dato del libro lleva su página del PDF (`pages`) y la cita abre esa página. Lo que sigue se actualizó con el contenido real; las páginas de la sección 2 se volvieron a verificar contra el PDF (`pdftotext` por página) el 15/11/2026. Los **ganchos** y el texto de unión no afirman nada y no llevan fuente.
+- **Estado (issue #145):** el recorrido tiene 9 paradas en cuatro actos (la patrulla «Paralelo 82» se unió al salto en paracaídas el 17/11/2026, DEC-221), con ganchos y diario de ruta. Cada dato del libro lleva su página del PDF (`pages`) y la cita abre esa página. Lo que sigue se actualizó con el contenido real; las páginas de la sección 2 se volvieron a verificar contra el PDF (`pdftotext` por página) el 15/11/2026. Los **ganchos** y el texto de unión no afirman nada y no llevan fuente.
 - **Fechas de consulta:**
   - `11/11/2026`: consulta inicial del equipo de `[P1]` y `[P2]`.
   - `12/11/2026`: segunda lectura de `[P1]` y `[P2]` y verificación contra fuentes oficiales `[V1]`–`[V3]` (agente de IA, issue #27).
@@ -35,9 +35,9 @@ Las páginas son las del PDF de `[P1]` (25 págs.). Los códigos de la interfaz 
 | `poncho-perro-guia`: puesto Número 1 en el regreso desde San Martín, un año y medio, costumbre de mirar al conductor; llegada a San Martín el 25/08/1962 | `[P1]` p. 12 y 10 | Solo libro. San Martín (fundación y desactivación): `[V2]` |
 | `rumbo-a-belgrano`: 12/1964, rompehielos, otros perros, preparativos de la marcha al Polo | `[P1]` p. 14 | Solo libro |
 | `rescate-ae-205`: avión caído, patrulla de dos hombres y siete perros, cuarto día; Cessna 185B; 1968 | `[P1]` p. 17 y 18 | Solo libro |
-| `patrulla-paralelo-82`: líder de la patrulla, separación del 18/11/1965, montañas Santa Fe, más allá de los 83° S | `[P1]` p. 15 | Solo libro |
-| `patrulla-paralelo-82`: salida del 26/10/1965; Polo el 10/12/1965 en 66 días; Poncho no llegó | `[V1]`; `[P1]` p. 17 | Verificado en `[V1]` |
-| `patrulla-paralelo-82`: barranco de unos 200 m frente al pico Santa Fe | `[P1]` p. 16 | Solo libro. Relato narrado |
+| `paracaidas` (la patrulla, en el texto y en «Saber más»): líder de la patrulla, separación del 18/11/1965, montañas Santa Fe, más allá de los 83° S | `[P1]` p. 15 | Solo libro |
+| `paracaidas` (la patrulla, en «Saber más»): salida del 26/10/1965; Polo el 10/12/1965 en 66 días; Poncho no llegó | `[V1]`; `[P1]` p. 17 | Verificado en `[V1]` |
+| `paracaidas` (la patrulla, en el texto y en «Saber más»): barranco de unos 200 m frente al pico Santa Fe | `[P1]` p. 16 | Solo libro. Relato narrado |
 | `paracaidas`: salto, descenso, aterrizaje y rescate de una patrulla perdida | `[P1]` p. 19; Pato, Bucky, arnés, S-55: p. 18 | Solo libro. Discrepancia de mes (sección 5.2) |
 | `brujula-perdida`: ventisca, doce kilómetros, brújula hundida, dos horas a ciegas, luces de la base | `[P1]` p. 20 (p. 19 para la bahía Duse) | Solo libro. Relato narrado |
 | `adios-a-la-antartida`: «No trabajó», excepción por su prestigio, rompehielos a Ushuaia; traslado de 1973 | `[P1]` p. 21 y 5 | Solo libro |
@@ -60,7 +60,7 @@ Las coordenadas salen del gazetteer de SCAR `[V3]` o de la Armada `[V2]`. Format
 | Base San Martín (`expedicion-invernal-1962`) | `[-67.10, -68.13]` | `[V2]`: 68°08' S 67°07' O. `[V3]`, «San Martín Station»: `[-67.103333, -68.129444]` | Verificado |
 | Bahía Margarita (`expedicion-invernal-1962`) | `[-68.0, -68.5]` | `[V3]`, «Margarita, bahía» (gazetteer ARG) | Verificado |
 | Bahía Duse (`brujula-perdida`) | `[-57.333333, -63.5]` | `[V3]`, «Duse, bahía» (gazetteer ARG). Otros gazetteers difieren hasta unos 0,1° en latitud (por ejemplo `[-57.25, -63.566667]`) | Verificado, aproximado |
-| Pico Santa Fe (`patrulla-paralelo-82`) | `[-41.333333, -82.05]` | `[V3]`, «Santa Fe, pico» (gazetteer ARG) | Verificado (el libro habla de «nunataks Santa Fe», un cordón; el gazetteer ubica el pico) |
+| Pico Santa Fe (ya no es una parada ni la ruta pasa por ahí; el dato está en «Saber más» de `paracaidas`) | `[-41.333333, -82.05]` | `[V3]`, «Santa Fe, pico» (gazetteer ARG) | Verificado (el libro habla de «nunataks Santa Fe», un cordón; el gazetteer ubica el pico) |
 | Cordillera Diamante (contexto de la patrulla) | `[-48.5, -82.666667]` | `[V3]`, «Diamante, cordillera» (gazetteer ARG) | Verificado |
 | Barrera de hielos Filchner (ya no es una parada) | `[-40, -79]` | `[V3]`, «Filchner, barrera de hielos» (gazetteer ARG). Es un punto central de una entidad muy grande | Verificado, muy aproximado |
 | Cabo Adams (ya no es una parada) | `[-62.333333, -75.033333]` | `[V3]`, «Adams, cabo» (gazetteer ARG) | Verificado |
@@ -176,7 +176,7 @@ Dos imágenes tomadas de las páginas de `[P1]` se muestran en dos paradas (`pac
 | Archivo | Origen | Parada |
 |---|---|---|
 | `poncho-pagina.jpg` | `https://www.marambio.aq/images/poncho1.jpg` (página «Poncho») | «Poncho va al frente» |
-| `perros-trineo.jpg` | `https://www.marambio.aq/galeria/fauna/perros/PERROS04.jpg` (página «El perro polar»); es ilustrativa, no de esa patrulla | «La patrulla Paralelo 82» |
+| `perros-trineo.jpg` | `https://www.marambio.aq/galeria/fauna/perros/PERROS04.jpg` (página «El perro polar»); es ilustrativa, no de esa patrulla | «De la patrulla al salto en paracaídas» (antes, «La patrulla Paralelo 82») |
 
 Consultadas el 2026-11-15. No se usó el retrato del autor que también está en la página.
 

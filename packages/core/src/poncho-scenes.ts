@@ -452,39 +452,6 @@ export const PONCHO_SCENES: Readonly<Record<string, SceneDef>> = {
     // cleared (book p. 18), so the last stage is calm.
     blizzard: { until: 2 },
   },
-  // The march that goes on (book p. 15-16): 0 two sleds of dogs go on, Poncho guiding them; 1 he goes ahead, over a snow
-  // bridge and past canes, to find the dangers; 2 the patrol goes through the peaks of the Santa Fe mountains.
-  'patrulla-paralelo-82': {
-    setting: 'plain',
-    radius: 4.2,
-    elements: [
-      sled(-3.6, -1.4, 0, { until: 1, path: 'march', radius: 0.8 }),
-      dog('pack', -3.6, -1.4, 0, { until: 1, path: 'march', lead: 1.1, side: 0.28 }),
-      dog('pack', -3.6, -1.4, 0, { until: 1, path: 'march', lead: 1.1, side: -0.28 }),
-      dog('poncho', -3.6, -1.4, 0, { until: 1, path: 'march', lead: 1.9 }),
-      person(ORANGE, -3.6, -1.4, 0, 'walk', 0, { until: 1, path: 'march', lead: -1.6 }),
-      prop('crevasseBridge', 2.0, 1.4, 0.15, 1, { appearAt: 1, until: 2, radius: 0.9 }),
-      prop('flaggedCanes', 0.6, -0.9, 0, 1, { appearAt: 1, until: 2, radius: 0.3 }),
-      dog('poncho', -2.4, 0.4, 0, { appearAt: 1, until: 2, path: 'scout' }),
-      prop('nunataks', 0.8, 2.6, 0, 1, { appearAt: 2, radius: 1.4 }),
-      sled(-3.6, -0.7, 0, { appearAt: 2, path: 'pass', radius: 0.8 }),
-      dog('pack', -3.6, -0.7, 0, { appearAt: 2, path: 'pass', lead: 1.1, side: 0.28 }),
-      dog('pack', -3.6, -0.7, 0, { appearAt: 2, path: 'pass', lead: 1.1, side: -0.28 }),
-      dog('poncho', -3.6, -0.7, 0, { appearAt: 2, path: 'pass', lead: 1.9 }),
-      person(ORANGE, -3.6, -0.7, 0, 'walk', 0, { appearAt: 2, path: 'pass', lead: -1.6 }),
-    ],
-    paths: [
-      { id: 'march', from: [-3.6, -1.4], to: [-0.4, -1.4], delay: 0.2, duration: 8 },
-      { id: 'scout', from: [-2.4, 0.4], via: [[-0.6, -0.1]], to: [1.0, 0.1], delay: 0.3, duration: 9 },
-      { id: 'pass', from: [-3.6, -0.7], via: [[-1.6, -0.2]], to: [1.0, -0.3], delay: 0.2, duration: 10 },
-    ],
-    camera: { distanceFactor: 1.1, elevationDeg: 42, azimuthDeg: -110 },
-    shots: [
-      shot(0, [-1.6, 0.5, -1.4], 8, 26, -95),
-      shot(1, [0.2, 0.4, 0.4], 7, 28, -80),
-      shot(2, [-0.8, 0.8, 0.2], 9, 22, -100),
-    ],
-  },
   // From the air (book p. 18-19): 0 the helicopter flying in over the ice, with its door open, and the two officers waiting below; 1 the three dogs come down on parachutes, small under it, paddling
   // their legs; 2 they land and Poncho is already at the front of the sled, walking, with a man behind it.
   paracaidas: {

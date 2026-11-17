@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { clearStorage } from '../storage.ts';
 import { mockOpenMeteo } from './weather-helpers.ts';
 import { show3D } from './map-helpers.ts';
-import { LIST_BUTTON_LABEL } from '../../core/src/content/points.ts';
+import { LIST_BUTTON_LABEL, PONCHO_POINT } from '../../core/src/content/points.ts';
 
 let consoleErrors: string[] = [];
 
@@ -71,6 +71,28 @@ test('while travelling the camera cannot back off as far as the overview, and ca
   await map.focus();
   for (let i = 0; i < 8; i++) await page.keyboard.press('-');
   expect(await settledDistance(page)).toBeGreaterThan(far * 2);
+});
+
+test('opening Poncho brings the camera down to Base Esperanza, where the trip leaves from (#255)', async ({ page }) => {
+  test.setTimeout(90_000);
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.reload();
+  await show3D(page);
+  await page.waitForFunction(() => (window as any).__cameraControls && (window as any).__invalidate);
+  await settledDistance(page);
+
+  await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
+  await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Poncho/ }).click();
+  await expect(page.getByRole('heading', { name: 'Poncho, perro polar argentino' })).toBeVisible();
+
+  // The point looked at, in map units: Base Esperanza, not the middle of the map the overview looked at.
+  await settledDistance(page);
+  const target = await page.evaluate(() => {
+    const cc = (window as any).__cameraControls;
+    const t = cc.getTarget(new cc.camera.position.constructor());
+    return { x: t.x + 500, y: t.z + 500 };
+  });
+  expect(Math.hypot(target.x - PONCHO_POINT.x, target.y - PONCHO_POINT.y)).toBeLessThan(15);
 });
 
 test('with motion, setting off the camera comes all the way down to the ship, past the farthest zoom of the trip (#181)', async ({ page }) => {

@@ -16,6 +16,7 @@ import {
   generateSeaLifeInstances,
   groundTarget,
   homeDistance3D,
+  cameraZoomAvailability,
   voyageMaxDistance3D,
   loadOceanDepth,
   poseFromView,
@@ -41,6 +42,7 @@ import {
   type SeaMarker,
   type Size,
   type View,
+  type ZoomAvailability,
   map3dLoadingStore,
 } from '@antartida/core';
 import { MarkerButton } from '../map/Markers.tsx';
@@ -77,6 +79,7 @@ function SceneContent({
   geo,
   command,
   onCameraRest,
+  onZoomAvailabilityChange,
   markers,
   overlayRef,
   enablePost,
@@ -96,6 +99,7 @@ function SceneContent({
   geo: Geometry;
   command: Layer3DProps['command'];
   onCameraRest: (view: View) => void;
+  onZoomAvailabilityChange: Layer3DProps['onZoomAvailabilityChange'];
   markers: Marker[];
   overlayRef: RefObject<HTMLDivElement | null>;
   enablePost: boolean;
@@ -171,6 +175,7 @@ function SceneContent({
         geo={geo}
         command={command}
         onCameraRest={onCameraRest}
+        onZoomAvailabilityChange={onZoomAvailabilityChange}
         voyaging={Boolean(voyage)}
       />
       <ProjectMarkers
@@ -216,6 +221,7 @@ function ControlsBridge({
   geo,
   command,
   onCameraRest,
+  onZoomAvailabilityChange,
   voyaging,
 }: {
   phase: Phase;
@@ -225,6 +231,7 @@ function ControlsBridge({
   geo: Geometry;
   command: Layer3DProps['command'];
   onCameraRest: (view: View) => void;
+  onZoomAvailabilityChange: Layer3DProps['onZoomAvailabilityChange'];
   /** On a trip the target follows the vehicle, up in the air with the plane. */
   voyaging: boolean;
 }) {
@@ -234,8 +241,9 @@ function ControlsBridge({
   const gl = useThree((s) => s.gl);
   const initialized = useRef(false);
   const approach = useRef<{ from: CameraPose; to: CameraPose; startMs: number } | null>(null);
-  const live = useRef({ size, geo, onCameraRest });
-  live.current = { size, geo, onCameraRest };
+  const live = useRef({ size, geo, onCameraRest, onZoomAvailabilityChange });
+  live.current = { size, geo, onCameraRest, onZoomAvailabilityChange };
+  const lastZoomAvailability = useRef<ZoomAvailability | null>(null);
   // Boundary box enclosing continent and surrounding ocean navigation area
   const boundary = useMemo(
     () => new Box3(new Vector3(-PAN_LIMIT, -50, -PAN_LIMIT), new Vector3(PAN_LIMIT, 2500, PAN_LIMIT)),
@@ -408,6 +416,14 @@ function ControlsBridge({
     if (heading < cc.minDistance - 0.01) void cc.dollyTo(cc.minDistance, !reduced);
     // A narrower window has a farther overview: come back in when the window gets wider.
     if (heading > cc.maxDistance + 0.01) void cc.dollyTo(cc.maxDistance, !reduced);
+    // The destination determines whether more zoom is available. Waiting for the rendered
+    // distance would leave the button visible throughout the tail of the damped animation.
+    const zoom = cameraZoomAvailability(cc.getSpherical(sphere.current, true).radius, cc.minDistance, cc.maxDistance);
+    const previous = lastZoomAvailability.current;
+    if (!previous || zoom.canZoomIn !== previous.canZoomIn || zoom.canZoomOut !== previous.canZoomOut) {
+      lastZoomAvailability.current = zoom;
+      live.current.onZoomAvailabilityChange(zoom);
+    }
     const near = cc.distance < NEAR_FROM ? NEAR_CLOSE : NEAR;
     if (camera.near !== near) {
       camera.near = near;
@@ -569,6 +585,7 @@ export function Map3DLayer({
   onPick,
   command,
   onCameraRest,
+  onZoomAvailabilityChange,
   voyage,
   voyagePicker,
   claims,
@@ -664,6 +681,7 @@ export function Map3DLayer({
           geo={geo}
           command={command}
           onCameraRest={onCameraRest}
+          onZoomAvailabilityChange={onZoomAvailabilityChange}
           markers={markers}
           overlayRef={overlayRef}
           enablePost={enablePost}

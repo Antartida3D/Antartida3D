@@ -141,7 +141,22 @@ test.describe('3D relief view', () => {
     expect(await closest()).toBeCloseTo(ICE_MIN_DISTANCE, 0);
 
     await reset();
-    for (let i = 0; i < 12; i++) await page.getByRole('button', { name: 'Acercar', exact: true }).click();
+    const closer = page.getByRole('button', { name: 'Acercar', exact: true, includeHidden: true });
+    await expect(closer).toBeVisible();
+    for (let i = 0; i < 12; i++) {
+      const before = await page.evaluate(() => {
+        const cc = (window as any).__cameraControls;
+        return { distance: cc.distance as number, min: cc.minDistance as number };
+      });
+      if (before.distance <= before.min + 0.01) break;
+      await closer.click();
+      await expect.poll(async () => {
+        const distance = await page.evaluate(() => (window as any).__cameraControls.distance as number);
+        return Math.abs(distance - before.distance);
+      }, { timeout: 15_000 }).toBeGreaterThan(1e-6);
+      await closest();
+    }
+    await expect(closer).toBeHidden();
     expect(await closest()).toBeCloseTo(ICE_MIN_DISTANCE, 0);
 
     await reset();

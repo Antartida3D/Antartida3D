@@ -53,6 +53,7 @@ export * from './fuegia.ts';
 export * from './fuegia-mesh.ts';
 export * from './fuegia-ground.ts';
 export * from './camera.ts';
+export * from './zoom.ts';
 export * from './gestures.ts';
 export * from './ocean.ts';
 export * from './sea.ts';

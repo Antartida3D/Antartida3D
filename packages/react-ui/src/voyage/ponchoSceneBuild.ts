@@ -68,7 +68,9 @@ export function scenePropTris(id: string): readonly Tri[] {
 export function elementStaticTris(e: SceneElement, ground: Ground): Tri[] {
   // The ship rides on the water, not on the sea bed under it: only the foot of its gangway follows the ice.
   if (e.kind === 'prop' && e.id === SHIP_PROP_ID) return shipStaticTris(ground);
-  if (e.kind === 'prop') return seatAt(scenePropTris(e.id), e.x, e.z, e.yaw, e.scale ?? 1, ground, e.lift ?? 0);
+  // A prop on a path flies (the helicopter): it is drawn apart, moving (PonchoDioramaActors.tsx).
+  if (e.kind === 'prop' && e.path) return [];
+  if (e.kind === 'prop') return seatAt(scenePropTris(e.id), e.x, e.z, e.yaw, e.scale ?? 1, ground, e.fall?.to ?? e.lift ?? 0);
   if (e.kind === 'person' && e.action === 'hammer') {
     const [sx, sz] = atPerson(e, HAMMER_STAKE_AT);
     return seatAt(PONCHO_PROPS.stakeAndPick.tris, sx, sz, e.yaw, e.scale ?? 1, ground);

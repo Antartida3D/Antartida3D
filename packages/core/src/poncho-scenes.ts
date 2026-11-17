@@ -111,7 +111,16 @@ export interface SceneElement {
   readonly radius?: number;
   /** prop, dog: height over the ground it hangs at, in scene units (a dog under its parachute, and the parachute). */
   readonly lift?: number;
+  /**
+   * prop, dog: comes down from height `from` to height `to` (scene units over the ground) in `duration` s after it shows, at an even pace,
+   * and a dog paddles its legs on the way (a dog under its parachute, book p. 19). With reduced motion it hangs half way down.
+   */
+  readonly fall?: { readonly from: number; readonly to: number; readonly duration: number };
 }
+
+/** Height over the ground of an element `t` seconds after it showed: where it is on its fall, or its `lift`. */
+export const sceneFallLift = (e: SceneElement, t: number): number =>
+  e.fall ? e.fall.from + (e.fall.to - e.fall.from) * clamp01(t / e.fall.duration) : (e.lift ?? 0);
 
 /** How the camera looks at a scene when its card opens. */
 export interface SceneCamera {
@@ -476,33 +485,41 @@ export const PONCHO_SCENES: Readonly<Record<string, SceneDef>> = {
       shot(2, [-0.8, 0.8, 0.2], 9, 22, -100),
     ],
   },
-  // From the air (book p. 18-19): 0 the helicopter on the ice with its door open; 1 the dogs come down on parachutes, paddling
-  // their legs; 2 they land and Poncho is already at the front of the sled.
+  // From the air (book p. 18-19): 0 the helicopter flying in over the ice, with its door open, and the two officers waiting below; 1 the three dogs come down on parachutes, small under it, paddling
+  // their legs; 2 they land and Poncho is already at the front of the sled, walking, with a man behind it.
   paracaidas: {
     setting: 'plain',
     radius: 4.2,
     elements: [
-      prop('rescueHelicopter', -2.3, 1.0, -0.4, 1, { until: 2, radius: 1.6 }),
-      person(ORANGE, 0.9, -0.5, yawToward(0.9, -0.5, -2.3, 1.0), 'stand', 0, { until: 1 }),
-      dog('poncho', 1.5, 0.4, yawToward(1.5, 0.4, -2.3, 1.0), { until: 1 }),
-      prop('dogParachute', 1.8, 1.8, 0, 1, { appearAt: 1, until: 2, lift: 1.0, radius: 0.3 }),
-      dog('pack', 1.8, 1.8, 0.6, { appearAt: 1, until: 2, lift: 0.96 }),
-      prop('dogParachute', 2.8, -0.2, 0, 1, { appearAt: 1, until: 2, lift: 0.6, radius: 0.3 }),
-      dog('poncho', 2.8, -0.2, 0, { appearAt: 1, until: 2, lift: 0.56 }),
-      prop('dogParachute', 0.6, -1.9, 0, 1, { appearAt: 1, until: 2, lift: 1.3, radius: 0.3 }),
-      dog('pack', 0.6, -1.9, -0.5, { appearAt: 1, until: 2, lift: 1.26 }),
-      sled(-1.6, -1.0, 0, { appearAt: 2, radius: 0.8 }),
-      dog('pack', -0.4, -0.7, 0, { appearAt: 2 }),
-      dog('pack', -0.4, -1.3, 0, { appearAt: 2 }),
-      dog('poncho', 0.6, -1.0, 0, { appearAt: 2 }),
-      person(RED, -2.4, -1.0, 0, 'haul', 0, { appearAt: 2 }),
+      // Flying, big and high (the people and the dogs are small below it, for the contrast): it comes in over the ice and hovers over the drop zone.
+      prop('rescueHelicopter', -3.4, 0.9, 0, 1, { until: 2, path: 'flight', lift: 6.5, radius: 0.1 }),
+      // The two officers who jumped first wait on the ice (book p. 18-19), looking up at it.
+      person(ORANGE, 2.3, -0.7, yawToward(2.3, -0.7, 0.4, 0.5), 'stand', 0, { scale: 0.45 }),
+      person(RED, 2.4, 0.2, yawToward(2.4, 0.2, 0.4, 0.5), 'stand', 1.9, { scale: 0.45 }),
+      // The three dogs (Poncho, Pato and Bucky) jump under the helicopter and come down on their parachutes, paddling their legs.
+      prop('dogParachute', 0.9, 1.0, 0, 0.45, { appearAt: 1, until: 2, radius: 0.2, fall: { from: 4.9, to: 0.05, duration: 9 } }),
+      dog('pack', 0.9, 1.0, 0.6, { appearAt: 1, until: 2, scale: 0.45, fall: { from: 4.88, to: 0.03, duration: 9 } }),
+      prop('dogParachute', 1.5, 0.6, 0, 0.45, { appearAt: 1, until: 2, radius: 0.2, fall: { from: 4.6, to: 0.05, duration: 10 } }),
+      dog('poncho', 1.5, 0.6, 0, { appearAt: 1, until: 2, scale: 0.45, fall: { from: 4.58, to: 0.03, duration: 10 } }),
+      prop('dogParachute', 0.1, 0.1, 0, 0.45, { appearAt: 1, until: 2, radius: 0.2, fall: { from: 4.8, to: 0.05, duration: 8 } }),
+      dog('pack', 0.1, 0.1, -0.5, { appearAt: 1, until: 2, scale: 0.45, fall: { from: 4.78, to: 0.03, duration: 8 } }),
+      // On the ice: the sled is ready and Poncho sets off at the front, with a man walking behind it, and goes up to the officers who wait.
+      sled(-1.4, -0.2, 0, { appearAt: 2, path: 'go', scale: 0.45, radius: 0.4 }),
+      dog('pack', -1.4, -0.2, 0, { appearAt: 2, path: 'go', lead: 0.5, side: 0.13, scale: 0.45 }),
+      dog('pack', -1.4, -0.2, 0, { appearAt: 2, path: 'go', lead: 0.5, side: -0.13, scale: 0.45 }),
+      dog('poncho', -1.4, -0.2, 0, { appearAt: 2, path: 'go', lead: 0.85, scale: 0.45 }),
+      person(NAVY, -1.4, -0.2, 0, 'walk', 0, { appearAt: 2, path: 'go', lead: -0.7, scale: 0.45 }),
     ],
-    paths: [],
+    paths: [
+      { id: 'flight', from: [-3.4, 0.9], to: [0.4, 0.5], delay: 0.3, duration: 8 },
+      // It ends where Poncho, in front, stands face to face with the two officers (at x 2.3 and 2.4): he gets to them, he does not go past.
+      { id: 'go', from: [-1.4, -0.2], to: [0.9, -0.2], delay: 1.2, duration: 7 },
+    ],
     camera: { distanceFactor: 1.1, elevationDeg: 40, azimuthDeg: -110 },
     shots: [
-      shot(0, [-0.3, 0.8, 0.6], 8, 24, -80),
-      shot(1, [1.6, 1.2, 0.2], 10, 22, -95),
-      shot(2, [-0.6, 0.4, -1.0], 6, 26, -100),
+      shot(0, [-0.6, 1.6, 0.3], 20, 22, -80),
+      shot(1, [0.8, 1.6, 0.3], 19, 22, -90),
+      shot(2, [0.8, 0.3, -0.2], 6, 26, -100),
     ],
   },
   // Lost compass (book p. 20): 0 the team walks in the storm; 1 the sled lies on its side and the men look for the compass

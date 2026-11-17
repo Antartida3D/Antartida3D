@@ -46,17 +46,25 @@ const FPS = 30;
 /** Fog of the blizzard: almost none in summer, a white-out at a hundred units in July. */
 const FOG_AT_PEAK = 0.0085;
 const FOG_LIGHT = new Color('#dfe6ea');
+/** The blizzard of the button (#263): all the snow, faster and bigger, and a pale haze that leaves the base faint. */
+const STORM_FOG = 0.013;
+const STORM_SPEED = 1.7;
+const STORM_FLAKE = 0.8;
+/** Camera distance the storm haze is set for: farther, it thins, so a phone's wider view still shows the base faint. */
+const STORM_FOG_DISTANCE = 100;
+const FLAKE = 0.45;
 const FOG_DIM = new Color('#8e9ba5');
 
 /**
  * Blowing snow and the haze it makes, as strong as the month's days of «ventisca alta» in the SMN
  * normals (marambioBlizzard). A simulation: it does not show the real strength of the wind. With
- * reduced motion the snow stands still.
+ * reduced motion the snow stands still. `storm` is the blizzard of the button (#263): every flake,
+ * faster, and a thick haze.
  */
-export function Blizzard({ month, reduced }: { month: number; reduced: boolean }) {
+export function Blizzard({ month, reduced, storm = false }: { month: number; reduced: boolean; storm?: boolean }) {
   const scene = useThree((s) => s.scene);
   const invalidate = useThree((s) => s.invalidate);
-  const intensity = marambioBlizzard(month);
+  const intensity = storm ? 1 : marambioBlizzard(month);
   const count = Math.round(MAX_FLAKES * intensity);
   const points = useRef<Points>(null);
 
@@ -73,9 +81,13 @@ export function Blizzard({ month, reduced }: { month: number; reduced: boolean }
     }
     const geometry = new BufferGeometry();
     geometry.setAttribute('position', new BufferAttribute(positions, 3));
-    const material = new PointsMaterial({ color: '#f7fafb', size: 0.45, transparent: true, opacity: 0.85, depthWrite: false, fog: false });
+    const material = new PointsMaterial({ color: '#f7fafb', size: FLAKE, transparent: true, opacity: 0.85, depthWrite: false, fog: false });
     return { geometry, material, speeds };
   }, [month]);
+  useEffect(() => {
+    material.size = storm ? STORM_FLAKE : FLAKE;
+    invalidate();
+  }, [material, storm, invalidate]);
   useEffect(
     () => () => {
       geometry.dispose();
@@ -88,13 +100,14 @@ export function Blizzard({ month, reduced }: { month: number; reduced: boolean }
   // The haze: a fog over everything but the sky, darker when the sun is low.
   useLayoutEffect(() => {
     const { elevationDeg } = marambioSun(month);
-    const light = Math.min(1, Math.max(0, (elevationDeg + 2) / 30));
-    scene.fog = new FogExp2(FOG_DIM.clone().lerp(FOG_LIGHT, light).getHex(), FOG_AT_PEAK * intensity);
+    // In the storm the haze is the snow itself: pale, whatever the sun.
+    const light = storm ? 1 : Math.min(1, Math.max(0, (elevationDeg + 2) / 30));
+    scene.fog = new FogExp2(FOG_DIM.clone().lerp(FOG_LIGHT, light).getHex(), storm ? STORM_FOG : FOG_AT_PEAK * intensity);
     invalidate();
     return () => {
       scene.fog = null;
     };
-  }, [scene, month, intensity, invalidate]);
+  }, [scene, month, intensity, storm, invalidate]);
 
   // Snow moves only while it is drawn: a clock asks for frames, like the sea of the map.
   useEffect(() => {
@@ -112,9 +125,13 @@ export function Blizzard({ month, reduced }: { month: number; reduced: boolean }
     return () => cancelAnimationFrame(id);
   }, [reduced, count, invalidate]);
 
-  useFrame((_, delta) => {
+  useFrame(({ camera }, delta) => {
+    if (storm && scene.fog instanceof FogExp2) {
+      const far = Math.max(STORM_FOG_DISTANCE, camera.position.length());
+      scene.fog.density = (STORM_FOG * STORM_FOG_DISTANCE) / far;
+    }
     if (reduced || count === 0) return;
-    const step = Math.min(delta, 0.1) * MAX_SPEED * (0.4 + 0.6 * intensity);
+    const step = Math.min(delta, 0.1) * MAX_SPEED * (0.4 + 0.6 * intensity) * (storm ? STORM_SPEED : 1);
     const pos = geometry.getAttribute('position') as BufferAttribute;
     const a = pos.array as Float32Array;
     for (let i = 0; i < count; i++) {

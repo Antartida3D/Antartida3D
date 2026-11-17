@@ -22,6 +22,9 @@ Contenido de la primera entrega de la expedición «Base Marambio» (issue #74):
 | OpenStreetMap: pista, plataforma, hangar y edificios de la Base Marambio (`osm`) | colaboradores de OpenStreetMap | https://www.openstreetmap.org/#map=16/-64.2400/-56.6300 | 14 de noviembre de 2026 | ODbL 1.0 (© colaboradores de OpenStreetMap) | Verificada por el agente (API 0.6, changeset 134877913). Es un mapa colaborativo: se usa para plantas, nombres y colores, las fichas lo dicen y ninguna ficha que se apoye solo en él lleva la etiqueta «Dato real». Detalle en `base-marambio-diseno.md`. |
 | «Estadísticas Climatológicas Normales: República Argentina – Período 1991-2020», 2023, Base Marambio pp. 792-799 (`smn-normales`) | Servicio Meteorológico Nacional | https://repositorio.smn.gob.ar/bitstream/handle/20.500.12160/2506/estad%C3%ADsticas_climatol%C3%B3gicas_normales_1991-2020.pdf?sequence=4&isAllowed=y | 15 de noviembre de 2026 | - | Verificada por el agente (#160): se leyó el texto del PDF y las filas de ventisca se cotejaron dos veces; las temperaturas coinciden con las normales OMM que envió la Argentina (NOAA NCEI, accesión 0253808, `BASE_MARAMBIO_89055.csv`). Falta revisión humana. |
 | «Clima en Argentina: Base Marambio» (`smn-clima`), copia del Internet Archive del 04-09-2017 | Servicio Meteorológico Nacional | https://web.archive.org/web/20170904145118/http://www.smn.gov.ar/serviciosclimaticos/?mod=elclima&id=69 | 15 de noviembre de 2026 | - | Verificada por el agente (#160) en la copia archivada: la página ya no está en línea. El texto no dice su período; sus cifras de temperatura perdieron los signos negativos y no se usan. Falta revisión humana. |
+| Atlas Internacional de Nubes: Ventisca alta (`omm-ventisca-alta`, #263) | Organización Meteorológica Mundial (OMM) | https://cloudatlas.wmo.int/es/blowing-snow.html | 17 de noviembre de 2026 | - | Verificada por el agente en la versión en español, que usa el mismo término «ventisca alta» que el SMN. Falta revisión humana. |
+| Atlas Internacional de Nubes: Ventisca baja (`omm-ventisca-baja`, #263) | Organización Meteorológica Mundial (OMM) | https://cloudatlas.wmo.int/es/drifting-snow.html | 17 de noviembre de 2026 | - | Verificada por el agente en la versión en español. Falta revisión humana. |
+| Antarctic weather (`aad-weather`, #263) | Australian Antarctic Division | https://www.antarctica.gov.au/about-antarctica/weather-and-climate/weather/ | 17 de noviembre de 2026 | - | Verificada por el agente. Es la definición del programa antártico australiano; la ficha lo aclara. Falta revisión humana. |
 
 ## Oraciones, fuentes y citas
 
@@ -118,6 +121,18 @@ Siete fotos de Eduardo Olivero, del archivo de la familia, se muestran en los pu
 | Edificios | `deposito-polar.webp` | `01 R Gallegos Marambio/DSCN6981.JPG` | 24/01/2009 | Casilla roja con el cartel «Depósito Polar Adelantado». |
 | Edificios | `casa-historica.webp` | `01 R Gallegos Marambio/DSCN6982.JPG` | 24/01/2009 | Casilla roja con el cartel «Casa Histórica - I, año 1970». |
 
+### Botón «Ver una ventisca» (`storm`, #263)
+
+El botón desata en la escena una ventisca simulada (toda la nieve, más rápida, y una bruma pálida que deja ver la base apenas) y pasa la tira de meses a julio, el mes con más días de ventisca alta. El panel explica:
+
+| Oración | Fuente | Cita |
+|---|---|---|
+| En una ventisca alta el viento levanta la nieve del suelo a alturas moderadas o grandes. A la altura de los ojos se ve muy poco, y la nieve puede “velar el cielo e incluso el sol”. | `omm-ventisca-alta` | "Conjunto de partículas de nieve que el viento levanta del suelo a alturas moderadas o grandes." / visibilidad horizontal a la altura de los ojos "por lo general muy escasa" / "velar el cielo e incluso el sol" |
+| En una ventisca baja la nieve queda cerca del suelo: puede tapar obstáculos muy bajos, pero casi no cambia lo que se ve a la altura de los ojos. | `omm-ventisca-baja` | "Conjunto de partículas de nieve que el viento levanta del suelo a alturas bajas." La página dice que puede ocultar obstáculos muy bajos y que no reduce sensiblemente la visibilidad a la altura de los ojos (1,80 m). |
+| En Marambio hay en promedio 88 días al año con ventisca alta, sobre todo en invierno: 12 en julio y 2 en enero (promedio de 1991 a 2020). | `smn-normales` | Total anual 88,3 días; julio 12,2 y enero 1,9 (filas ya cotejadas en #160). El texto se arma con esos valores de `marambio-climate.ts`. |
+| Para el programa antártico australiano hay tormenta de nieve (“blizzard”) cuando el viento sopla con fuerza de temporal durante al menos una hora, la temperatura está bajo 0 °C y la visibilidad baja a 100 m o menos. Cada país usa sus propios criterios. | `aad-weather` | "When wind speeds are gale force or stronger for at least one hour" / "the temperature is less than 0°C and visibility is reduced to 100 m or less" |
+| La ventisca de la escena es una simulación: muestra cómo la nieve y la bruma tapan la base, no la fuerza real del viento. | — | Simulación (etiqueta «Simulación»). |
+
 ## Pendientes
 
 No se publica nada de esto hasta tener fuente.
@@ -126,7 +141,7 @@ No se publica nada de esto hasta tener fuente.
 - **Lugar exacto del helicóptero en el campo (#207):** [Fuente a definir]. El epígrafe no nombra la isla ni el campamento.
 - **Historia del «Depósito Polar Adelantado» y de la «Casa Histórica - I» (#207):** [Fuente a definir]. Solo se transcriben sus carteles.
 - **Velocidad del viento por mes:** [Fuente a definir]. Las normales 1991-2020 del SMN dan «S/D» en todas las tablas de viento de Marambio (velocidad, viento máximo, dirección y días con viento fuerte), igual que las estadísticas 2011-2020. Las únicas velocidades mensuales oficiales encontradas son las de 1971-1990, en una página del SMN que solo sobrevive en el Internet Archive; no se usan.
-- **Qué es «ventisca alta» y «ventisca baja»:** [Fuente a definir]. El SMN no las define en sus estadísticas. Las fichas usan las palabras del SMN sin explicarlas.
+- ~~**Qué es «ventisca alta» y «ventisca baja»**~~: resuelto en #263 con el Atlas Internacional de Nubes de la OMM, en español (ver «Botón «Ver una ventisca»»). El SMN sigue sin definirlas en sus estadísticas.
 - **Dirección del viento de la ventisca en la escena:** la nieve vuela desde el sudoeste. Sigue a Asmi et al., «Primary sources control the variability of aerosol optical properties in the Antarctic Peninsula», Tellus B 70(1), 2018 (CC BY 4.0, https://b.tellusjournals.se/articles/10.1080/16000889.2017.1414571), que dice que la mayoría de los temporales llegan con viento del sudoeste. Se leyó a través de un resumidor: es solo una decisión de la simulación, ninguna ficha lo afirma, y falta revisión humana.
 - **Dónde fondea el Irízar frente a Marambio:** [Fuente a definir]. `[O24]` dice que el buque operó frente a la base y que la carga subió en helicóptero, sin dar el lugar. En el diorama el barco está en el mar, lejos de la meseta, en un lugar ilustrativo.
 

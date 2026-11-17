@@ -7,7 +7,9 @@ import {
   MARAMBIO_SPOTS,
   marambioFacts,
   marambioSourcesOf,
+  MARAMBIO_STORM_MONTH,
 } from '../src/content/marambio.ts';
+import { MARAMBIO_BLIZZARD_HIGH_YEAR, MARAMBIO_CLIMATE } from '../src/content/marambio-climate.ts';
 import { FACT_KIND_LABEL } from '../src/content/orcadas.ts';
 import { MARAMBIO_POINT } from '../src/content/points.ts';
 import { VOYAGE_SOURCES } from '../src/content/ushuaia.ts';
@@ -99,8 +101,22 @@ describe('Base Marambio content and sources (docs/expediciones/base-marambio.md)
       expect(s.label.length).toBeGreaterThan(0);
       expect(s.shortLabel.length).toBeGreaterThan(0);
     }
-    // Besides the points: the scene label and the strip of months (#160).
-    expect(MARAMBIO_FACTS.length).toBe(MARAMBIO_SPOTS.reduce((n, s) => n + marambioFacts(s.id).length, marambioFacts('scene').length + marambioFacts('months').length));
+    // Besides the points: the scene label, the strip of months (#160) and the blizzard button (#263).
+    expect(MARAMBIO_FACTS.length).toBe(
+      MARAMBIO_SPOTS.reduce((n, s) => n + marambioFacts(s.id).length, marambioFacts('scene').length + marambioFacts('months').length + marambioFacts('storm').length)
+    );
+  });
+
+  it('explains the blizzard of the button with sources, from the SMN numbers, and says the scene is a simulation (#263)', () => {
+    const storm = marambioFacts('storm');
+    expect(storm.filter((f) => f.kind === 'real').every((f) => f.sourceIds.length > 0)).toBe(true);
+    expect(storm.some((f) => f.kind === 'sim')).toBe(true);
+    // The numbers come from the normals, not typed in.
+    const peak = Math.max(...MARAMBIO_CLIMATE.map((c) => c.blizzardHighDays));
+    const marambio = storm.find((f) => f.id === 'storm-marambio')!;
+    expect(marambio.text).toContain(`${Math.round(MARAMBIO_BLIZZARD_HIGH_YEAR)} días al año`);
+    expect(marambio.text).toContain(`${Math.round(peak)} en julio`);
+    expect(MARAMBIO_CLIMATE[MARAMBIO_STORM_MONTH - 1].blizzardHighDays).toBe(peak);
   });
 
   it('keeps the facts short and without exclamation marks', () => {

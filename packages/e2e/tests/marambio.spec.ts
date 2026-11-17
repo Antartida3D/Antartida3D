@@ -126,6 +126,27 @@ test.describe('with WebGL', () => {
     await expect(section.getByRole('group', { name: 'Archivo fotográfico' })).toHaveCount(0);
   });
 
+  test('«Ver una ventisca» blows a blizzard over the base, explains it with its sources and calms down (#263)', async ({ page }) => {
+    await openMarambio(page);
+    const section = page.getByRole('region', { name: 'Expedición Base Marambio' });
+    const button = section.getByRole('button', { name: 'Ver una ventisca' });
+    await button.click();
+    await expect(heading(page, '¿Qué es una ventisca?')).toBeFocused();
+    for (const fact of marambioFacts('storm')) await expect(section.locator('.orc-panel')).toContainText(fact.text);
+    await expect(section.getByRole('button', { name: 'Calmar la ventisca' }).first()).toHaveAttribute('aria-pressed', 'true');
+    // It blows in the month with most days of «ventisca alta».
+    await expect(section.locator('.orc-month-strip-wrap')).toContainText(/jul/i);
+    // A source link opens the list on that source, and the list goes back to the blizzard.
+    await section.locator('.orc-panel .orc-src-link').first().click();
+    await expect(section.locator('.mar-source.is-highlight')).toContainText('Ventisca alta');
+    await section.getByRole('button', { name: 'Volver a la ventisca' }).click();
+    await expect(heading(page, '¿Qué es una ventisca?')).toBeVisible();
+    // Escape calms it, and the visit is where it was.
+    await page.keyboard.press('Escape');
+    await expect(heading(page, MARAMBIO_SPOTS[0].label)).toBeVisible();
+    await expect(section.getByRole('button', { name: 'Ver una ventisca' })).toHaveAttribute('aria-pressed', 'false');
+  });
+
   test('the Irízar at sea offers the trip to Orcadas, and the trip opens Orcadas', async ({ page }) => {
     await openMarambio(page);
     const section = page.getByRole('region', { name: 'Expedición Base Marambio' });

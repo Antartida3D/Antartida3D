@@ -40,6 +40,8 @@ export interface MarambioSceneProps {
   month: number;
   /** The Irízar at sea was tapped or clicked: offer the trip to Orcadas. */
   onIrizar: () => void;
+  /** The blizzard of the button «Ver una ventisca» is blowing (#263). */
+  storm?: boolean;
 }
 
 /**
@@ -91,7 +93,7 @@ function Stage() {
 }
 
 /** The sky of the month: the sun of mid-month at Marambio, and more cloud in the months with more blizzards. */
-function Sky({ month }: { month: number }) {
+function Sky({ month, storm = false }: { month: number; storm?: boolean }) {
   const geo = useMemo(() => new SphereGeometry(SKY_RADIUS, 32, 20), []);
   const mat = useMemo(
     () =>
@@ -112,9 +114,9 @@ function Sky({ month }: { month: number }) {
   const invalidate = useThree((s) => s.invalidate);
   useLayoutEffect(() => {
     mat.uniforms.uSunDir.value.copy(marambioSun(month).dir);
-    mat.uniforms.uCloudCover.value = 0.25 + 0.5 * marambioBlizzard(month);
+    mat.uniforms.uCloudCover.value = storm ? 0.95 : 0.25 + 0.5 * marambioBlizzard(month);
     invalidate();
-  }, [mat, month, invalidate]);
+  }, [mat, month, storm, invalidate]);
   useEffect(
     () => () => {
       geo.dispose();
@@ -416,11 +418,11 @@ export const MarambioScene = memo(function MarambioScene(props: MarambioScenePro
             });
           }}
         >
-          <Sky month={props.month} />
+          <Sky month={props.month} storm={props.storm} />
           <Sea />
           <Irizar onSelect={props.onIrizar} />
           <Stage />
-          <Blizzard month={props.month} reduced={props.reduced} />
+          <Blizzard month={props.month} reduced={props.reduced} storm={props.storm} />
           <EffectComposer multisampling={0}>
             <InkEffect />
           </EffectComposer>

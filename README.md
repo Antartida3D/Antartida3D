@@ -167,6 +167,8 @@ Cada PR declara su impacto documental y registra las decisiones nuevas o reempla
 
 En cumplimiento con las bases de la hackatón, se declara el uso de herramientas de inteligencia artificial en el desarrollo de los prototipos:
 
+- **Botones de zoom en sus límites (#237):**
+  > Implementación y pruebas con asistencia de Codex, a partir del pedido del usuario de ocultar «+» al máximo acercamiento y «−» al máximo alejamiento. Los botones conservan su espacio, reaparecen al salir del límite y trasladan el foco si corresponde. El comportamiento cubre el relieve 3D y el respaldo 2D; se documenta en [DEC-237](docs/decisiones/DEC-237-botones-zoom.md). No se agregaron datos ni fuentes.
 - **Sistema visual cartográfico y migración local de la UI:**
   > Orquestación y revisión de root; Codex Luna High implementó el lenguaje visual, Codex Luna XHigh realizó la interacción y las pruebas, y Codex Luna Medium mantiene la documentación y la evidencia. La dirección parte de las referencias aportadas por el usuario: composición cartográfica ocre de la primera y soporte claro de la segunda, refinada hasta el Pergamino claro aprobado en la ficha «Océano». El sistema se documentó en [DESIGN.md](DESIGN.md), con el formato de Google Labs solicitado. Se reutilizan las costas de Natural Earth, las fuentes tipográficas y la textura de papel del proyecto; la rosa y la retícula son decorativas. La migración se entrega en la rama `202-ui-pergamino-claro` (issue #202), con la ficha aprobada versionada. La E2E global terminó con 366 casos: 322 pasaron, 44 se omitieron y no hubo fallos. La evidencia visual revisada sigue siendo acotada a los estados documentados.
 - **Pulido general: bienvenida, «Desde Ushuaia» y toques en el celular (#190):**

@@ -1,8 +1,8 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import {
-  DOUBLE_TAP_ZOOM, DRAG_THRESHOLD, EXPEDITION_POINT, HOME, KEY_PAN, MAP_2D_ENABLED, MIN_K, ONE_FINGER_IDLE, PONCHO_POINT, PONCHO_TRANSPORT, PTS, TRANSPORTS, VOYAGE_POINT, VOYAGE_POINTS, ZOOM_MS,
+  DOUBLE_TAP_ZOOM, DRAG_THRESHOLD, EXPEDITION_POINT, HOME, KEY_PAN, MAP_2D_ENABLED, MAX_K, MIN_K, ONE_FINGER_IDLE, PONCHO_POINT, PONCHO_TRANSPORT, PTS, TRANSPORTS, VOYAGE_POINT, VOYAGE_POINTS, ZOOM_MS,
   afterExpedition, buildMarkers, diveView, focusWorld, freeArea, needsFraming, markerPress, geometry, isWheelNotch, keyView, nextExpedition, oneFingerDown, oneFingerMove, oneFingerUp, panBy, resumeDetail, welcomeView, wheelFactor, zoomAround, zoomCenter,
-  type ArrivalId, type MapPoint, type Marker, type OneFingerZoomState, type ResumePoint, type SeaPoint, type Size, type TransportId, type View, type ClaimsCoverage,
+  type ArrivalId, type MapPoint, type Marker, type OneFingerZoomState, type ResumePoint, type SeaPoint, type Size, type TransportId, type View, type ClaimsCoverage, type ZoomAvailability,
 } from '@antartida/core';
 import { useBackLayer, usePageSettled, useReducedMotion, useTimers } from '../hooks.ts';
 import { useVoyage, type VoyageBus } from '../voyage/useVoyage.ts';
@@ -17,6 +17,7 @@ import { PointSheet } from './PointSheet.tsx';
 import { KindChip } from '../orcadas/KindChip.tsx';
 import { OrcadasIntro } from '../orcadas/OrcadasIntro.tsx';
 import { ViewToggle } from './ViewToggle.tsx';
+import { ZoomControls } from './ZoomControls.tsx';
 import { Map2DLayer, type LayerProps } from './Map2DLayer.tsx';
 import { ctrlZoomWheelDelta, dispatchWheelAtCenter } from '../keyboardWheel.ts';
 
@@ -52,6 +53,8 @@ export type Layer3DProps = LayerProps & {
   command: { n: number; cmd: Camera3DCommand } | null;
   /** The camera came to rest: the 2D-style view it shows, for clustering and the 2D switch. */
   onCameraRest: (view: View) => void;
+  /** The effective zoom limits, also updated while the camera is moving. */
+  onZoomAvailabilityChange: (availability: ZoomAvailability) => void;
   /** The trip from Ushuaia while it is under way: the scene draws the vehicle and follows it. */
   voyage: VoyageBus | null;
   /** The trip opens on the vehicle picker (Ushuaia): the camera goes to the departure before one is picked (#190). */
@@ -179,6 +182,7 @@ export function MapView({
   const markersRef = useRef<Marker[]>([]);
   const [size, setSize] = useState<Size>({ vw: 390, vh: 844 });
   const [view, setView] = useState<View>(HOME);
+  const [zoom3D, setZoom3D] = useState<ZoomAvailability>({ canZoomIn: false, canZoomOut: false });
   const [anim, setAnim] = useState<Anim>('');
   const [touched, setTouched] = useState(false);
   const [sheet, setSheet] = useState<MapPoint | SeaPoint | null>(null);
@@ -671,6 +675,7 @@ export function MapView({
               onPick={onPick}
               command={command}
               onCameraRest={setView}
+              onZoomAvailabilityChange={setZoom3D}
               voyage={voyaging ? voyage.bus : null}
               voyagePicker={!voyageTransport}
               claims={claimsEnabled && !voyaging ? { selection: claimsSelection, coverage: claimsCoverage } : null}
@@ -771,11 +776,12 @@ export function MapView({
             )}
           </div>
           )}
-          <div className="zoom">
-            <button type="button" className="iconbtn" onClick={() => (is3D ? send3D({ type: 'zoom', factor: 1.6 }) : animateTo(zoomCenter(size, view, 1.6)))} aria-label="Acercar">{Icon.plus}</button>
-            <button type="button" className="iconbtn" onClick={() => (is3D ? send3D({ type: 'zoom', factor: 1 / 1.6 }) : animateTo(zoomCenter(size, view, 1 / 1.6)))} aria-label="Alejar">{Icon.minus}</button>
-            <button type="button" className="iconbtn" onClick={() => (is3D ? send3D({ type: 'home' }) : animateTo(HOME))} aria-label="Ver todo el continente">{Icon.reset}</button>
-          </div>
+          <ZoomControls
+            availability={is3D ? zoom3D : { canZoomIn: view.k < MAX_K, canZoomOut: view.k > MIN_K }}
+            mapRef={vpRef}
+            onZoom={(factor) => is3D ? send3D({ type: 'zoom', factor }) : animateTo(zoomCenter(size, view, factor))}
+            onReset={() => is3D ? send3D({ type: 'home' }) : animateTo(HOME)}
+          />
         </div>
         )}
         {phase === 'travel' && <OrcadasTravelBar arrival={arrival} onSkip={onSkipTravel} />}

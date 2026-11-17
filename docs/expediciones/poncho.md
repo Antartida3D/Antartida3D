@@ -50,6 +50,7 @@ La página es la del PDF del libro `[P1]` donde está el hecho principal de la f
 ### 3. `poncho-perro-guia` — Poncho va al frente (1962, tramo 0)
 
 - **Escena** (p. 12): en el regreso desde la Base San Martín, el instructor le da el puesto Número 1 del tiro; tiene un año y medio; cuando el trineo se detiene se echa y mira al conductor.
+- **Diorama** (una etapa por frase), delante de la Base San Martín vacía: 0 el instructor le da a Poncho el puesto de Número 1 (un trineo parado con algunos de sus perros); 1 el tiro completo, cinco yuntas y el líder (once perros, p. 12), avanza por la huella con Poncho al frente; 2 el trineo se detiene, Poncho se echa y mira al conductor, y al recibir la orden sale rápido. Hay un solo trineo en marcha; el segundo trineo, las carpas y los hombres que descansan que pedía el issue no entran por el tope de 22 elementos de la escena. La base se modeló a partir de una foto de hoy (sección 4.5 de `poncho-fuentes.md`), así que es una ilustración.
 - **Gancho:** «Más adelante lo esperaba un viaje hacia el sur.»
 - **Saber más:** llegada a San Martín el 25 de agosto y los 1.842 metros (p. 10); estado de la base (`O2`); diez días de instrucción (p. 12); perro-guía el resto de su vida (p. 12).
 

@@ -272,42 +272,46 @@ export const PONCHO_SCENES: Readonly<Record<string, SceneDef>> = {
       shot(2, [2.0, 0.4, 0.2], 6.8, 30, -100),
     ],
   },
-  // The post of number one (book p. 10 and 11): 0 the instructor gives Poncho the lead of the team; 1 he follows the trail of the
-  // other sled with efficiency; 2 when the sled stops he lies down and turns to the driver.
+  // The post of number one (book p. 10 to 12), in front of the Base San Martín (empty in 1962: no one at its doors), in three
+  // stages (one per sentence): 0 the instructor gives Poncho the lead of the team (a sled at rest with four dogs of it);
+  // 1 the whole team (five pairs and the leader: eleven dogs, book p. 12) goes along the trail with Poncho in front;
+  // 2 the sled stops, he lies down and looks round at the driver, and at the order he dashes ahead. The team of the second
+  // and third stage is the same elements (they stay where the march ends), so the scene keeps the limit of 22 elements.
   'poncho-perro-guia': {
     setting: 'plain',
     radius: 4.2,
     elements: [
-      person(ORANGE, 1.6, -0.9, yawToward(1.6, -0.9, 0.4, 0.2), 'stand', 0, { until: 1 }),
-      sled(-2.3, 0, 0, { until: 1, radius: 0.8 }),
-      dog('pack', -0.7, -0.3, 0, { until: 1 }),
-      dog('pack', -0.7, 0.35, 0, { until: 1 }),
-      dog('poncho', -0.7, 1.0, 0, { until: 1, path: 'promoted' }),
-      // 1: the team follows the other sled along the trail, Poncho in front.
-      sled(-3.2, 0.9, 0, { appearAt: 1, until: 2, path: 'follow', radius: 0.8 }),
-      dog('pack', -3.2, 0.9, 0, { appearAt: 1, until: 2, path: 'follow', lead: 1.1, side: 0.28 }),
-      dog('pack', -3.2, 0.9, 0, { appearAt: 1, until: 2, path: 'follow', lead: 1.1, side: -0.28 }),
-      dog('poncho', -3.2, 0.9, 0, { appearAt: 1, until: 2, path: 'follow', lead: 2.1 }),
-      sled(0.2, -2.1, 0, { appearAt: 1, until: 2, path: 'other', radius: 0.8 }),
-      dog('pack', 0.2, -2.1, 0, { appearAt: 1, until: 2, path: 'other', lead: 1.1 }),
-      person(RED, 0.2, -2.1, 0, 'walk', 0, { appearAt: 1, until: 2, path: 'other', lead: -1.5 }),
-      // 2: the sled stands; Poncho lies in front of the driver and looks round at him.
-      sled(-2.2, 0.2, 0, { appearAt: 2, radius: 0.8 }),
-      dog('pack', -0.5, -0.1, 0, { appearAt: 2 }),
-      dog('pack', -0.5, 0.5, 0, { appearAt: 2 }),
-      dog('poncho', 0.7, 0.2, yawToward(0.7, 0.2, -2.3, -1.2), { appearAt: 2, curled: true }),
-      person(ORANGE, -2.4, -1.2, yawToward(-2.4, -1.2, 0.7, 0.2), 'stand', 0, { appearAt: 2 }),
+      prop('baseSanMartin', 0, 3.4, 0, 1, { radius: 0.01 }),
+      // 0: the sled stands with a few dogs of its team; a dog of the pack is promoted and takes the lead.
+      sled(-2.6, 0.9, 0, { until: 1, radius: 0.8 }),
+      dog('pack', -1.6, 0.5, 0, { until: 1 }),
+      dog('pack', -1.6, 1.1, 0, { until: 1 }),
+      dog('pack', -0.8, 0.5, 0, { until: 1 }),
+      dog('pack', -0.8, 1.1, 0, { until: 1 }),
+      dog('poncho', -0.8, 1.9, 0, { until: 1, path: 'promoted' }),
+      person(ORANGE, 1.9, -0.2, yawToward(1.9, -0.2, 0.9, 0.9), 'stand', 0, { until: 1 }),
+      // 1: the team goes along the trail, five pairs and Poncho at the front; the driver walks behind the sled. They stay where
+      // the march ends, for the third stage.
+      sled(-4, -0.8, 0, { appearAt: 1, path: 'follow', radius: 0.8 }),
+      ...[0.9, 1.7, 2.5, 3.3, 4.1].flatMap((lead) => [
+        dog('pack', -4, -0.8, 0, { appearAt: 1, path: 'follow', lead, side: 0.28 }),
+        dog('pack', -4, -0.8, 0, { appearAt: 1, path: 'follow', lead, side: -0.28 }),
+      ]),
+      person(ORANGE, -4, -0.8, 0, 'walk', 0, { appearAt: 1, path: 'follow', lead: -1.6 }),
+      dog('poncho', -4, -0.8, 0, { appearAt: 1, until: 2, path: 'follow', lead: 5 }),
+      // 2: the sled stands; Poncho lies in front of the team and looks round at the driver; at the order he dashes ahead.
+      dog('poncho', 3, -0.8, yawToward(3, -0.8, -3.6, -0.8), { appearAt: 2, curled: true, path: 'dash' }),
     ],
     paths: [
-      { id: 'promoted', from: [-0.7, 1.0], via: [[0.2, 1.1]], to: [0.9, 0.1], delay: 1, duration: 4 },
-      { id: 'follow', from: [-3.2, 0.9], to: [1.2, 0.9], delay: 0.2, duration: 8 },
-      { id: 'other', from: [0.2, -2.1], to: [3.2, -2.1], delay: 0.2, duration: 10 },
+      { id: 'promoted', from: [-0.8, 1.9], via: [[0.2, 1.9]], to: [0.9, 0.9], delay: 1, duration: 4 },
+      { id: 'follow', from: [-4, -0.8], to: [-2, -0.8], delay: 0.2, duration: 9 },
+      { id: 'dash', from: [3, -0.8], to: [4, -0.8], delay: 6, duration: 1.2 },
     ],
     camera: { distanceFactor: 1.05, elevationDeg: 42, azimuthDeg: -125 },
     shots: [
-      shot(0, [-0.3, 0.4, 0], 8.5, 28, -100),
-      shot(1, [0, 0.3, 0], 8, 30, -95),
-      shot(2, [-0.8, 0.4, 0.1], 5.5, 22, -80),
+      shot(0, [0.2, 0.6, 0.9], 8, 22, -95),
+      shot(1, [-1.4, 0.4, -0.8], 9, 24, -92),
+      shot(2, [0.6, 0.4, -0.8], 10, 22, -98),
     ],
   },
   // The ship takes the dogs to the south (book p. 14): the icebreaker afloat at the edge of the ice (poncho-ship.ts), whole, with

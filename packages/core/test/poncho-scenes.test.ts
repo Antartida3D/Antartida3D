@@ -526,3 +526,29 @@ describe('«Al rescate de un avión» (#220)', () => {
     expect(sceneBlizzard(PONCHO_SCENES['nacimiento'], 0)).toBe(false);
   });
 });
+
+describe('«Poncho va al frente» (#218)', () => {
+  const scene = PONCHO_SCENES['poncho-perro-guia'];
+  const at = (step: number) => scene.elements.filter((e) => sceneElementShown(e, step));
+
+  it('stands in front of the Base San Martín, told in three stages', () => {
+    expect(sceneStepCount(scene)).toBe(3);
+    for (let step = 0; step < 3; step++) expect(at(step).some((e) => e.id === 'baseSanMartin'), `step ${step}`).toBe(true);
+  });
+
+  it('shows the whole team of the book (five pairs and a leader: eleven dogs) once it goes', () => {
+    for (const step of [1, 2]) expect(at(step).filter((e) => e.kind === 'dog').length, `step ${step}`).toBeGreaterThanOrEqual(11);
+  });
+
+  it('keeps nobody at the doors of the base, empty in 1962', () => {
+    for (const e of scene.elements.filter((x) => x.kind === 'person')) expect(e.z, 'a person stays clear of the base').toBeLessThan(2.5);
+  });
+
+  it('has Poncho lie down and look at the driver in the last stage, then dash ahead', () => {
+    const lying = at(2).find((e) => e.id === 'poncho' && e.curled)!;
+    expect(lying).toBeDefined();
+    const dash = scene.paths.find((p) => p.id === lying.path)!;
+    expect(dash.delay).toBeGreaterThan(3);
+    expect(scenePathLength(dash) / dash.duration).toBeGreaterThan(0.5);
+  });
+});

@@ -1,3 +1,4 @@
+import { SHIP_DOOR, SHIP_GANGWAY_FOOT, SHIP_GANGWAY_TOP } from './poncho-ship.ts';
 import { clamp01 } from './voyage.ts';
 
 /**
@@ -47,6 +48,11 @@ export interface ScenePath {
   readonly duration: number;
   /** The one who walks it leaves boot prints (at most one such path per scene). */
   readonly prints?: boolean;
+  /**
+   * It ends at a door (issue #219: the ship): everyone who follows it walks it to the end, one behind the other, and is gone
+   * there, as if they went in. Not a loop.
+   */
+  readonly board?: boolean;
 }
 
 export interface SceneElement {
@@ -139,7 +145,8 @@ export const SHOT_TARGET_HEIGHT: readonly [number, number] = [0, 1.6];
 export const MAX_SCENE_ELEMENTS = 14;
 export const MAX_SCENE_PEOPLE = 5;
 export const MAX_SCENE_TOTAL = 22;
-export const MAX_SCENE_RADIUS = 4.6;
+/** The ship of «En rompehielos hacia Belgrano» lies beyond the ice edge (z 4.7) and its foredeck is part of the stage: that scene needs more room than the others. */
+export const MAX_SCENE_RADIUS = 6.8;
 
 /**
  * The middle of the scene stands this far (world units) from the team, to its left, so the team stays
@@ -298,36 +305,52 @@ export const PONCHO_SCENES: Readonly<Record<string, SceneDef>> = {
       shot(2, [-0.8, 0.4, 0.1], 5.5, 22, -80),
     ],
   },
-  // The ship takes the dogs to the south (book p. 14): the icebreaker at the edge of the ice with its ramp and cargo;
-  // 0 Poncho and a man look at it; 1 many other dogs go to board; 2 the sleds and cargo of the march to the Pole are made ready.
+  // The ship takes the dogs to the south (book p. 14): the icebreaker afloat at the edge of the ice (poncho-ship.ts), whole, with
+  // its gangway and cargo; 0 Poncho and a man look at it from the ice; 1 a file of dogs, Poncho in front, climbs the gangway behind
+  // a man, crosses the foredeck and goes in at the door; 2 the sleds and cargo of the march to the Pole are made ready on the ice.
   'rumbo-a-belgrano': {
     setting: 'coast',
-    radius: 4.2,
+    radius: 6.8,
     elements: [
-      prop('icebreakerHull', 0, 3.4, Math.PI, 1, { radius: 0.01 }),
-      prop('loadingRamp', -0.8, 1.0, Math.PI, 1, { radius: 0.5 }),
-      prop('cargoCrates', 1.3, 1.1, Math.PI, 1, { radius: 0.9 }),
-      person(NAVY, -2.9, 0.5, yawToward(-2.9, 0.5, 0, 3), 'stand', 0, { until: 2 }),
-      dog('poncho', -1.5, 0.3, yawToward(-1.5, 0.3, 0, 3), { until: 2 }),
-      // 1: a man leads a file of dogs to the ramp. Each holds its place in the file (a dog's length and a half apart, a little
-      // off the line), so they walk and stop one behind the other and not piled up.
-      person(ORANGE, -3.6, -1.4, 0, 'walk', 0, { appearAt: 1, path: 'file' }),
-      dog('pack', -3.6, -1.4, 0, { appearAt: 1, path: 'file', lag: 1.5 }),
-      dog('pack', -3.6, -1.4, 0, { appearAt: 1, path: 'file', lag: 3 }),
-      dog('pack', -3.6, -1.4, 0, { appearAt: 1, path: 'file', lag: 4.5 }),
-      dog('pack', -3.6, -1.4, 0, { appearAt: 1, path: 'file', lag: 6 }),
-      sled(2.2, -1.2, 0.2, { appearAt: 2, radius: 0.8 }),
-      sled(1.2, -2.4, -0.1, { appearAt: 2, radius: 0.8 }),
-      person(ORANGE, 2.9, -0.2, -Math.PI / 2, 'tend', 0, { appearAt: 2 }),
-      person(RED, 0.4, -1.8, yawToward(0.4, -1.8, 1.2, -2.4), 'haul', 2.2, { appearAt: 2 }),
+      // The ship and its gangway are one prop, placed by poncho-ship.ts: this x, z is only a spot of ice by it, clear of the walks.
+      prop('icebreakerShip', 1.6, 3.6, 0, 1, { radius: 0.01 }),
+      prop('cargoCrates', 3.5, 2.4, Math.PI, 1, { radius: 0.9 }),
+      person(NAVY, 2.3, 1.2, yawToward(2.3, 1.2, 1, 6), 'stand', 0, { until: 1 }),
+      dog('poncho', 1.5, 1.4, yawToward(1.5, 1.4, 1, 6), { until: 1 }),
+      // 1: a man leads the file up the gangway and in at the door, Poncho first behind him. Each holds its place in the file
+      // (about a dog's length and a half apart), so they climb one behind the other, and each is gone at the door.
+      person(ORANGE, -3.4, -0.4, 0, 'walk', 0, { appearAt: 1, path: 'board' }),
+      dog('poncho', -3.4, -0.4, 0, { appearAt: 1, path: 'board', lag: 1.2 }),
+      dog('pack', -3.4, -0.4, 0, { appearAt: 1, path: 'board', lag: 2.4 }),
+      dog('pack', -3.4, -0.4, 0, { appearAt: 1, path: 'board', lag: 3.6 }),
+      dog('pack', -3.4, -0.4, 0, { appearAt: 1, path: 'board', lag: 4.8 }),
+      dog('pack', -3.4, -0.4, 0, { appearAt: 1, path: 'board', lag: 6 }),
+      dog('pack', -3.4, -0.4, 0, { appearAt: 1, path: 'board', lag: 7.2 }),
+      sled(2.4, 0.5, 0.2, { appearAt: 2, radius: 0.8 }),
+      sled(1.2, -1.2, -0.1, { appearAt: 2, radius: 0.8 }),
+      person(ORANGE, 3.6, 0.2, Math.PI, 'tend', 0, { appearAt: 2 }),
+      person(RED, 0.2, -0.3, yawToward(0.2, -0.3, 1.2, -1.2), 'haul', 2.2, { appearAt: 2 }),
     ],
-    // A winding trail (S bends), so the file follows a curve and not a ruler.
-    paths: [{ id: 'file', from: [-3.6, -1.4], via: [[-2.7, -2.0], [-1.8, -1.3], [-1.0, -1.8]], to: [-0.4, -0.9], delay: 0.3, duration: 9 }],
-    camera: { distanceFactor: 1.1, elevationDeg: 42, azimuthDeg: -112 },
+    // A winding trail (S bends) to the foot of the gangway, straight up it, across the foredeck and in at the door.
+    paths: [
+      {
+        id: 'board',
+        from: [-3.4, -0.4],
+        via: [[-2.5, 0.5], [-1.5, 0.3], [-0.7, 1.2], [SHIP_GANGWAY_FOOT[0], SHIP_GANGWAY_FOOT[1] - 0.4], SHIP_GANGWAY_FOOT, SHIP_GANGWAY_TOP, [SHIP_GANGWAY_TOP[0] + 0.5, SHIP_GANGWAY_TOP[1] + 0.08]],
+        to: SHIP_DOOR,
+        delay: 0.3,
+        duration: 12,
+        board: true,
+      },
+    ],
+    camera: { distanceFactor: 1.1, elevationDeg: 38, azimuthDeg: -112 },
     shots: [
-      shot(0, [-1.4, 0.7, 0.4], 8, 20, -90),
-      shot(1, [-2.2, 0.3, -1.2], 6.5, 25, -85),
-      shot(2, [1.4, 0.4, -1.2], 7, 28, -105),
+      // The whole ship, from the ice ahead of its bow: Poncho and a man small in front of it.
+      shot(0, [6.2, 1.6, 2.6], 22, 20, -118),
+      // The gangway and the file climbing it.
+      shot(1, [1.0, 1.4, 4.4], 12, 22, -75),
+      // The cargo and the sleds on the ice, the ship behind.
+      shot(2, [1.8, 0.4, 0.4], 10, 26, -105),
     ],
   },
   // The little plane that came down (book p. 17-18): 0 it lies on the ice and a man and Poncho look at it; 1 the patrol
@@ -588,7 +611,7 @@ export function walkPosition(path: ScenePath, u: number): { x: number; z: number
  * the point and yaw, whether it is walking, and the distance walked (not wrapped on a loop, so the stride
  * of the legs goes on). A walk that is not a loop ends and stays at its end.
  */
-export function sceneWalk(path: ScenePath, t: number, lag = 0): { x: number; z: number; yaw: number; moving: boolean; travel: number } {
+export function sceneWalk(path: ScenePath, t: number, lag = 0): { x: number; z: number; yaw: number; moving: boolean; travel: number; gone: boolean } {
   const length = scenePathLength(path);
   if (lag > 0) {
     // Someone behind the head of a file is not piled on the start waiting for their turn: they stand (or walk in)
@@ -597,15 +620,17 @@ export function sceneWalk(path: ScenePath, t: number, lag = 0): { x: number; z: 
     if (u < 0) {
       const head = walkPosition(path, 0);
       const back = -u * length;
-      return { x: head.x - Math.cos(head.yaw) * back, z: head.z + Math.sin(head.yaw) * back, yaw: head.yaw, moving: t > path.delay, travel: u * length };
+      return { x: head.x - Math.cos(head.yaw) * back, z: head.z + Math.sin(head.yaw) * back, yaw: head.yaw, moving: t > path.delay, travel: u * length, gone: false };
     }
   }
   const laps = Math.max(0, (t - path.delay - lag) / path.duration);
   // On a walk that ends, someone behind the head of the file stops where the head was `lag` s before it stopped,
   // along the path: the file stays a file (spaced, on the same curve) and does not pile up on the end.
-  const last = path.loop || lag <= 0 ? 1 : Math.max(0, 1 - lag / path.duration);
+  // On a walk that ends at a door, everyone goes all the way, in at the door.
+  const last = path.loop || lag <= 0 || path.board ? 1 : Math.max(0, 1 - lag / path.duration);
   const u = path.loop ? laps % 1 : Math.min(last, laps);
-  return { ...walkPosition(path, u), moving: laps > 0 && (!!path.loop || laps < last), travel: (path.loop ? laps : u) * length };
+  const gone = !!path.board && !path.loop && laps >= 1;
+  return { ...walkPosition(path, u), moving: laps > 0 && !gone && (!!path.loop || laps < last), travel: (path.loop ? laps : u) * length, gone };
 }
 
 /** Phase of the walk at fraction `u` of the path: one pose cycle every two prints, so the feet do not slide. */

@@ -23,6 +23,7 @@ import { DOG_HEAD_PIVOT, DOG_LEGS, DOG_LEG_PIVOT, dogHeadPitch, dogLegSwing, pon
 import { PONCHO_PALETTE, type DogPalette } from './ponchoModels.ts';
 import { PONCHO_PROPS } from './ponchoProps.ts';
 import { DOG_SCALE, elementStaticTris, pathFootprints, type Ground } from './ponchoSceneBuild.ts';
+import { sceneHasShip, withShipWalkway } from './ponchoShip.ts';
 import { ROPE_SEGMENTS, ropeIndices, ropePoints, ropeVertexCount, fillRopeTube } from './ponchoRope.ts';
 import { TOOL_THICKNESS, heldTool, scenePose } from './ponchoTools.ts';
 import { buildBoxGeometry, vehicleMaterial } from './vehicles.ts';
@@ -60,6 +61,9 @@ const DOG_SWAY = 0.04;
 const DOG_SWAY_RATE = 1.3;
 /** Distance a dog covers in one whole stride of its legs, in scene units. */
 const DOG_STRIDE = 0.45;
+/** A dog leans with the ground over this length, but only past this slope (radians): the gentle bumps of the ice leave it level, a gangway tilts it. */
+const DOG_SPAN = 0.3;
+const DOG_SLOPE_DEAD_ZONE = 0.12;
 /** The sled leans with the ground over this length (scene units). */
 const SLED_SPAN = 0.55;
 /** Where the line is tied on a dog (its model frame: x ahead, y up): the back, over the hips. */
@@ -220,21 +224,23 @@ interface Spot {
   moving: boolean;
   /** Distance walked so far, without wrapping on a loop. */
   travel: number;
+  /** Gone in at the door at the end of its walk (a path that boards): not drawn. */
+  gone: boolean;
 }
 
 function placeOf(e: SceneElement, path: ScenePath | undefined, t: number): Spot {
-  if (!path) return { x: e.x, z: e.z, yaw: e.yaw, moving: false, travel: 0 };
+  if (!path) return { x: e.x, z: e.z, yaw: e.yaw, moving: false, travel: 0, gone: false };
   const w = sceneWalk(path, t, e.lag ?? 0);
   // (cos, -sin) is where a yaw faces; its left is the next turn of 90 degrees.
   const dx = Math.cos(w.yaw);
   const dz = -Math.sin(w.yaw);
   const lead = e.lead ?? 0;
   const side = e.side ?? 0;
-  return { x: w.x + dx * lead - dz * side, z: w.z + dz * lead + dx * side, yaw: w.yaw, moving: w.moving, travel: w.travel };
+  return { x: w.x + dx * lead - dz * side, z: w.z + dz * lead + dx * side, yaw: w.yaw, moving: w.moving, travel: w.travel, gone: w.gone };
 }
 
-/** The clock of an element at rest (reduced motion): the end of a walk, half way round a loop. */
-const restClock = (path: ScenePath | undefined): number => (path ? (path.loop ? path.delay + path.duration / 2 : REDUCED_CLOCK) : 0);
+/** The clock of an element at rest (reduced motion): the end of a walk, half way round a loop, and half way along a walk that boards (at its end they would be gone: the file stays in sight on its way). */
+const restClock = (path: ScenePath | undefined): number => (path ? (path.loop || path.board ? path.delay + path.duration / 2 : REDUCED_CLOCK) : 0);
 
 const stanceOf = (e: SceneElement, spot: Spot, t: number, reduced: boolean): Stance => {
   // A walker walks while it goes along its path, then stands; with reduced motion it stands.
@@ -317,6 +323,8 @@ export function DioramaActors({ scene, step, ground, reduced }: { scene: SceneDe
     return tris.length ? buildPolyGeometry(resolveRelief(tris, () => 0)) : null;
   }), [scene, ground]);
   const prints = useMemo(() => (printed ? pathFootprints(printed, ground) : null), [printed, ground]);
+  // Whoever walks does it on the gangway and the deck of the ship when the scene has one (the still parts stay seated on the ice).
+  const walk = useMemo<Ground>(() => (sceneHasShip(scene) ? withShipWalkway(ground) : ground), [scene, ground]);
   const printsGeometry = useMemo(() => buildPolyGeometry(prints?.tris ?? []), [prints]);
 
   useEffect(() => () => stillGeometries.forEach((g) => g?.dispose()), [stillGeometries]);
@@ -349,7 +357,7 @@ export function DioramaActors({ scene, step, ground, reduced }: { scene: SceneDe
       const k = (e.scale ?? 1) * grow;
       const spot = placeOf(e, e.path ? paths.get(e.path) : undefined, t);
       travels.current[i] = spot.travel;
-      const gy = ground(spot.x, spot.z);
+      const gy = walk(spot.x, spot.z);
       const still = stills.current[i];
       if (still) {
         // Grows out of its foot: the faces are already seated, so the group scales about the foot.
@@ -363,20 +371,20 @@ export function DioramaActors({ scene, step, ground, reduced }: { scene: SceneDe
       if (e.kind === 'person') {
         const rig = rigs.current[i];
         if (!rig) return;
-        rig.root.visible = p > 0;
-        if (p <= 0) return;
+        rig.root.visible = p > 0 && !spot.gone;
+        if (p <= 0 || spot.gone) return;
         const out = turnPerson(rig, stanceOf(e, spot, t, reduced), k, gy, reduced);
         if (e.rope) waists.set(i, out.waist);
         return;
       }
       const node = nodes.current[i];
       if (!node) return;
-      node.visible = p > 0;
-      if (p <= 0) return;
+      node.visible = p > 0 && !spot.gone;
+      if (p <= 0 || spot.gone) return;
       if (e.kind === 'sled') {
         const fx = Math.cos(spot.yaw) * SLED_SPAN;
         const fz = -Math.sin(spot.yaw) * SLED_SPAN;
-        const pitch = Math.atan2(ground(spot.x + fx, spot.z + fz) - ground(spot.x - fx, spot.z - fz), 2 * SLED_SPAN);
+        const pitch = Math.atan2(walk(spot.x + fx, spot.z + fz) - walk(spot.x - fx, spot.z - fz), 2 * SLED_SPAN);
         node.position.set(spot.x, gy, spot.z);
         node.rotation.set(0, spot.yaw, pitch, 'YZX');
         node.scale.setScalar(k);
@@ -391,7 +399,11 @@ export function DioramaActors({ scene, step, ground, reduced }: { scene: SceneDe
       // The head tips about the neck: it bobs to the snow while the dog sniffs (not with reduced motion: level).
       dogHeads.current[i]?.rotation.set(0, 0, dogHeadPitch(t, !!e.sniff && !reduced));
       node.position.set(spot.x, gy + (e.lift ?? 0) - (e.curled ? CURLED_SINK : 0), spot.z);
-      node.rotation.set(sway, spot.yaw, 0, 'YZX');
+      // Going up a gangway it leans with the slope; on the ice's gentle bumps it stays level.
+      const fx = Math.cos(spot.yaw) * DOG_SPAN;
+      const fz = -Math.sin(spot.yaw) * DOG_SPAN;
+      const slope = Math.atan2(walk(spot.x + fx, spot.z + fz) - walk(spot.x - fx, spot.z - fz), 2 * DOG_SPAN);
+      node.rotation.set(sway, spot.yaw, e.curled ? 0 : Math.sign(slope) * Math.max(0, Math.abs(slope) - DOG_SLOPE_DEAD_ZONE), 'YZX');
       node.scale.set(DOG_SCALE * k, DOG_SCALE * k * (e.curled ? CURLED_HEIGHT : 1), DOG_SCALE * k);
       harnesses.set(i, placed(DOG_HARNESS, spot.x, gy, spot.z, spot.yaw, DOG_SCALE * k));
     });
@@ -406,7 +418,7 @@ export function DioramaActors({ scene, step, ground, reduced }: { scene: SceneDe
       mesh.visible = both && !!a && !!b;
       if (!mesh.visible || !a || !b) return;
       const attr = mesh.geometry.getAttribute('position') as BufferAttribute;
-      fillRopeTube(attr.array as Float32Array, ropePoints(a, b, e.rope.length, ground, ROPE_SEGMENTS));
+      fillRopeTube(attr.array as Float32Array, ropePoints(a, b, e.rope.length, walk, ROPE_SEGMENTS));
       attr.needsUpdate = true;
     });
 

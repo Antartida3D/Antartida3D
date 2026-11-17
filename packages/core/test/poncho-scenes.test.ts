@@ -30,6 +30,7 @@ import {
   sceneStepCount,
   sceneTrack,
   sceneWalk,
+  shipWalkwayAt,
   stageProgress,
   stageScale,
   sceneCameraOffset,
@@ -92,7 +93,8 @@ describe('scenes of Poncho: data', () => {
         expect(SCENE_SETTINGS).toContain(scene.setting);
         if (scene.setting !== 'coast') return;
         for (const e of scene.elements) {
-          for (const [x, z] of sceneTrack(scene, e)) expect(z + sceneBodyRadius(e), `${e.kind} ${e.id}`).toBeLessThan(sceneCoastZ(x) - 0.5);
+          // The gangway of the ship and its foredeck reach out over the water: whoever walks there is not in the sea.
+          for (const [x, z] of sceneTrack(scene, e)) if (!shipWalkwayAt(x, z)) expect(z + sceneBodyRadius(e), `${e.kind} ${e.id}`).toBeLessThan(sceneCoastZ(x) - 0.5);
         }
       });
 

@@ -4,6 +4,8 @@ import { SEA_ICE_FLOE_POLY_VARIANTS } from '../orcadas/lowPolyProps.ts';
 import { ICEBERG_PEAKS_POLY, ICEBERG_TABULAR_POLY } from './icebergs.ts';
 import { PRESHADED, RELIEF_ICE, chunk, normalOf, resolveRelief, type Tri, type Vec3 } from './lowPoly.ts';
 import { ponchoFootprints } from './ponchoPeople.ts';
+import { DIORAMA_WATER_Y } from './ponchoSea.ts';
+import { sceneHasShip, underShip } from './ponchoShip.ts';
 import { sceneClearings, seatAt, type Ground } from './ponchoSceneBuild.ts';
 import { snowMound } from './ponchoShapes.ts';
 
@@ -36,8 +38,9 @@ const FAR_CELLS = 15;
 /** Beyond this distance the ground is the haze itself: the canvas fog is complete here (PonchoDioramaCanvas). */
 export const DIORAMA_FOG_FAR = 125;
 
-/** Water level and how deep the sea bed goes (under it nothing is drawn). The ice foot stands 0.3 above the water. */
-export const DIORAMA_WATER_Y = -0.3;
+/** Water level (ponchoSea.ts, shared with the ship afloat). The ice foot stands 0.3 above the water. */
+export { DIORAMA_WATER_Y };
+/** How deep the sea bed goes (under it nothing is drawn). */
 const SEA_BED = -1.3;
 /** The cliff of the ice falls from the snow to the bed over this width, starting this far before the coast line (scene units). */
 const CLIFF_START = -0.1;
@@ -376,7 +379,7 @@ function foamFaces(): Tri[] {
 }
 
 /** Floes and small icebergs afloat (the models of Orcadas, scaled) in a few fixed places of the sea, near and far. */
-function floatingIce(seed: number): Tri[] {
+function floatingIce(seed: number, ship: boolean): Tri[] {
   const rng = createSeededRng(seed);
   const out: Tri[] = [];
   const place = (tris: readonly Tri[], x: number, z: number, scale: number, yaw: number) => {
@@ -392,7 +395,11 @@ function floatingIce(seed: number): Tri[] {
   bergs.forEach(([x, z, k], i) => place(i % 2 ? ICEBERG_PEAKS_POLY : ICEBERG_TABULAR_POLY, x, z, k, rng() * Math.PI * 2));
   // Small floes of loose ice along the coast and farther out.
   const floes: readonly (readonly [number, number, number])[] = [[-5, 7.4, 0.85], [2.8, 8.1, 0.6], [-1.5, 9.4, 0.7], [6.5, 7.2, 0.55], [-8.5, 8.6, 0.75], [11, 12, 1.3], [-14, 15, 1.6], [4, 21, 1.8]];
-  floes.forEach(([x, z, k], i) => place(SEA_ICE_FLOE_POLY_VARIANTS[i % SEA_ICE_FLOE_POLY_VARIANTS.length].tris, x, z, k, rng() * Math.PI * 2));
+  // Not where the ship lies: a floe would cut through its hull. (The yaw is drawn all the same, so the rest keeps its turn.)
+  floes.forEach(([x, z, k], i) => {
+    const yaw = rng() * Math.PI * 2;
+    if (!(ship && underShip(x, z, 0.5 + k))) place(SEA_ICE_FLOE_POLY_VARIANTS[i % SEA_ICE_FLOE_POLY_VARIANTS.length].tris, x, z, k, yaw);
+  });
   return out;
 }
 
@@ -423,7 +430,7 @@ export function buildDioramaWorld(scene: SceneDef, seed = 146000): DioramaWorld 
   // The sea is built for a coast on +z and, on a station, turned to -z (every face mirrored, its winding kept outwards).
   // The sea of a station is only water, with the foam at its shore, to the horizon: no icebergs or floes.
   const station = scene.setting === 'station';
-  const sea = hasSea(scene) ? turnedTo(seaSide(scene), station ? STATION_SHORE_SHIFT : 0, [...waterFaces(s + 3), ...foamFaces(), ...(station ? [] : floatingIce(s + 4))]) : [];
+  const sea = hasSea(scene) ? turnedTo(seaSide(scene), station ? STATION_SHORE_SHIFT : 0, [...waterFaces(s + 3), ...foamFaces(), ...(station ? [] : floatingIce(s + 4, sceneHasShip(scene)))]) : [];
   // The props of a station spread up the slope and down to the water (the base, its walkway): they sit on the ground as it is
   // drawn, and over the sea on the water. Round the stage it is the same swell as everywhere.
   const ground: Ground = station ? (x, z) => Math.max(DIORAMA_WATER_Y, worldHeight(scene, x, z)) : dioramaGround;

@@ -3,6 +3,7 @@ import { resolveRelief, type Tri, type Vec3 } from './lowPoly.ts';
 import { ponchoPrint } from './ponchoPeople.ts';
 import { HAMMER_STAKE_AT, PONCHO_PROP_IDS, PONCHO_PROPS, type PonchoPropId } from './ponchoProps.ts';
 import { buildRescueRotor, PONCHO_PROP2_IDS, PONCHO_PROPS2, RESCUE_ROTOR_AT, type PonchoProp2Id } from './ponchoProps2.ts';
+import { SHIP_PROP_ID, shipStaticTris } from './ponchoShip.ts';
 
 /**
  * The still parts of a scene of Poncho (the props, the snow they stand in and the boot prints),
@@ -37,8 +38,8 @@ function atPerson(e: SceneElement, offset: readonly [number, number]): [number, 
   return [e.x + (offset[0] * c + offset[1] * s) * k, e.z + (-offset[0] * s + offset[1] * c) * k];
 }
 
-/** Every prop a scene may name: those of ponchoProps.ts and of ponchoProps2.ts. */
-export const SCENE_PROP_IDS: readonly string[] = [...PONCHO_PROP_IDS, ...PONCHO_PROP2_IDS];
+/** Every prop a scene may name: those of ponchoProps.ts and of ponchoProps2.ts, and the ship afloat (ponchoShip.ts). */
+export const SCENE_PROP_IDS: readonly string[] = [...PONCHO_PROP_IDS, ...PONCHO_PROP2_IDS, SHIP_PROP_ID];
 
 /**
  * The ground the props of a scene take beyond their own radius (`PonchoProp.clearings`), as circles (x, z, radius) in the
@@ -65,6 +66,8 @@ export function scenePropTris(id: string): readonly Tri[] {
 
 /** The still faces of one element, seated on the ground (relief colors not resolved): its prop or the stake it drives. Empty for the others (a curled dog lies on the bare ground, #261). */
 export function elementStaticTris(e: SceneElement, ground: Ground): Tri[] {
+  // The ship rides on the water, not on the sea bed under it: only the foot of its gangway follows the ice.
+  if (e.kind === 'prop' && e.id === SHIP_PROP_ID) return shipStaticTris(ground);
   if (e.kind === 'prop') return seatAt(scenePropTris(e.id), e.x, e.z, e.yaw, e.scale ?? 1, ground, e.lift ?? 0);
   if (e.kind === 'person' && e.action === 'hammer') {
     const [sx, sz] = atPerson(e, HAMMER_STAKE_AT);

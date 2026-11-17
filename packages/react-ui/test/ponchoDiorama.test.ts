@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 // Break the pre-existing stationModels <-> sightingModels -> penguins import cycle in test isolation.
 import '../src/voyage/sightingModels.ts';
-import { PONCHO_SCENES, sceneBodyRadius, sceneCoastZ, type SceneDef } from '@antartida/core';
+import { PONCHO_SCENES, sceneBodyRadius, sceneCoastZ, shipWalkwayAt, type SceneDef } from '@antartida/core';
 import {
   DIORAMA_CLEAR_MARGIN,
   DIORAMA_FOG_FAR,
@@ -39,7 +39,8 @@ describe('ground of the diorama', () => {
 
       it('has every element and path on the ice, with no sea under them', () => {
         const spots = [...scene.elements.map((e) => [e.x, e.z] as const), ...scene.paths.flatMap((p) => [p.from, ...(p.via ?? []), p.to])];
-        for (const [x, z] of spots) expect(dioramaOnLand(scene, x, z)).toBe(true);
+        // (The gangway of the ship and its foredeck reach out over the water: they are the way aboard, not the sea.)
+        for (const [x, z] of spots) if (!shipWalkwayAt(x, z)) expect(dioramaOnLand(scene, x, z)).toBe(true);
       });
 
       it('builds finite faces with resolved colors, within the budget, and the same every time', () => {

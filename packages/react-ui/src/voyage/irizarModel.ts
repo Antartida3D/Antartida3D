@@ -76,6 +76,28 @@ const HULL_STATIONS: readonly HullStation[] = [
   [0.42, 0.045, 0.01, [0.032, 0.05], [0.052, 0.06], [0.068, 0.088]],
   [0.5, 0.08, 0.002, [0.006, 0.082], [0.014, 0.086], [0.03, 0.093]],
 ];
+/** Linear value between the stations of the hull at x (clamped to the ends), taken from each station by `pick`. */
+function alongHull(x: number, pick: (s: HullStation) => number): number {
+  const first = HULL_STATIONS[0];
+  const last = HULL_STATIONS[HULL_STATIONS.length - 1];
+  if (x <= first[0]) return pick(first);
+  if (x >= last[0]) return pick(last);
+  const i = HULL_STATIONS.findIndex((s, k) => x >= s[0] && x <= HULL_STATIONS[k + 1][0]);
+  const [a, b] = [HULL_STATIONS[i], HULL_STATIONS[i + 1]];
+  return pick(a) + ((pick(b) - pick(a)) * (x - a[0])) / (b[0] - a[0]);
+}
+/** Half width of the main deck at x (model units): the foredeck narrows to the bow. */
+export const irizarDeckHalfWidth = (x: number): number => alongHull(x, (s) => s[5][0]);
+/** Height of the edge of the main deck at x. */
+export const irizarDeckY = (x: number): number => alongHull(x, (s) => s[5][1]);
+/** Height of the waterline corner of the hull rings at x. */
+export const irizarWaterY = (x: number): number => alongHull(x, (s) => s[4][1]);
+/** Half width of the hull at its waterline at x (0 past the stem). */
+export const irizarWaterHalfWidth = (x: number): number => alongHull(x, (s) => s[4][0]);
+/** x of the stem and of the stern. */
+export const IRIZAR_STERN_X = HULL_STATIONS[0][0];
+export const IRIZAR_STEM_X = HULL_STATIONS[HULL_STATIONS.length - 1][0];
+
 /** Segment of a hull ring that is the main deck: 0-2 the +z side from the keel up, 4-6 the -z side down, 7 the keel. */
 const HULL_DECK_SEGMENT = 3;
 
@@ -102,6 +124,21 @@ const TIER2_BACK = 3;
 /** How much narrower a tier is at its top than at its foot, along the ship and across it. */
 const TIER_LEAN_X = 0.015;
 const TIER_LEAN_Z = 0.04;
+
+/**
+ * Measures of the deckhouse others draw on (ponchoShip.ts puts windows and a door on its walls): the main deck, the first tier
+ * (its straight sides from `tier1Aft` to `tier1Fore` at ±`tier1Half`, leaning in by `tierLeanZ` at `tier1Top`), its slanted front
+ * wall on the +z side (`tier1FrontNear`, from the side to the point), the lifeboat height, and the hangar.
+ */
+export const IRIZAR_DECKHOUSE = {
+  mainDeck: MAIN_DECK,
+  tier1Top: TIER1_TOP,
+  tier1Half: TIER1[2][1],
+  tier1Fore: TIER1[2][0],
+  tier1Aft: TIER1[3][0],
+  tier1FrontNear: [TIER1[2], TIER1[1]] as const,
+  tierLeanZ: TIER_LEAN_Z,
+} as const;
 
 function superstructure(): Tri[] {
   // The walls lean in a little as they rise: the ring of the second tier at a fraction k of its height.
@@ -165,21 +202,25 @@ const LIFEBOAT_X = 0.075;
 const LIFEBOAT_Z = 0.095;
 const LIFEBOAT_LENGTH = 0.085;
 const LIFEBOAT_WIDTH = 0.028;
-const LIFEBOAT_FOOT = 0.118;
+/** Height of the keel of the lifeboats (they hang from davits, over the side). */
+export const IRIZAR_LIFEBOAT_FOOT = 0.118;
+const LIFEBOAT_FOOT = IRIZAR_LIFEBOAT_FOOT;
 
-/** Lifeboat of the +z side: an enclosed orange boat, its hull narrowing to the keel and its rounded roof. */
-function lifeboat(): Tri[] {
-  const l = LIFEBOAT_LENGTH / 2;
-  const w = LIFEBOAT_WIDTH / 2;
-  const x = LIFEBOAT_X;
-  const z = LIFEBOAT_Z;
+/**
+ * Lifeboat of the +z side: an enclosed orange boat, its hull narrowing to the keel and its rounded roof. By default the one
+ * beside the superstructure; `x`, `z` and `size` place another one (ponchoShip.ts hangs a second pair by the hangar).
+ */
+export function irizarLifeboat(x = LIFEBOAT_X, z = LIFEBOAT_Z, size = 1): Tri[] {
+  const l = (LIFEBOAT_LENGTH / 2) * size;
+  const w = (LIFEBOAT_WIDTH / 2) * size;
   const gunwale: Ring2 = [[x + l, z], [x + l * 0.55, z + w], [x - l * 0.6, z + w], [x - l, z + w * 0.5], [x - l, z - w * 0.5], [x - l * 0.6, z - w], [x + l * 0.55, z - w]];
-  const rim = LIFEBOAT_FOOT + 0.015;
+  const rim = LIFEBOAT_FOOT + 0.015 * size;
   return [
     ...frustum(scaleRing(gunwale, 0.8, 0.45), LIFEBOAT_FOOT, gunwale, rim, LIFEBOAT),
-    ...frustum(gunwale, rim, scaleRing(gunwale, 0.82, 0.55), rim + 0.013, LIFEBOAT),
+    ...frustum(gunwale, rim, scaleRing(gunwale, 0.82, 0.55), rim + 0.013 * size, LIFEBOAT),
   ];
 }
+const lifeboat = (): Tri[] => irizarLifeboat();
 
 /** Cargo crane of the +z side, on the foredeck, its jib raised forward and out. */
 function crane(): Tri[] {
@@ -196,6 +237,8 @@ function crane(): Tri[] {
 // lands: its middle IRIZAR_DECK_AFT aft of the middle of the ship and its top IRIZAR_DECK_TOP high.
 const HANGAR: Ring2 = [[-0.035, 0.08], [-0.2, 0.08], [-0.2, -0.08], [-0.035, -0.08]];
 const HANGAR_TOP = 0.15;
+/** The hangar for others to draw on (ponchoShip.ts): along the ship, its half width, its top, and how much its sides lean in at the top. */
+export const IRIZAR_HANGAR = { fore: HANGAR[0][0], aft: HANGAR[1][0], half: HANGAR[0][1], top: HANGAR_TOP, leanZ: 0.04 } as const;
 const FLIGHT_DECK_FORE = -0.2;
 const FLIGHT_DECK_AFT_END = -0.475;
 const FLIGHT_DECK_HALF_WIDTH = 0.097;
@@ -217,7 +260,7 @@ function hangarAndDeck(): Tri[] {
     return [facingOut([ox, y, oz], [px, y, pz], [qx, y, qz], CREAM, below), facingOut([ox, y, oz], [qx, y, qz], [ix, y, iz], CREAM, below)];
   });
   return [
-    ...frustum(HANGAR, MAIN_DECK - 0.002, scaleRing(HANGAR, 0.99, 0.96), HANGAR_TOP, CREAM),
+    ...frustum(HANGAR, MAIN_DECK - 0.002, scaleRing(HANGAR, 0.99, 1 - IRIZAR_HANGAR.leanZ), HANGAR_TOP, CREAM),
     // The hangar door, closed, on its after wall.
     ...block(-0.2015, 0.112, 0, 0.003, 0.06, 0.104, DECK),
     ...frustum(deck, MAIN_DECK - 0.001, deck, IRIZAR_DECK_TOP, DECK),

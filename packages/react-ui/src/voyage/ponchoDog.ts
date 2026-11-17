@@ -37,9 +37,13 @@ export const DOG_LEG_PIVOT: Readonly<Record<DogLeg, Vec3>> = {
   hindRight: [-0.27, 0.4, -0.1],
 };
 
-/** The dog in pieces: the body, and each leg with its points relative to its own pivot, so it can swing. */
+/** Where the head hangs from: the base of the neck (model frame). The head's points are relative to it, so it can tip. */
+export const DOG_HEAD_PIVOT: Vec3 = [0.2, 0.62, 0];
+
+/** The dog in pieces: the body, the head (around the neck pivot), and each leg with its points relative to its own pivot, so it can swing. */
 export interface DogParts {
   readonly body: Tri[];
+  readonly head: Tri[];
   readonly legs: Readonly<Record<DogLeg, Tri[]>>;
 }
 
@@ -57,10 +61,31 @@ export function dogLegSwing(phase: number, moving: boolean): Record<DogLeg, numb
   return { frontLeft: a, hindRight: a, frontRight: -a, hindLeft: -a };
 }
 
+/** Deepest the nose goes down while the dog sniffs, in radians. */
+export const DOG_SNIFF_DOWN = 0.6;
+/** Bobs per second of a sniffing head. */
+export const DOG_SNIFF_RATE = 0.45;
+
+/**
+ * Tip of the head about the neck (radians about z, negative = nose down) at time `t` seconds. A dog that sniffs
+ * lowers its nose to the snow and lifts it back to level, slowly; any other dog keeps its head level.
+ */
+export function dogHeadPitch(t: number, sniffing: boolean): number {
+  if (!sniffing) return 0;
+  return -DOG_SNIFF_DOWN * (0.5 - 0.5 * Math.cos(t * DOG_SNIFF_RATE * Math.PI * 2));
+}
+
 /** A dog in the given palette, in pieces. */
 export function ponchoDogParts(p: DogPalette = PONCHO_PALETTE): DogParts {
   const body: Tri[] = [
     ...loftAlongX(BODY, SIDES, (i, band) => (i >= 5 && i <= 7 && band >= 1 && band <= 2 ? p.patch : i >= 3 && i <= 4 ? p.shade : p.coat)),
+    // Plumed tail curled up over the back.
+    ...tube([-0.34, 0.54, 0], [-0.46, 0.62, 0], 0.06, 0.07, 6, p.tail),
+    ...tube([-0.46, 0.62, 0], [-0.42, 0.78, 0], 0.07, 0.065, 6, p.tail, false, true),
+    ...tube([-0.42, 0.78, 0], [-0.3, 0.8, 0], 0.065, 0.03, 6, p.tail, false, true),
+  ];
+  const [hx, hy, hz] = DOG_HEAD_PIVOT;
+  const headAtRest: Tri[] = [
     ...loftAlongX(HEAD, SIDES, (i, band) => (band === 2 ? (i >= 3 && i <= 5 ? p.muzzle : p.coat) : i >= 5 && i <= 7 && band === 0 ? p.patch : p.coat)),
     // Dark nose and almond eyes (the distinctive trait), ears pointing up and a bit back.
     ...tube([0.475, 0.645, 0], [0.5, 0.645, 0], 0.045, 0.03, 6, PONCHO_NOSE),
@@ -68,11 +93,13 @@ export function ponchoDogParts(p: DogPalette = PONCHO_PALETTE): DogParts {
     ...tube([0.37, 0.72, -0.1], [0.385, 0.72, -0.125], 0.022, 0.022, 5, PONCHO_EYE_ALMOND),
     ...tube([0.28, 0.77, 0.07], [0.25, 0.91, 0.08], 0.045, 0.01, 5, p.ear),
     ...tube([0.28, 0.77, -0.07], [0.25, 0.91, -0.08], 0.045, 0.01, 5, p.ear),
-    // Plumed tail curled up over the back.
-    ...tube([-0.34, 0.54, 0], [-0.46, 0.62, 0], 0.06, 0.07, 6, p.tail),
-    ...tube([-0.46, 0.62, 0], [-0.42, 0.78, 0], 0.07, 0.065, 6, p.tail, false, true),
-    ...tube([-0.42, 0.78, 0], [-0.3, 0.8, 0], 0.065, 0.03, 6, p.tail, false, true),
   ];
+  const head = headAtRest.map(([a, b, c, color]): Tri => [
+    [a[0] - hx, a[1] - hy, a[2] - hz],
+    [b[0] - hx, b[1] - hy, b[2] - hz],
+    [c[0] - hx, c[1] - hy, c[2] - hz],
+    color,
+  ]);
   // Legs tapering down to a paw, front pair and hind pair, each one moved so its pivot is the origin.
   const legs = {} as Record<DogLeg, Tri[]>;
   for (const leg of DOG_LEGS) {
@@ -89,13 +116,16 @@ export function ponchoDogParts(p: DogPalette = PONCHO_PALETTE): DogParts {
       color,
     ]);
   }
-  return { body, legs };
+  return { body, head, legs };
 }
 
 /** The whole dog at rest in the given palette (body and legs in their places). */
 export function ponchoDogTris(p: DogPalette = PONCHO_PALETTE): Tri[] {
-  const { body, legs } = ponchoDogParts(p);
+  const { body, head, legs } = ponchoDogParts(p);
   const out = [...body];
+  for (const [a, b, c, color] of head) {
+    out.push([[a[0] + DOG_HEAD_PIVOT[0], a[1] + DOG_HEAD_PIVOT[1], a[2] + DOG_HEAD_PIVOT[2]], [b[0] + DOG_HEAD_PIVOT[0], b[1] + DOG_HEAD_PIVOT[1], b[2] + DOG_HEAD_PIVOT[2]], [c[0] + DOG_HEAD_PIVOT[0], c[1] + DOG_HEAD_PIVOT[1], c[2] + DOG_HEAD_PIVOT[2]], color]);
+  }
   for (const leg of DOG_LEGS) {
     const [px, py, pz] = DOG_LEG_PIVOT[leg];
     for (const [a, b, c, color] of legs[leg]) {

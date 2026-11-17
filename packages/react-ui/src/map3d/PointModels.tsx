@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, type MutableRefObject } from 'react';
-import { Color, Frustum, IcosahedronGeometry, Matrix4, MeshBasicMaterial, Sphere, type BufferGeometry, type Group, type Mesh, type Vector3 } from 'three';
+import { Color, Frustum, IcosahedronGeometry, Matrix4, MeshBasicMaterial, Sphere, type Group, type Mesh, type Vector3 } from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import { FOV, MODEL_MIN_PX, PTS, TERRAIN_BOX, heightAt, screenPx, worldHeight, type MapPoint } from '@antartida/core';
 import relief4096Url from '@antartida/core/assets/terrain-relief-4096.webp';
@@ -8,12 +8,9 @@ import {
   BELGRANO_FLAGS,
   BOMBS,
   calvingPose,
-  EMPEROR_HUDDLE,
-  EMPEROR_HUDDLE_CENTER,
   erebusSummit,
   flagCloth,
   flagSwing,
-  huddleTurn,
   lavaBomb,
   PLUME_PUFFS,
   plumePuff,
@@ -96,13 +93,6 @@ const GROW_MAX = 12;
 /** How far (world units) the feet of a model go into the relief: its foundations. */
 const FOUNDATION = 0.06;
 
-/** A geometry built from faces, disposed when it changes or unmounts. */
-function usePolyGeometry(tris: readonly Tri[]): BufferGeometry {
-  const geometry = useMemo(() => buildPolyGeometry(tris), [tris]);
-  useEffect(() => () => geometry.dispose(), [geometry]);
-  return geometry;
-}
-
 /** Flag cloths hanging from their pole tops, each its own geometry so it can swing. */
 function Flags({ flags, parts }: { flags: readonly PointFlag[]; parts: MutableRefObject<Part[]> }) {
   const geometries = useMemo(() => flags.map((f) => buildPolyGeometry(flagCloth({ ...f, top: [0, 0, 0] }))), [flags]);
@@ -118,19 +108,6 @@ function Flags({ flags, parts }: { flags: readonly PointFlag[]; parts: MutableRe
         </group>
       ))}
     </>
-  );
-}
-
-/** Emperors: the huddle turns slowly round its centre. */
-function HuddlePart({ parts }: { parts: MutableRefObject<Part[]> }) {
-  const geometry = usePolyGeometry(EMPEROR_HUDDLE);
-  const pivot = useRef<Group>(null);
-  const move = useMemo(() => (t: number) => void (pivot.current && (pivot.current.rotation.y = huddleTurn(t))), []);
-  usePart(parts, move);
-  return (
-    <group ref={pivot} position={EMPEROR_HUDDLE_CENTER as [number, number, number]}>
-      <mesh geometry={geometry} material={vehicleMaterial} />
-    </group>
   );
 }
 
@@ -248,7 +225,6 @@ function PointModelMesh({ id, point, model, reduced }: Placed & { reduced: boole
       <mesh ref={body} material={vehicleMaterial} />
       {/* The moving parts, in model units on the pad: this group carries the model's turn and width. */}
       <group rotation-y={model.heading ?? 0} scale={width}>
-        {id === 'emperador' && <HuddlePart parts={parts} />}
         {id === 'polo' && <Flags flags={POLO_FLAGS} parts={parts} />}
         {id === 'belgrano' && <Flags flags={BELGRANO_FLAGS} parts={parts} />}
       </group>

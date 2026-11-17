@@ -101,7 +101,9 @@ Para la animación (no aparece en la ficha): USAP registra «two to six Strombol
 
 La aurora ya no se dibuja en el mapa 3D (#117): de día se leía como rayas verdes sueltas. Queda solo en la ficha (cita revisada el 14 de noviembre de 2026).
 
-## `emperador` — Colonias de pingüino emperador
+## `emperador` — Colonias de pingüino emperador (quitado)
+
+El punto se quitó del mapa el 17 nov 2026 ([#277](https://github.com/Antartida3D/Antartida3D/issues/277), [DEC-277](decisiones/DEC-277-quitar-colonias-emperador.md)). Sus citas quedan como registro.
 
 > El pingüino emperador es el único animal que se reproduce en el invierno antártico, sobre el hielo marino fijo a la costa. Solo el macho incuba el huevo sobre sus patas: cuando nace el pichón lleva unos 4 meses de ayuno. Para resistir el frío se agrupan y se turnan los lugares más abrigados, lo que reduce hasta un 50 % la pérdida de calor. Desde satélites se ubican sus colonias por las manchas de guano sobre el hielo, también en la Tierra de la Reina Maud.
 

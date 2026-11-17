@@ -4,12 +4,14 @@
 {
   "id": "DEC-276",
   "date": "2026-11-17",
-  "status": "accepted",
+  "status": "superseded",
   "issue": 276,
   "supersedes": ["DEC-258"],
-  "supersededBy": null
+  "supersededBy": "DEC-277"
 }
 ```
+
+> Reemplazada por [DEC-277](DEC-277-quitar-colonias-emperador.md) solo en las fichas del «dato real» (`loaderFact`, punto 5): la ficha `emperador` ya no existe y el dato sale de `cerronevado`. El resto sigue vigente.
 
 ## Decisión
 

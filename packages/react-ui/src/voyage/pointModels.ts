@@ -16,7 +16,7 @@ import {
   ZINC,
 } from './sightingModels.ts';
 import { ICEBERG_TABULAR_POLY } from './icebergs.ts';
-import { block, chunk, emperor, emperorChick, emperorWithFlippers, extrude, groundField, lathe, ngon, normalOf, prism, quad, rect, RELIEF_ICE, RELIEF_ROCK, reliefColor, resolveRelief, scaled, shift, turn, type Tri, type Vec3 } from './lowPoly.ts';
+import { block, chunk, emperorChick, emperorWithFlippers, extrude, groundField, lathe, ngon, normalOf, prism, quad, rect, RELIEF_ICE, RELIEF_ROCK, reliefColor, resolveRelief, scaled, shift, turn, type Tri, type Vec3 } from './lowPoly.ts';
 
 // Approximate colors. Every model here is an illustration, not to scale (docs/diseno/estilo-voxel.md).
 // Erebus: its snow and rock take the colors of the painted relief (reliefColor); here only the lava lake.
@@ -44,7 +44,7 @@ const TENT = 0xd8ccb0;
 const TENT_SHADE = 0xbfb193;
 const GENERATOR_BLUE = 0x1f5aa6;
 const ICE_CORE = 0xcfe6f2;
-// Emperor colony: guano stains on the sea ice, seen from space (NASA Earth Observatory).
+// Cerro Nevado: guano stains on the fast ice, seen from space (NASA Earth Observatory).
 const GUANO = 0x8a6450;
 // Flags of the South Pole ring: generic flag colours, not the flags of real countries.
 const FLAG_BLUE = 0x2c4a8c;
@@ -763,52 +763,6 @@ const TESTIGOS: Tri[] = [
 ];
 
 // ---------------------------------------------------------------------------------------------
-// Emperor penguin colony
-// ---------------------------------------------------------------------------------------------
-
-export const EMPEROR_HUDDLE_CENTER: Point3 = [0.04, 0.012, 0.08];
-const EMPEROR_HEIGHT = 0.075;
-
-/**
- * Emperor colony on the fast ice: the guano stain under the colony, a crack in the ice and an
- * iceberg grounded behind it (-z), with a few birds apart from the huddle, on the ice of the relief. The huddle
- * is EMPEROR_HUDDLE. Illustration, not to scale.
- */
-const EMPERADOR: Tri[] = [
-  // The guano stain under the colony and a crack in the ice: the rest of the ground is the relief.
-  ...groundField(
-    16,
-    16,
-    0.062,
-    2012,
-    (u, v, noise) => {
-      const stain = Math.hypot(u * 0.5 - EMPEROR_HUDDLE_CENTER[0], v * 0.5 - EMPEROR_HUDDLE_CENTER[2]) < 0.15 + (noise - 0.5) * 0.06;
-      const crack = Math.abs(u * 0.6 - v + 0.55) < 0.06 && Math.hypot(u, v) < 0.9;
-      return stain || crack ? 0.012 : null;
-    },
-    (u, v) => (Math.hypot(u * 0.5 - EMPEROR_HUDDLE_CENTER[0], v * 0.5 - EMPEROR_HUDDLE_CENTER[2]) < 0.17 ? GUANO : ICE_WALL),
-    0.002,
-  ),
-  // Grounded iceberg at the back: a tabular block with a lower melted step.
-  ...prism([[0.1, -0.25], [-0.2, -0.24], [-0.32, -0.3], [-0.22, -0.4], [0.02, -0.42], [0.2, -0.36]], 0, 0.2, ICE_WALL, WHITE),
-  ...prism([[0.24, -0.2], [0.1, -0.25], [0.2, -0.36], [0.26, -0.3]], 0, 0.11, ICE_WALL, WHITE),
-  ...emperor(0.3, 0.26, EMPEROR_HEIGHT, 0.4),
-  ...emperor(0.35, 0.2, EMPEROR_HEIGHT * 0.9, 0.2),
-  ...emperor(-0.28, 0.3, EMPEROR_HEIGHT, 2.6),
-  ...emperor(0.32, -0.08, EMPEROR_HEIGHT, -0.6),
-];
-
-/** The huddle: emperors packed in rings round EMPEROR_HUDDLE_CENTER, relative to it. On the map it turns slowly (AAD). */
-export const EMPEROR_HUDDLE: readonly Tri[] = Array.from({ length: 19 }, (_, i) => {
-  // Packed rings: 1 in the middle, 6 round it, 12 outside, all facing roughly the same way.
-  const ring = i === 0 ? 0 : i < 7 ? 1 : 2;
-  const k = ring === 0 ? 0 : ring === 1 ? i - 1 : i - 7;
-  const a = (k / (ring === 1 ? 6 : 12)) * Math.PI * 2 + ring * 0.3;
-  const r = ring * 0.034;
-  return emperor(r * Math.cos(a), r * Math.sin(a), EMPEROR_HEIGHT * (ring === 2 ? 0.95 : 1), 0.3 + Math.sin(i * 2.3) * 0.25);
-}).flat();
-
-// ---------------------------------------------------------------------------------------------
 // Emperor colony of Cerro Nevado (Snow Hill Island, #206)
 // ---------------------------------------------------------------------------------------------
 
@@ -989,12 +943,6 @@ export const POINT_MODELS: Readonly<Record<string, PointModel>> = {
   // Thwaites is built from the relief round its point (thwaitesFront), like the summit of Erebus.
   thwaites: { preview: { tris: THWAITES_CARD, motion: 'turn', lift: 0.02, sea: true } },
   vostok: { map: VOSTOK, preview: { tris: card(VOSTOK, 22, true), motion: 'turn', lift: 0.14 }, width: 1, pad: 0.46 },
-  emperador: {
-    map: EMPERADOR,
-    preview: { tris: card([...EMPERADOR, ...shift(EMPEROR_HUDDLE, ...EMPEROR_HUDDLE_CENTER)], 0, true), motion: 'turn', lift: 0.06 },
-    width: 0.6,
-    pad: 0.48,
-  },
   // The colony on the map; the point opens its own scene (cerronevado/), where an emperor waves.
   cerronevado: {
     map: [...SNOW_HILL_BASE, ...emperorWithFlippers(MAP_WAVER.x, MAP_WAVER.z, MAP_WAVER.k, MAP_WAVER.facing)],
@@ -1059,9 +1007,6 @@ export function calvingPose(t: number): { tilt: number; sink: number; visible: b
   if (p < 12.5) return { tilt: 1.2, sink: -0.1 * ((p - 11) / 1.5), visible: true };
   return { tilt: 1.2, sink: -0.1, visible: false };
 }
-
-/** Turn of the emperor huddle: the birds take turns at the warm centre (AAD). One turn in about 2.5 min. */
-export const huddleTurn = (t: number) => t * 0.04;
 
 /** Seconds of one wave of the emperor of Cerro Nevado (cerronevado/): raise, wave three times, lower, rest. ILLUSTRATIVE: emperors do not wave. */
 const WAVE_SECONDS = 5;

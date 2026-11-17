@@ -153,7 +153,7 @@ export interface LoaderFact {
   title: string;
 }
 
-const FACT_IDS = ['thwaites', 'vostok', 'erebus', 'emperador'] as const;
+const FACT_IDS = ['thwaites', 'vostok', 'erebus', 'cerronevado'] as const;
 
 /** Up to the first full stop followed by a capital letter: «3.794 m» does not cut. */
 export function firstSentence(text: string): string {

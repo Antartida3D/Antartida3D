@@ -58,15 +58,6 @@ export const POINT_DETAILS: Readonly<Record<string, { desc: string; sources: rea
       { label: 'Thwaites Glacier Transformed', org: 'NASA Science · Earth Observatory', url: 'https://science.nasa.gov/earth/earth-observatory/thwaites-glacier-transformed-146247/', consulted: '2026-11-13' },
     ],
   },
-  emperador: {
-    desc: 'El pingüino emperador es el único animal que se reproduce en el invierno antártico, sobre el hielo marino fijo a la costa. Solo el macho incuba el huevo sobre sus patas: cuando nace el pichón lleva unos 4 meses de ayuno. Para resistir el frío se agrupan y se turnan los lugares más abrigados, lo que reduce hasta un 50 % la pérdida de calor. Desde satélites se ubican sus colonias por las manchas de guano sobre el hielo, también en la Tierra de la Reina Maud.',
-    sources: [
-      { label: 'Emperor penguin', org: 'Australian Antarctic Division (AAD)', url: 'https://www.antarctica.gov.au/about-antarctica/animals/penguins/emperor-penguin/', consulted: '2026-11-13' },
-      { label: 'Emperor penguin breeding cycle', org: 'Australian Antarctic Division (AAD)', url: 'https://www.antarctica.gov.au/about-antarctica/animals/penguins/emperor-penguin/breeding-cycle/', consulted: '2026-11-13' },
-      { label: 'A Changing World for Emperor Penguins', org: 'NASA Science · Earth Observatory', url: 'https://science.nasa.gov/earth/earth-observatory/a-changing-world-for-emperor-penguins/', consulted: '2026-11-13' },
-      { label: 'Four unreported emperor penguin colonies discovered by satellite', org: 'Antarctic Science (Cambridge University Press)', url: 'https://www.cambridge.org/core/journals/antarctic-science/article/four-unreported-emperor-penguin-colonies-discovered-by-satellite/20956FD3E80F3604C21D0E2AA80FEF9B', consulted: '2026-11-13' },
-    ],
-  },
   // #206: every sentence and its quote are in docs/puntos-proximamente-fuentes.md.
   cerronevado: {
     desc: 'Frente a la costa sur de la isla Cerro Nevado, sobre el hielo marino fijo, está la colonia de pingüino emperador más al norte que se conoce. La descubrieron científicos del Instituto Antártico Argentino desde un avión Twin Otter, el 20 de julio de 1997. Desde 2013 la estudian en campañas de agosto y septiembre: salen de Base Marambio, a unos 65 km, cruzan el hielo en motos de nieve y trineos, y acampan junto a un témpano. Según el año, los censos publicados van de 1.200 a unas 4.000 parejas. Está en una zona donde el clima cambia rápido: por eso seguirla es clave.',

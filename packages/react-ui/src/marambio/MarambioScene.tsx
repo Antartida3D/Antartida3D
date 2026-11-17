@@ -253,6 +253,10 @@ function CameraAndDots({ focus, reduced, sheetTall, sidePanel, overlayRef }: Omi
       camera.updateMatrixWorld(true);
     }
     void cc.setLookAt(...pose.pos, ...pose.target, !first && !reduced);
+    // The library keeps the end angle between -180 and 180 degrees without comparing it to the
+    // current one, so a flight across the 180 degree seam (the buildings look from 150, the other
+    // spots from 200 to 262) would turn the long way round, over 240 degrees at once (#230).
+    cc.normalizeRotations();
     invalidate();
   }, [focus, portrait, sheetTall, sidePanel, reduced, camera, invalidate]);
 

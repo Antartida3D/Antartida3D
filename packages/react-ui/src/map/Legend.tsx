@@ -76,7 +76,7 @@ export function Legend({ open, onToggle, mode = '2d' }: { open: boolean; onToggl
     >
       <button type="button" className="lt" onClick={onToggle} aria-expanded={open}>
         {Icon.legend}
-        Leyenda
+        <span className="lt-label">Leyenda</span>
       </button>
       {open && (
         <>

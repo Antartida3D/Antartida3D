@@ -51,10 +51,13 @@ async function nextStep(page: Page) {
   await guide(page).getByRole('button', { name: 'Siguiente', exact: true }).click();
 }
 
-test('«Mapa listo»: the loader card waits for the person and puts the focus on «Explorar el mapa» (#258)', async ({ page }) => {
+test('ready card: the loader card waits for the person and puts the focus on «Exploración guiada» (#258, #276)', async ({ page }) => {
   await readyCard(page);
-  await expect(loader(page).getByRole('status')).toContainText('Mapa listo');
-  await expect(loader(page).getByRole('heading', { level: 1 })).toHaveText('Un mapa para recorrer la Antártida desde adentro');
+  await expect(loader(page).locator('.ld-status')).toHaveCount(0);
+  await expect(loader(page).getByText('Mapa listo')).toHaveCount(0);
+  await expect(loader(page).getByRole('heading', { level: 1 })).toHaveText('Desplegando la carta austral');
+  await expect(loader(page).getByRole('heading', { name: 'Un mapa para recorrer la Antártida desde adentro' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Sin guía' })).toBeVisible();
   await expect(exploreBtn(page)).toBeFocused();
   // It does not close by itself.
   await page.waitForTimeout(2_000);

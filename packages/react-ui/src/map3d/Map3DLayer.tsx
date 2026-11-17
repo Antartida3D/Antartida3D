@@ -483,7 +483,12 @@ function ProjectMarkers({
     // places, each with a line back to its own (#238): the spread is worked out here, from where the
     // camera really puts them, since the tilt and the turn change how close they look. Sea markers
     // stay out of it, and go behind: a moving ship must not push the points around.
-    const placed: { btn: HTMLElement; guide: HTMLElement | null; left: number; top: number }[] = [];
+    const gap = markerGap(size.width);
+    // A marker just out of the screen is hidden but still takes its room, up to a gap past the edge:
+    // if it stopped counting the moment it left, its neighbours would jump back (#253).
+    const roomX = 1.1 + (2 * gap) / size.width;
+    const roomY = 1.1 + (2 * gap) / size.height;
+    const placed: { btn: HTMLElement; guide: HTMLElement | null; left: number; top: number; visible: boolean }[] = [];
     for (const m of markers) {
       const btn = el.querySelector<HTMLElement>(`[data-key="${m.key}"]`);
       if (!btn) continue;
@@ -499,16 +504,16 @@ function ProjectMarkers({
       if (!visible) {
         btn.style.display = 'none';
         if (guide) guide.style.display = 'none';
-        continue;
       }
-
-      btn.style.display = '';
-      placed.push({ btn, guide, left: ((p.x + 1) * size.width) / 2, top: ((-p.y + 1) * size.height) / 2 });
+      if (p.z >= 1.0 || Math.abs(p.x) > roomX || Math.abs(p.y) > roomY) continue;
+      placed.push({ btn, guide, left: ((p.x + 1) * size.width) / 2, top: ((-p.y + 1) * size.height) / 2, visible });
     }
-    const offsets = fanOffsets(placed, markerGap(size.width));
-    placed.forEach(({ btn, guide, left, top }, i) => {
+    const offsets = fanOffsets(placed, gap);
+    placed.forEach(({ btn, guide, left, top, visible }, i) => {
+      if (!visible) return;
       const { dx, dy } = offsets[i];
       const lift = markerLift(dx, dy);
+      btn.style.display = '';
       btn.style.transform = `translate3d(${(left + dx).toFixed(1)}px, ${(top + dy).toFixed(1)}px, 0px) translate(-50%, -50%)`;
       btn.style.setProperty('--lift', `${lift.toFixed(1)}px`);
       if (!guide) return;

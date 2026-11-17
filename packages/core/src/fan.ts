@@ -35,48 +35,52 @@ export interface Offset {
   dy: number;
 }
 
+/** Most rounds of pushing pairs apart; a crowd settles long before. */
+const FAN_ROUNDS = 300;
+/** A pair this close to the gap, in px, counts as apart. */
+const FAN_SLACK_PX = 0.001;
+
 /**
- * Fans out the markers that crowd each other on screen (#238). Markers closer than `gap` px, one by
- * one or through a chain of neighbours, form a crowd: its members go to the corners of a regular
- * polygon around the crowd centre, just wide enough to be `gap` px apart, keeping the order they
- * had around that centre. Markers alone do not move. The result has one offset per entry, in order.
+ * Fans out the markers that crowd each other on screen (#238). Every pair closer than `gap` px is
+ * pushed apart along the line between the two, half of what is missing each, round after round until
+ * every pair is `gap` px apart. Markers alone do not move. The result has one offset per entry, in order.
  *
- * Moving by the shortfall keeps it continuous: two markers `gap - e` apart move `e / 2` each, so
- * they separate smoothly while the view zooms out and come back to their real place on zooming in.
+ * Each marker moves only as far as its own neighbours need, so a chain of neighbours does not drag
+ * a far marker along, and a small move of the map gives a small move of the markers: nothing jumps
+ * when a pair crosses the gap (#253). Two markers `gap - e` apart move `e / 2` each, so they
+ * separate smoothly while the view zooms out and come back to their real place on zooming in.
  */
 export function fanOffsets(screen: readonly ScreenPos[], gap = MARKER_GAP_PX): Offset[] {
-  const offsets = screen.map(() => ({ dx: 0, dy: 0 }));
-  const seen = screen.map(() => false);
-
-  screen.forEach((_, start) => {
-    if (seen[start]) return;
-    const crowd = [start];
-    seen[start] = true;
-    for (let k = 0; k < crowd.length; k++) {
-      const a = screen[crowd[k]];
-      screen.forEach((b, j) => {
-        if (!seen[j] && Math.hypot(a.left - b.left, a.top - b.top) < gap) {
-          seen[j] = true;
-          crowd.push(j);
+  const at = screen.map((p) => ({ x: p.left, y: p.top }));
+  for (let round = 0; round < FAN_ROUNDS; round++) {
+    let missing = 0;
+    for (let i = 0; i < at.length; i++) {
+      for (let j = i + 1; j < at.length; j++) {
+        const a = at[i];
+        const b = at[j];
+        let ux = b.x - a.x;
+        let uy = b.y - a.y;
+        const d = Math.hypot(ux, uy);
+        if (d >= gap) continue;
+        missing = Math.max(missing, gap - d);
+        if (d < 1e-6) {
+          // On one spot there is no line between the two: each pair takes a direction of its own,
+          // so that a crowd on one spot opens round it and not along one line.
+          const angle = 2.399963 * (i * 7 + j);
+          ux = Math.cos(angle);
+          uy = Math.sin(angle);
+        } else {
+          ux /= d;
+          uy /= d;
         }
-      });
+        const half = (gap - d) / 2;
+        a.x -= ux * half;
+        a.y -= uy * half;
+        b.x += ux * half;
+        b.y += uy * half;
+      }
     }
-    const n = crowd.length;
-    if (n < 2) return;
-
-    const cx = crowd.reduce((s, i) => s + screen[i].left, 0) / n;
-    const cy = crowd.reduce((s, i) => s + screen[i].top, 0) / n;
-    const around = crowd
-      .map((i) => ({ i, angle: Math.atan2(screen[i].top - cy, screen[i].left - cx) }))
-      .sort((p, q) => p.angle - q.angle || p.i - q.i);
-    const radius = gap / (2 * Math.sin(Math.PI / n));
-    // Start where the first member already is; if the crowd sits on one spot, start straight up.
-    const first = screen[around[0].i];
-    const start0 = Math.hypot(first.left - cx, first.top - cy) < 1e-6 ? -Math.PI / 2 : around[0].angle;
-    around.forEach(({ i }, k) => {
-      const angle = start0 + (2 * Math.PI * k) / n;
-      offsets[i] = { dx: cx + radius * Math.cos(angle) - screen[i].left, dy: cy + radius * Math.sin(angle) - screen[i].top };
-    });
-  });
-  return offsets;
+    if (missing < FAN_SLACK_PX) break;
+  }
+  return screen.map((p, i) => ({ dx: at[i].x - p.left, dy: at[i].y - p.top }));
 }

@@ -17,6 +17,8 @@ El mapa ya no agrupa marcadores en un círculo con número. Cada punto tiene sie
 
 Las coordenadas de los puntos no cambian. Sigue valiendo lo que fijó DEC-7: el punto de Fósiles va en el oeste de la isla James Ross (≈ 64,0° S, 58,05° O) y no se aleja de su lugar real. Base Marambio queda en la isla Marambio. Se quitan la ventana «Puntos en este lugar» y su variante de hoja inferior (DEC-75-2).
 
+> **Actualización (16-11-2026, #253):** la forma del corrimiento cambió. Los marcadores ya no van a un polígono regular: cada par que se pisa se separa lo justo. El resto de esta decisión sigue vigente. Ver [DEC-253](DEC-253-pines-separados-de-a-pares.md).
+
 ## Motivo
 
 El número no dice qué hay adentro, obliga a tocar para descubrirlo y no ayuda a quien visita. Además, Base Marambio, Fósiles y Poncho están a unos 75-90 km entre sí: ni con el zoom al máximo se separaban, así que el grupo era permanente. El abanico los muestra siempre separados sin presentar una ubicación falsa, porque la línea marca dónde está cada uno de verdad.

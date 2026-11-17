@@ -254,5 +254,7 @@ En cumplimiento con las bases de la hackatón, se declara el uso de herramientas
   > Relevamiento de los archivos afectados, redacción del issue, implementación, pruebas y documentación con Claude Code (modelo Claude Opus 5.5), a pedido de quien lleva el issue. No se agregaron datos ni fuentes.
 - **Componentes de interfaz: una sola definición, primario azul y sin líneas dobles (#234, #231, #232, #233):**
   > Relevamiento de las hojas de estilo, redacción de los issues, implementación, pruebas, capturas y documentación con asistencia de IA, con revisión en pantalla de quien lleva los issues. No se agregaron datos ni fuentes.
+- **Pines que se estiraban al mover el mapa en el celular (#253):**
+  > Reproducción a partir de un video, diagnóstico, redacción del issue, arreglo, pruebas, capturas y documentación con asistencia de IA, a pedido de quien lleva el issue. No se agregaron datos ni fuentes.
 - **Aviso cuando el 3D falla, en vez de página en blanco (#242):**
   > Reproducción del fallo, redacción del issue, implementación, prueba e2e, capturas y documentación con asistencia de IA, a pedido de quien lleva el issue. No se agregaron datos ni fuentes.

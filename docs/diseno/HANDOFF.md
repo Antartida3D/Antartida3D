@@ -37,7 +37,7 @@ src/
       MapLayer.tsx           // SVG del continente (estático)
       Markers.tsx            // clustering + marcadores HTML
       PointSheet.tsx         // ficha B/C
-      ListView.tsx           // "Ver como lista"
+      ListView.tsx           // botón "Actividades"
       Legend.tsx
       ExplorationLog.tsx     // registro 0/1
     expedition/
@@ -89,7 +89,7 @@ Textura: filtros SVG en `Main.dc.html` → `#wc`, `#wcs`, `#ink`, `#bleed` (feTu
 - Clustering greedy por distancia **en pantalla** (< 46 px). El grupo muestra un contador; si contiene el punto activo, borde ocre. Tocarlo acerca hasta que se separen.
 - Las etiquetas están cerradas de entrada (#54). Se muestran al pasar el cursor, con el foco del teclado o con el primer toque en celular; el segundo toque abre. Detalle en `docs/decisiones.md`, «Carteles del mapa cerrados».
 - A abre la expedición. B/C abren una ficha (título, lugar, pregunta provisional, etiqueta). En celular, recién con el segundo toque.
-- "Ver como lista" muestra los tres grupos con encabezados reales y botones; no depende del mapa.
+- "Actividades" (antes "Ver como lista", #236) muestra los tres grupos con encabezados reales y botones; no depende del mapa.
 
 ### Transición (1,5 s)
 1. La capa del mapa hace zoom a Marambio (`k = 3.4`) con transición CSS.

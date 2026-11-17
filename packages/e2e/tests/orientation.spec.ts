@@ -6,6 +6,7 @@ import { PONCHO_MILESTONES } from '../../core/src/content/poncho.ts';
 import { MILESTONES } from '../../core/src/content/ushuaia.ts';
 import { CHAPTERS } from '../../core/src/orcadas.ts';
 import { show3D } from './map-helpers.ts';
+import { LIST_BUTTON_LABEL } from '../../core/src/content/points.ts';
 
 const PLANE_MILESTONES = MILESTONES.filter((m) => m.kinds.includes('plane'));
 
@@ -65,7 +66,7 @@ test.describe('3D header at 844x390', () => {
 test.describe('resume last expedition', () => {
   test('resumes Marambio at exact spot, reloads, and clears on completion', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('button', { name: 'Ver como lista' }).click();
+    await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
     await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Base Marambio/ }).click();
 
     const section = page.getByRole('region', { name: 'Expedición Base Marambio' });
@@ -77,7 +78,7 @@ test.describe('resume last expedition', () => {
     await expect(section).toContainText(`Punto 3 de ${MARAMBIO_SPOTS.length}`);
 
     await section.getByRole('button', { name: 'Volver al mapa' }).click();
-    await expect(page.getByRole('button', { name: 'Ver como lista' })).toBeVisible();
+    await expect(page.getByRole('button', { name: LIST_BUTTON_LABEL })).toBeVisible();
 
     const resumeBtn = page.getByRole('button', {
       name: `Continuar: Base Marambio · punto 3 de ${MARAMBIO_SPOTS.length}`,
@@ -96,14 +97,14 @@ test.describe('resume last expedition', () => {
       await primary.click();
     }
 
-    await expect(page.getByRole('button', { name: 'Ver como lista' })).toBeVisible();
+    await expect(page.getByRole('button', { name: LIST_BUTTON_LABEL })).toBeVisible();
     await expect(page.getByRole('button', { name: /^Continuar:/ })).toHaveCount(0);
     expect(await page.evaluate(() => localStorage.getItem('antartida:last'))).toBeNull();
   });
 
   test('resumes Fósiles at exact stop after reload', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('button', { name: 'Ver como lista' }).click();
+    await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
     await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Fósiles/ }).click();
 
     const section = page.getByRole('region', { name: 'Expedición Fósiles' });
@@ -130,7 +131,7 @@ test.describe('resume last expedition', () => {
 
   test('resumes Orcadas at exact chapter after reload', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('button', { name: 'Ver como lista' }).click();
+    await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
     await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Estación Orcadas/ }).click();
     await page.getByRole('button', { name: 'Comenzar' }).click();
 
@@ -157,7 +158,7 @@ test.describe('resume last expedition', () => {
 
   test('resumes Océano at exact stop after reload', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('button', { name: 'Ver como lista' }).click();
+    await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
     await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Océano/ }).click();
 
     const section = page.getByRole('region', { name: 'Expedición Océano' });
@@ -185,7 +186,7 @@ test.describe('resume last expedition', () => {
 
   test('resumes Desde Ushuaia at exact milestone with same transport after reload', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('button', { name: 'Ver como lista' }).click();
+    await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
     await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Desde Ushuaia/ }).click();
     await page.getByRole('group', { name: 'Medio de transporte' }).getByRole('button', { name: /Hércules/ }).click();
     await page.getByRole('button', { name: 'Despegar' }).click();
@@ -217,7 +218,7 @@ test.describe('resume last expedition', () => {
 
   test('resumes Poncho at exact milestone after reload', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('button', { name: 'Ver como lista' }).click();
+    await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
     await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Poncho/ }).click();
     await page.getByRole('button', { name: 'Comenzar' }).click();
 
@@ -267,7 +268,7 @@ test.describe('resume last expedition', () => {
     });
 
     await page.goto('/');
-    await page.getByRole('button', { name: 'Ver como lista' }).click();
+    await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
     await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Desde Ushuaia/ }).click();
     await page.getByRole('group', { name: 'Medio de transporte' }).getByRole('button', { name: /Hércules/ }).click();
     await page.getByRole('button', { name: 'Despegar' }).click();
@@ -299,7 +300,7 @@ test.describe('resume last expedition', () => {
       });
     });
     await page.goto('/');
-    await expect(page.getByRole('button', { name: 'Ver como lista' })).toBeVisible();
+    await expect(page.getByRole('button', { name: LIST_BUTTON_LABEL })).toBeVisible();
     await expect(page.getByRole('button', { name: /^Continuar:/ })).toHaveCount(0);
   });
 });

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { AVAILABLE_COUNT } from '../../core/src/content/points.ts';
+import { AVAILABLE_COUNT, LIST_BUTTON_LABEL } from '../../core/src/content/points.ts';
 import { clearStorage } from '../storage.ts';
 import { MARAMBIO_SPOTS, marambioFacts, marambioPhotos } from '../../core/src/content/marambio.ts';
 import { ORCADAS_GUIDING_QUESTION } from '../../core/src/content/orcadas.ts';
@@ -10,7 +10,7 @@ const primary = (page: Page) => page.locator('.mar .ebar .btn.primary');
 const heading = (page: Page, name: string) => page.locator('.mar').getByRole('heading', { level: 2, name });
 
 async function openMarambio(page: Page) {
-  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
   const list = page.getByRole('dialog', { name: 'Todos los puntos' });
   await list.getByRole('button', { name: /Base Marambio/ }).click();
   await expect(heading(page, MARAMBIO_SPOTS[0].label)).toBeVisible();

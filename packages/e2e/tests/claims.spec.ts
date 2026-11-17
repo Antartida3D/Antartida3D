@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { mockOpenMeteo } from './weather-helpers.ts';
 import { MAP_2D_ENABLED, show3D } from './map-helpers.ts';
+import { LIST_BUTTON_LABEL } from '../../core/src/content/points.ts';
 
 /**
  * Hides the claims details (#148). On a phone they are a sheet over the bottom half, over their own
@@ -24,7 +25,7 @@ test.beforeEach(async ({ page }) => {
 
 /** The claims layer has no control in the map menu while off: it opens from the South Pole sheet (#128). */
 async function openFromPole(page: Page, key = false, beforeAction?: () => Promise<void>) {
-  await page.getByRole('button', { name: 'Ver como lista', exact: true }).click();
+  await page.getByRole('button', { name: LIST_BUTTON_LABEL, exact: true }).click();
   await page.getByRole('dialog').getByRole('button', { name: /^El Polo Sur/ }).click();
   await beforeAction?.();
   const action = page.getByRole('dialog').getByRole('button', { name: 'Ver reclamos territoriales', exact: true });
@@ -176,7 +177,7 @@ test('claims controls fit the viewport and preserve selection when changing view
     await page.getByRole('button', { name: 'Mapa 2D', exact: true }).click();
     await expect(page.getByRole('switch', { name: 'Reclamos territoriales' })).toHaveCount(0);
     // The 2D map has no claims layer, so the South Pole sheet does not offer it.
-    await page.getByRole('button', { name: 'Ver como lista', exact: true }).click();
+    await page.getByRole('button', { name: LIST_BUTTON_LABEL, exact: true }).click();
     await page.getByRole('dialog').getByRole('button', { name: /^El Polo Sur/ }).click();
     await expect(page.getByRole('dialog').getByRole('button', { name: /reclamos/i })).toHaveCount(0);
     await page.getByRole('dialog').getByRole('button', { name: 'Volver al mapa', exact: true }).click();

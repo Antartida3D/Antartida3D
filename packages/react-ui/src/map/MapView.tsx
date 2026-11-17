@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import {
-  DOUBLE_TAP_ZOOM, DRAG_THRESHOLD, EXPEDITION_POINT, HOME, KEY_PAN, MAP_2D_ENABLED, MAX_K, MIN_K, ONE_FINGER_IDLE, PONCHO_POINT, PONCHO_TRANSPORT, PTS, TRANSPORTS, VOYAGE_POINT, VOYAGE_POINTS, ZOOM_MS,
+  DOUBLE_TAP_ZOOM, DRAG_THRESHOLD, EXPEDITION_POINT, HOME, KEY_PAN, LIST_BUTTON_LABEL, MAP_2D_ENABLED, MAX_K, MIN_K, ONE_FINGER_IDLE, PONCHO_POINT, PONCHO_TRANSPORT, PTS, TRANSPORTS, VOYAGE_POINT, VOYAGE_POINTS, ZOOM_MS,
   afterExpedition, buildMarkers, diveView, focusWorld, freeArea, needsFraming, markerPress, geometry, isWheelNotch, keyView, nextExpedition, oneFingerDown, oneFingerMove, oneFingerUp, panBy, resumeDetail, welcomeView, wheelFactor, zoomAround, zoomCenter,
   type ArrivalId, type MapPoint, type Marker, type OneFingerZoomState, type ResumePoint, type SeaPoint, type Size, type TransportId, type View, type ClaimsCoverage, type ZoomAvailability,
 } from '@antartida/core';
@@ -712,7 +712,7 @@ export function MapView({
         <div className="bottom">
           {voyaging ? <span /> : (
           <div className="leftcol">
-            {/* «Siguiente» / «Continuar» go first: Leyenda and «Ver como lista» stay together, same size (#248). */}
+            {/* «Siguiente» / «Continuar» go first: Leyenda and «Actividades» stay together, same size (#248). */}
             {(() => {
               const resumePoint = resume && phase === 'idle' && !voyaging && !welcome && !welcoming
                 ? PTS.find((p) => p.id === resume.id)
@@ -762,7 +762,7 @@ export function MapView({
               }} />}
             <button type="button" className="btn" onClick={() => { setSheet(null); setPendingOrcadas(null); setList(true); }}>
               {Icon.list}
-              Ver como lista
+              {LIST_BUTTON_LABEL}
             </button>
             {/* With the 2D map off (#227) there is no toggle: only the note on why the 3D map is not showing. */}
             {showToggle && onToggleMode && (MAP_2D_ENABLED || !available3D) && (

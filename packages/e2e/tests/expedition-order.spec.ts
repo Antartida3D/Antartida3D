@@ -1,7 +1,7 @@
 import { expect, test, type CDPSession, type Locator, type Page } from '@playwright/test';
 import { MARAMBIO_SPOTS } from '../../core/src/content/marambio.ts';
 import { ORCADAS_GUIDING_QUESTION } from '../../core/src/content/orcadas.ts';
-import { AVAILABLE_COUNT } from '../../core/src/content/points.ts';
+import { AVAILABLE_COUNT, LIST_BUTTON_LABEL } from '../../core/src/content/points.ts';
 import { EXPLORED_KEY } from '../../core/src/storage.ts';
 import { clearStorage } from '../storage.ts';
 import { mockOpenMeteo } from './weather-helpers.ts';
@@ -33,7 +33,7 @@ async function touchDrag(cdp: CDPSession, from: Locator, dx: number, dy: number)
 }
 
 async function completeFossilsFromList(page: Page) {
-  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
   await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Fósiles/ }).click();
   await expect(page.getByRole('heading', { name: 'Las rocas recuerdan' })).toBeVisible();
   for (let i = 0; i < 13; i++) {
@@ -44,7 +44,7 @@ async function completeFossilsFromList(page: Page) {
 }
 
 async function completeMarambioFromList(page: Page) {
-  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
   await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Base Marambio/ }).click();
   await expect(page.locator('.mar').getByRole('heading', { level: 2, name: MARAMBIO_SPOTS[0].label })).toBeVisible();
   await page.waitForFunction(() => (window as unknown as { __marambioReady?: boolean }).__marambioReady === true);
@@ -222,7 +222,7 @@ test('browser back closes the next card and keeps the app on the map', async ({ 
   await page.goBack();
   await expect(card).toHaveCount(0);
   expect(page.url()).not.toBe('about:blank');
-  await expect(page.getByRole('button', { name: 'Ver como lista' })).toBeVisible();
+  await expect(page.getByRole('button', { name: LIST_BUTTON_LABEL })).toBeVisible();
 });
 
 test('dragging the map moves it while the next card stays open', async ({ page }) => {
@@ -289,7 +289,7 @@ test('dragging the map moves it while the next card stays open', async ({ page }
 
 test('list view shows expeditions ordered 1 to 6 and labels the next suggested one', async ({ page }) => {
   await seedExplored(page, ['campana']);
-  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
   const dialog = page.getByRole('dialog', { name: 'Todos los puntos' });
   const section = dialog.locator('section', { has: page.locator('#g-a') });
   await expect(section.locator('h3')).toContainText('Expediciones · orden sugerido');

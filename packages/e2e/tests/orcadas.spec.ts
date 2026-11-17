@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { AVAILABLE_COUNT } from '../../core/src/content/points.ts';
+import { AVAILABLE_COUNT, LIST_BUTTON_LABEL } from '../../core/src/content/points.ts';
 import { clearStorage } from '../storage.ts';
 import { ORCADAS_GUIDING_QUESTION, ORCADAS_INTRO_DESC } from '../../core/src/content/orcadas.ts';
 import { answerFor } from '../../core/src/orcadas.ts';
@@ -254,7 +254,7 @@ test('opens Orcadas from the 2D map, completes it, and updates the log', async (
   // The next-expedition card covers the bottom buttons on a phone until it is closed (#75).
   await page.getByRole('button', { name: 'Quedarme en el mapa' }).click();
   // A point of interest opens a sheet rather than an expedition (Océano, #8, is now an expedition).
-  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
   const erebusBtn = page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Volcán en el hielo/ });
   await expect(erebusBtn).toBeVisible();
   await erebusBtn.click();
@@ -862,7 +862,7 @@ test('Orcadas intro modal opens from marker and list, traps focus, returns focus
   await expect(intro).toHaveCount(0);
   await expect(page.getByRole('button', { name: /^Estación Orcadas, Islas Orcadas del Sur/ })).toBeFocused();
 
-  const listBtn = page.getByRole('button', { name: 'Ver como lista' });
+  const listBtn = page.getByRole('button', { name: LIST_BUTTON_LABEL });
   await listBtn.click();
   await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Estación Orcadas/ }).click();
   await expect(intro).toBeVisible();

@@ -217,13 +217,15 @@ test.describe('resume last expedition', () => {
   });
 
   test('resumes Poncho at exact milestone after reload', async ({ page }) => {
+    // It reloads the page and reads two stops on a software renderer: it takes more than the default 30 s.
+    test.setTimeout(90_000);
     await page.goto('/');
     await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
     await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Poncho/ }).click();
     await page.getByRole('button', { name: 'Comenzar' }).click();
 
     const closeCard = async () => {
-      const dialog = page.locator('section.sheet.voyage');
+      const dialog = page.locator('.poncho-panel, section.sheet.voyage');
       await expect(dialog).toBeVisible();
       const nextSentence = dialog.getByRole('button', { name: 'Siguiente' });
       while (await nextSentence.isVisible()) {

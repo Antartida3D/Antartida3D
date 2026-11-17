@@ -3,7 +3,7 @@ import { resolveRelief, type Tri, type Vec3 } from './lowPoly.ts';
 import { ponchoPrint } from './ponchoPeople.ts';
 import { HAMMER_STAKE_AT, PONCHO_PROP_IDS, PONCHO_PROPS, type PonchoPropId } from './ponchoProps.ts';
 import { buildRescueRotor, PONCHO_PROP2_IDS, PONCHO_PROPS2, RESCUE_ROTOR_AT, type PonchoProp2Id } from './ponchoProps2.ts';
-import { snowMound } from './ponchoShapes.ts';
+import { SHIP_PROP_ID, shipStaticTris } from './ponchoShip.ts';
 
 /**
  * The still parts of a scene of Poncho (the props, the snow they stand in and the boot prints),
@@ -15,8 +15,6 @@ export type Ground = (x: number, z: number) => number;
 
 /** How far the foot of a prop goes into the ground, so on a bump it does not float (as PointModels' FOUNDATION, in scene units). */
 const FOUNDATION = 0.03;
-/** A dog that lies curled in the snow: size of the drift it sleeps in. */
-const DRIFT: readonly [number, number, number] = [0.42, 0.34, 0.1];
 /** Scale of a dog next to a person (ponchoProps.ts: ~0.55). */
 export const DOG_SCALE = 0.55;
 
@@ -40,8 +38,22 @@ function atPerson(e: SceneElement, offset: readonly [number, number]): [number, 
   return [e.x + (offset[0] * c + offset[1] * s) * k, e.z + (-offset[0] * s + offset[1] * c) * k];
 }
 
-/** Every prop a scene may name: those of ponchoProps.ts and of ponchoProps2.ts. */
-export const SCENE_PROP_IDS: readonly string[] = [...PONCHO_PROP_IDS, ...PONCHO_PROP2_IDS];
+/** Every prop a scene may name: those of ponchoProps.ts and of ponchoProps2.ts, and the ship afloat (ponchoShip.ts). */
+export const SCENE_PROP_IDS: readonly string[] = [...PONCHO_PROP_IDS, ...PONCHO_PROP2_IDS, SHIP_PROP_ID];
+
+/**
+ * The ground the props of a scene take beyond their own radius (`PonchoProp.clearings`), as circles (x, z, radius) in the
+ * frame of the scene: a prop as big as a base stands at one point, but its houses must not get rocks scattered inside them.
+ */
+export function sceneClearings(scene: SceneDef): [number, number, number][] {
+  return scene.elements.flatMap((e) => {
+    if (e.kind !== 'prop' || !(e.id in PONCHO_PROPS)) return [];
+    const k = e.scale ?? 1;
+    const c = Math.cos(e.yaw);
+    const s = Math.sin(e.yaw);
+    return PONCHO_PROPS[e.id as PonchoPropId].clearings.map(([px, pz, r]): [number, number, number] => [e.x + (px * c + pz * s) * k, e.z + (-px * s + pz * c) * k, r * k]);
+  });
+}
 
 /** The faces of a prop by id. The parked helicopter takes its rotor, at rest. */
 export function scenePropTris(id: string): readonly Tri[] {
@@ -52,20 +64,21 @@ export function scenePropTris(id: string): readonly Tri[] {
   return [...prop.tris, ...buildRescueRotor().map(([a, b, c, color]): Tri => [[a[0] + rx, a[1] + ry, a[2] + rz], [b[0] + rx, b[1] + ry, b[2] + rz], [c[0] + rx, c[1] + ry, c[2] + rz], color])];
 }
 
-/** The still faces of one element, seated on the ground (relief colors not resolved): its prop, the stake it drives or the drift it sleeps in. Empty for the ones that move. */
-export function elementStaticTris(e: SceneElement, i: number, ground: Ground): Tri[] {
+/** The still faces of one element, seated on the ground (relief colors not resolved): its prop or the stake it drives. Empty for the others (a curled dog lies on the bare ground, #261). */
+export function elementStaticTris(e: SceneElement, ground: Ground): Tri[] {
+  // The ship rides on the water, not on the sea bed under it: only the foot of its gangway follows the ice.
+  if (e.kind === 'prop' && e.id === SHIP_PROP_ID) return shipStaticTris(ground);
   if (e.kind === 'prop') return seatAt(scenePropTris(e.id), e.x, e.z, e.yaw, e.scale ?? 1, ground, e.lift ?? 0);
   if (e.kind === 'person' && e.action === 'hammer') {
     const [sx, sz] = atPerson(e, HAMMER_STAKE_AT);
     return seatAt(PONCHO_PROPS.stakeAndPick.tris, sx, sz, e.yaw, e.scale ?? 1, ground);
   }
-  if (e.kind === 'dog' && e.curled) return seatAt(snowMound(0, 0, DRIFT[0], DRIFT[1], DRIFT[2], 200 + i, 9), e.x, e.z, e.yaw, 1, ground);
   return [];
 }
 
-/** Props, the stake each hammerer drives and the drifts of the curled dogs, seated and colored as the relief (worldY: height in the world). */
+/** Props and the stake each hammerer drives, seated and colored as the relief (worldY: height in the world). */
 export function sceneStaticTris(scene: SceneDef, ground: Ground, worldY: (y: number) => number): Tri[] {
-  return resolveRelief(scene.elements.flatMap((e, i) => elementStaticTris(e, i, ground)), worldY);
+  return resolveRelief(scene.elements.flatMap((e) => elementStaticTris(e, ground)), worldY);
 }
 
 export interface ScenePrints {

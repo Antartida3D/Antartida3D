@@ -31,6 +31,7 @@ export * from './poncho-log.ts';
 export * from './poncho-diorama.ts';
 export * from './poncho-scenes.ts';
 export * from './fan.ts';
+export * from './poncho-ship.ts';
 export * from './labels.ts';
 export * from './viewport.ts';
 export * from './markers.ts';

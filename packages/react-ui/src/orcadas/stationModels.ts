@@ -914,13 +914,13 @@ export function buildStageDetailTris(seed = 190415): Tri[] {
   return tris;
 }
 
-export function generateSnowParticles(count: number, seed = 190412): Float32Array {
+export function generateSnowParticles(count: number, seed = 190412, span = 28, top = 18): Float32Array {
   const rng = createSeededRng(seed);
   const data = new Float32Array(count * 3);
   for (let i = 0; i < count; i++) {
-    data[i * 3] = (rng() - 0.5) * 56;
-    data[i * 3 + 1] = rng() * 18 + 0.4;
-    data[i * 3 + 2] = (rng() - 0.5) * 56;
+    data[i * 3] = (rng() - 0.5) * span * 2;
+    data[i * 3 + 1] = rng() * top + 0.4;
+    data[i * 3 + 2] = (rng() - 0.5) * span * 2;
   }
   return data;
 }

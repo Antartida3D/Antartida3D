@@ -43,6 +43,7 @@ La página es la del PDF del libro `[P1]` donde está el hecho principal de la f
 ### 2. `expedicion-invernal-1962` — El olfato de Poncho (1962, tramo 0)
 
 - **Escena** (p. 12): la expedición invernal en marcha; Poncho olfatea la nieve, se detiene, mira al conductor, camina en zigzag y los hombres hunden bastones y piquetas hasta dar con una grieta.
+- **Diorama** (una etapa por frase): 0 llega la columna (un trineo con cuatro perros, un conductor y un hombre al lado); 1 Poncho avanza olfateando muy despacio, con la cabeza que baja a la nieve y sube; 2 se detiene y mira al conductor, camina en zigzag y los hombres sondean hasta la grieta ancha. La cantidad de perros y de hombres es una ilustración: el libro no da números (fuente a definir).
 - **Gancho:** «La expedición todavía le tenía reservado un puesto nuevo.»
 - **Saber más:** salida el 14 de junio, nunataks Foca, distancia, el peligro de las grietas y que ciertos perros las detectaban con el olfato (p. 6, 9, 12).
 
@@ -55,12 +56,15 @@ La página es la del PDF del libro `[P1]` donde está el hecho principal de la f
 ### 4. `rumbo-a-belgrano` — En rompehielos hacia Belgrano (1964, tramo 1, barco)
 
 - **Escena** (p. 14): diciembre de 1964, viaje a la Base General Belgrano con ayuda de un rompehielos y otros perros, como preparativo de la marcha al Polo.
+- **Escena en el diorama** (#219): un rompehielos entero a flote junto al borde del hielo, pintado como un buque polar (casco azul oscuro con franja roja en la línea de flotación, superestructura blanca con ventanas, botes salvavidas naranjas), con una pasarela de tablones desde el hielo hasta la cubierta de proa. Primero se lo ve completo con Poncho y un hombre en el hielo; después un hombre lleva una fila de perros, Poncho primero, que sube por la pasarela, cruza la cubierta y entra por una puerta de la superestructura: cada uno desaparece al entrar (con movimiento reducido la fila queda quieta a mitad de camino); al final, en el hielo, los trineos y la carga de la marcha al Polo. Es una ilustración: la silueta sigue el modelo del rompehielos del viaje (`irizarModel.ts`), más grande y más alto para que las cubiertas tengan altura de persona, y **no es el barco de 1964**; el libro (p. 14) solo dice «un rompehielos» y el barco no lleva nombre. Las medidas, la pasarela y la puerta están en `packages/core/src/poncho-ship.ts`; el modelo, en `packages/react-ui/src/voyage/ponchoShip.ts`.
 - **Gancho:** «Allá, en el hielo, pronto haría falta un perro como él.»
 - **Saber más:** perros elegidos por su servicio en 1962, la barrera Filchner y el nombre «Operación 90» (p. 14).
 
 ### 5. `rescate-ae-205` — Al rescate de un avión (1965, tramo 2, trineo)
 
 - **Escena** (p. 18): un avión ha caído en el hielo y el mal tiempo impide buscarlo por aire; sale una patrulla de dos hombres y siete perros con Poncho al frente; al cuarto día, apenas olfatea el avión, acelera el paso.
+- **Diorama** (una etapa por frase): 0 el avión destrozado sobre el hielo, más grande que las personas (como un Cessna 185) y color crema para que se distinga de la nieve (la nariz clavada, la cola partida, un ala desprendida, un esquí y chapas sueltas), con los cuatro tripulantes esperando al lado, en plena ventisca; 1 llega la patrulla de dos hombres y siete perros por un rastro en S, con Poncho al frente olfateando: los perros y el trineo pisan su mismo rastro y siguen sus curvas, como una onda, y Poncho encuentra el avión; 2 el tiempo mejora (el libro: «al cuarto día, el clima había mejorado», p. 18) y los hombres de la patrulla dejan el trineo y van hacia los tripulantes. Cuatro tripulantes, dos hombres y siete perros son las cifras del libro (p. 17 y 18); la forma de los daños, los colores, las posturas, la escala y la ventisca son una ilustración.
+- **Foto:** pendiente. No se encontró una foto del AE-205 caído con fuente y licencia verificables (ver [poncho-fuentes.md](./poncho-fuentes.md), 4.5).
 - **Gancho:** «Pero la gran marcha seguía su camino.»
 - **Saber más:** el avión Cessna 185B «AE-205» y el «blanqueo» (p. 17); tres jornadas entre grietas y ventiscas, los víveres que se tragó una grieta y el regreso de 1968 (p. 18).
 

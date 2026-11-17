@@ -101,7 +101,8 @@ export interface MapViewProps {
   voyageResume?: ResumePoint | null;
   onStartVoyage?: (point: MapPoint, resume?: ResumePoint) => void;
   onEndVoyage?: (done: boolean) => void;
-  onVoyageProgress?: (step: number, sub: number) => void;
+  /** The stops reached and, if a card is open, its index: leaving and resuming goes back into it. */
+  onVoyageProgress?: (step: number, sub: number, card?: number) => void;
   /** The 2D base image and optional ink layer reached a usable state. */
   onMap2DReady?: () => void;
 }
@@ -209,24 +210,30 @@ export function MapView({
   const resumeTransport = (r: ResumePoint): TransportId | undefined =>
     r.id === PONCHO_POINT.id ? PONCHO_TRANSPORT.id : TRANSPORTS[r.sub ?? -1]?.id;
 
+  /** Starts a trip where it was left: at the stop reached and, if the user left from inside a stop of Poncho, back into it. */
+  const resumeVoyage = (r: ResumePoint) => {
+    const transport = resumeTransport(r);
+    if (!transport) return;
+    voyage.start(transport, r.step);
+    if (r.card !== undefined && r.card < r.step) voyage.openMilestone(r.card);
+  };
+
   useEffect(() => {
     if (!voyaging) {
       voyage.reset();
       return;
     }
-    if (!voyage.bus.state && voyageResume && voyageResume.step >= 1) {
-      const transport = resumeTransport(voyageResume);
-      if (transport) voyage.start(transport, voyageResume.step);
-    }
+    if (!voyage.bus.state && voyageResume && voyageResume.step >= 1) resumeVoyage(voyageResume);
   }, [voyaging, voyageResume]);
 
   const onVoyageProgressRef = useRef(onVoyageProgress);
   onVoyageProgressRef.current = onVoyageProgress;
   useEffect(() => {
     if (!voyaging || !voyage.state) return;
-    const { transport, reached } = voyage.state;
+    const { transport, reached, card } = voyage.state;
     const sub = transport === PONCHO_TRANSPORT.id ? 0 : TRANSPORTS.findIndex((t) => t.id === transport);
-    if (sub >= 0) onVoyageProgressRef.current?.(reached, sub);
+    // Only the story of Poncho goes back into its card: the other trips offer theirs.
+    if (sub >= 0) onVoyageProgressRef.current?.(reached, sub, transport === PONCHO_TRANSPORT.id && card >= 0 ? card : undefined);
   }, [voyaging, voyage.state]);
 
   const is3D = mode === '3d' && !!Layer3D;
@@ -756,10 +763,7 @@ export function MapView({
                     setSheet(null);
                     setPendingOrcadas(null);
                     if (VOYAGE_POINTS.some((v) => v.id === resumePoint.id)) {
-                      if (resume && resume.step >= 1) {
-                        const transport = resumeTransport(resume);
-                        if (transport) voyage.start(transport, resume.step);
-                      }
+                      if (resume && resume.step >= 1) resumeVoyage(resume);
                       onStartVoyage?.(resumePoint, resume ?? undefined);
                     } else {
                       onStart(resumePoint, undefined, true);

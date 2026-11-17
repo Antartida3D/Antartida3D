@@ -49,6 +49,18 @@ const wave = (phase: number) => 0.5 + 0.5 * Math.sin(phase);
 
 export const standPose = (): PersonPose => ({ legL: 0, legR: 0, armL: 0, armR: 0, torsoPitch: 0, grip: 0 });
 
+/** Biggest sway of someone who waits (radians): the chest rises and falls and the arms shift a little, so nobody looks frozen. */
+export const IDLE_SWAY = 0.07;
+/** Stand still but alive: breathing and a shift of the arms, one cycle per `phase` turn. Never moves the feet. */
+export const idlePose = (phase: number): PersonPose => ({
+  legL: 0,
+  legR: 0,
+  armL: IDLE_SWAY * Math.sin(phase + 1),
+  armR: -IDLE_SWAY * Math.sin(phase + 1),
+  torsoPitch: 0.3 * IDLE_SWAY * Math.sin(phase),
+  grip: 0,
+});
+
 /** Walk: the swing of the Orcadas observer (`observerStridePose`), one stride per `phase` turn. */
 export function walkPose(phase: number): PersonPose {
   const s = observerStridePose(phase / STRIDE_PER_DISTANCE, 1, false);
@@ -101,7 +113,7 @@ export function ponchoPose(action: PersonAction, phase: number): PersonPose {
     case 'haul':
       return haulPose(phase);
     default:
-      return standPose();
+      return idlePose(phase);
   }
 }
 

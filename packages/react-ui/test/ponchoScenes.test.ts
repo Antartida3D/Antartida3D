@@ -8,12 +8,14 @@ import {
   minCameraDistance,
   sceneUnit,
   voyageStops,
+  type SceneDef,
 } from '@antartida/core';
 import { PERSON_VARIANTS } from '../src/voyage/ponchoPeople.ts';
 import { PONCHO_MODELS } from '../src/voyage/ponchoModels.ts';
 import { elementStaticTris, pathFootprints, SCENE_PROP_IDS, sceneFootprints, sceneStaticTris } from '../src/voyage/ponchoSceneBuild.ts';
 import { sceneLookAt } from '../src/voyage/ponchoSceneFocus.ts';
 import type { Tri } from '../src/voyage/lowPoly.ts';
+import { SHIP_PROP_ID } from '../src/voyage/ponchoShip.ts';
 
 const scenes = Object.entries(PONCHO_SCENES);
 const flat = () => 0;
@@ -31,8 +33,10 @@ describe('scenes of Poncho: ids against the models', () => {
     });
 
     it(`${id}: the still parts have faces, are finite and sit on the ground`, () => {
-      const tris = sceneStaticTris(scene, flat, (y) => y);
-      const hasStill = scene.elements.some((e) => e.kind === 'prop' || (e.kind === 'person' && e.action === 'hammer') || (e.kind === 'dog' && e.curled));
+      // The ship rides on the water, not on the ground (its own tests: ponchoShip.test.ts): the rest of the scene sits on it.
+      const grounded: SceneDef = { ...scene, elements: scene.elements.filter((e) => e.id !== SHIP_PROP_ID) };
+      const tris = sceneStaticTris(grounded, flat, (y) => y);
+      const hasStill = grounded.elements.some((e) => e.kind === 'prop' || (e.kind === 'person' && e.action === 'hammer'));
       expect(tris.length > 0).toBe(hasStill);
       for (const t of tris) {
         expect(t.slice(0, 3).flat().every(Number.isFinite)).toBe(true);
@@ -41,7 +45,7 @@ describe('scenes of Poncho: ids against the models', () => {
       }
       // Seated on a ground that rises 0.3 per unit of x, every face follows it: the lowest vertex under each foot is on it.
       const slope = (x: number) => 0.3 * x;
-      const lifted = sceneStaticTris(scene, slope, (y) => y);
+      const lifted = sceneStaticTris(grounded, slope, (y) => y);
       if (tris.length) {
         const mean = (ts: readonly Tri[]) => ts.reduce((s, [a, b, c]) => s + a[1] + b[1] + c[1], 0) / (3 * ts.length);
         const meanX = lifted.reduce((s, [a, b, c]) => s + a[0] + b[0] + c[0], 0) / (3 * lifted.length);
@@ -63,12 +67,13 @@ describe('scenes of Poncho: ids against the models', () => {
 describe('scenes of Poncho: the parts that come and go', () => {
   it('has the still faces of each element on their own, which together are the ones of the scene', () => {
     for (const [, scene] of scenes) {
-      const each = scene.elements.flatMap((e, i) => elementStaticTris(e, i, flat));
+      const each = scene.elements.flatMap((e) => elementStaticTris(e, flat));
       expect(sceneStaticTris(scene, flat, (y) => y)).toHaveLength(each.length);
-      scene.elements.forEach((e, i) => {
-        const tris = elementStaticTris(e, i, flat);
+      scene.elements.forEach((e) => {
+        const tris = elementStaticTris(e, flat);
         if (e.kind === 'prop') expect(tris.length, e.id).toBeGreaterThan(0);
-        if (e.kind === 'sled' || (e.kind === 'dog' && !e.curled)) expect(tris).toHaveLength(0);
+        // A curled dog lies on the bare ground, with no drift of snow under it (#261).
+        if (e.kind === 'sled' || e.kind === 'dog') expect(tris).toHaveLength(0);
       });
     }
   });

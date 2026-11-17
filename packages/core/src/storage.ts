@@ -11,6 +11,8 @@ export interface ResumePoint {
   id: string;
   step: number;
   sub?: number;
+  /** Poncho: index of the stop whose card was open when the user left. Resuming goes back into it. */
+  card?: number;
 }
 
 /** Ids of the completed expeditions. The old format ('1') meant only Fósiles. */
@@ -80,9 +82,13 @@ export function loadLastExpedition(): ResumePoint | null {
     if (typeof record.id !== 'string' || record.id.length === 0) return null;
     if (!isNonNegativeInt(record.step)) return null;
     if (record.sub !== undefined && !isNonNegativeInt(record.sub)) return null;
-    return record.sub !== undefined
-      ? { id: record.id, step: record.step, sub: record.sub }
-      : { id: record.id, step: record.step };
+    if (record.card !== undefined && !isNonNegativeInt(record.card)) return null;
+    return {
+      id: record.id,
+      step: record.step,
+      ...(record.sub !== undefined ? { sub: record.sub } : {}),
+      ...(record.card !== undefined ? { card: record.card } : {}),
+    };
   } catch {
     return null;
   }

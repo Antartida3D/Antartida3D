@@ -799,6 +799,19 @@ export function openVoyageCard(s: VoyageState, index: number): VoyageState {
   return { ...s, card: index };
 }
 
+/**
+ * The card to go back to from the open card of a story told in order (Poncho): the one before it, or null at the first
+ * one or with no card open. Only for stories: the other trips offer their cards by pin, not in a row.
+ */
+export const previousVoyageCard = (s: VoyageState): number | null => (storyInOrder(s.kind) && s.card > 0 ? s.card - 1 : null);
+
+/**
+ * The card that comes after the open one when it is not the last passed (the user went back to read): the next one in
+ * the story. Null at the last passed card, from where the trip goes on, or with no card open.
+ */
+export const nextVoyageCard = (s: VoyageState): number | null =>
+  storyInOrder(s.kind) && s.card >= 0 && s.card + 1 < s.reached ? s.card + 1 : null;
+
 /** A milestone is near while the vehicle is within this many map units of it along the path (about 75 km). */
 export const MILESTONE_NEAR = 10;
 

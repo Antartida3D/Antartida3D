@@ -261,10 +261,10 @@ export function AntarcticaApp() {
     begin(ORCADAS_POINT, 'orcadas', 'ship', !reduced && mode === '3d' && can3D);
   };
 
-  const recordProgress = useCallback((id: string, step: number, sub?: number) => {
-    const next: ResumePoint = sub !== undefined ? { id, step, sub } : { id, step };
+  const recordProgress = useCallback((id: string, step: number, sub?: number, card?: number) => {
+    const next: ResumePoint = { id, step, ...(sub !== undefined ? { sub } : {}), ...(card !== undefined ? { card } : {}) };
     setLastExpedition((prev) => {
-      if (prev && prev.id === next.id && prev.step === next.step && prev.sub === next.sub) return prev;
+      if (prev && prev.id === next.id && prev.step === next.step && prev.sub === next.sub && prev.card === next.card) return prev;
       saveLastExpedition(next);
       return next;
     });
@@ -359,7 +359,7 @@ export function AntarcticaApp() {
             onSkipTravel={skipTravel}
             onStartVoyage={startVoyage}
             onEndVoyage={endVoyage}
-            onVoyageProgress={(step, sub) => recordProgress(voyagePoint.id, step, sub)}
+            onVoyageProgress={(step, sub, card) => recordProgress(voyagePoint.id, step, sub, card)}
             onMap2DReady={map2DReady}
           />
           {!map3dLoaderDismissed && (

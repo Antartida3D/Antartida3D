@@ -3,24 +3,19 @@ import {
   DIORAMA_ENTER_MS,
   DIORAMA_LEAVE_MS,
   DIORAMA_TIMER_SLACK_MS,
-  backStep,
   clampStep,
   dioramaOpacity,
   dioramaRemaining,
+  entryStep,
   dioramaView,
   leaveDiorama,
-  nextStep,
   openDiorama,
   tickDiorama,
   timerFiredDiorama,
 } from '../src/index.ts';
 
 describe('steps of the diorama', () => {
-  it('next and back stay inside 0..count-1', () => {
-    expect(nextStep(0, 3)).toBe(1);
-    expect(nextStep(2, 3)).toBe(2);
-    expect(backStep(1, 3)).toBe(0);
-    expect(backStep(0, 3)).toBe(0);
+  it('keeps a step inside 0..count-1', () => {
     expect(clampStep(9, 3)).toBe(2);
     expect(clampStep(-4, 3)).toBe(0);
     expect(clampStep(NaN, 3)).toBe(0);
@@ -28,31 +23,26 @@ describe('steps of the diorama', () => {
     expect(clampStep(5, 0)).toBe(0);
   });
 
-  it('tells one more sentence at each step', () => {
-    expect([0, 1, 2].map((s) => dioramaView(s, 3).shown)).toEqual([1, 2, 3]);
-    expect(dioramaView(0, 3).first).toBe(true);
-    expect(dioramaView(1, 3).first).toBe(false);
-  });
-
-  it('shows the hook and «Saber más» only at the last step', () => {
-    for (const step of [0, 1]) {
-      const v = dioramaView(step, 3);
-      expect(v.last).toBe(false);
-      expect(v.showsHook).toBe(false);
-      expect(v.showsMore).toBe(false);
-    }
-    const last = dioramaView(2, 3);
-    expect(last.last && last.showsHook && last.showsMore).toBe(true);
+  it('tells one sentence at each step: first and last are marked, the hook shows at the last', () => {
+    expect([0, 1, 2].map((s) => dioramaView(s, 3).first)).toEqual([true, false, false]);
+    expect([0, 1, 2].map((s) => dioramaView(s, 3).last)).toEqual([false, false, true]);
+    expect([0, 1, 2].map((s) => dioramaView(s, 3).showsHook)).toEqual([false, false, true]);
     // A step past the end is the last one.
     expect(dioramaView(40, 3).step).toBe(2);
   });
 
-  it('a tour of one step is first and last at once, and one of none shows nothing', () => {
+  it('a stop of one step is first and last at once, and one of none shows nothing', () => {
     const one = dioramaView(0, 1);
-    expect(one.first && one.last && one.shown === 1).toBe(true);
+    expect(one.first && one.last && one.count === 1).toBe(true);
     const none = dioramaView(0, 0);
-    expect(none.shown).toBe(0);
+    expect(none.count).toBe(0);
     expect(none.last).toBe(true);
+  });
+
+  it('enters a stop at its first sentence, or at its last when coming back from the next stop', () => {
+    expect(entryStep('start', 3)).toBe(0);
+    expect(entryStep('end', 3)).toBe(2);
+    expect(entryStep('end', 0)).toBe(0);
   });
 });
 

@@ -1,9 +1,11 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { BackSide, BufferAttribute, Color, MeshBasicMaterial, SphereGeometry } from 'three';
+import { BackSide, BufferAttribute, Color, MeshBasicMaterial, SphereGeometry, Vector2 } from 'three';
 import { Canvas, useThree } from '@react-three/fiber';
 import { CameraControls, CameraControlsImpl, PerformanceMonitor } from '@react-three/drei';
-import { SHOT_DISTANCE, shotPose, type SceneDef } from '@antartida/core';
+import { SHOT_DISTANCE, SNOW_GALE_KMH, SNOW_LOW_QUALITY_PARTICLES, SNOW_MAX_PARTICLES, sceneBlizzard, shotPose, type SceneDef } from '@antartida/core';
 import { CanvasGuard } from '../CanvasGuard.tsx';
+import { Snowfall } from '../orcadas/WeatherDetails.tsx';
+import { ViewShift, type ViewShiftPx } from '../sceneFrame.tsx';
 import { buildPolyGeometry } from './lowPoly.ts';
 import { DioramaActors } from './PonchoDioramaActors.tsx';
 import { DIORAMA_FOG_FAR, buildDioramaWorld } from './ponchoDioramaGround.ts';
@@ -38,6 +40,16 @@ const FOG_NEAR = 55;
 /** Radius of the dome of the sky, and how far the camera sees: past the fog, which already hides the ground. */
 const SKY_RADIUS = 300;
 const CAMERA_FAR = 400;
+/** In a blizzard (issue #220) the haze closes in: the stage still reads, the far ground is lost in the snow. */
+const BLIZZARD_FOG_NEAR = 4;
+const BLIZZARD_FOG_FAR = 22;
+/** The flakes of a blizzard fill the stage and a little round it (scene units), and are bigger than the station's: wind-blown snow. */
+const BLIZZARD_SPAN = 10;
+const BLIZZARD_TOP = 5;
+const BLIZZARD_FLAKE = 1.6;
+/** The wind of a blizzard: a gale, so the flakes blow across the stage instead of falling, in the face of the team (towards -x). */
+const BLIZZARD_WIND_KMH = SNOW_GALE_KMH + 25;
+const BLIZZARD_WIND = new Vector2(-0.9, 0.35).normalize();
 const skyMaterial = new MeshBasicMaterial({ vertexColors: true, side: BackSide, fog: false, depthWrite: false });
 
 /** A mesh built once per scene, with its geometry freed when it goes. */
@@ -110,26 +122,33 @@ function ShotCamera({ scene, step, reduced }: { scene: SceneDef; step: number; r
 }
 
 /** The scene: sky, ground and sea out to the horizon, and the actors, with the camera on its shot. Mounted inside the Canvas. */
-function Stage({ scene, step, reduced }: { scene: SceneDef; step: number; reduced: boolean }) {
+function Stage({ scene, step, reduced, lowQuality }: { scene: SceneDef; step: number; reduced: boolean; lowQuality: boolean }) {
   const world = useMemo(() => buildDioramaWorld(scene), [scene]);
+  const blizzard = sceneBlizzard(scene, step);
   const land = useMemo(() => buildPolyGeometry(world.land), [world]);
   const sea = useMemo(() => (world.sea.length ? buildPolyGeometry(world.sea) : null), [world]);
   return (
     <>
-      <fog attach="fog" args={[SKY_HAZE, FOG_NEAR, DIORAMA_FOG_FAR]} />
+      {/* The key remounts the fog when the weather changes, so the materials take the new distances. */}
+      <fog key={blizzard ? 'blizzard' : 'clear'} attach="fog" args={blizzard ? [SKY_HAZE, BLIZZARD_FOG_NEAR, BLIZZARD_FOG_FAR] : [SKY_HAZE, FOG_NEAR, DIORAMA_FOG_FAR]} />
       <Sky />
       <Faces geometry={land} />
       {sea && <Faces geometry={sea} />}
       <DioramaActors scene={scene} step={step} ground={world.ground} reduced={reduced} />
+      {blizzard && (
+        <Snowfall count={lowQuality ? SNOW_LOW_QUALITY_PARTICLES : SNOW_MAX_PARTICLES} windKmh={BLIZZARD_WIND_KMH} windVec={BLIZZARD_WIND} reduced={reduced} span={BLIZZARD_SPAN} top={BLIZZARD_TOP} size={BLIZZARD_FLAKE} />
+      )}
       <ShotCamera scene={scene} step={step} reduced={reduced} />
     </>
   );
 }
 
-export function PonchoDioramaCanvas({ scene, step, reduced, onLost }: {
+export function PonchoDioramaCanvas({ scene, step, reduced, shift, onLost }: {
   scene: SceneDef;
   step: number;
   reduced: boolean;
+  /** Pixels the centre of the view moves, so the stage stays in what the panel leaves free. */
+  shift: ViewShiftPx;
   /** The WebGL context was lost and did not come back: the screen gives way to the common card. */
   onLost: () => void;
 }) {
@@ -163,7 +182,8 @@ export function PonchoDioramaCanvas({ scene, step, reduced, onLost }: {
       >
         {/* Reduced motion draws on demand: sparse frames would read as a slow GPU. */}
         {!reduced && <PerformanceMonitor bounds={() => (lowQuality ? [24, 27] : [36, 42])} flipflops={4} onIncline={() => setLowQuality(false)} onDecline={() => setLowQuality(true)} />}
-        <Stage scene={scene} step={step} reduced={reduced} />
+        <ViewShift shift={shift} />
+        <Stage scene={scene} step={step} reduced={reduced} lowQuality={lowQuality} />
       </Canvas>
     </CanvasGuard>
   );

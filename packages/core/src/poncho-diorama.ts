@@ -1,17 +1,14 @@
 /**
- * The screen of a diorama of Poncho (issue #146), without drawing and without a clock of its own:
- * which step of the tour it is at, what the panel shows at each, and how the screen opens and closes.
+ * The screen of a diorama of Poncho (issue #146, replanned in #211), without drawing and without a clock of its own:
+ * which step of the story it is at, what the panel shows at each, and how the screen opens and closes.
  *
- * A tour has one step per sentence of the stop's `essential` text (`essentialSentences`), and one
- * camera shot per step (`SceneShot`). Step `i` (0-based) shows sentences 0..i; the hook of the stop and
- * «Saber más» wait for the last step.
+ * A stop has one step per sentence of its `essential` text (`essentialSentences`) and one camera shot per step
+ * (`SceneShot`). The panel tells one sentence at a time, like the stops of Fósiles: «›» goes to the next one (the
+ * scene shows something new, and the camera moves), «‹» to the one before. Past the last one the trip goes on; before
+ * the first one it goes back to the stop before.
  */
 
-/** The step after `step` (stays at the last) and the one before (stays at the first); `count` is the number of steps. */
-export const nextStep = (step: number, count: number): number => clampStep(step + 1, count);
-export const backStep = (step: number, count: number): number => clampStep(step - 1, count);
-
-/** A step inside 0..count-1 (0 for a tour without steps). */
+/** A step inside 0..count-1 (0 for a stop without steps). */
 export function clampStep(step: number, count: number): number {
   if (!Number.isFinite(step) || count <= 0) return 0;
   return Math.min(count - 1, Math.max(0, Math.trunc(step)));
@@ -21,20 +18,23 @@ export function clampStep(step: number, count: number): number {
 export interface DioramaView {
   /** The step, clamped. */
   readonly step: number;
-  /** How many sentences are told: the first `shown`. */
-  readonly shown: number;
+  /** How many steps the stop has. */
+  readonly count: number;
   readonly first: boolean;
   readonly last: boolean;
-  /** The hook of the stop and «Saber más» show only at the last step. */
+  /** The hook of the stop shows at the last step only, when the story of the stop is told. */
   readonly showsHook: boolean;
-  readonly showsMore: boolean;
 }
 
 export function dioramaView(step: number, count: number): DioramaView {
   const at = clampStep(step, count);
   const last = at === count - 1 || count <= 0;
-  return { step: at, shown: count <= 0 ? 0 : at + 1, first: at === 0, last, showsHook: last, showsMore: last };
+  return { step: at, count: Math.max(0, count), first: at === 0, last, showsHook: last };
 }
+
+/** Where a stop is entered: at its first sentence (coming forward), or at its last (coming back from the next stop). */
+export type DioramaEntry = 'start' | 'end';
+export const entryStep = (entry: DioramaEntry, count: number): number => (entry === 'end' ? clampStep(count - 1, count) : 0);
 
 /** Phases of the screen: the fade in, the tour, the fade out and gone. */
 export type DioramaPhase = 'entering' | 'inside' | 'leaving' | 'closed';

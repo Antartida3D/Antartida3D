@@ -90,6 +90,15 @@ describe('storage', () => {
     expect(loadLastExpedition()).toBeNull();
   });
 
+  it('remembers the stop of Poncho whose card was open, and drops a card that is not a whole number', () => {
+    saveLastExpedition({ id: 'poncho', step: 3, sub: 0, card: 2 });
+    expect(loadLastExpedition()).toEqual({ id: 'poncho', step: 3, sub: 0, card: 2 });
+    for (const card of [-1, 1.5, '2', null]) {
+      mem.set(LAST_EXPEDITION_KEY, JSON.stringify({ id: 'poncho', step: 3, sub: 0, card }));
+      expect(loadLastExpedition()).toBeNull();
+    }
+  });
+
   it('ignores legacy string and corrupt last expedition values', () => {
     for (const raw of [
       '',

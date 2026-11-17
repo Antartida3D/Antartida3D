@@ -185,7 +185,9 @@ export const PONCHO_SCENES: Readonly<Record<string, SceneDef>> = {
     setting: 'station',
     radius: 4,
     elements: [
-      // The base: its huts spread over the bare ground with room between them, with masts, dish and flag, under the mountain (one prop; it stands behind where people walk, so it takes no room on the ground).
+      // The base (one prop, at a point where no one walks; react-ui lays it out from there, ESPERANZA_SCENE_Z): the main house, the
+      // container with the flag and the walkway by the shore on the +x side, the other huts scattered up the slope behind. It takes
+      // no room of its own; its houses keep the rocks off (clearings).
       prop('baseEsperanza', 0, 3.2, 0, 1, { radius: 0.01 }),
       // The dogs of the base rest by the huts all the time, and a man looks after them while the first sentence is told.
       dog('pack', 3.3, 0.2, 0.4, { curled: true }),
@@ -217,7 +219,7 @@ export const PONCHO_SCENES: Readonly<Record<string, SceneDef>> = {
     ],
     camera: { distanceFactor: 1.05, elevationDeg: 42, azimuthDeg: -112 },
     shots: [
-      shot(0, [0, 1.5, 2.4], 22, 10, -92),
+      shot(0, [3.8, 1.3, 0.6], 22, 11, -102),
       shot(1, [-0.3, 0.3, -0.5], 9, 26, -96),
       shot(2, [-0.5, 0.5, 0], 11, 24, -100),
     ],

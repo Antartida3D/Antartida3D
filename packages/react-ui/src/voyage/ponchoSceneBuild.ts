@@ -43,6 +43,20 @@ function atPerson(e: SceneElement, offset: readonly [number, number]): [number, 
 /** Every prop a scene may name: those of ponchoProps.ts and of ponchoProps2.ts. */
 export const SCENE_PROP_IDS: readonly string[] = [...PONCHO_PROP_IDS, ...PONCHO_PROP2_IDS];
 
+/**
+ * The ground the props of a scene take beyond their own radius (`PonchoProp.clearings`), as circles (x, z, radius) in the
+ * frame of the scene: a prop as big as a base stands at one point, but its houses must not get rocks scattered inside them.
+ */
+export function sceneClearings(scene: SceneDef): [number, number, number][] {
+  return scene.elements.flatMap((e) => {
+    if (e.kind !== 'prop' || !(e.id in PONCHO_PROPS)) return [];
+    const k = e.scale ?? 1;
+    const c = Math.cos(e.yaw);
+    const s = Math.sin(e.yaw);
+    return PONCHO_PROPS[e.id as PonchoPropId].clearings.map(([px, pz, r]): [number, number, number] => [e.x + (px * c + pz * s) * k, e.z + (-px * s + pz * c) * k, r * k]);
+  });
+}
+
 /** The faces of a prop by id. The parked helicopter takes its rotor, at rest. */
 export function scenePropTris(id: string): readonly Tri[] {
   if (id in PONCHO_PROPS) return PONCHO_PROPS[id as PonchoPropId].tris;

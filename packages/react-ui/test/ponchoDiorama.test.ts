@@ -95,8 +95,8 @@ describe('ground of the diorama', () => {
       it('reports a place on an element as blocked and a free one as open', () => {
         const e = scene.elements[0];
         expect(dioramaBlocked(scene, e.x, e.z)).toBe(true);
-        // A free place: on land, away from the scene (a station has its sea on -z).
-        expect(dioramaBlocked(scene, -9, scene.setting === 'station' ? 9 : -9)).toBe(false);
+        // A free place: on land, away from the scene (a station has its sea on -z, and its huts scattered behind: #261).
+        expect(dioramaBlocked(scene, scene.setting === 'station' ? -3 : -9, scene.setting === 'station' ? 9 : -9)).toBe(false);
       });
     });
   }

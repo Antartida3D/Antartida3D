@@ -4,7 +4,7 @@ import { SEA_ICE_FLOE_POLY_VARIANTS } from '../orcadas/lowPolyProps.ts';
 import { ICEBERG_PEAKS_POLY, ICEBERG_TABULAR_POLY } from './icebergs.ts';
 import { PRESHADED, RELIEF_ICE, chunk, normalOf, resolveRelief, type Tri, type Vec3 } from './lowPoly.ts';
 import { ponchoFootprints } from './ponchoPeople.ts';
-import { seatAt, type Ground } from './ponchoSceneBuild.ts';
+import { sceneClearings, seatAt, type Ground } from './ponchoSceneBuild.ts';
 import { snowMound } from './ponchoShapes.ts';
 
 /**
@@ -246,6 +246,7 @@ export function dioramaBlocked(scene: SceneDef, x: number, z: number, size = 0):
   // The whole detail must stay on land, not just its middle.
   if (!dioramaOnLand(scene, x, z + seaSide(scene) * size)) return true;
   return (
+    sceneClearings(scene).some(([cx, cz, r]) => Math.hypot(cx - x, cz - z) < r + size) ||
     scene.elements.some((e) => Math.hypot(e.x - x, e.z - z) < sceneBodyRadius(e) + DIORAMA_CLEAR_MARGIN + size) ||
     scene.paths.some((p) => {
       const pts = scenePathPoints(p);
@@ -423,5 +424,8 @@ export function buildDioramaWorld(scene: SceneDef, seed = 146000): DioramaWorld 
   // The sea of a station is only water, with the foam at its shore, to the horizon: no icebergs or floes.
   const station = scene.setting === 'station';
   const sea = hasSea(scene) ? turnedTo(seaSide(scene), station ? STATION_SHORE_SHIFT : 0, [...waterFaces(s + 3), ...foamFaces(), ...(station ? [] : floatingIce(s + 4))]) : [];
-  return { land, sea, ground: dioramaGround };
+  // The props of a station spread up the slope and down to the water (the base, its walkway): they sit on the ground as it is
+  // drawn, and over the sea on the water. Round the stage it is the same swell as everywhere.
+  const ground: Ground = station ? (x, z) => Math.max(DIORAMA_WATER_Y, worldHeight(scene, x, z)) : dioramaGround;
+  return { land, sea, ground };
 }

@@ -1,7 +1,7 @@
 import { block, chunk, prism, quad, RELIEF_ICE, shift, type Tri, type Vec3 } from './lowPoly.ts';
 import { VOXEL_PALETTE } from '../orcadas/stationModels.ts';
 import { loftAlongX, lowestY, rope, slab, snowMound, thinTriangle, tube } from './ponchoShapes.ts';
-import { buildBaseHut, buildEsperanzaBase } from './ponchoBase.ts';
+import { buildBaseHut, buildEsperanzaBase, ESPERANZA_CLEARINGS } from './ponchoBase.ts';
 
 /**
  * Low-poly props of Poncho's stops (rule 30, docs/diseno/estilo-voxel.md): the objects of the
@@ -460,9 +460,11 @@ export interface PonchoProp {
   readonly height: number;
   /** Measured extent [x, y, z] of the box that contains the faces (the test holds it to a box set by hand). */
   readonly size: readonly [number, number, number];
+  /** Circles (x, z, radius) of ground it takes, in its own frame, when its own radius in the scene is only a point (the base). */
+  readonly clearings: readonly (readonly [number, number, number])[];
 }
 
-const BUILDERS: Readonly<Record<PonchoPropId, readonly [string, () => Tri[]]>> = {
+const BUILDERS: Readonly<Record<PonchoPropId, readonly [string, () => Tri[], (readonly (readonly [number, number, number])[])?]>> = {
   tent: ['Carpa de tela', buildTent],
   shovel: ['Pala', buildShovel],
   staffAndPick: ['Bastón y piqueta', buildStaffAndPick],
@@ -475,7 +477,7 @@ const BUILDERS: Readonly<Record<PonchoPropId, readonly [string, () => Tri[]]>> =
   iceTunnelEntrance: ['Entrada de un túnel de hielo', buildIceTunnelEntrance],
   nansenSled: ['Trineo Nansen', buildNansenSled],
   baseHut: ['Casilla baja de la base', buildBaseHut],
-  baseEsperanza: ['Base Esperanza: casas, mástiles y rocas', buildEsperanzaBase],
+  baseEsperanza: ['Base Esperanza: casa principal, contenedor con la bandera, muelle, casas y rocas', buildEsperanzaBase, ESPERANZA_CLEARINGS],
 };
 
 const extentOf = (tris: readonly Tri[]): [number, number, number] => {
@@ -487,9 +489,9 @@ const extentOf = (tris: readonly Tri[]): [number, number, number] => {
 };
 
 const makeProp = (id: PonchoPropId): PonchoProp => {
-  const [label, build] = BUILDERS[id];
+  const [label, build, clearings = []] = BUILDERS[id];
   const tris = build();
-  return { id, label, tris, height: Math.max(...tris.flatMap(([a, b, c]) => [a[1], b[1], c[1]])), size: extentOf(tris) };
+  return { id, label, tris, height: Math.max(...tris.flatMap(([a, b, c]) => [a[1], b[1], c[1]])), size: extentOf(tris), clearings };
 };
 
 /** Every prop, built once. The test of detail (rule 30) walks this table. */

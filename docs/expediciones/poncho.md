@@ -12,7 +12,7 @@ Contenido del recorrido de **«Poncho»** (issues #9, #27 y #145). Cuenta la vid
 
 ## Cómo está contado
 
-El recorrido tiene **10 paradas** en **cuatro actos**. Cada parada es una ficha con:
+El recorrido tiene **9 paradas** en **cuatro actos**. Cada parada es una ficha con:
 
 1. **Rótulo de acto** (solo en la primera parada de cada acto), arriba del título.
 2. **`essential`:** una mini-escena de dos o tres frases cortas, con algo que se ve y se hace (los abrigos naranjas, la cincha atada a la cintura, los hombres que sondean con bastones y piquetas, la brújula que se hunde en la nieve). Empieza con un eco del gancho de la parada anterior.
@@ -27,7 +27,7 @@ Entre paradas, mientras el equipo viaja, aparece el **diario de ruta**: una lín
 | :--- | :--- | :--- | :--- |
 | 1 | Un cachorro que aprende | `nacimiento` | `nacimiento` |
 | 2 | El guía en quien confían | `expedicion-invernal-1962` | `expedicion-invernal-1962`, `poncho-perro-guia` |
-| 3 | Salvar vidas en el hielo | `rumbo-a-belgrano` | `rumbo-a-belgrano`, `rescate-ae-205`, `patrulla-paralelo-82`, `paracaidas`, `brujula-perdida` |
+| 3 | Salvar vidas en el hielo | `rumbo-a-belgrano` | `rumbo-a-belgrano`, `rescate-ae-205`, `paracaidas`, `brujula-perdida` |
 | 4 | Un retiro merecido | `adios-a-la-antartida` | `adios-a-la-antartida`, `ushuaia` |
 
 ## Paradas (en orden de recorrido)
@@ -69,31 +69,29 @@ La página es la del PDF del libro `[P1]` donde está el hecho principal de la f
 - **Gancho:** «Pero la gran marcha seguía su camino.»
 - **Saber más:** el avión Cessna 185B «AE-205» y el «blanqueo» (p. 17); tres jornadas entre grietas y ventiscas, los víveres que se tragó una grieta y el regreso de 1968 (p. 18).
 
-### 6. `patrulla-paralelo-82` — La patrulla «Paralelo 82» (1965, tramo 2)
+### 6. `paracaidas` — De la patrulla al salto en paracaídas (1966, tramo 2)
 
-- **Escena** (p. 15): Poncho guía la patrulla de trineos de perros que va por delante de los tractores para detectar peligros; cuando los tractores se separan, conduce al grupo por portezuelos y valles helados de las montañas Santa Fe.
-- **Gancho:** «Y todavía le esperaba una aventura por el aire.»
-- **Saber más:** salida del 26 de octubre (`O12`), separación del 18 de noviembre y los 83° de latitud sur (p. 15), el barranco frente al pico Santa Fe (p. 16), la posición del pico (`P3`), y que Poncho no llegó al Polo: lo alcanzaron los tractores el 10 de diciembre, tras 66 días (p. 17, `O12`).
+Junta los hitos 6 y 7 anteriores ([DEC-221](../decisiones/DEC-221-patrulla-y-paracaidas-en-una-parada.md)): la patrulla «Paralelo 82» ya no es una parada ni tiene escena; se cuenta resumida al principio de esta y con todos sus datos en «Saber más».
 
-### 7. `paracaidas` — Poncho paracaidista (1966, tramo 2)
-
-- **Escena** (p. 19), ilustración del relato, no un registro: el helicóptero entra volando, grande y alto, con dos oficiales esperando abajo; los tres perros bajan con paracaídas, chicos bajo el helicóptero y moviendo las patas como si nadaran; aterrizan en el hielo y Poncho sale al frente del trineo, con un hombre detrás, hasta llegar a los oficiales. La cantidad de personas y los tamaños son una ilustración (el libro no los da).
+- **Texto** (cita principal: p. 19): la gran marcha sigue su camino; Poncho guía a la patrulla «Paralelo 82» por las montañas Santa Fe y tira hacia arriba de un trineo que cayó a un barranco (p. 15 y 16); después, en un helicóptero se abre la puerta y los perros saltan con paracaídas, aterrizan y Poncho sale al frente del trineo, a rescatar a una patrulla perdida (p. 19).
+- **Escena** (la del salto), ilustración del relato, no un registro: el helicóptero entra volando, grande y alto, con dos oficiales esperando abajo; los tres perros bajan con paracaídas, chicos bajo el helicóptero y moviendo las patas como si nadaran; aterrizan en el hielo y Poncho sale al frente del trineo, con un hombre detrás, hasta llegar a los oficiales. La cantidad de personas y los tamaños son una ilustración (el libro no los da). La patrulla no tiene escena: la primera frase la nombra mientras se ve el helicóptero.
+- **Foto:** la del equipo de perros de la página «El perro polar» (Fundación Marambio), que antes iba en la parada de la patrulla.
 - **Gancho:** «Pero otra tormenta ya lo esperaba.»
-- **Saber más:** Pato y Bucky, el arnés, el afecto del suboficial a cargo, el trineo desarmable y los oficiales que saltaron antes, el helicóptero S-55 y los 30 km al sur de Belgrano (p. 18 y 19).
+- **Saber más:** de la patrulla, la salida del 26 de octubre (`O12`), que iba por delante de los tractores, la separación del 18 de noviembre, los portezuelos de las montañas Santa Fe y los 83° de latitud sur (p. 15), el barranco frente al pico Santa Fe (p. 16), la posición del pico (`P3`), y que Poncho no llegó al Polo: lo alcanzaron los tractores el 10 de diciembre, tras 66 días (p. 17, `O12`); del salto, Pato y Bucky, el arnés, el afecto del suboficial a cargo, el trineo desarmable y los oficiales que saltaron antes, el helicóptero S-55 y los 30 km al sur de Belgrano (p. 18 y 19).
 
-### 8. `brujula-perdida` — La brújula perdida (1967, tramo 4, trineo)
+### 7. `brujula-perdida` — La brújula perdida (1967, tramo 4, trineo)
 
 - **Escena** (p. 20): una ventisca sorprende a la patrulla a unos doce kilómetros de Esperanza; el trineo vuelca, la brújula se hunde en la nieve; los hombres solo pueden seguir a Poncho y, tras dos horas a ciegas, ven las luces de la base.
 - **Gancho:** «Esa noche su legajo sumó una proeza más.»
 - **Saber más:** la bahía Duse sobre mar congelado (p. 19), la «Cuesta de los Afligidos», las tres cañas con banderolas y la brújula recuperada tres días después (p. 20).
 
-### 9. `adios-a-la-antartida` — Poncho deja la Antártida (1973, tramo 5, barco)
+### 8. `adios-a-la-antartida` — Poncho deja la Antártida (1973, tramo 5, barco)
 
 - **Escena** (p. 21): en su legajo aparece cada vez más «No trabajó»; ya no corre a la par de los jóvenes; llega el rompehielos y lo llevan a bordo rumbo a Ushuaia, una excepción por su prestigio.
 - **Gancho:** «Lejos de la nieve lo esperaba un mundo nuevo.»
 - **Saber más:** el traslado de 1973 con una familia de Ushuaia y su hotel (p. 5); legajo y excepción (p. 21).
 
-### 10. `ushuaia` — Un final tranquilo en Ushuaia (1978, tramo 5)
+### 9. `ushuaia` — Un final tranquilo en Ushuaia (1978, tramo 5)
 
 - **Escena** (p. 22): en ese mundo nuevo, Poncho vive plácidamente en el hotel de un viejo compañero de patrulla; llega a casi 18 años; una mañana de primavera de 1978, en el jardín, ya no despierta.
 - **Gancho:** «Así termina el camino de Poncho.»

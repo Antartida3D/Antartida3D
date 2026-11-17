@@ -197,3 +197,17 @@
   font-size: 13px;
   color: var(--chart-muted);
 }
+
+/* The blizzard button beside the scene label (#263): a small paper button, pressed while it blows. */
+.mar .mar-storm-btn {
+  pointer-events: auto;
+  min-height: 44px;
+  margin-bottom: 8px;
+  padding: 0 14px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+.mar .mar-storm-btn[aria-pressed="true"] {
+  background: var(--chart-ink);
+  color: var(--ice);
+}

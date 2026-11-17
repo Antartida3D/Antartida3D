@@ -1,5 +1,7 @@
 import type { FactKind } from './orcadas.ts';
 import { VOYAGE_SOURCES, type VoyageSourceCode } from './ushuaia.ts';
+import { MARAMBIO_BLIZZARD_HIGH_YEAR, MARAMBIO_CLIMATE } from './marambio-climate.ts';
+import { MONTH_NAMES } from './orcadas.ts';
 
 /**
  * Content of the Base Marambio diorama (issue #74): a few points of interest to walk, each with
@@ -21,8 +23,8 @@ export interface MarambioSource {
 
 export interface MarambioFact {
   id: string;
-  /** The point of interest it belongs to, or the scene label («Reconstrucción ilustrada»). */
-  spot: MarambioSpotId | 'scene' | 'months';
+  /** The point of interest it belongs to, the scene label («Reconstrucción ilustrada»), the months or the blizzard button (#263). */
+  spot: MarambioSpotId | 'scene' | 'months' | 'storm';
   kind: FactKind;
   text: string;
   sourceIds: readonly string[];
@@ -83,6 +85,30 @@ export const MARAMBIO_SOURCES: readonly MarambioSource[] = [
     consulted: '15 de noviembre de 2026',
   },
   {
+    id: 'omm-ventisca-alta',
+    label: 'Atlas Internacional de Nubes: Ventisca alta',
+    short: 'OMM, ventisca alta',
+    org: 'Organización Meteorológica Mundial (OMM)',
+    url: 'https://cloudatlas.wmo.int/es/blowing-snow.html',
+    consulted: '17 de noviembre de 2026',
+  },
+  {
+    id: 'omm-ventisca-baja',
+    label: 'Atlas Internacional de Nubes: Ventisca baja',
+    short: 'OMM, ventisca baja',
+    org: 'Organización Meteorológica Mundial (OMM)',
+    url: 'https://cloudatlas.wmo.int/es/drifting-snow.html',
+    consulted: '17 de noviembre de 2026',
+  },
+  {
+    id: 'aad-weather',
+    label: 'Antarctic weather',
+    short: 'Programa Antártico Australiano',
+    org: 'Australian Antarctic Division',
+    url: 'https://www.antarctica.gov.au/about-antarctica/weather-and-climate/weather/',
+    consulted: '17 de noviembre de 2026',
+  },
+  {
     id: 'smn-clima',
     label: 'Clima en Argentina: Base Marambio (copia del Internet Archive del 4 de septiembre de 2017)',
     short: 'SMN, clima de Marambio',
@@ -91,6 +117,13 @@ export const MARAMBIO_SOURCES: readonly MarambioSource[] = [
     consulted: '15 de noviembre de 2026',
   },
 ];
+
+/** The month with most days of «ventisca alta» and the one with fewest, from the SMN normals. */
+const byHighDays = MARAMBIO_CLIMATE.map((c, i) => ({ days: c.blizzardHighDays, name: MONTH_NAMES[i] ?? '' })).sort((a, b) => b.days - a.days);
+const MOST = byHighDays[0];
+const FEWEST = byHighDays[byHighDays.length - 1];
+/** The month the blizzard button shows: the one with most days of «ventisca alta» (1 to 12). */
+export const MARAMBIO_STORM_MONTH = MARAMBIO_CLIMATE.findIndex((c) => c.blizzardHighDays === MOST.days) + 1;
 
 const SOURCE_MAP = new Map<string, MarambioSource>(MARAMBIO_SOURCES.map((src) => [src.id, src]));
 
@@ -283,6 +316,42 @@ export const MARAMBIO_FACTS: readonly MarambioFact[] = [
     text: 'La temperatura media va de -0,8 °C en enero a -14,9 °C en junio y en julio (promedio de 1991 a 2020).',
     sourceIds: ['smn-normales'],
   },
+  // storm: what the «Ver una ventisca» button explains (#263)
+  {
+    id: 'storm-alta',
+    spot: 'storm',
+    kind: 'real',
+    text: 'En una ventisca alta el viento levanta la nieve del suelo a alturas moderadas o grandes. A la altura de los ojos se ve muy poco, y la nieve puede “velar el cielo e incluso el sol”.',
+    sourceIds: ['omm-ventisca-alta'],
+  },
+  {
+    id: 'storm-baja',
+    spot: 'storm',
+    kind: 'real',
+    text: 'En una ventisca baja la nieve queda cerca del suelo: puede tapar obstáculos muy bajos, pero casi no cambia lo que se ve a la altura de los ojos.',
+    sourceIds: ['omm-ventisca-baja'],
+  },
+  {
+    id: 'storm-marambio',
+    spot: 'storm',
+    kind: 'real',
+    text: `En Marambio hay en promedio ${Math.round(MARAMBIO_BLIZZARD_HIGH_YEAR)} días al año con ventisca alta, sobre todo en invierno: ${Math.round(MOST.days)} en ${MOST.name} y ${Math.round(FEWEST.days)} en ${FEWEST.name} (promedio de 1991 a 2020).`,
+    sourceIds: ['smn-normales'],
+  },
+  {
+    id: 'storm-blizzard',
+    spot: 'storm',
+    kind: 'real',
+    text: 'Para el programa antártico australiano hay tormenta de nieve (“blizzard”) cuando el viento sopla con fuerza de temporal durante al menos una hora, la temperatura está bajo 0 °C y la visibilidad baja a 100 m o menos. Cada país usa sus propios criterios.',
+    sourceIds: ['aad-weather'],
+  },
+  {
+    id: 'storm-simulacion',
+    spot: 'storm',
+    kind: 'sim',
+    text: 'La ventisca de la escena es una simulación: muestra cómo la nieve y la bruma tapan la base, no la fuerza real del viento.',
+    sourceIds: [],
+  },
   {
     id: 'months-simulacion',
     spot: 'months',
@@ -372,7 +441,7 @@ export function marambioPhotos(spot: MarambioSpotId): readonly MarambioPhoto[] {
   return MARAMBIO_PHOTOS.filter((photo) => photo.spot === spot);
 }
 
-export function marambioFacts(spot: MarambioSpotId | 'scene' | 'months'): readonly MarambioFact[] {
+export function marambioFacts(spot: MarambioFact['spot']): readonly MarambioFact[] {
   return MARAMBIO_FACTS.filter((fact) => fact.spot === spot);
 }
 

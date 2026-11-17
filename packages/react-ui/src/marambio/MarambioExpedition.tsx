@@ -10,6 +10,7 @@ import {
   MARAMBIO_PHOTO_CREDIT,
   MARAMBIO_SOURCES,
   MARAMBIO_SPOTS,
+  MARAMBIO_STORM_MONTH,
   MARAMBIO_TITLE,
   marambioFacts,
   marambioPhotos,
@@ -96,7 +97,7 @@ function marambioSeason(onOpenSource: (id: string) => void): MonthStripSeason {
 }
 
 /** Always-visible label of the scene: it is an illustrated reconstruction, and what that means. */
-function SceneBadge({ onOpenSource }: { onOpenSource: (id: string) => void }) {
+function SceneBadge({ onOpenSource, storm, onStorm }: { onOpenSource: (id: string) => void; storm: boolean; onStorm: () => void }) {
   const [open, setOpen] = useState(false);
   const helpRef = useRef<HTMLButtonElement>(null);
   const facts = marambioFacts('scene');
@@ -115,6 +116,10 @@ function SceneBadge({ onOpenSource }: { onOpenSource: (id: string) => void }) {
           ?
         </button>
       </div>
+      {/* Blows a blizzard over the base and explains it (#263): its own row, over the label. */}
+      <button type="button" className="btn mar-storm-btn" aria-pressed={storm} onClick={onStorm}>
+        {storm ? 'Calmar la ventisca' : 'Ver una ventisca'}
+      </button>
       {open && (
         <div className="orc-scene-help-popover" role="note">
           {facts.map((f) => (
@@ -263,6 +268,8 @@ export function MarambioExpedition({
     onProgressRef.current?.(index);
   }, [index]);
   const [showSources, setShowSources] = useState(false);
+  // The blizzard of the button: the scene blows it and the panel explains it (#263).
+  const [storm, setStorm] = useState(false);
   const [highlight, setHighlight] = useState<string | null>(null);
   const [sheetSize, setSheetSize] = useState<OpenSheetSize>('small');
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -280,7 +287,7 @@ export function MarambioExpedition({
   useEffect(() => {
     if (!moved.current) return;
     headingRef.current?.focus({ preventScroll: true });
-  }, [index, showSources]);
+  }, [index, showSources, storm]);
 
   useEffect(() => {
     if (!showSources || !highlight) return;
@@ -289,6 +296,7 @@ export function MarambioExpedition({
 
   const go = (next: number) => {
     moved.current = true;
+    setStorm(false);
     setShowSources(false);
     setHighlight(null);
     setIndex(next);
@@ -307,6 +315,15 @@ export function MarambioExpedition({
     setHighlight(null);
     setSheetSize((size) => (size === 'peek' ? 'small' : size));
   };
+  const toggleStorm = () => {
+    moved.current = true;
+    setShowSources(false);
+    setHighlight(null);
+    // It blows in the month with most days of «ventisca alta», the one its facts speak of.
+    if (!storm) setMonth(MARAMBIO_STORM_MONTH);
+    setStorm(!storm);
+    setSheetSize((size) => (size === 'peek' ? 'small' : size));
+  };
   // One season for the whole visit: its source links reach the latest openSources through a ref.
   const openSourcesRef = useRef(openSources);
   openSourcesRef.current = openSources;
@@ -317,10 +334,10 @@ export function MarambioExpedition({
       <div className="orc-panel-scroll">
         <div className="orc-panel-head">
           <span id="mar-panel-label" className="orc-kicker hand">
-            {showSources ? 'Fuentes de la base' : `Punto ${index + 1} de ${MARAMBIO_SPOTS.length}`}
+            {showSources ? 'Fuentes de la base' : storm ? 'Ventisca en la base' : `Punto ${index + 1} de ${MARAMBIO_SPOTS.length}`}
           </span>
           <h2 className="orc-chapter-h2" ref={headingRef} tabIndex={-1}>
-            {showSources ? 'De dónde sale cada dato' : spot.label}
+            {showSources ? 'De dónde sale cada dato' : storm ? '¿Qué es una ventisca?' : spot.label}
           </h2>
         </div>
         {showSources ? (
@@ -345,6 +362,12 @@ export function MarambioExpedition({
               <span>Consultado el {MARAMBIO_PHOTO_ARCHIVE.consulted} · archivo familiar, sin enlace público</span>
             </li>
           </ul>
+        ) : storm ? (
+          <div className="orc-facts-list">
+            {marambioFacts('storm').map((fact) => (
+              <FactCard key={fact.id} fact={fact} onOpenSource={openSources} />
+            ))}
+          </div>
         ) : (
           <div className="orc-chapter-content">
             {index === 0 && <p className="orc-question">{MARAMBIO_GUIDING_QUESTION}</p>}
@@ -382,7 +405,11 @@ export function MarambioExpedition({
       <div className="orc-bar ebar">
         {showSources ? (
           <button type="button" className="btn primary" onClick={closeSources}>
-            Volver a la base
+            {storm ? 'Volver a la ventisca' : 'Volver a la base'}
+          </button>
+        ) : storm ? (
+          <button type="button" className="btn primary" onClick={toggleStorm}>
+            Calmar la ventisca
           </button>
         ) : (
           <>
@@ -406,6 +433,7 @@ export function MarambioExpedition({
       aria-label={`Expedición ${MARAMBIO_TITLE}`}
       onKeyDown={(e) => {
         if (e.key === 'Escape' && showSources) closeSources();
+        else if (e.key === 'Escape' && storm) toggleStorm();
       }}
     >
       <MarambioScene
@@ -416,11 +444,12 @@ export function MarambioExpedition({
         overlayRef={overlayRef}
         onIrizar={() => setTrip(true)}
         month={month}
+        storm={storm}
       />
 
       <MonthStrip month={month} onMonth={setMonth} season={season} />
 
-      <SceneBadge onOpenSource={openSources} />
+      <SceneBadge onOpenSource={openSources} storm={storm} onStorm={toggleStorm} />
 
       <div className="orc-hotspots" ref={overlayRef} role="group" aria-label="Puntos de interés de la base">
         {MARAMBIO_SPOTS.map((s, i) => {

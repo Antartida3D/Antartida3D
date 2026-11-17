@@ -53,6 +53,7 @@ export * from './svg/filters.ts';
 export * from './svg/map.ts';
 export * from './svg/art.ts';
 export * from './coastline.ts';
+export * from './relief-contours.ts';
 export * from './southern-lands.ts';
 export * from './relief.ts';
 export * from './terrain.ts';

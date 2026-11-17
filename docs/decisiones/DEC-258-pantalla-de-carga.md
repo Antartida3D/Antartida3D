@@ -4,10 +4,10 @@
 {
   "id": "DEC-258",
   "date": "2026-11-17",
-  "status": "accepted",
+  "status": "superseded",
   "issue": 258,
   "supersedes": [],
-  "supersededBy": null
+  "supersededBy": "DEC-276"
 }
 ```
 

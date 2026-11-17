@@ -123,18 +123,25 @@ export function pacedSteps(shown: number, done: number): number {
 }
 
 /**
- * Radius, in pixels, of the colour layer of the poster. It starts at 0 and, with all the steps
- * done, covers the screen: the mask is solid up to POSTER_SOLID of its radius, so the radius is
- * enlarged by that much past the farthest corner. `pole` is the position of the South Pole in the
- * poster, in percent of its width and height.
+ * Splits a multi-subpath SVG path into its longest closed coastline (`main`)
+ * and all remaining subpaths (`islands`), keeping original coordinates intact.
  */
-export const POSTER_SOLID = 0.6;
-export function posterReveal(progress: number, size: { vw: number; vh: number }, pole: { x: number; y: number }): number {
-  const p = Math.min(1, Math.max(0, progress));
-  const px = (pole.x / 100) * size.vw;
-  const py = (pole.y / 100) * size.vh;
-  const corner = Math.hypot(Math.max(px, size.vw - px), Math.max(py, size.vh - py));
-  return (corner / POSTER_SOLID) * p ** 1.5;
+export function splitAntarcticaCoastline(path: string): { main: string; islands: string } {
+  const parts = path
+    .trim()
+    .split(/(?=M)/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (parts.length === 0) return { main: '', islands: '' };
+
+  let longestIndex = 0;
+  for (let i = 1; i < parts.length; i += 1) {
+    if (parts[i]!.length > parts[longestIndex]!.length) longestIndex = i;
+  }
+
+  const main = parts[longestIndex]!;
+  const islands = parts.filter((_, i) => i !== longestIndex).join(' ');
+  return { main, islands };
 }
 
 export interface LoaderFact {

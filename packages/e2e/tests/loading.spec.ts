@@ -106,28 +106,28 @@ function expectReadableTiming(run: LoadingRun) {
   expect(run.removedAt - run.leavingAt).toBeGreaterThanOrEqual(350);
 }
 
-async function expectDeepFixed(loader: Locator) {
+async function expectPaperFixed(loader: Locator) {
   const colors = await loader.evaluate((element: HTMLElement) => {
     const loaderStyle = getComputedStyle(element);
     const probe = document.createElement('div');
-    probe.style.backgroundColor = 'var(--deep)';
+    probe.style.backgroundColor = 'var(--paper)';
     probe.style.position = 'absolute';
     document.body.append(probe);
-    const deepColor = getComputedStyle(probe).backgroundColor;
+    const paperColor = getComputedStyle(probe).backgroundColor;
     probe.remove();
     return {
       position: loaderStyle.position,
       backgroundColor: loaderStyle.backgroundColor,
-      deepColor,
+      paperColor,
     };
   });
 
   expect(colors.position).toBe('fixed');
-  expect(colors.backgroundColor).toBe(colors.deepColor);
+  expect(colors.backgroundColor).toBe(colors.paperColor);
 }
 
 test.describe('Loading screen', () => {
-  test('map3d loader draws the map from a poster behind one small card (#258)', async ({ page }) => {
+  test('map3d loader draws the cartographic continent in blue with steps and real fact (#276)', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     await installLoadingTimingObserver(page);
     const terrain = deferred();
@@ -143,25 +143,25 @@ test.describe('Loading screen', () => {
       await expect(loader.locator('[aria-live="polite"]')).toBeAttached();
       const bar = loader.getByRole('progressbar');
       await expect(bar).toHaveAttribute('aria-valuemax', '5');
-      // The step under way, in plain words, and its number.
-      await expect(loader.getByRole('heading', { level: 1 })).toHaveText(/Preparando el cuaderno|Levantando el relieve/);
-      await expect(loader.locator('.ld-count')).toHaveText(/^[1-5] de 5$/);
-      // Gone with the old loader: the list of five steps, the title and the orange.
-      await expect(loader.locator('.ld-step')).toHaveCount(0);
-      await expect(loader.getByText('Desplegando la carta austral')).toHaveCount(0);
-      await expect(loader.getByText(/Atlas antártico/)).toHaveCount(0);
+      await expect(loader.getByRole('heading', { level: 1 })).toHaveText('Desplegando la carta austral');
+      await expect(loader.getByText(/Atlas antártico · Vista 3D/i)).toBeVisible();
 
-      // The poster is a picture of the app itself: no text for a screen reader.
-      await expect(loader.locator('.ld-poster')).toHaveAttribute('aria-hidden', 'true');
-      await expect(loader.locator('.ld-poster-sketch')).toHaveAttribute('alt', '');
-      await expectDeepFixed(loader);
+      const steps = loader.locator('.ld-step');
+      await expect(steps).toHaveCount(5);
+      await expect(steps.first()).toContainText('Preparando el cuaderno');
+      await expect(steps.last()).toContainText('Encendiendo la luz');
+
+      // The continent SVG is decorative: hidden from screen readers.
+      await expect(loader.locator('.ld-cam-map')).toHaveAttribute('aria-hidden', 'true');
+      await expect(loader.locator('.ld-cam-map svg')).toBeVisible();
+      await expectPaperFixed(loader);
 
       // «Dato real»: the sentence and every source of its card.
       const fact = loader.locator('.ld-fact');
       await expect(fact).toContainText('Mientras tanto · dato real');
       await expect(fact.locator('.ld-source')).toContainText(/^Fuentes: .+ · ficha “.+”\.?$/);
 
-      // One line around the card (DEC-234) and a card that stays small.
+      // One border line around the card (DEC-234).
       const cards = loader.locator('.ld-card');
       await expect(cards).toHaveCount(1);
       const card = await cards.evaluate((el) => {
@@ -170,8 +170,8 @@ test.describe('Loading screen', () => {
         return { border: style.borderStyle, w: box.width, h: box.height, vw: innerWidth, vh: innerHeight };
       });
       expect(card.border).toBe('solid');
-      expect(card.h).toBeLessThan(card.vh * 0.6);
-      expect(card.w).toBeLessThanOrEqual(card.vw < 820 ? card.vw - 24 : 440);
+      expect(card.h).toBeLessThan(card.vh * 0.65);
+      expect(card.w).toBeLessThanOrEqual(card.vw < 820 ? card.vw - 12 : 610);
 
       // Release only after the structural assertions: the gate keeps the loader mounted.
       terrain.release();
@@ -218,7 +218,8 @@ test.describe('Loading screen', () => {
 
       const loader = page.locator('[data-loading-variant="map2d"]');
       await expect(loader).toBeVisible();
-      await expect(loader.getByRole('heading', { level: 1 })).toHaveText(/Preparando el cuaderno|Dibujando el mapa en 2D/);
+      await expect(loader.getByRole('heading', { level: 1 })).toHaveText('Desplegando la carta austral');
+      await expect(loader.locator('.ld-step')).toHaveCount(2);
       await expect(loader.getByRole('progressbar')).toHaveAttribute('aria-valuemax', '2');
 
       // The 2D view is usable even while the idle 3D preload remains behind the gate.
@@ -273,11 +274,11 @@ test.describe('Loading screen', () => {
       terrain.release();
     }
 
-    // The loader tells it plainly and keeps only the sketch of the poster (#258).
+    // The loader tells it plainly and keeps only the base sketch (#276).
     const fallback = page.locator('.ld');
     await expect(fallback.getByRole('heading', { name: 'Seguimos con el mapa en 2D' })).toBeVisible();
     await expect(fallback).toContainText('El relieve 3D no pudo cargar en este dispositivo.');
-    await expect(fallback.locator('.ld-poster-color')).toHaveCount(0);
+    await expect(fallback.locator('.ld-map-shelves-fill')).toHaveCount(0);
     await expect(fallback.locator('.ld-fact')).toHaveCount(0);
 
     await expect(page.locator('.ld')).toHaveCount(0, { timeout: 10_000 });

@@ -1,16 +1,17 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  ANTARCTICA_PATH,
   LOADER_STEP_MS,
   LOADER_STEP_TEXT,
   LOADER_STEP_TEXT_2D,
   MAP3D_STEPS,
-  POSTER_SOLID,
   PTS,
+  RELIEF_CONTOURS,
   createLoadingStore,
   firstSentence,
   loaderFact,
   pacedSteps,
-  posterReveal,
+  splitAntarcticaCoastline,
 } from '../src/index.ts';
 
 describe('createLoadingStore', () => {
@@ -90,25 +91,29 @@ describe('loader texts and timing (#258)', () => {
     // A whole load takes a few steps long, not a fixed wait after the end.
     expect(5 * LOADER_STEP_MS).toBeLessThan(3000);
   });
+});
 
-  it('grows the colour from nothing to the whole screen', () => {
-    const size = { vw: 1440, vh: 900 };
-    const pole = { x: 50, y: 50 };
-    expect(posterReveal(0, size, pole)).toBe(0);
-    const mid = posterReveal(0.5, size, pole);
-    const full = posterReveal(1, size, pole);
-    expect(mid).toBeGreaterThan(0);
-    expect(full).toBeGreaterThan(mid);
-    // The solid part of the mask reaches the farthest corner.
-    const corner = Math.hypot(720, 450);
-    expect(full * POSTER_SOLID).toBeGreaterThanOrEqual(corner);
-    expect(posterReveal(2, size, pole)).toBe(full);
-    expect(posterReveal(-1, size, pole)).toBe(0);
+describe('splitAntarcticaCoastline', () => {
+  it('separates the continental coastline from islands without losing subpaths', () => {
+    const { main, islands } = splitAntarcticaCoastline(ANTARCTICA_PATH);
+    expect(main.startsWith('M')).toBe(true);
+    expect(islands.startsWith('M')).toBe(true);
+    expect(main.length).toBeGreaterThan(islands.length);
   });
 
-  it('reveals further when the pole is off centre', () => {
-    const size = { vw: 390, vh: 844 };
-    expect(posterReveal(1, size, { x: 20, y: 30 })).toBeGreaterThan(posterReveal(1, size, { x: 50, y: 50 }));
+  it('handles empty input safely', () => {
+    expect(splitAntarcticaCoastline('')).toEqual({ main: '', islands: '' });
+  });
+});
+
+describe('RELIEF_CONTOURS', () => {
+  it('provides ascending Bedmap3 elevation bands as valid SVG paths', () => {
+    expect(RELIEF_CONTOURS).toHaveLength(5);
+    for (let i = 0; i < RELIEF_CONTOURS.length; i++) {
+      const band = RELIEF_CONTOURS[i]!;
+      expect(band.path.startsWith('M')).toBe(true);
+      if (i > 0) expect(band.elevationM).toBeGreaterThan(RELIEF_CONTOURS[i - 1]!.elevationM);
+    }
   });
 });
 

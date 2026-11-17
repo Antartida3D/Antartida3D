@@ -24,7 +24,7 @@
     "test": "vitest run",
     "typecheck": "tsc -p .",
     "map-raster": "tsx scripts/build-map-raster.ts",
-    "poster": "tsx scripts/build-loader-poster.ts"
+    "relief-svg": "tsx scripts/build-relief-svg.ts"
   },
   "dependencies": {
     "@fontsource/atkinson-hyperlegible": "5.3.0",

@@ -31,7 +31,7 @@ import { buildBaseHut, buildEsperanzaBase, ESPERANZA_CLEARINGS } from './ponchoB
  * as the map relief), then `buildPolyGeometry(tris)` once per prop (cache the geometry) and
  * `vehicleMaterial`. Heights of reference (model units): tent 0.8, shovel 0.83, staffAndPick 1.05,
  * stakeAndPick 0.39, slalomPoles 1.0 (2.4 long), flaggedCanes 0.95 (1.0 long), haulLine 0.06 (2.4
- * long), crevasseBridge 0.12 (1.9 long), crashedPlane 1.75 (3.5 long, 4.3 across), iceTunnelEntrance 0.85
+ * long), crevasseBridge 0.12 (1.9 long), crashedPlane 1.35 (5 long, 5.2 across, wreck field), iceTunnelEntrance 0.85
  * (1.8 wide), nansenSled 0.87 (2.2 long). Scale them together with the people.
  *
  * People are drawn frame by frame by `buildPonchoPerson(pose, variant)` (ponchoPeople.ts): the
@@ -50,7 +50,8 @@ const { WHITE, ICE, ICE_BLUE, ORANGE, RED, RED_DARK, CREAM, WOOD, WOOD_LIGHT, BR
 // Colors of the props that the station palette does not have (rule 30, 5: named constants).
 const TENT_SEAM = 0xb86a1f;
 const CREVASSE_DARK = 0x111b26;
-const PLANE_BODY = 0xf3f1ea;
+/** Cream, so the wreck stands out from the snow (issue #220); the book gives no colors. */
+const PLANE_BODY = 0xe6d3a3;
 const PLANE_TRIM = 0xb8452a;
 const TUNNEL_DARK = 0x16222e;
 const SLED_RUNNER = 0x5e4630;
@@ -299,14 +300,15 @@ function pose(tris: readonly Tri[], rx: number, ry: number, rz: number): Tri[] {
 }
 
 /**
- * A small high-wing plane on skis, slewed and tipped in the snow (book p. 17: a Cessna crashed;
- * the book gives no more, so its colors and the shape of the damage are an illustration): the
- * fuselage with cabin windows, a wing and struts, tail, propeller with a bent blade, two skis,
- * the whole of it tilted, with snow piled where it touches. 3.6 long, 4.4 across, ~1.7 high.
+ * A small high-wing plane on skis, wrecked in the snow (book p. 17: a Cessna made an emergency landing
+ * and was «seriamente dañado»; the book gives no more, so its colors and the shape of the damage are an
+ * illustration): the nose and cabin lean on one wing, the tail has broken off and lies a little behind
+ * and askew, the other wing has come off and lies flat on the snow, a ski and some panels are strewn
+ * about, the propeller is bent. Snow is banked where the pieces touch. About 4.3 long, 4.4 across, ~1.5 high.
  */
 export function buildCrashedPlane(): Tri[] {
-  const body = loftAlongX(
-    [
+  const fuselage = (xs: readonly number[]): Tri[] => {
+    const all = [
       { x: 1.62, cy: 0.74, ry: 0.06, rz: 0.06 },
       { x: 1.5, cy: 0.74, ry: 0.2, rz: 0.2 },
       { x: 1.15, cy: 0.76, ry: 0.27, rz: 0.26 },
@@ -314,44 +316,59 @@ export function buildCrashedPlane(): Tri[] {
       { x: -0.25, cy: 0.8, ry: 0.28, rz: 0.26 },
       { x: -1.0, cy: 0.82, ry: 0.19, rz: 0.17 },
       { x: -1.75, cy: 0.85, ry: 0.07, rz: 0.06 },
-    ],
-    8,
-    (i, band) => (band === 0 ? BLACK : i === 1 || i === 2 ? PLANE_TRIM : PLANE_BODY),
-  );
-  const out: Tri[] = [...body];
-  // Cabin windows on both sides and the windshield.
+    ].filter((st) => xs.includes(st.x));
+    return loftAlongX(all, 8, (i, band) => (band === 0 ? BLACK : i === 1 || i === 2 ? PLANE_TRIM : PLANE_BODY));
+  };
+  // Front part: nose, cabin (windows both sides and the windshield), the wing that stayed on, struts, ski, bent propeller.
+  const front: Tri[] = [...fuselage([1.62, 1.5, 1.15, 0.5, -0.25])];
   for (const s of [1, -1]) {
-    out.push(...slab([at(0.85, 0.86, s * 0.275), at(0.1, 0.9, s * 0.29), at(0.1, 1.04, s * 0.27), at(0.8, 1.0, s * 0.255)], 0.02, WINDOW_DAY));
+    front.push(...slab([at(0.85, 0.86, s * 0.275), at(0.1, 0.9, s * 0.29), at(0.1, 1.04, s * 0.27), at(0.8, 1.0, s * 0.255)], 0.02, WINDOW_DAY));
+    front.push(...tube(at(0.55, 0.55, s * 0.17), at(0.5, 0.12, s * 0.46), 0.022, 0.022, 5, ZINC));
+    front.push(...slab([at(-0.15, 0.08, s * 0.38), at(0.95, 0.08, s * 0.38), at(0.95, 0.08, s * 0.54), at(-0.15, 0.08, s * 0.54)], 0.045, WOOD_LIGHT, SLED_RUNNER));
   }
-  out.push(...slab([at(1.0, 0.95, -0.2), at(1.0, 0.95, 0.2), at(0.78, 1.1, 0.19), at(0.78, 1.1, -0.19)], 0.02, WINDOW_DAY));
-  // Wing (high), struts, tail, propeller.
-  for (const s of [1, -1]) {
-    out.push(...slab([at(0.65, 1.12, 0), at(-0.05, 1.12, 0), at(0.0, 1.08, s * 2.2), at(0.5, 1.08, s * 2.2)], 0.07, PLANE_BODY, WHITE));
-    out.push(...slab([at(0.5, 1.08, s * 2.2), at(0.0, 1.08, s * 2.2), at(0.0, 1.075, s * 2.26), at(0.5, 1.075, s * 2.26)], 0.075, PLANE_TRIM));
-    out.push(...tube(at(0.25, 0.58, s * 0.24), at(0.25, 1.08, s * 1.1), 0.02, 0.02, 5, ZINC));
-    out.push(...slab([at(-1.35, 0.92, 0), at(-1.7, 0.92, 0), at(-1.72, 0.92, s * 0.75), at(-1.52, 0.92, s * 0.75)], 0.04, PLANE_BODY));
-  }
-  out.push(...slab([at(-1.15, 0.9, 0), at(-1.7, 0.9, 0), at(-1.82, 1.42, 0), at(-1.5, 1.45, 0)], 0.05, PLANE_BODY, PLANE_BODY));
-  out.push(...slab([at(-1.45, 1.2, 0), at(-1.72, 1.17, 0), at(-1.78, 1.38, 0), at(-1.52, 1.4, 0)], 0.055, PLANE_TRIM));
-  out.push(...slab([at(1.66, 0.76, -0.04), at(1.66, 0.76, 0.04), at(1.7, 1.28, 0.03), at(1.7, 1.28, -0.03)], 0.016, BLACK));
-  out.push(...slab([at(1.66, 0.72, 0.04), at(1.66, 0.72, -0.04), at(1.62, 0.3, -0.03), at(1.62, 0.3, 0.03)], 0.016, BLACK));
-  // Skis on short struts: each a plate with an upturned tip.
-  for (const s of [1, -1]) {
-    out.push(...tube(at(0.55, 0.55, s * 0.17), at(0.5, 0.12, s * 0.46), 0.022, 0.022, 5, ZINC));
-    out.push(...tube(at(-0.1, 0.55, s * 0.17), at(0.0, 0.12, s * 0.46), 0.022, 0.022, 5, ZINC));
-    out.push(...slab([at(-0.15, 0.08, s * 0.38), at(0.95, 0.08, s * 0.38), at(0.95, 0.08, s * 0.54), at(-0.15, 0.08, s * 0.54)], 0.045, WOOD_LIGHT, SLED_RUNNER));
-    out.push(...slab([at(0.95, 0.08, s * 0.38), at(1.16, 0.2, s * 0.38), at(1.16, 0.2, s * 0.54), at(0.95, 0.08, s * 0.54)], 0.045, WOOD_LIGHT, SLED_RUNNER));
-  }
-  // Slewed and tipped: a wing down, the nose a little low and turned off its line.
-  const tilted = pose(out, 0.26, -0.3, -0.09);
-  const floor = lowestY(tilted);
-  const grounded = shift(tilted, 0, -floor, 0);
+  front.push(...slab([at(1.0, 0.95, -0.2), at(1.0, 0.95, 0.2), at(0.78, 1.1, 0.19), at(0.78, 1.1, -0.19)], 0.02, WINDOW_DAY));
+  front.push(...slab([at(0.65, 1.12, 0), at(-0.05, 1.12, 0), at(0.0, 1.08, 2.2), at(0.5, 1.08, 2.2)], 0.07, PLANE_BODY));
+  front.push(...slab([at(0.5, 1.08, 2.2), at(0.0, 1.08, 2.2), at(0.0, 1.075, 2.26), at(0.5, 1.075, 2.26)], 0.075, PLANE_TRIM));
+  front.push(...tube(at(0.25, 0.58, 0.24), at(0.25, 1.08, 1.1), 0.02, 0.02, 5, ZINC));
+  // Propeller: one blade bent back, the other snapped to a stub.
+  front.push(...slab([at(1.66, 0.76, -0.04), at(1.66, 0.76, 0.04), at(1.62, 1.1, 0.2), at(1.62, 1.1, 0.12)], 0.016, BLACK));
+  front.push(...slab([at(1.66, 0.72, 0.04), at(1.66, 0.72, -0.04), at(1.64, 0.5, -0.03), at(1.64, 0.5, 0.03)], 0.016, BLACK));
+  // The nose pitched down into the snow, the wing side low.
+  const nose = pose(front, 0.3, 0.1, -0.16);
+  const noseGround = shift(nose, 0, -lowestY(nose), 0.2);
+
+  // Tail: the rear fuselage with the fin and tailplane, snapped off, askew a little behind.
+  const tail: Tri[] = [...fuselage([-0.25, -1.0, -1.75])];
+  for (const s of [1, -1]) tail.push(...slab([at(-1.35, 0.92, 0), at(-1.7, 0.92, 0), at(-1.72, 0.92, s * 0.75), at(-1.52, 0.92, s * 0.75)], 0.04, PLANE_BODY));
+  tail.push(...slab([at(-1.15, 0.9, 0), at(-1.7, 0.9, 0), at(-1.82, 1.42, 0), at(-1.5, 1.45, 0)], 0.05, PLANE_BODY, PLANE_BODY));
+  tail.push(...slab([at(-1.45, 1.2, 0), at(-1.72, 1.17, 0), at(-1.78, 1.38, 0), at(-1.52, 1.4, 0)], 0.055, PLANE_TRIM));
+  const tailPosed = pose(tail, 0.7, 0.55, 0.12);
+  const tailGround = shift(tailPosed, -1.0, -lowestY(tailPosed), -0.7);
+
+  // Wing torn off, flat on the snow with its struts broken, torn edge towards the plane.
+  const wing: Tri[] = [];
+  wing.push(...slab([at(0.65, 0.1, 0), at(-0.05, 0.1, 0), at(0.0, 0.1, -2.2), at(0.5, 0.1, -2.2)], 0.07, PLANE_BODY));
+  wing.push(...slab([at(0.5, 0.1, -2.2), at(0.0, 0.1, -2.2), at(0.0, 0.1, -2.26), at(0.5, 0.1, -2.26)], 0.075, PLANE_TRIM));
+  wing.push(...tube(at(0.25, 0.14, -0.3), at(0.25, 0.14, -1.0), 0.02, 0.02, 5, ZINC));
+  const wingPosed = pose(wing, 0.05, -0.35, 0.04);
+  const wingGround = shift(wingPosed, 0.2, -lowestY(wingPosed), -0.4);
+
+  // A ski that came off, and panels of the skin strewn about.
+  const ski = slab([at(-0.5, 0.05, 0), at(0.6, 0.05, 0), at(0.6, 0.05, 0.16), at(-0.5, 0.05, 0.16)], 0.045, WOOD_LIGHT, SLED_RUNNER);
+  const skiGround = shift(pose(ski, 0.1, 0.9, 0.05), 1.0, 0, -1.3);
+  const panels = [
+    slab([at(0, 0.04, 0), at(0.4, 0.04, 0.05), at(0.35, 0.04, 0.35), at(-0.05, 0.04, 0.3)], 0.02, PLANE_BODY),
+    slab([at(0, 0.04, 0), at(0.3, 0.04, -0.05), at(0.28, 0.04, 0.22), at(-0.02, 0.04, 0.25)], 0.02, PLANE_TRIM),
+  ];
+  const debris = [shift(panels[0]!, 1.8, 0, 0.9), shift(panels[1]!, 0.6, 0, 1.4), shift(panels[0]!, -2.1, 0, 0.6)].flat();
+
+  const parts = [...noseGround, ...tailGround, ...wingGround, ...skiGround, ...debris];
   // Snow banked where the lowest parts touch the ground.
-  const low = grounded.flatMap(([a, b, c]) => [a, b, c]).filter((p) => p[1] < 0.06);
+  const low = parts.flatMap(([a, b, c]) => [a, b, c]).filter((p) => p[1] < 0.06);
   const seen: Vec3[] = [];
   for (const p of low) if (seen.every((q) => Math.hypot(q[0] - p[0], q[2] - p[2]) > 0.9)) seen.push(p);
   const banks = seen.flatMap((p, i) => snowMound(p[0], p[2], 0.6, 0.45, 0.14, 110 + i, 9));
-  return [...grounded, ...banks];
+  return [...parts, ...banks];
 }
 
 // ---- Ice tunnel -----------------------------------------------------------------------------------

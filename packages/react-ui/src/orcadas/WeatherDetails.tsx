@@ -14,7 +14,7 @@ import { generateSnowParticles } from './stationModels.ts';
 
 const SNOW_SEED = 190412;
 const SNOW_SPAN = 28;
-const SNOW_WRAP = SNOW_SPAN * 2;
+const SNOW_TOP = 18;
 
 export interface StationSnowfallProps {
   month: number;
@@ -29,19 +29,32 @@ export interface StationSnowfallProps {
  * Particle count scales with the month's mean temperature (`snowParticleCount`)
  * and turns off completely when reduced motion is active.
  */
-export function StationSnowfall({
-  month,
-  windKmh,
-  windVec,
-  reduced,
-  lowQuality,
-}: StationSnowfallProps) {
-  const meshRef = useRef<InstancedMesh>(null);
+export function StationSnowfall({ month, windKmh, windVec, reduced, lowQuality }: StationSnowfallProps) {
   const maxForQuality = lowQuality ? SNOW_LOW_QUALITY_PARTICLES : SNOW_MAX_PARTICLES;
-  const activeCount = snowParticleCount(month, maxForQuality, reduced);
+  return <Snowfall count={snowParticleCount(month, maxForQuality, reduced)} windKmh={windKmh} windVec={windVec} reduced={reduced} />;
+}
+
+/**
+ * Low-poly flakes that fall, or blow along `windVec` when the wind is a gale (`SNOW_GALE_KMH`): `count` of
+ * them (at most `SNOW_MAX_PARTICLES`), none with reduced motion. Also the blizzard of Poncho's diorama (issue #220).
+ */
+export function Snowfall({ count, windKmh, windVec, reduced, span = SNOW_SPAN, top = SNOW_TOP, size = 1 }: {
+  count: number;
+  windKmh: number;
+  windVec: Vector2;
+  reduced: boolean;
+  /** Half the side of the square the flakes fill, and the height they fall from (the Orcadas station by default). */
+  span?: number;
+  top?: number;
+  /** Size of a flake relative to the Orcadas one. */
+  size?: number;
+}) {
+  const wrap = span * 2;
+  const meshRef = useRef<InstancedMesh>(null);
+  const activeCount = reduced ? 0 : Math.min(Math.max(0, Math.round(count)), SNOW_MAX_PARTICLES);
 
   const snowGeo = useMemo(() => buildPolyGeometry(buildSnowPuffTris(), boxShade), []);
-  const positions = useMemo(() => generateSnowParticles(SNOW_MAX_PARTICLES, SNOW_SEED), []);
+  const positions = useMemo(() => generateSnowParticles(SNOW_MAX_PARTICLES, SNOW_SEED, span, top), [span, top]);
   const dummy = useMemo(() => new Object3D(), []);
 
   useEffect(() => {
@@ -61,7 +74,7 @@ export function StationSnowfall({
       const x = positions[i * 3];
       const y = positions[i * 3 + 1];
       const z = positions[i * 3 + 2];
-      const s = 0.055 + (i % 4) * 0.012;
+      const s = (0.055 + (i % 4) * 0.012) * size;
       dummy.position.set(x, y, z);
       dummy.rotation.set(y * 1.4 + i, x * 0.9 - i, z * 0.7);
       dummy.scale.set(s, s, s);
@@ -69,7 +82,7 @@ export function StationSnowfall({
       mesh.setMatrixAt(i, dummy.matrix);
     }
     mesh.instanceMatrix.needsUpdate = true;
-  }, [activeCount, positions, dummy]);
+  }, [activeCount, positions, dummy, size]);
 
   useFrame((_, delta) => {
     const mesh = meshRef.current;
@@ -86,19 +99,19 @@ export function StationSnowfall({
       let y = positions[i * 3 + 1] + vy * dt;
       let z = positions[i * 3 + 2] + vz * dt;
 
-      if (x > SNOW_SPAN) x -= SNOW_WRAP;
-      if (x < -SNOW_SPAN) x += SNOW_WRAP;
-      if (z > SNOW_SPAN) z -= SNOW_WRAP;
-      if (z < -SNOW_SPAN) z += SNOW_WRAP;
+      if (x > span) x -= wrap;
+      if (x < -span) x += wrap;
+      if (z > span) z -= wrap;
+      if (z < -span) z += wrap;
       if (y < 0.2) {
-        y = strongGale && i % 3 === 0 ? 0.4 + (i % 5) * 0.45 : 18.4;
+        y = strongGale && i % 3 === 0 ? 0.4 + (i % 5) * (top / 40) : top + 0.4;
       }
 
       positions[i * 3] = x;
       positions[i * 3 + 1] = y;
       positions[i * 3 + 2] = z;
 
-      const s = 0.055 + (i % 4) * 0.012;
+      const s = (0.055 + (i % 4) * 0.012) * size;
       dummy.position.set(x, y, z);
       dummy.rotation.set(y * 1.4 + i, x * 0.9 - i, z * 0.7);
       dummy.scale.set(s, s, s);

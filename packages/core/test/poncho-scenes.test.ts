@@ -5,6 +5,7 @@ import {
   MAX_SCENE_RADIUS,
   MAX_SCENE_TOTAL,
   SCENE_SETTINGS,
+  sceneBlizzard,
   SCENE_TURN_LENGTH,
   STAGE_ENTER_S,
   MAX_POLAR_DEG,
@@ -470,5 +471,58 @@ describe('«El olfato de Poncho» (#217)', () => {
     expect(scene.elements.filter((e) => e.kind === 'dog' && e.id === 'pack').length).toBeLessThanOrEqual(4);
     const zig = scene.paths.find((p) => p.id === 'zigzag')!;
     expect((zig.via ?? []).length).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe('«Al rescate de un avión» (#220)', () => {
+  const scene = PONCHO_SCENES['rescate-ae-205'];
+  const at = (step: number) => scene.elements.filter((e) => sceneElementShown(e, step));
+  const people = (step: number) => at(step).filter((e) => e.kind === 'person');
+
+  it('shows the wreck, bigger than the people, with the four survivors of the book waiting by it from the first sentence', () => {
+    const plane = scene.elements.find((e) => e.id === 'crashedPlane')!;
+    expect(plane.scale!).toBeGreaterThan(1);
+    for (let step = 0; step < sceneStepCount(scene); step++) {
+      expect(at(step)).toContain(plane);
+      expect(people(step).filter((e) => !e.path).length, `step ${step}`).toBe(4);
+    }
+    expect(at(0).filter((e) => e.kind === 'dog' || e.kind === 'sled').length).toBe(0);
+  });
+
+  it('brings the patrol of the book in the second sentence: two men and seven dogs, Poncho at the head sniffing', () => {
+    const patrol = at(1).filter((e) => e.path === 'patrol');
+    expect(patrol.filter((e) => e.kind === 'person').length).toBe(2);
+    expect(patrol.filter((e) => e.kind === 'dog').length).toBe(7);
+    const poncho = patrol.find((e) => e.id === 'poncho')!;
+    expect(poncho.sniff).toBe(true);
+    expect(poncho.lag ?? 0).toBe(0);
+    for (const e of patrol.filter((x) => x !== poncho)) expect(e.lag!, `${e.kind} ${e.id}`).toBeGreaterThan(0);
+  });
+
+  it('has the team follow Poncho on his own winding trail, like a wave, and not in a rigid block', () => {
+    const team = scene.elements.filter((e) => e.path === 'patrol');
+    for (const e of team) expect(e.lead, `${e.kind} ${e.id}`).toBeUndefined();
+    const trail = scene.paths.find((p) => p.id === 'patrol')!;
+    expect((trail.via ?? []).length).toBeGreaterThanOrEqual(3);
+    // The trail bends one way and the other (an S), not along a ruler.
+    const pts = [trail.from, ...(trail.via ?? []), trail.to];
+    const turns = pts.slice(2).map((c, i) => {
+      const [a, b] = [pts[i], pts[i + 1]];
+      return Math.sign((b[0] - a[0]) * (c[1] - b[1]) - (b[1] - a[1]) * (c[0] - b[0]));
+    });
+    expect(turns.some((t) => t > 0) && turns.some((t) => t < 0)).toBe(true);
+  });
+
+  it('has the men of the patrol leave the sled and go to the survivors only in the last sentence', () => {
+    const helpers = (step: number) => people(step).filter((e) => e.path && e.path !== 'patrol');
+    expect(helpers(1).length).toBe(0);
+    expect(helpers(2).length).toBe(2);
+  });
+
+  it('blows a blizzard while the plane waits and the patrol marches, and clears on the fourth day (book p. 18)', () => {
+    expect(sceneBlizzard(scene, 0)).toBe(true);
+    expect(sceneBlizzard(scene, 1)).toBe(true);
+    expect(sceneBlizzard(scene, 2)).toBe(false);
+    expect(sceneBlizzard(PONCHO_SCENES['nacimiento'], 0)).toBe(false);
   });
 });

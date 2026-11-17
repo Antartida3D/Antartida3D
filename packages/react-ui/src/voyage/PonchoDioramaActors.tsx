@@ -52,7 +52,7 @@ const REDUCED_CLOCK = 1e4;
 // Colors of the tools and of the darker dogs of the team (rule 30, 5: named constants).
 const { WOOD_LIGHT, ZINC } = VOXEL_PALETTE;
 const PACK_DARKEN = 0.62;
-/** A dog of the team that lies curled: how much it is squashed, and how far it sinks into its drift. */
+/** A dog of the team that lies curled: how much it is squashed, and how far it settles into the ground (so it does not float on a swell). */
 const CURLED_HEIGHT = 0.55;
 const CURLED_SINK = 0.03;
 /** Sway of a dog standing (radians) and its speed (radians per second). A dog that goes does not bob: its legs trot. */
@@ -312,8 +312,8 @@ export function DioramaActors({ scene, step, ground, reduced }: { scene: SceneDe
   const printed = scene.paths.find((p) => p.prints);
   const printedIndex = printed ? scene.elements.findIndex((e) => e.path === printed.id) : -1;
   // One mesh for each element that has a still part, seated on the ground.
-  const stillGeometries = useMemo(() => scene.elements.map((e, i) => {
-    const tris = elementStaticTris(e, i, ground);
+  const stillGeometries = useMemo(() => scene.elements.map((e) => {
+    const tris = elementStaticTris(e, ground);
     return tris.length ? buildPolyGeometry(resolveRelief(tris, () => 0)) : null;
   }), [scene, ground]);
   const prints = useMemo(() => (printed ? pathFootprints(printed, ground) : null), [printed, ground]);

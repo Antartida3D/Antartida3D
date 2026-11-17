@@ -32,7 +32,7 @@ describe('scenes of Poncho: ids against the models', () => {
 
     it(`${id}: the still parts have faces, are finite and sit on the ground`, () => {
       const tris = sceneStaticTris(scene, flat, (y) => y);
-      const hasStill = scene.elements.some((e) => e.kind === 'prop' || (e.kind === 'person' && e.action === 'hammer') || (e.kind === 'dog' && e.curled));
+      const hasStill = scene.elements.some((e) => e.kind === 'prop' || (e.kind === 'person' && e.action === 'hammer'));
       expect(tris.length > 0).toBe(hasStill);
       for (const t of tris) {
         expect(t.slice(0, 3).flat().every(Number.isFinite)).toBe(true);
@@ -63,12 +63,13 @@ describe('scenes of Poncho: ids against the models', () => {
 describe('scenes of Poncho: the parts that come and go', () => {
   it('has the still faces of each element on their own, which together are the ones of the scene', () => {
     for (const [, scene] of scenes) {
-      const each = scene.elements.flatMap((e, i) => elementStaticTris(e, i, flat));
+      const each = scene.elements.flatMap((e) => elementStaticTris(e, flat));
       expect(sceneStaticTris(scene, flat, (y) => y)).toHaveLength(each.length);
-      scene.elements.forEach((e, i) => {
-        const tris = elementStaticTris(e, i, flat);
+      scene.elements.forEach((e) => {
+        const tris = elementStaticTris(e, flat);
         if (e.kind === 'prop') expect(tris.length, e.id).toBeGreaterThan(0);
-        if (e.kind === 'sled' || (e.kind === 'dog' && !e.curled)) expect(tris).toHaveLength(0);
+        // A curled dog lies on the bare ground, with no drift of snow under it (#261).
+        if (e.kind === 'sled' || e.kind === 'dog') expect(tris).toHaveLength(0);
       });
     }
   });

@@ -73,7 +73,7 @@ export interface SceneElement {
   readonly side?: number;
   /** dog: sniffs the snow, its head bobbing down and up while it goes (issue #217). */
   readonly sniff?: boolean;
-  /** dog: lying curled in the snow. */
+  /** dog: lying curled on the ground, with no drift of snow under it (#261). */
   readonly curled?: boolean;
   /** With a path: seconds behind the one at the point of the path (a litter in single file follows the same trail). */
   readonly lag?: number;

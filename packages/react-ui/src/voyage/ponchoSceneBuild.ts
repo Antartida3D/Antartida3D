@@ -3,7 +3,6 @@ import { resolveRelief, type Tri, type Vec3 } from './lowPoly.ts';
 import { ponchoPrint } from './ponchoPeople.ts';
 import { HAMMER_STAKE_AT, PONCHO_PROP_IDS, PONCHO_PROPS, type PonchoPropId } from './ponchoProps.ts';
 import { buildRescueRotor, PONCHO_PROP2_IDS, PONCHO_PROPS2, RESCUE_ROTOR_AT, type PonchoProp2Id } from './ponchoProps2.ts';
-import { snowMound } from './ponchoShapes.ts';
 
 /**
  * The still parts of a scene of Poncho (the props, the snow they stand in and the boot prints),
@@ -15,8 +14,6 @@ export type Ground = (x: number, z: number) => number;
 
 /** How far the foot of a prop goes into the ground, so on a bump it does not float (as PointModels' FOUNDATION, in scene units). */
 const FOUNDATION = 0.03;
-/** A dog that lies curled in the snow: size of the drift it sleeps in. */
-const DRIFT: readonly [number, number, number] = [0.42, 0.34, 0.1];
 /** Scale of a dog next to a person (ponchoProps.ts: ~0.55). */
 export const DOG_SCALE = 0.55;
 
@@ -66,20 +63,19 @@ export function scenePropTris(id: string): readonly Tri[] {
   return [...prop.tris, ...buildRescueRotor().map(([a, b, c, color]): Tri => [[a[0] + rx, a[1] + ry, a[2] + rz], [b[0] + rx, b[1] + ry, b[2] + rz], [c[0] + rx, c[1] + ry, c[2] + rz], color])];
 }
 
-/** The still faces of one element, seated on the ground (relief colors not resolved): its prop, the stake it drives or the drift it sleeps in. Empty for the ones that move. */
-export function elementStaticTris(e: SceneElement, i: number, ground: Ground): Tri[] {
+/** The still faces of one element, seated on the ground (relief colors not resolved): its prop or the stake it drives. Empty for the others (a curled dog lies on the bare ground, #261). */
+export function elementStaticTris(e: SceneElement, ground: Ground): Tri[] {
   if (e.kind === 'prop') return seatAt(scenePropTris(e.id), e.x, e.z, e.yaw, e.scale ?? 1, ground, e.lift ?? 0);
   if (e.kind === 'person' && e.action === 'hammer') {
     const [sx, sz] = atPerson(e, HAMMER_STAKE_AT);
     return seatAt(PONCHO_PROPS.stakeAndPick.tris, sx, sz, e.yaw, e.scale ?? 1, ground);
   }
-  if (e.kind === 'dog' && e.curled) return seatAt(snowMound(0, 0, DRIFT[0], DRIFT[1], DRIFT[2], 200 + i, 9), e.x, e.z, e.yaw, 1, ground);
   return [];
 }
 
-/** Props, the stake each hammerer drives and the drifts of the curled dogs, seated and colored as the relief (worldY: height in the world). */
+/** Props and the stake each hammerer drives, seated and colored as the relief (worldY: height in the world). */
 export function sceneStaticTris(scene: SceneDef, ground: Ground, worldY: (y: number) => number): Tri[] {
-  return resolveRelief(scene.elements.flatMap((e, i) => elementStaticTris(e, i, ground)), worldY);
+  return resolveRelief(scene.elements.flatMap((e) => elementStaticTris(e, ground)), worldY);
 }
 
 export interface ScenePrints {

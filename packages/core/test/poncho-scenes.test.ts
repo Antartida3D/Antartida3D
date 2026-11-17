@@ -6,6 +6,7 @@ import {
   MAX_SCENE_TOTAL,
   SCENE_SETTINGS,
   sceneBlizzard,
+  sceneFallLift,
   SCENE_TURN_LENGTH,
   STAGE_ENTER_S,
   MAX_POLAR_DEG,
@@ -594,5 +595,30 @@ describe('«Poncho va al frente» (#218)', () => {
     // And then away, faster than the team walked.
     const go = path('go');
     expect(scenePathLength(go) / go.duration).toBeGreaterThan(scenePathLength(path('trail')) / path('trail').duration);
+  });
+});
+
+describe('scene paracaidas: the dogs come down', () => {
+  const scene = PONCHO_SCENES['paracaidas'];
+  const falling = scene.elements.filter((e) => e.fall);
+
+  it('has the three dogs of the book, each under a parachute, and they come down to the ground at an even pace', () => {
+    expect(falling.filter((e) => e.kind === 'dog')).toHaveLength(3);
+    expect(falling.filter((e) => e.id === 'dogParachute')).toHaveLength(3);
+    for (const e of falling) {
+      const { from, to, duration } = e.fall!;
+      expect(sceneFallLift(e, 0)).toBe(from);
+      expect(sceneFallLift(e, duration)).toBeCloseTo(to);
+      expect(sceneFallLift(e, duration / 2)).toBeCloseTo((from + to) / 2);
+      expect(sceneFallLift(e, duration * 3)).toBeCloseTo(to);
+      expect(from, 'it starts under the helicopter').toBeLessThan(scene.elements[0].lift!);
+    }
+  });
+
+  it('keeps the helicopter big and high, and the people and the dogs small under it', () => {
+    const heli = scene.elements.find((e) => e.id === 'rescueHelicopter')!;
+    expect(heli.scale).toBeGreaterThanOrEqual(1);
+    for (const e of scene.elements.filter((x) => x.kind === 'person')) expect(e.scale, 'person').toBeLessThan(0.6);
+    for (const e of falling.filter((x) => x.kind === 'dog')) expect(e.scale, 'dog').toBeLessThan(0.6);
   });
 });

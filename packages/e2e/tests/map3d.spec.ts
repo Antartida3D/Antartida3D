@@ -87,17 +87,11 @@ test.describe('3D relief view', () => {
     await page.goto('/');
     await show3D(page);
 
-    // Click cluster containing orcadas or directly orcadas marker
-    const clusterOrMarker = page.locator('.ov [data-key*="orcadas"] button');
-    await expect(clusterOrMarker).toBeVisible();
-    await clusterOrMarker.click();
+    const marker = page.locator('.ov [data-key*="orcadas"] button');
+    await expect(marker).toBeVisible();
+    await marker.click();
 
-    // If it was in a cluster, clicking it zooms in and separates the points; then click the marker.
     const intro = page.getByRole('dialog', { name: 'Estación Orcadas' });
-    const orcadasBtn = page.getByRole('button', { name: /Estación Orcadas.*Expedición disponible/ });
-    if (!(await intro.isVisible()) && (await orcadasBtn.isVisible())) {
-      await orcadasBtn.click();
-    }
     // In 3D the intro shows the turning model of the chosen arrival vehicle, labelled as an illustration.
     await expect(intro.locator('.vpreview')).toBeVisible();
     await expect(intro.getByText('Reconstrucción ilustrada')).toBeVisible();
@@ -688,7 +682,8 @@ test.describe('3D relief view', () => {
     // Open PointSheet for a sea marker
     const seaMarker = page.locator('.ov [data-key^="sea-"] button').first();
     await expect(seaMarker).toBeVisible();
-    await seaMarker.click();
+    // A point marker can stand over this one (it goes behind them): open the card without aiming at it.
+    await seaMarker.evaluate((b: HTMLElement) => b.click());
     const sheet = page.locator('.sheet[role="dialog"]');
     await expect(sheet).toBeVisible();
 

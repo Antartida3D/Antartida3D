@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  PTS, buildMarkers, markerPress, clusterPoints, geometry, keyView, labelSide, project, unproject, separationZoom,
+  PTS, buildMarkers, markerPress, fanOffsets, guideLine, markerLift, MARKER_STICK_PX, MARKER_GAP_PX, markerGap, geometry, keyView, labelSide, project, unproject,
   zoomAround, wheelFactor, focusWorld, freeArea, needsFraming, clampView, HOME, MAX_K, MIN_K, toScreen,
 } from '../src/index.ts';
 
@@ -50,56 +50,105 @@ describe('projection', () => {
   });
 });
 
-describe('clustering', () => {
-  const a = { id: 'a', x: 100, y: 100 };
-  const b = { id: 'b', x: 140, y: 100 };
-  const c = { id: 'c', x: 600, y: 600 };
+describe('fanning out crowded markers (#238)', () => {
+  const at = (left: number, top: number) => ({ left, top });
+  const gapOf = (ps: { left: number; top: number }[], o: { dx: number; dy: number }[], i: number, j: number) =>
+    Math.hypot(ps[i].left + o[i].dx - ps[j].left - o[j].dx, ps[i].top + o[i].dy - ps[j].top - o[j].dy);
 
-  it('groups points closer than 46 px on screen', () => {
-    // 40 map units at 1 px/unit = 40 px < 46
-    expect(clusterPoints([a, b, c], 1).map((g) => g.map((p) => p.id))).toEqual([['a', 'b'], ['c']]);
+  it('leaves markers that are far enough apart where they are', () => {
+    expect(fanOffsets([at(0, 0), at(MARKER_GAP_PX, 0), at(500, 500)])).toEqual([{ dx: 0, dy: 0 }, { dx: 0, dy: 0 }, { dx: 0, dy: 0 }]);
   });
 
-  it('respects the threshold boundary', () => {
-    expect(clusterPoints([a, b], 46 / 40 - 0.001)).toHaveLength(1);
-    expect(clusterPoints([a, b], 46 / 40)).toHaveLength(2);
+  it('separates two crowded markers to the minimum gap along the line between them, and nothing else moves', () => {
+    const ps = [at(100, 100), at(120, 100), at(600, 600)];
+    const o = fanOffsets(ps);
+    expect(gapOf(ps, o, 0, 1)).toBeCloseTo(MARKER_GAP_PX);
+    expect(o[0].dy).toBeCloseTo(0);
+    expect(o[0].dx).toBeLessThan(0);
+    expect(o[1].dx).toBeGreaterThan(0);
+    expect(o[2]).toEqual({ dx: 0, dy: 0 });
+  });
+
+  it('moves a pair by half of what is missing, so it separates smoothly while zooming out', () => {
+    const o = fanOffsets([at(0, 0), at(MARKER_GAP_PX - 6, 0)]);
+    expect(o[0].dx).toBeCloseTo(-3);
+    expect(o[1].dx).toBeCloseTo(3);
+  });
+
+  it('keeps every marker of a bigger crowd, even on one spot, at least the gap from the others', () => {
+    for (const ps of [[at(50, 50), at(50, 50), at(50, 50)], [at(50, 50), at(55, 52), at(48, 58), at(60, 60)]]) {
+      const o = fanOffsets(ps);
+      for (let i = 0; i < ps.length; i++) for (let j = i + 1; j < ps.length; j++) expect(gapOf(ps, o, i, j)).toBeGreaterThan(MARKER_GAP_PX - 0.01);
+    }
+  });
+
+  it('keeps every head a full stick above its place, even when the marker was pushed down', () => {
+    expect(markerLift(0, 0)).toBe(MARKER_STICK_PX);
+    for (let a = 0; a < 2 * Math.PI; a += 0.1) {
+      for (const r of [5, 20, 40, 80]) {
+        const dx = r * Math.cos(a);
+        const dy = r * Math.sin(a);
+        // Where the head ends up over its place: lift - dy px up.
+        expect(markerLift(dx, dy) - dy, `${dx} ${dy}`).toBeGreaterThanOrEqual(MARKER_STICK_PX - 1e-9);
+        expect(guideLine(dx, dy, markerLift(dx, dy)).length).toBeGreaterThanOrEqual(MARKER_STICK_PX - 1e-9);
+      }
+    }
+  });
+
+  it('draws the line from a marker head down to its real place', () => {
+    // Not moved: straight down, as long as the stick.
+    expect(guideLine(0, 0, 34)).toEqual({ length: 34, angle: 0 });
+    // Moved 30 px right and 40 px up, 34 px up on its stick: place is 30 px left of the head, 74 px down.
+    const g = guideLine(30, -40, 34);
+    expect(g.length).toBeCloseTo(Math.hypot(30, 74));
+    expect(g.angle).toBeCloseTo(Math.atan2(30, 74));
+    // On the 2D map there is no stick: the line goes from the marker to its place.
+    expect(guideLine(30, 40, 0).angle).toBeCloseTo(Math.atan2(30, -40));
   });
 
   // Base Marambio, Fósiles (#7) and Poncho (#9, Base Esperanza) are close together at the tip of the
-  // Peninsula: some of them stay together even at the closest zoom. Base Esperanza and Isla Marambio
-  // are about 90 km apart, 12 map units; James Ross Island is closer still to Marambio.
+  // Peninsula: 10 to 12 map units apart, about 75 to 90 km. They never separate by zooming alone.
   const PHONE = { vw: 390, vh: 844 };
   const DESKTOP = { vw: 1440, vh: 900 };
-  const atMax = (size: { vw: number; vh: number }) =>
-    clusterPoints(PTS, (geometry(size).S * MAX_K) / 1000).filter((g) => g.length > 1).map((g) => g.map((p) => p.id).sort());
+  const PENINSULA = ['marambio', 'fosiles', 'poncho'];
 
-  it('separates the Peninsula points as zoom increases, but for the ones closest to Marambio', () => {
+  it('shows a marker for every point at any zoom and size, with no group', () => {
     for (const size of [PHONE, DESKTOP]) {
-      const { S } = geometry(size);
-      const count = (k: number) => clusterPoints(PTS, (S * k) / 1000).length;
-      expect(count(1)).toBeLessThan(PTS.length);
-      for (let k = 1; k < MAX_K; k += 0.5) expect(count(k + 0.5)).toBeGreaterThanOrEqual(count(k));
+      for (let k = 1; k <= MAX_K; k += 0.25) {
+        const markers = buildMarkers(size, { k, px: 0, py: 0 }, []);
+        expect(markers.map((m) => m.key).sort()).toEqual(PTS.map((p) => p.id).sort());
+        expect(markers.every((m) => m.kind === 'point')).toBe(true);
+      }
     }
-    // A phone cannot tell the three apart; a wide screen separates Poncho, not Fósiles from Marambio.
-    expect(atMax(PHONE)).toEqual([['fosiles', 'marambio', 'poncho']]);
-    expect(atMax(DESKTOP)).toEqual([['fosiles', 'marambio']]);
   });
 
-  it('a group that zooming cannot separate lets the visitor pick one of its points; the others zoom in', () => {
+  it('keeps Marambio, Fósiles and Poncho apart on screen at any zoom, each with its line back to its real place', () => {
     for (const size of [PHONE, DESKTOP]) {
-      const together = atMax(size).map((g) => g.join());
-      const clusters = (k: number) =>
-        buildMarkers(size, { k, px: 0, py: 0 }, [], PTS).flatMap((m) => (m.kind === 'cluster' ? [m] : []));
-      for (let k = 1; k < MAX_K; k += 0.25) {
-        for (const m of clusters(k)) {
-          const stays = together.includes(m.points.map((p) => p.id).sort().join());
-          expect(m.pick, `${size.vw} ${k} ${m.key}`).toBe(stays);
-          expect(m.aria).toContain(stays ? 'Tocá para elegir uno.' : 'Tocá para acercar.');
+      const geo = geometry(size);
+      for (let k = 1; k <= MAX_K; k += 0.25) {
+        const view = { k, px: 0, py: 0 };
+        const pts = buildMarkers(size, view, []).flatMap((m) => (m.kind === 'point' && PENINSULA.includes(m.key) ? [m] : []));
+        expect(pts).toHaveLength(3);
+        for (const m of pts) {
+          const real = toScreen(geo, view, m.x, m.y);
+          expect(m.left - m.dx, `${size.vw} ${k} ${m.key}`).toBeCloseTo(real.left);
+          expect(m.top - m.dy, `${size.vw} ${k} ${m.key}`).toBeCloseTo(real.top);
+        }
+        for (let i = 0; i < 3; i++) for (let j = i + 1; j < 3; j++) {
+          expect(Math.hypot(pts[i].left - pts[j].left, pts[i].top - pts[j].top), `${size.vw} ${k}`).toBeGreaterThan(markerGap(size.vw) - 0.01);
         }
       }
-      // At the closest zoom, every group left is one to pick from.
-      for (const m of clusters(MAX_K)) expect(m.pick).toBe(true);
     }
+  });
+
+  it('leaves a marker at its real place once nothing crowds it', () => {
+    const size = DESKTOP;
+    const view = { k: 1, px: 0, py: 0 };
+    const geo = geometry(size);
+    const orcadas = buildMarkers(size, view, []).find((m) => m.key === 'campana');
+    const real = toScreen(geo, view, 31.4, 313.5);
+    expect(orcadas?.kind === 'point' && orcadas.dx === 0 && orcadas.dy === 0).toBe(true);
+    expect(orcadas?.left).toBeCloseTo(real.left);
   });
 
   it('buildMarkers with identity projector matches standard 2D markers', () => {
@@ -128,19 +177,6 @@ describe('clustering', () => {
     expect(loadViewMode()).toBe('3d');
     saveViewMode('2d');
     expect(loadViewMode()).toBe('2d');
-  });
-
-  it('tapping a cluster zooms far enough to split it', () => {
-    const size = { vw: 1440, vh: 900 };
-    const markers = buildMarkers(size, HOME, []);
-    const cluster = markers.find((m) => m.kind === 'cluster');
-    expect(cluster).toBeDefined();
-    if (cluster?.kind !== 'cluster') return;
-    const after = buildMarkers(size, cluster.target, []);
-    const ids = cluster.key.slice(2).split(',');
-    const stillGrouped = after.some((m) => m.kind === 'cluster' && ids.every((id) => m.key.includes(id)));
-    expect(stillGrouped).toBe(false);
-    expect(separationZoom(PTS.filter((p) => ids.includes(p.id)), geometry(size).S)).toBeGreaterThan(1);
   });
 });
 
@@ -189,23 +225,14 @@ describe('markers and labels', () => {
     }
   });
 
-  it('marks the cluster containing the suggested expedition', () => {
+  it('keeps the suggested expedition on its own marker even when it is fanned out', () => {
     const size = { vw: 1440, vh: 900 };
     const markers = buildMarkers(size, HOME, ['campana', 'marambio'], PTS, undefined, 'fosiles');
-    const clusterWithNext = markers.find((m) => m.kind === 'cluster' && m.points.some((p) => p.id === 'fosiles'));
-    const otherCluster = markers.find((m) => m.kind === 'cluster' && !m.points.some((p) => p.id === 'fosiles'));
-    expect(clusterWithNext?.kind === 'cluster').toBe(true);
-    if (clusterWithNext?.kind === 'cluster') {
-      expect(clusterWithNext.hasNext).toBe(true);
-      expect(clusterWithNext.nextPoint?.id).toBe('fosiles');
-      expect(clusterWithNext.cls.split(' ')).toContain('has-next');
-      expect(clusterWithNext.aria).toContain('Incluye la siguiente sugerida: Fósiles');
-    }
-    if (otherCluster?.kind === 'cluster') {
-      expect(otherCluster.hasNext).toBe(false);
-      expect(otherCluster.nextPoint).toBeNull();
-      expect(otherCluster.cls.split(' ')).not.toContain('has-next');
-    }
+    const next = markers.find((m) => m.kind === 'point' && m.next);
+    expect(next?.key).toBe('fosiles');
+    expect(next?.kind === 'point' && next.pulse).toBe(true);
+    expect(next?.kind === 'point' && next.cls.split(' ')).toEqual(expect.arrayContaining(['next']));
+    expect(markers.filter((m) => m.kind === 'point' && m.next)).toHaveLength(1);
   });
 
   it('opens a label to the right, or to the left when it would run off the screen', () => {

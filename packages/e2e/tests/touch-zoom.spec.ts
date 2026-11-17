@@ -157,10 +157,10 @@ for (const mode of ['Mapa 2D', 'Relieve 3D'] as const) {
     } else {
       await show3D(page);
     }
-    // A point marker free to tap, other than the trip from Ushuaia (it opens its own panel, not a sheet).
+    // A point of interest free to tap: it opens a sheet (an expedition opens its own panel, not a sheet).
     const freeMarker = () =>
       page.evaluate(() => {
-        for (const el of document.querySelectorAll('.vp .mk:not(.cluster)')) {
+        for (const el of document.querySelectorAll('.vp .mk.tc')) {
           if (/Ushuaia|Orcadas/.test(el.getAttribute('aria-label') ?? '')) continue;
           const r = el.getBoundingClientRect();
           const x = r.left + r.width / 2;

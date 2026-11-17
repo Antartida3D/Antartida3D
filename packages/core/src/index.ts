@@ -28,7 +28,7 @@ export * from './voyage.ts';
 export * from './poncho-log.ts';
 export * from './poncho-diorama.ts';
 export * from './poncho-scenes.ts';
-export * from './clustering.ts';
+export * from './fan.ts';
 export * from './labels.ts';
 export * from './viewport.ts';
 export * from './markers.ts';

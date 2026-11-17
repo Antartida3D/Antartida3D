@@ -59,7 +59,7 @@ for (const mode of ['Mapa 2D', 'Relieve 3D'] as const) {
       // A first tap leaves a marker label open, raised to the top of the map (#54).
       const freeMarker = () =>
         page.evaluate(() => {
-          for (const el of document.querySelectorAll('.vp .mk:not(.cluster)')) {
+          for (const el of document.querySelectorAll('.vp .mk')) {
             const r = el.getBoundingClientRect();
             const x = r.left + r.width / 2;
             const y = r.top + r.height / 2;

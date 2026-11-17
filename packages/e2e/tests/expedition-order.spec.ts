@@ -5,7 +5,7 @@ import { AVAILABLE_COUNT } from '../../core/src/content/points.ts';
 import { EXPLORED_KEY } from '../../core/src/storage.ts';
 import { clearStorage } from '../storage.ts';
 import { mockOpenMeteo } from './weather-helpers.ts';
-import { MAP_2D_ENABLED, show3D } from './map-helpers.ts';
+import { show3D } from './map-helpers.ts';
 
 let consoleErrors: string[] = [];
 
@@ -57,23 +57,6 @@ async function completeMarambioFromList(page: Page) {
   await expect(page.locator('.next-sheet')).toBeVisible();
 }
 
-async function openGroupPicker(page: Page) {
-  if (MAP_2D_ENABLED) await page.getByRole('group', { name: 'Modo de vista' }).getByRole('button', { name: 'Mapa 2D' }).click();
-  else await show3D(page);
-  const group = page.locator('.vp .mk.cluster[aria-label*="Fósiles"]');
-  for (let i = 0; i < 6; i++) {
-    await expect(group).toHaveCount(1);
-    const label = (await group.getAttribute('aria-label')) ?? '';
-    if (label.includes('Tocá para elegir uno.')) break;
-    await group.click();
-    await expect(group).not.toHaveAttribute('aria-label', label);
-  }
-  await group.click();
-  const picker = page.getByRole('dialog', { name: 'Puntos en este lugar' });
-  await expect(picker).toBeVisible();
-  return picker;
-}
-
 test.beforeEach(async ({ page }) => {
   consoleErrors = [];
   page.on('console', (m) => {
@@ -99,13 +82,13 @@ test('with nothing explored, shows Siguiente: Desde Ushuaia and marks its marker
   await expect(marker.locator('.mnext')).toHaveText('Siguiente');
 });
 
-test('with campana explored, suggests Base Marambio and announces it on its cluster', async ({ page }) => {
+test('with campana explored, suggests Base Marambio and tags its own marker', async ({ page }) => {
   await seedExplored(page, ['campana']);
   await expect(page.locator('.btn.next-btn')).toHaveText('Siguiente: Base Marambio');
-  const cluster = page.locator('.vp .mk.has-next');
-  await expect(cluster).toHaveCount(1);
-  await expect(cluster).toHaveAttribute('aria-label', /Incluye la siguiente sugerida: Base Marambio/);
-  await expect(cluster.locator('.mnext')).toHaveText('Siguiente');
+  const marker = page.locator('.vp .mk.next');
+  await expect(marker).toHaveCount(1);
+  await expect(marker).toHaveAttribute('aria-label', /^Base Marambio, .*Expedición sugerida para seguir\. Empezar\.$/);
+  await expect(marker.locator('.mnext')).toHaveText('Siguiente');
 });
 
 test('in 3D relief, the suggested marker carries the next class', async ({ page }) => {
@@ -285,19 +268,4 @@ test('list view shows expeditions ordered 1 to 6 and labels the next suggested o
   await expect(items.nth(0).locator('.go')).toHaveText('Explorado · volver a entrar');
   await expect(items.nth(1).locator('.go.next')).toHaveText('Siguiente sugerida');
   await expect(items.nth(2).locator('.go')).toHaveText('Empezar expedición');
-});
-
-test('group picker closes when tapping the map around it and when dragged down on narrow phones', async ({ page }) => {
-  const picker = await openGroupPicker(page);
-  await page.locator('.scrim.clear').click({ position: { x: 20, y: 20 } });
-  await expect(picker).toHaveCount(0);
-
-  if (page.viewportSize()!.width < 820) {
-    const reopened = await openGroupPicker(page);
-    const handle = reopened.locator('.sheet-handle');
-    await expect(handle).toBeVisible();
-    const cdp = await page.context().newCDPSession(page);
-    await touchDrag(cdp, handle, 0, 200);
-    await expect(reopened).toHaveCount(0);
-  }
 });

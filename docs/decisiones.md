@@ -178,7 +178,7 @@ Pedido de quien lleva el issue: los carteles de los marcadores no están abierto
 - **Celular (toque o lápiz):** el primer toque muestra el cartel del marcador. El segundo toque abre la expedición o la ficha. Tocar otro marcador muestra el cartel de ese otro. Tocar el mapa cierra el cartel.
 - **Mouse:** pasar el cursor por encima muestra el cartel. Un clic abre.
 - **Teclado:** el foco muestra el cartel. Enter abre.
-- **Grupos de marcadores:** no cambian; un toque acerca.
+- **Grupos de marcadores:** ya no existen; los marcadores que se pisan se abren en abanico con una línea a su lugar ([DEC-238](decisiones/DEC-238-marcadores-en-abanico.md)).
 - **Dónde está la regla:** `markerPress(shown, key, touch)` en `core/src/markers.ts`, con pruebas. La interfaz distingue el dedo del mouse por el `pointerType` del clic (`MarkerButton` en `react-ui/src/map/Markers.tsx`). El cartel mostrado se guarda en `MapView.tsx` y se marca con la clase `.mk.shown`.
 - **Lado del cartel:** se abre a la derecha, salvo que ahí se salga de la pantalla y a la izquierda haya más lugar (`labelSide` en `core/src/labels.ts`). Se muestra uno solo por vez y por encima de todo, así que ya no hace falta evitar choques entre carteles: se quitó `placeLabels` y la constante `LABELS_MIN_PX`.
 - **Marcador sobre un palito (relieve 3D, 12-11-2026):** pedido de quien lleva el issue #46. El círculo que se toca va 34 px por encima de su lugar, sobre un palito fino que termina justo en el punto del mapa. Así no tapa el modelo de bloques dibujado ahí (Ushuaia, Orcadas, el Irízar, los témpanos). Vale para todos los marcadores del 3D menos los grupos. En el mapa 2D no cambia: ahí no hay modelos. Solo el círculo recibe toques; el palito no. Es una regla de `painted.css` (`.m3d .ov .mk:not(.cluster)`), con el alto en la variable `--stick`.
@@ -281,7 +281,7 @@ Pedido de quien lleva el issue: quien entra por primera vez se queda perdido y n
 
 ### Orden sugerido de expediciones (#75, 16-11-2026)
 
-El mapa señala una expedición sugerida (marcador, botón «Siguiente: X», lista numerada) y una tarjeta al volver de cada expedición ofrece la siguiente, sin bloquear nada. Detalle en [DEC-75](decisiones/DEC-75-orden-sugerido.md). El selector «Puntos en este lugar» pasa a hoja inferior: [DEC-75-2](decisiones/DEC-75-2-selector-de-grupo-como-hoja.md), que no reemplaza a [DEC-7](decisiones/DEC-7-pin-y-grupos-para-elegir.md).
+El mapa señala una expedición sugerida (marcador, botón «Siguiente: X», lista numerada) y una tarjeta al volver de cada expedición ofrece la siguiente, sin bloquear nada. Detalle en [DEC-75](decisiones/DEC-75-orden-sugerido.md). El selector «Puntos en este lugar» pasó a hoja inferior ([DEC-75-2](decisiones/DEC-75-2-selector-de-grupo-como-hoja.md)) y después se quitó junto con los grupos: [DEC-238](decisiones/DEC-238-marcadores-en-abanico.md) reemplaza a DEC-75-2 y a [DEC-7](decisiones/DEC-7-pin-y-grupos-para-elegir.md).
 
 ### Pulido general: «Desde Ushuaia» y toques en el celular (#190, 16-11-2026)
 

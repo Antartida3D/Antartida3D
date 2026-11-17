@@ -33,9 +33,8 @@ test.describe('3D header at 844x390', () => {
     await show3D(page);
     await page.waitForFunction(() => (window as unknown as { __cameraControls?: unknown }).__cameraControls);
 
-    const clusterOrMarker = page.locator('.ov [data-key*="orcadas"] button');
-    await expect(clusterOrMarker).toBeVisible();
-    await clusterOrMarker.click();
+    const orcadasMarker = page.locator('.ov [data-key*="orcadas"] button');
+    await expect(orcadasMarker).toBeVisible();
 
     const orcadasBtn = page.getByRole('button', { name: /Estación Orcadas.*Expedición disponible/ });
     await expect(orcadasBtn).toBeVisible();

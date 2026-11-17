@@ -86,7 +86,8 @@ test('the welcome shows once: the next visit starts from the overview (#115)', a
   await expect(hint(page)).toHaveText(WELCOME, { timeout: SETTLE_WAIT });
   await page.reload();
   await expect(hint(page)).toHaveText('arrastrá para mover · pellizcá para acercar');
-  await expect(ushuaia(page)).not.toHaveClass(/\bshown\b/);
+  // By its key, not by role: in the 3D overview a phone leaves Ushuaia off the screen, and a hidden marker has no role.
+  await expect(page.locator('.vp [data-key="campana"] .mk')).not.toHaveClass(/\bshown\b/);
 });
 
 test('dragging the map ends the welcome (#115)', async ({ page }) => {
@@ -105,5 +106,6 @@ test('no welcome once the trip from Ushuaia is done (#115)', async ({ page }) =>
   await page.addInitScript((key) => localStorage.setItem(key, JSON.stringify(['campana'])), EXPLORED_KEY);
   await page.goto('/');
   await expect(hint(page)).toHaveText('arrastrá para mover · pellizcá para acercar');
-  await expect(ushuaia(page)).not.toHaveClass(/\bshown\b/);
+  // By its key, not by role: in the 3D overview a phone leaves Ushuaia off the screen, and a hidden marker has no role.
+  await expect(page.locator('.vp [data-key="campana"] .mk')).not.toHaveClass(/\bshown\b/);
 });

@@ -4,12 +4,14 @@
 {
   "id": "DEC-7",
   "date": "2026-11-16",
-  "status": "accepted",
+  "status": "superseded",
   "issue": 7,
   "supersedes": [],
-  "supersededBy": null
+  "supersededBy": "DEC-238"
 }
 ```
+
+> Reemplazada por [DEC-238](DEC-238-marcadores-en-abanico.md) en lo de los grupos: ya no hay grupos ni ventana para elegir. Sigue vigente que el pin de Fósiles no se aleja de su lugar.
 
 ## Decisión
 

@@ -33,7 +33,7 @@ const WHEEL_MS = 200;
 const CLAIMS_POINT_ID = 'polo';
 
 /**
- * A request from the shared controls (buttons, keys, cluster clicks) to the 3D camera. In 3D the
+ * A request from the shared controls (buttons, keys) to the 3D camera. In 3D the
  * orbit camera owns zoom and pan, so the controls ask it to move instead of rewriting `view`.
  */
 export type Camera3DCommand =
@@ -51,7 +51,7 @@ export type Layer3DProps = LayerProps & {
   arrival?: ArrivalId;
   /** `n` grows with every request so repeating the same command still fires. */
   command: { n: number; cmd: Camera3DCommand } | null;
-  /** The camera came to rest: the 2D-style view it shows, for clustering and the 2D switch. */
+  /** The camera came to rest: the 2D-style view it shows, for fanning out the markers and the 2D switch. */
   onCameraRest: (view: View) => void;
   /** The effective zoom limits, also updated while the camera is moving. */
   onZoomAvailabilityChange: (availability: ZoomAvailability) => void;
@@ -190,8 +190,6 @@ export function MapView({
   // Key of the marker whose label a first touch brought into view.
   const [shown, setShown] = useState<string | null>(null);
   const [list, setList] = useState(false);
-  // Points of a group that zooming no longer separates, while the visitor picks one of them.
-  const [picking, setPicking] = useState<readonly MapPoint[] | null>(null);
   const [claimsEnabled, setClaimsEnabled] = useState(false);
   const [claimsSelection, setClaimsSelection] = useState<ClaimsSelection>('all');
   const [claimsCoverage, setClaimsCoverage] = useState<ClaimsCoverage>('sectors');
@@ -243,7 +241,6 @@ export function MapView({
 
   // Browser «back» closes the top layer instead of leaving the app (#185).
   useBackLayer(list, () => setList(false));
-  useBackLayer(!!picking, () => setPicking(null));
   useBackLayer(!!sheet, () => setSheet(null));
   useBackLayer(!!pendingOrcadas && phase === 'idle', () => setPendingOrcadas(null));
   useBackLayer(voyaging, () => onEndVoyage?.(false));
@@ -350,7 +347,7 @@ export function MapView({
         id = requestAnimationFrame(frame);
         return;
       }
-      const marker = markersRef.current.find((k) => (k.kind === 'point' && k.next) || (k.kind === 'cluster' && k.hasNext));
+      const marker = markersRef.current.find((k) => k.kind === 'point' && k.next);
       if (!marker) return;
       const sz = live.current.size;
       const next = focusWorld(sz, marker.x, marker.y, live.current.view.k, ((free.top + free.bottom) / 2) / sz.vh, ((free.left + free.right) / 2) / sz.vw);
@@ -363,8 +360,8 @@ export function MapView({
 
   // A sheet, the list or the Orcadas intro replaces the card.
   useEffect(() => {
-    if (finished && (sheet || list || picking || pendingOrcadas)) onDismissFinished?.();
-  }, [finished, sheet, list, picking, pendingOrcadas]);
+    if (finished && (sheet || list || pendingOrcadas)) onDismissFinished?.();
+  }, [finished, sheet, list, pendingOrcadas]);
 
   useEffect(() => {
     if (phase !== 'dive' && phase !== 'fade') return;
@@ -620,12 +617,7 @@ export function MapView({
   const onPick = (m: Marker, touch: boolean) => {
     if (gesture.current.dragged) return;
     setWelcoming(false);
-    if (m.kind === 'cluster') {
-      setShown(null);
-      if (m.pick) setPicking(m.points);
-      else if (is3D) send3D({ type: 'focus', view: m.target });
-      else animateTo(m.target);
-    } else if (markerPress(shown, m.key, touch) === 'show') setShown(m.key);
+    if (markerPress(shown, m.key, touch) === 'show') setShown(m.key);
     else {
       setShown(null);
       openPoint(m.point);
@@ -791,14 +783,6 @@ export function MapView({
             explored={explored}
             onClose={() => setList(false)}
             onPick={(p) => { setList(false); openPoint(p); }}
-          />
-        )}
-        {picking && (
-          <ListView
-            explored={explored}
-            points={picking}
-            onClose={() => setPicking(null)}
-            onPick={(p) => { setPicking(null); openPoint(p); }}
           />
         )}
         {showCard && finished && after && (

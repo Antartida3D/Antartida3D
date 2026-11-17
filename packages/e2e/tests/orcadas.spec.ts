@@ -269,10 +269,8 @@ test('from the 3D map with motion allowed, the camera zooms down to the island b
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.reload();
   await show3D(page);
-  const cluster = page.getByRole('button', { name: /Grupo de .*Estación Orcadas/ });
   const marker = page.getByRole('button', { name: /^Estación Orcadas, Islas Orcadas del Sur/ });
-  await cluster.or(marker).first().waitFor();
-  if (await cluster.isVisible()) await cluster.click();
+  await marker.waitFor();
   await page.evaluate(() => {
     const w = window as unknown as { __sawApproach?: boolean };
     new MutationObserver(() => {

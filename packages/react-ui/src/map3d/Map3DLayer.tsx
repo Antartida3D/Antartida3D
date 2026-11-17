@@ -33,6 +33,10 @@ import {
   screenPx,
   ICE_MIN_DISTANCE,
   irizarStateAtTime,
+  fanOffsets,
+  guideLine,
+  markerGap,
+  markerLift,
   SEA_POINTS,
   type Geometry,
   type MapPoint,
@@ -303,7 +307,7 @@ function ControlsBridge({
     else approach.current = null;
   });
 
-  // Report where the camera settled, so clustering and the 2D view follow the orbit camera.
+  // Report where the camera settled, so the markers and the 2D view follow the orbit camera.
   useEffect(() => {
     const cc = controlsRef.current;
     if (!cc) return;
@@ -328,7 +332,7 @@ function ControlsBridge({
     };
   }, []);
 
-  // Buttons, keys and cluster clicks move the camera from where it is now; they never rebuild
+  // Buttons and keys move the camera from where it is now; they never rebuild
   // a pose from the 2D view, which used to undo the user's orbit and zoom.
   useEffect(() => {
     const cc = controlsRef.current;
@@ -337,7 +341,7 @@ function ControlsBridge({
     const { cmd } = command;
     const aspect = size.vw / size.vh;
     const clampDistance = (d: number) => Math.min(cc.maxDistance, Math.max(cc.minDistance, d));
-    // Where the camera ends up; reported right away so clusters split as soon as you zoom,
+    // Where the camera ends up; reported right away so markers separate as soon as you zoom,
     // without waiting for the 'rest' event (instant moves under reduced motion may not fire it).
     let endDistance = cc.distance;
     if (cmd.type === 'zoom') {
@@ -474,10 +478,15 @@ function ProjectMarkers({
     // WebGLRenderer.render() updates it later, so project() here would lag behind the rendered frame.
     camera.updateMatrixWorld();
 
-    // 1. Position expedition & fossil markers
+    // 1. Position expedition markers. Those that crowd each other on screen fan out around their
+    // places, each with a line back to its own (#238): the spread is worked out here, from where the
+    // camera really puts them, since the tilt and the turn change how close they look. Sea markers
+    // stay out of it, and go behind: a moving ship must not push the points around.
+    const placed: { btn: HTMLElement; guide: HTMLElement | null; left: number; top: number }[] = [];
     for (const m of markers) {
       const btn = el.querySelector<HTMLElement>(`[data-key="${m.key}"]`);
       if (!btn) continue;
+      const guide = el.querySelector<HTMLElement>(`[data-guide="${m.key}"]`);
 
       const elevM = heightAt(m.x, m.y);
       const groundH = worldHeight(elevM);
@@ -488,14 +497,26 @@ function ProjectMarkers({
       const visible = p.z < 1.0 && p.x >= -1.1 && p.x <= 1.1 && p.y >= -1.1 && p.y <= 1.1;
       if (!visible) {
         btn.style.display = 'none';
+        if (guide) guide.style.display = 'none';
         continue;
       }
 
       btn.style.display = '';
-      const sx = ((p.x + 1) * size.width) / 2;
-      const sy = ((-p.y + 1) * size.height) / 2;
-      btn.style.transform = `translate3d(${sx.toFixed(1)}px, ${sy.toFixed(1)}px, 0px) translate(-50%, -50%)`;
+      placed.push({ btn, guide, left: ((p.x + 1) * size.width) / 2, top: ((-p.y + 1) * size.height) / 2 });
     }
+    const offsets = fanOffsets(placed, markerGap(size.width));
+    placed.forEach(({ btn, guide, left, top }, i) => {
+      const { dx, dy } = offsets[i];
+      const lift = markerLift(dx, dy);
+      btn.style.transform = `translate3d(${(left + dx).toFixed(1)}px, ${(top + dy).toFixed(1)}px, 0px) translate(-50%, -50%)`;
+      btn.style.setProperty('--lift', `${lift.toFixed(1)}px`);
+      if (!guide) return;
+      // From the head of the marker down to its place.
+      const { length, angle } = guideLine(dx, dy, lift);
+      guide.style.display = '';
+      guide.style.height = `${length.toFixed(1)}px`;
+      guide.style.transform = `translate3d(${(left + dx).toFixed(1)}px, ${(top + dy - lift).toFixed(1)}px, 0px) rotate(${angle.toFixed(3)}rad)`;
+    });
 
     // 2. Position sea markers
     const uTime = timeUniform.value;
@@ -737,8 +758,10 @@ export function Map3DLayer({
             >
               60° S
             </span>
+            {/* The stick of each expedition point, under every marker: no line covers another one's dot (#238). */}
+            {markers.map((m) => (m.kind === 'point' ? <span key={'g:' + m.key} data-guide={m.key} className="guide" aria-hidden="true" style={{ zIndex: 0 }} /> : null))}
             {markers.map((m) => {
-              const zIndex = m.kind === 'cluster' ? 3 : m.kind === 'point' && m.point.tier === 'A' ? 2 : 1;
+              const zIndex = m.kind === 'point' && m.point.tier === 'A' ? 2 : 1;
               return (
                 <div
                   key={m.key}

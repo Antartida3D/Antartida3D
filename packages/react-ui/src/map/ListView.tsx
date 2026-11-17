@@ -1,6 +1,5 @@
 import { useRef } from 'react';
 import { EXPEDITION_ORDER, PTS, nextExpedition, type MapPoint, type Tier } from '@antartida/core';
-import { BottomSheet } from '../BottomSheet.tsx';
 import { useFocusReturn } from '../hooks.ts';
 import { CompassRose } from '../Cartography.tsx';
 
@@ -10,17 +9,13 @@ const GROUPS: { tier: Tier; id: string; tag: string; label?: string; desc: strin
   { tier: 'C', id: 'g-c', tag: 'Punto de interés', desc: 'Lugares para conocer, con su ficha y fuentes.' },
 ];
 
-export function ListView({ explored, onClose, onPick, points }: {
+export function ListView({ explored, onClose, onPick }: {
   explored: readonly string[];
   onClose: () => void;
   onPick: (p: MapPoint) => void;
-  points?: readonly MapPoint[];
 }) {
-  const shown = points ?? PTS;
-  const pick = points !== undefined;
   const ref = useRef<HTMLDivElement>(null);
-  const sheetRef = useRef<HTMLElement>(null);
-  useFocusReturn(true, pick ? sheetRef : ref);
+  useFocusReturn(true, ref);
   const next = nextExpedition(explored)?.id;
   const order = (p: MapPoint) => EXPEDITION_ORDER.indexOf(p.id);
 
@@ -29,12 +24,12 @@ export function ListView({ explored, onClose, onPick, points }: {
       <div className="listhead">
         <div className="listhead-title">
           <CompassRose className="chart-compass list-emblem" />
-          <div><span className="editorial-kicker">Índice del atlas</span><h2 id="list-title">{pick ? 'Puntos en este lugar' : 'Todos los puntos'}</h2></div>
+          <div><span className="editorial-kicker">Índice del atlas</span><h2 id="list-title">Todos los puntos</h2></div>
         </div>
-        <button type="button" className="btn" onClick={onClose}>{pick ? 'Volver al mapa' : 'Ver mapa'}</button>
+        <button type="button" className="btn" onClick={onClose}>Ver mapa</button>
       </div>
-      {GROUPS.filter((g) => shown.some((p) => p.tier === g.tier)).map((g) => {
-        const items = shown.filter((p) => p.tier === g.tier);
+      {GROUPS.map((g) => {
+        const items = PTS.filter((p) => p.tier === g.tier);
         if (g.tier === 'A') items.sort((a, b) => order(a) - order(b));
         const List = g.tier === 'A' ? 'ol' : 'ul';
         return (
@@ -63,17 +58,6 @@ export function ListView({ explored, onClose, onPick, points }: {
     </div>
   );
 
-  // The points of a group that zooming cannot separate: a bottom sheet like a point's, closed by dragging it down (DEC-75-2).
-  if (pick) {
-    return (
-      <>
-        <div className="scrim clear" onClick={onClose} />
-        <BottomSheet className="half pick-sheet" labelledBy="list-title" sheetRef={sheetRef} onClose={onClose}>
-          {body}
-        </BottomSheet>
-      </>
-    );
-  }
   return (
     <div
       className="listview"

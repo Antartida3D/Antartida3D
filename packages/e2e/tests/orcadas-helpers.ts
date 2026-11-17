@@ -1,18 +1,15 @@
 import { expect, type Page } from '@playwright/test';
 import { ORCADAS_GUIDING_QUESTION } from '../../core/src/content/orcadas.ts';
 
-/** Clicks the Estación Orcadas marker on the map, expanding its cluster first if needed. */
+/** Clicks the Estación Orcadas marker on the map. */
 export async function clickOrcadasMarker(page: Page) {
-  const cluster = page.getByRole('button', { name: /Grupo de .*Estación Orcadas/ });
   const marker = page.getByRole('button', { name: /^Estación Orcadas, Islas Orcadas del Sur/ });
-  // The 3D map shows its markers once the loading screen closes: wait for one of the two. If the
-  // camera left the islands out of view (for example after the window shrank), show the whole continent.
-  const either = cluster.or(marker).first();
-  if (!(await either.waitFor({ timeout: 15_000 }).then(() => true, () => false))) {
+  // The 3D map shows its markers once the loading screen closes. If the camera left the islands out
+  // of view (for example after the window shrank), show the whole continent.
+  if (!(await marker.waitFor({ timeout: 15_000 }).then(() => true, () => false))) {
     await page.getByRole('button', { name: 'Ver todo el continente' }).click();
-    await either.waitFor();
+    await marker.waitFor();
   }
-  if (await cluster.isVisible()) await cluster.click();
   await marker.click();
 }
 

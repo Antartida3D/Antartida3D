@@ -113,6 +113,48 @@ La aurora ya no se dibuja en el mapa 3D (#117): de día se leía como rayas verd
 | 4 | [NASA Earth Observatory · A Changing World for Emperor Penguins](https://science.nasa.gov/earth/earth-observatory/a-changing-world-for-emperor-penguins/) | "researchers identify colonies from the guano stains that accumulate where thousands of birds congregate on the ice." |
 | 4 | [Antarctic Science · Four unreported emperor penguin colonies discovered by satellite](https://www.cambridge.org/core/journals/antarctic-science/article/four-unreported-emperor-penguin-colonies-discovered-by-satellite/20956FD3E80F3604C21D0E2AA80FEF9B) | "The first of the four sites is on the northern side of the Lazarev Ice Shelf [...] on the Dronning Maud Land coast" |
 
+## `cerronevado` — Pingüinos de Cerro Nevado (#206)
+
+El punto abre una escena propia con cuatro puntos (`packages/core/src/content/cerro-nevado.ts`). Sus textos reparten las mismas oraciones de la ficha y suman estas, con su cita:
+
+| Texto de la escena | Fuente | Cita |
+|---|---|---|
+| Estimaron unas 1.200 parejas a partir de fotografías. | Coria y Montalti 2000 | "The population was estimated as 1200 pairs [...] based on counts obtained from photographs." |
+| El hielo fijo es hielo marino agarrado a la costa: no se mueve con el viento ni con las corrientes. | [NSIDC · fast ice](https://nsidc.org/learn/cryosphere-glossary/fast-ice) | "is defined by the fact that it does not move with the winds or currents" |
+| A fines de diciembre de 2018 los pingüinos estaban repartidos a lo largo del borde del hielo fijo, en una franja de unos 3 km, casi todos en zonas planas. | Schiel et al. 2019 | "distributed over an area of approximately three kilometers in length and a few hundred meters in width, along the edge of the fast ice. Almost all penguins were observed on level areas." |
+| Delante del borde había una franja angosta de hielo suelto, con grupos chicos de pichones sobre los témpanos. | Schiel et al. 2019 | "the narrow pack ice belt in front of the fast ice" / "small groups of recently fledged chicks (20 at most) in the pack ice and on ice floes" |
+| La guardería más grande que se vio en 2018 tenía 144 pichones, al reparo de un témpano. | Schiel et al. 2019 | "The largest gathering was a crèche of 144 chicks seen on the lee side of an iceberg" |
+| Mientras cambian el plumón por las plumas, casi todos conservan la máscara blanca de la cara. | Schiel et al. 2019 | "The white face mask of the juvenile plumage was preserved in almost all chicks." |
+| Las guarderías se forman hacia fines de septiembre: unos pocos adultos cuidan a los pichones mientras los demás van al mar a buscar comida. | IAA (Libertelli) | epígrafe: "Pequeñas guarderías de pichones de emperador se forman hacia finales del mes de septiembre." / "unos pocos adultos se encargan de cuidar a todos los pichones de la colonia mientras los demás adultos se adentran al mar en busca de comida" |
+| Primero sobrevuelan la colonia en un Twin Otter. | IAA (Libertelli) | "La primera actividad que se realiza al arribar a Base Marambio es programar un vuelo con Twin Otter para sobrevolar ambas colonias" |
+| La temperatura puede bajar de -45 °C y el viento pasar los 130 km/h. | IAA (Libertelli) | "las temperaturas pueden ser inferiores a los -45°C y los vientos superiores a los 130 km/hora" |
+
+> Frente a la costa sur de la isla Cerro Nevado, sobre el hielo marino fijo, está la colonia de pingüino emperador más al norte que se conoce. La descubrieron científicos del Instituto Antártico Argentino desde un avión Twin Otter, el 20 de julio de 1997. Desde 2013 la estudian en campañas de agosto y septiembre: salen de Base Marambio, a unos 65 km, cruzan el hielo en motos de nieve y trineos, y acampan junto a un témpano. Según el año, los censos publicados van de 1.200 a unas 4.000 parejas. Está en una zona donde el clima cambia rápido: por eso seguirla es clave.
+
+Consulta: 17 nov 2026. Las tres fuentes son PDF que se descargaron y se leyeron completos.
+
+| Oración | Fuente | Cita |
+|---|---|---|
+| 1 | [Coria y Montalti 2000 · Marine Ornithology 28: 119-120](https://www.marineornithology.org/PDF/28_2/28_2_5.pdf) | "The colony is located at 64°32'S, 57°26'W on level sea ice approximately 500 m from the south coast of Snow Hill Island" |
+| 1 | [Schiel et al. 2019 · Marine Ornithology 47: 189-192](https://www.marineornithology.org/PDF/47_2/47_2_189-192.pdf) | "The northernmost known Emperor Penguin Aptenodytes forsteri colony is located on the fast ice at the southeastern coast of Snow Hill Island" |
+| 2 | [Coria y Montalti 2000](https://www.marineornithology.org/PDF/28_2/28_2_5.pdf) | Autores del "Instituto Antartico Argentino"; "This colony was discovered on a Twin-Otter aeroplane flight at 300 m on 20 July 1997" |
+| 3 | [IAA · Pingüino emperador (M. M. Libertelli)](https://cancilleria.gob.ar/userfiles/ut/pinguinoemperador.pdf) | "se debe programar la campaña científica durante los meses de agosto y septiembre" / "nuestro país comenzó en el 2013 el estudio de la colonia de Cerro Nevado, situada a unos 65 km al sur de Base Marambio" / "Durante 4 horas se recorre con motos de nieve y trineos el trayecto hasta Cerro Nevado" / epígrafe de foto: "Campamento realizado sobre el pack marino a 300 metros de la colonia, protegido por témpano." |
+| 4 | [Schiel et al. 2019](https://www.marineornithology.org/PDF/47_2/47_2_189-192.pdf) | "counts conducted in 2004, 2009, and 2013, ranging from 1 200–4 000 breeding pairs" (el censo de 2018 da "at least 2 700 breeding pairs", dentro del rango) |
+| 5 | [Schiel et al. 2019](https://www.marineornithology.org/PDF/47_2/47_2_189-192.pdf) | "in an area strongly influenced by recent climatic developments" / "Therefore, monitoring this Snow Hill colony is crucial." |
+| 5 | [IAA · Pingüino emperador](https://cancilleria.gob.ar/userfiles/ut/pinguinoemperador.pdf) | "se encuentra en una de las regiones del mundo donde los efectos del cambio climático global son más evidentes" |
+
+**Discrepancias resueltas:** Coria y Montalti (los descubridores) ubican la colonia a unos 500 m de la costa sur; Schiel et al. dicen «costa sureste». La ficha dice «costa sur», como la fuente original y el IAA («al sur de la Isla Cerro Nevado»). El punto del mapa usa las coordenadas de Coria y Montalti (64°32′ S, 57°26′ O).
+
+**Pendientes (no se publican):**
+- Transmisores satelitales en adultos (IAA, Global Penguin Society, Aves Argentinas): solo en notas de prensa (Perfil; Noticias Ambientales, 31 oct 2026). [Fuente a definir]: comunicado del IAA o de la Dirección Nacional del Antártico.
+- Superficie del sitio: 214 ha según BirdLife International (citado por Schiel et al.); la ficha de BirdLife no se abrió en esta verificación.
+- Cruceros que salen de Ushuaia: ninguna fuente leída lo dice. Schiel et al. y el IAA sí registran visitas turísticas en helicóptero; la ficha no las menciona.
+- Dieta de esta colonia: el IAA nombra kril, peces y calamar como presas de la especie, no medidas en Cerro Nevado.
+
+**Cómo se dibujó el hielo (#206, consulta 17 nov 2026):** el hielo fijo es hielo marino agarrado a la costa que no se mueve con el viento ni las corrientes ([NSIDC · Cryosphere glossary: fast ice](https://nsidc.org/learn/cryosphere-glossary/fast-ice)): en el modelo es una planicie delgada desde la costa, no un témpano. La colonia va a lo largo de su borde, en lo plano (Schiel et al.: "distributed over an area of approximately three kilometers in length and a few hundred meters in width, along the edge of the fast ice" / "Almost all penguins were observed on level areas"), y delante hay una franja angosta de hielo suelto ("the narrow pack ice belt in front of the fast ice") con pichones sobre témpanos.
+
+**El modelo del mapa y de la ficha es una ilustración:** la cantidad de pingüinos, el témpano con la guardería de pichones (Schiel et al.: "a crèche of 144 chicks seen on the lee side of an iceberg") y el campamento no son un conteo ni un plano del sitio. El saludo con la aleta del emperador de adelante, en el mapa, es un recurso de la ilustración, no un comportamiento de la especie.
+
 ## `fosiles` — Fósiles
 
 **Nota del 14 nov 2026 (#74):** la ficha «Fósiles» salió del mapa. En su lugar, sobre la Isla Marambio, está el punto «Base Marambio» ([`docs/expediciones/base-marambio.md`](expediciones/base-marambio.md)), y la expedición de fósiles va a vivir en otro lugar. El texto ya no está en `point-details.ts`; la descripción y sus fuentes verificadas se conservan acá para esa expedición.

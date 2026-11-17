@@ -1,4 +1,5 @@
 import type { Source } from './sea.ts';
+import { CERRO_NEVADO_SOURCES } from './cerro-nevado.ts';
 
 /**
  * Verified first description of the map points without an expedition (tier B and C), by point id.
@@ -65,5 +66,10 @@ export const POINT_DETAILS: Readonly<Record<string, { desc: string; sources: rea
       { label: 'A Changing World for Emperor Penguins', org: 'NASA Science · Earth Observatory', url: 'https://science.nasa.gov/earth/earth-observatory/a-changing-world-for-emperor-penguins/', consulted: '2026-11-13' },
       { label: 'Four unreported emperor penguin colonies discovered by satellite', org: 'Antarctic Science (Cambridge University Press)', url: 'https://www.cambridge.org/core/journals/antarctic-science/article/four-unreported-emperor-penguin-colonies-discovered-by-satellite/20956FD3E80F3604C21D0E2AA80FEF9B', consulted: '2026-11-13' },
     ],
+  },
+  // #206: every sentence and its quote are in docs/puntos-proximamente-fuentes.md.
+  cerronevado: {
+    desc: 'Frente a la costa sur de la isla Cerro Nevado, sobre el hielo marino fijo, está la colonia de pingüino emperador más al norte que se conoce. La descubrieron científicos del Instituto Antártico Argentino desde un avión Twin Otter, el 20 de julio de 1997. Desde 2013 la estudian en campañas de agosto y septiembre: salen de Base Marambio, a unos 65 km, cruzan el hielo en motos de nieve y trineos, y acampan junto a un témpano. Según el año, los censos publicados van de 1.200 a unas 4.000 parejas. Está en una zona donde el clima cambia rápido: por eso seguirla es clave.',
+    sources: [CERRO_NEVADO_SOURCES.coria2000, CERRO_NEVADO_SOURCES.iaa, CERRO_NEVADO_SOURCES.schiel2019].map(({ label, org, url, consulted }) => ({ label, org, url, consulted })),
   },
 };

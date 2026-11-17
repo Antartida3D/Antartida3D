@@ -186,3 +186,14 @@
     top: 72px;
   }
 }
+
+/* Cerro Nevado (#206) shares the layout of Marambio (.mar): only its own pieces here. */
+.cn .orc-hs {
+  left: 0;
+  top: 0;
+}
+.cn-no3d {
+  margin: 0;
+  font-size: 13px;
+  color: var(--chart-muted);
+}

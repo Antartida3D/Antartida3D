@@ -361,6 +361,55 @@ export function emperor(x: number, z: number, k: number, facing = 0): Tri[] {
   return shift(scaled(turn([...body, ...head, ...bill, ...feet], facing), k), x, 0, z);
 }
 
+// Emperor chick: grey down with the white face mask and black crown it keeps while it moults
+// (Schiel et al. 2019, Cerro Nevado #206). Approximate colors.
+const CHICK_DOWN = 0x9ba1a6;
+const CHICK_DOWN_DARK = 0x7c8389;
+
+/**
+ * Emperor chick, low-poly: a round grey body, the black crown and the white face mask, facing +x
+ * as emperor(). `k` is its height.
+ */
+export function emperorChick(x: number, z: number, k: number, facing = 0): Tri[] {
+  // The four segments round +x are the face, as the white front of emperor().
+  const face = (i: number) => i < 2 || i > 4;
+  const body = lathe(0, 0, [[0, 0.2], [0.26, 0.27], [0.52, 0.23], [0.68, 0.15]], 7, (_i, band) => (band === 0 ? CHICK_DOWN_DARK : CHICK_DOWN));
+  const head = lathe(0.02, 0, [[0.66, 0.16], [0.8, 0.16], [0.9, 0.11], [1, 0]], 7, (i, band) => (band < 2 && face(i) ? PENGUIN_WHITE : PENGUIN_BLACK));
+  const bill: Tri[] = [
+    [[0.16, 0.8, 0.02], [0.16, 0.8, -0.02], [0.25, 0.78, 0], PENGUIN_BLACK],
+    [[0.16, 0.78, -0.02], [0.16, 0.78, 0.02], [0.25, 0.78, 0], PENGUIN_BLACK],
+  ];
+  return shift(scaled(turn([...body, ...head, ...bill], facing), k), x, 0, z);
+}
+
+/** Where the flipper of emperor() hangs, in its units (height 1, front +x): its +z shoulder, on the body. */
+export const EMPEROR_SHOULDER: Vec3 = [0, 0.64, 0.17];
+/** Turn (radians) of a flipper at rest away from the body, so it lies on the widening side instead of inside it. */
+const FLIPPER_REST = 0.3;
+
+/**
+ * A flipper of emperor(), apart so it can move: it hangs from (0, 0, 0) down -y on the +z side,
+ * resting on the body, black outside and pale on the face towards the body. `side` -1 gives the
+ * one on -z. Units of emperor(); place it at EMPEROR_SHOULDER, scaled by `k`. Turning it round x
+ * towards +z raises it.
+ */
+export function emperorFlipper(side: 1 | -1 = 1): Tri[] {
+  const c = Math.cos(FLIPPER_REST);
+  const sn = Math.sin(FLIPPER_REST);
+  // Round x, so that what hangs (-y) swings out towards +z.
+  const out = ([x, y, z]: Vec3): Vec3 => [x, y * c + z * sn, -y * sn + z * c];
+  const tris = [...block(0, -0.17, 0.035, 0.09, 0.34, 0.035, PENGUIN_BLACK), ...block(0, -0.16, 0.014, 0.06, 0.28, 0.008, PENGUIN_WHITE)]
+    .map(([a, b, d, col]): Tri => [out(a), out(b), out(d), col]);
+  return side === 1 ? tris : mirrorZ(tris);
+}
+
+/** An emperor() with both flippers hanging at its sides. */
+export function emperorWithFlippers(x: number, z: number, k: number, facing = 0): Tri[] {
+  const [sx, sy, sz] = EMPEROR_SHOULDER;
+  const flippers = [...shift(emperorFlipper(1), sx, sy, sz), ...shift(emperorFlipper(-1), sx, sy, -sz)];
+  return [...emperor(x, z, k, facing), ...shift(scaled(turn(flippers, facing), k), x, 0, z)];
+}
+
 const unit = (v: Vec3): Vec3 => {
   const l = Math.hypot(v[0], v[1], v[2]);
   return l ? [v[0] / l, v[1] / l, v[2] / l] : [0, 1, 0];

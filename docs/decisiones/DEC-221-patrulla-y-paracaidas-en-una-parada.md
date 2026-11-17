@@ -17,7 +17,7 @@
 2. La patrulla no tiene escena propia. Su escena (grieta, cañas, rocas y trineos) se borró de `poncho-scenes.ts`. La parada unida usa la escena del salto (#222).
 3. La primera frase de la parada unida resume la patrulla (la guía por las montañas Santa Fe y el trineo que cayó al barranco) mientras se ve el helicóptero. Los demás datos de la patrulla pasan a «Saber más», cada uno con su fuente y su página, incluido que Poncho no llegó al Polo. Se mantiene el máximo de tres frases por parada, una toma de cámara por frase.
 4. La foto del equipo de perros (Fundación Marambio) pasa de la parada de la patrulla a la parada unida.
-5. La ruta del mapa no cambia: el equipo sigue pasando por el pico Santa Fe, aunque ya no haya una parada ahí.
+5. La ruta del mapa va derecho de Belgrano (hito 5) al lugar del salto (hito 6) y vuelve al frente de la barrera de Filchner: ya no baja hasta el pico Santa Fe. El tramo en trineo dura 14 s en lugar de 30, para que el equipo no vaya más lento en un camino más corto.
 
 ## Motivo
 

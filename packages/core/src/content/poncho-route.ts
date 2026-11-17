@@ -7,8 +7,8 @@ import type { TripSegment } from './ushuaia.ts';
 
 /**
  * Places of the team as [lon, lat]: Base Esperanza (where Poncho was born in 1961), the Foca nunataks and
- * Base San Martín (the winter expedition of 1962), the Belgrano area on the Filchner ice shelf (1964-66), the
- * Santa Fe peak (the «Paralelo 82» patrol of 1965) and, in 1967, Duse Bay near Esperanza.
+ * Base San Martín (the winter expedition of 1962), the Belgrano area on the Filchner ice shelf (1964-66) and, in 1967,
+ * Duse Bay near Esperanza.
  *
  * Verified places: docs/expediciones/poncho-fuentes.md, section 3. Belgrano I has no verified coordinate, so it
  * is drawn on the Filchner ice shelf, and the way back to it is a second, nearby point (both APPROXIMATE).
@@ -19,8 +19,10 @@ export const FOCA_NUNATAKS = [-60.25, -65.07] as const;
 export const SAN_MARTIN = [-67.1, -68.13] as const;
 /** APPROXIMATE: central point of the Filchner ice shelf (SCAR gazetteer), standing for Base Belgrano I. */
 export const BELGRANO_AREA = [-40, -79] as const;
-export const SANTA_FE_PEAK = [-41.33, -82.05] as const;
-/** APPROXIMATE and ILLUSTRATIVE: a point near Belgrano for the way back of the patrol, only to draw the curve. */
+/**
+ * APPROXIMATE and ILLUSTRATIVE: a point near Belgrano for the stop of the jump of 1966, only to draw the curve. The book puts the jump
+ * about 30 km south of the base (p. 19), but the base has no verified coordinate, so this point is not that place.
+ */
 export const BELGRANO_RETURN = [-41, -79.6] as const;
 export const DUSE_BAY = [-57.33, -63.5] as const;
 /** Ushuaia as the trip «Desde Ushuaia» marks it (`[Fuente a definir]` there too). */
@@ -121,8 +123,9 @@ const ESPERANZA_PATROL: LonLat[] = [
   ESPERANZA_PORT,
 ];
 
-// Over the Filchner ice shelf, from its front to the Belgrano area, to the Santa Fe peak and back in a loop. ILLUSTRATIVE.
-const FILCHNER_LOOP: LonLat[] = [FILCHNER_PORT, BELGRANO_AREA, [-40.8, -80.6], SANTA_FE_PEAK, [-42.6, -80.6], BELGRANO_RETURN, FILCHNER_PORT];
+// Over the Filchner ice shelf, from its front to the Belgrano area, straight on to the place of the jump and back to the front.
+// ILLUSTRATIVE. The patrol of the Paralelo 82 is no longer a stop (DEC-221), so the leg no longer goes down to the Santa Fe peak.
+const FILCHNER_LOOP: LonLat[] = [FILCHNER_PORT, BELGRANO_AREA, BELGRANO_RETURN, FILCHNER_PORT];
 
 /** From the port of Esperanza to Ushuaia: the sea route of route.ts, from the Antarctic Sound back, derived and not copied. */
 const TO_USHUAIA: LonLat[] = (() => {
@@ -134,7 +137,7 @@ const TO_USHUAIA: LonLat[] = (() => {
  * Contract of the legs (index, vehicle, where). Poncho's milestones point at them with `segment` (poncho.ts).
  *  0 sled: Peninsula 1961-62. Esperanza -> Foca nunataks -> San Martín and back, ends at the port of Esperanza.
  *  1 ship: move to Belgrano (1964). Port of Esperanza -> Weddell Sea -> front of the Filchner ice shelf.
- *  2 sled: Belgrano and the Pole (1964-66). Front of the shelf -> Belgrano area -> Santa Fe peak -> loop back to the front.
+ *  2 sled: Belgrano (1964-66). Front of the shelf -> Belgrano area -> place of the jump -> back to the front.
  *  3 ship: back to the peninsula (1967). Front of the Filchner ice shelf -> Weddell Sea -> port of Esperanza.
  *  4 sled: Esperanza (1967). Short patrol inland to Duse Bay and back to the port of Esperanza.
  *  5 ship: towards Ushuaia (1973). Port of Esperanza -> Ushuaia, over the sea route of route.ts reversed.
@@ -147,7 +150,7 @@ const TO_USHUAIA: LonLat[] = (() => {
 export const PONCHO_SEGMENTS: readonly TripSegment[] = [
   { vehicle: 'sled', seconds: 30, waypoints: PENINSULA_ROUND_TRIP },
   { vehicle: 'ship', seconds: 14, waypoints: WEDDELL_SEA },
-  { vehicle: 'sled', seconds: 30, waypoints: FILCHNER_LOOP },
+  { vehicle: 'sled', seconds: 14, waypoints: FILCHNER_LOOP },
   { vehicle: 'ship', seconds: 12, waypoints: reversed(WEDDELL_SEA) },
   { vehicle: 'sled', seconds: 12, waypoints: ESPERANZA_PATROL },
   { vehicle: 'ship', seconds: 24, waypoints: TO_USHUAIA },

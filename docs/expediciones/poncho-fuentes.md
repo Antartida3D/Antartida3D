@@ -60,7 +60,7 @@ Las coordenadas salen del gazetteer de SCAR `[V3]` o de la Armada `[V2]`. Format
 | Base San Martín (`expedicion-invernal-1962`) | `[-67.10, -68.13]` | `[V2]`: 68°08' S 67°07' O. `[V3]`, «San Martín Station»: `[-67.103333, -68.129444]` | Verificado |
 | Bahía Margarita (`expedicion-invernal-1962`) | `[-68.0, -68.5]` | `[V3]`, «Margarita, bahía» (gazetteer ARG) | Verificado |
 | Bahía Duse (`brujula-perdida`) | `[-57.333333, -63.5]` | `[V3]`, «Duse, bahía» (gazetteer ARG). Otros gazetteers difieren hasta unos 0,1° en latitud (por ejemplo `[-57.25, -63.566667]`) | Verificado, aproximado |
-| Pico Santa Fe (ya no es una parada; la ruta pasa por ahí y el dato está en «Saber más» de `paracaidas`) | `[-41.333333, -82.05]` | `[V3]`, «Santa Fe, pico» (gazetteer ARG) | Verificado (el libro habla de «nunataks Santa Fe», un cordón; el gazetteer ubica el pico) |
+| Pico Santa Fe (ya no es una parada ni la ruta pasa por ahí; el dato está en «Saber más» de `paracaidas`) | `[-41.333333, -82.05]` | `[V3]`, «Santa Fe, pico» (gazetteer ARG) | Verificado (el libro habla de «nunataks Santa Fe», un cordón; el gazetteer ubica el pico) |
 | Cordillera Diamante (contexto de la patrulla) | `[-48.5, -82.666667]` | `[V3]`, «Diamante, cordillera» (gazetteer ARG) | Verificado |
 | Barrera de hielos Filchner (ya no es una parada) | `[-40, -79]` | `[V3]`, «Filchner, barrera de hielos» (gazetteer ARG). Es un punto central de una entidad muy grande | Verificado, muy aproximado |
 | Cabo Adams (ya no es una parada) | `[-62.333333, -75.033333]` | `[V3]`, «Adams, cabo» (gazetteer ARG) | Verificado |

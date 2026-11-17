@@ -4,6 +4,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import {
   SCENE_STRIDE,
   sceneElementShown,
+  sceneFallLift,
   sceneHop,
   scenePathLength,
   scenePersonPhase,
@@ -23,6 +24,7 @@ import { buildBeltTris, ponchoPersonParts, ponchoPoseLift, ponchoWaistAt, type P
 import { DOG_HEAD_PIVOT, DOG_LEGS, DOG_LEG_PIVOT, dogHeadPitch, dogLegSwing, ponchoDogParts, type DogLeg } from './ponchoDog.ts';
 import { PONCHO_PALETTE, type DogPalette } from './ponchoModels.ts';
 import { PONCHO_PROPS } from './ponchoProps.ts';
+import { PONCHO_PROPS2, buildRescueRotor, RESCUE_ROTOR_AT } from './ponchoProps2.ts';
 import { DOG_SCALE, elementStaticTris, pathFootprints, type Ground } from './ponchoSceneBuild.ts';
 import { sceneHasShip, withShipWalkway } from './ponchoShip.ts';
 import { ROPE_SEGMENTS, ropeIndices, ropePoints, ropeVertexCount, fillRopeTube } from './ponchoRope.ts';
@@ -73,6 +75,12 @@ const DOG_SPAN = 0.3;
 const DOG_SLOPE_DEAD_ZONE = 0.12;
 /** The sled leans with the ground over this length (scene units). */
 const SLED_SPAN = 0.55;
+/** Turns of the rotor of a flying helicopter per second, and the slow bob of the aircraft in the air (scene units, radians per second). */
+const ROTOR_RATE = 14;
+const FLY_BOB = 0.05;
+const FLY_BOB_RATE = 1.7;
+/** Radians per second of the legs of a dog paddling as it comes down on its parachute. */
+const PADDLE_RATE = 9;
 /** Where the line is tied on a dog (its model frame: x ahead, y up): the back, over the hips. */
 const DOG_HARNESS: Vec3 = [-0.28, 0.58, 0];
 /** The line shows once both its ends are this grown. */
@@ -339,6 +347,15 @@ export function DioramaActors({ scene, step, ground, reduced }: { scene: SceneDe
     const tris = elementStaticTris(e, ground);
     return tris.length ? buildPolyGeometry(resolveRelief(tris, () => 0)) : null;
   }), [scene, ground]);
+  // A prop that follows a path flies (the helicopter): its body and its rotor, apart, so the rotor can spin.
+  const flyers = useMemo(() => scene.elements.map((e) => {
+    if (e.kind !== 'prop' || !e.path) return null;
+    return {
+      body: buildPolyGeometry(resolveRelief(PONCHO_PROPS2[e.id as keyof typeof PONCHO_PROPS2].tris, () => 0)),
+      rotor: buildPolyGeometry(resolveRelief(buildRescueRotor(), () => 0)),
+    };
+  }), [scene]);
+  const rotors = useRef<(Group | null)[]>([]);
   const prints = useMemo(() => (printed ? pathFootprints(printed, ground) : null), [printed, ground]);
   // Whoever walks does it on the gangway and the deck of the ship when the scene has one (the still parts stay seated on the ice).
   const walk = useMemo<Ground>(() => (sceneHasShip(scene) ? withShipWalkway(ground) : ground), [scene, ground]);
@@ -346,6 +363,7 @@ export function DioramaActors({ scene, step, ground, reduced }: { scene: SceneDe
 
   useEffect(() => () => stillGeometries.forEach((g) => g?.dispose()), [stillGeometries]);
   useEffect(() => () => printsGeometry.dispose(), [printsGeometry]);
+  useEffect(() => () => flyers.forEach((f) => { f?.body.dispose(); f?.rotor.dispose(); }), [flyers]);
   // With reduced motion switched on or off, or a new step, draw once more so everything settles.
   useEffect(() => invalidateAll(), [reduced, step, invalidateAll]);
   // Back on the page, the loop that stopped while it was hidden starts again.
@@ -378,6 +396,8 @@ export function DioramaActors({ scene, step, ground, reduced }: { scene: SceneDe
       travels.current[i] = spot.travel;
       const gy = walk(spot.x, spot.z);
       const still = stills.current[i];
+      // Height over the ground on its fall (hanging half way down with reduced motion).
+      const lift = sceneFallLift(e, reduced && e.fall ? e.fall.duration / 2 : t);
       if (still) {
         // Grows out of its foot: the faces are already seated, so the group scales about the foot.
         const gx = e.x;
@@ -385,7 +405,9 @@ export function DioramaActors({ scene, step, ground, reduced }: { scene: SceneDe
         const base = ground(gx, gz);
         still.visible = p > 0;
         still.scale.setScalar(grow);
-        still.position.set(gx * (1 - grow), base * (1 - grow), gz * (1 - grow));
+        // It scales about its foot, which is where it hangs now; the faces are seated at the end of the fall.
+        const hung = e.fall ? lift - e.fall.to : 0;
+        still.position.set(gx * (1 - grow), (base + lift) * (1 - grow) + grow * hung, gz * (1 - grow));
       }
       if (e.kind === 'person') {
         const rig = rigs.current[i];
@@ -400,6 +422,15 @@ export function DioramaActors({ scene, step, ground, reduced }: { scene: SceneDe
       if (!node) return;
       node.visible = p > 0 && !spot.gone;
       if (p <= 0 || spot.gone) return;
+      if (e.kind === 'prop') {
+        // It flies along its path at its height, nose where it heads, rocking a little; the rotor spins (not with reduced motion).
+        const bob = reduced ? 0 : Math.sin(t * FLY_BOB_RATE) * FLY_BOB;
+        node.position.set(spot.x, gy + (e.lift ?? 0) + bob * k, spot.z);
+        node.rotation.set(0, spot.yaw, bob * 0.5, 'YZX');
+        node.scale.setScalar(k);
+        rotors.current[i]?.rotation.set(0, reduced ? 0 : t * ROTOR_RATE, 0);
+        return;
+      }
       if (e.kind === 'sled') {
         const fx = Math.cos(spot.yaw) * SLED_SPAN;
         const fz = -Math.sin(spot.yaw) * SLED_SPAN;
@@ -410,17 +441,18 @@ export function DioramaActors({ scene, step, ground, reduced }: { scene: SceneDe
         return;
       }
       // A dog sways a little where it stands, and its legs trot while it goes with the team.
-      const moving = spot.moving && !reduced;
+      const falling = !!e.fall && !reduced && t < e.fall.duration;
+      const moving = (spot.moving && !reduced) || falling;
       // A dog that lies down (rest) folds its legs under it and comes down onto them; one curled up is squashed into a ball.
       const lying = e.curled ? 0 : spot.lying;
       const sway = reduced || e.curled || lying > 0 ? 0 : Math.sin(t * DOG_SWAY_RATE + i) * DOG_SWAY;
-      const swing = dogLegSwing((spot.travel * Math.PI * 2) / DOG_STRIDE + i, moving);
+      const swing = dogLegSwing(falling ? t * PADDLE_RATE + i : (spot.travel * Math.PI * 2) / DOG_STRIDE + i, moving);
       const legs = dogLegs.current[i];
       if (legs) for (const leg of DOG_LEGS) legs[leg]?.rotation.set(0, 0, swing[leg] + lying * LIE_LEG_FOLD);
       // The head tips about the neck: it bobs to the snow while the dog sniffs (not with reduced motion: level).
       dogHeads.current[i]?.rotation.set(0, 0, dogHeadPitch(t, !!e.sniff && !reduced));
       const drop = lying * LIE_DROP * DOG_LEG_PIVOT.frontLeft[1] * DOG_SCALE * k;
-      node.position.set(spot.x, gy + (e.lift ?? 0) - (e.curled ? CURLED_SINK : 0) - drop, spot.z);
+      node.position.set(spot.x, gy + lift - (e.curled ? CURLED_SINK : 0) - drop, spot.z);
       // Going up a gangway it leans with the slope; on the ice's gentle bumps it stays level.
       const fx = Math.cos(spot.yaw) * DOG_SPAN;
       const fz = -Math.sin(spot.yaw) * DOG_SPAN;
@@ -477,6 +509,17 @@ export function DioramaActors({ scene, step, ground, reduced }: { scene: SceneDe
                   }}
                 />
               )}
+            </group>
+          );
+        }
+        const flyer = flyers[i];
+        if (flyer) {
+          return (
+            <group key={i} ref={(n) => void (nodes.current[i] = n)}>
+              <mesh geometry={flyer.body} material={vehicleMaterial} frustumCulled={false} />
+              <group position={RESCUE_ROTOR_AT as [number, number, number]} ref={(n) => void (rotors.current[i] = n)}>
+                <mesh geometry={flyer.rotor} material={vehicleMaterial} frustumCulled={false} />
+              </group>
             </group>
           );
         }

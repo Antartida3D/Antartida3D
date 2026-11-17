@@ -77,7 +77,7 @@ La página es la del PDF del libro `[P1]` donde está el hecho principal de la f
 
 ### 7. `paracaidas` — Poncho paracaidista (1966, tramo 2)
 
-- **Escena** (p. 19): se abre la puerta del helicóptero, los perros saltan con paracaídas, aterrizan en el hielo y Poncho sale al frente del trineo a rescatar a una patrulla perdida.
+- **Escena** (p. 19), ilustración del relato, no un registro: el helicóptero entra volando, grande y alto, con dos oficiales esperando abajo; los tres perros bajan con paracaídas, chicos bajo el helicóptero y moviendo las patas como si nadaran; aterrizan en el hielo y Poncho sale al frente del trineo, con un hombre detrás, hasta llegar a los oficiales. La cantidad de personas y los tamaños son una ilustración (el libro no los da).
 - **Gancho:** «Pero otra tormenta ya lo esperaba.»
 - **Saber más:** Pato y Bucky, el arnés, el afecto del suboficial a cargo, el trineo desarmable y los oficiales que saltaron antes, el helicóptero S-55 y los 30 km al sur de Belgrano (p. 18 y 19).
 

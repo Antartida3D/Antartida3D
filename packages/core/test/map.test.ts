@@ -82,6 +82,37 @@ describe('fanning out crowded markers (#238)', () => {
     }
   });
 
+  // Measured on a phone while dragging the 3D map (#253): the Peninsula against the left edge, with
+  // Belgrano, the South Pole and Mount Erebus each just under the gap from the next one.
+  const CHAIN = [at(-15, 345), at(-19, 347), at(43, 351), at(-3, 320), at(81, 361.5), at(123.5, 400), at(141, 457)];
+  const moved = (o: { dx: number; dy: number }) => Math.hypot(o.dx, o.dy);
+
+  it('does not drag a marker far away because a chain of neighbours reaches it (#253)', () => {
+    const o = fanOffsets(CHAIN);
+    for (let i = 0; i < CHAIN.length; i++) {
+      expect(moved(o[i]), `marker ${i}`).toBeLessThan(MARKER_GAP_PX);
+      for (let j = i + 1; j < CHAIN.length; j++) expect(gapOf(CHAIN, o, i, j), `${i} ${j}`).toBeGreaterThan(MARKER_GAP_PX - 0.01);
+    }
+    // The South Pole and Mount Erebus only touch the end of the chain: they move a little, pushed by
+    // their neighbour, less than a quarter of the gap. The polygon took Mount Erebus 219 px away.
+    expect(moved(o[5])).toBeLessThan(MARKER_GAP_PX / 4);
+    expect(moved(o[6])).toBeLessThan(MARKER_GAP_PX / 4);
+  });
+
+  it('moves the markers a little when the map moves a little: no jump when a pair crosses the gap (#253)', () => {
+    // Three in a row. The outer ones go from just over the gap to just under it.
+    const row = (d: number) => [at(0, 0), at(d, 0), at(2 * d, 0)];
+    const far = fanOffsets(row(MARKER_GAP_PX + 0.25));
+    const near = fanOffsets(row(MARKER_GAP_PX - 0.25));
+    for (let i = 0; i < 3; i++) expect(Math.hypot(far[i].dx - near[i].dx, far[i].dy - near[i].dy), `marker ${i}`).toBeLessThan(1);
+
+    // The chain of the phone, with Mount Erebus half a pixel farther from the South Pole or nearer to it.
+    const nudged = (d: number) => CHAIN.map((p, i) => (i === 6 ? at(p.left, p.top + d) : p));
+    const a = fanOffsets(nudged(1.2));
+    const b = fanOffsets(nudged(0.7));
+    for (let i = 0; i < CHAIN.length; i++) expect(Math.hypot(a[i].dx - b[i].dx, a[i].dy - b[i].dy), `marker ${i}`).toBeLessThan(1);
+  });
+
   it('keeps every head a full stick above its place, even when the marker was pushed down', () => {
     expect(markerLift(0, 0)).toBe(MARKER_STICK_PX);
     for (let a = 0; a < 2 * Math.PI; a += 0.1) {

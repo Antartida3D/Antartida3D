@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { LIST_BUTTON_LABEL } from '../../core/src/content/points.ts';
 import { PONCHO_MILESTONES } from '../../core/src/content/poncho.ts';
 
 let consoleErrors: string[] = [];
@@ -19,7 +20,7 @@ test.afterEach(() => {
 test('«Volver al mapa» leaves the diorama for the map and the trip resumes inside that stop', async ({ page }) => {
   const first = PONCHO_MILESTONES[0];
   await page.goto('/');
-  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
   await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Poncho/ }).click();
   await page.getByRole('button', { name: 'Comenzar' }).click();
 
@@ -47,7 +48,7 @@ test('«Volver al mapa» leaves the diorama for the map and the trip resumes ins
 test('the arrows go back into the stop before, at its last sentence, and forward again; the bar goes back into the stop too', async ({ page }) => {
   const [first, second] = PONCHO_MILESTONES;
   await page.goto('/');
-  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
   await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Poncho/ }).click();
   await page.getByRole('button', { name: 'Comenzar' }).click();
 

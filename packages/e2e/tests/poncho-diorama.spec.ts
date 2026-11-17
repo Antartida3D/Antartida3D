@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { LIST_BUTTON_LABEL } from '../../core/src/content/points.ts';
 import { PONCHO_MILESTONES } from '../../core/src/content/poncho.ts';
 
 let consoleErrors: string[] = [];
@@ -19,7 +20,7 @@ test.afterEach(() => {
 test('the story grows a sentence at each «Siguiente», and «Saber más» comes at the end and unfolds in place', async ({ page }) => {
   const stop = PONCHO_MILESTONES[0];
   await page.goto('/');
-  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
   await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Poncho/ }).click();
   await page.getByRole('button', { name: 'Comenzar' }).click();
 
@@ -72,7 +73,7 @@ test('the photograph of a stop opens in a modal and Escape closes it without lea
   test.setTimeout(90_000);
   const stop = PONCHO_MILESTONES.find((m) => m.id === 'poncho-perro-guia')!;
   await page.goto('/');
-  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
   await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Poncho/ }).click();
   await page.getByRole('button', { name: 'Comenzar' }).click();
   const panel = page.locator('.poncho-panel');
@@ -102,7 +103,7 @@ test('the photograph of a stop opens in a modal and Escape closes it without lea
 // #216: the first stop shows the Base Esperanza, and its photograph shows its author and license.
 test('the photograph of Esperanza at the end of the first stop names its author and license', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
   await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Poncho/ }).click();
   await page.getByRole('button', { name: 'Comenzar' }).click();
   const panel = page.locator('.poncho-panel');

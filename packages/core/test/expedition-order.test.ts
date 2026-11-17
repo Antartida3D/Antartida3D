@@ -8,6 +8,7 @@ import {
   VOYAGE_POINT,
   afterExpedition,
   nextExpedition,
+  EXPEDITIONS_IN_ORDER,
 } from '../src/index.ts';
 
 describe('expedition order', () => {
@@ -36,6 +37,11 @@ describe('expedition order', () => {
 
   it('returns null when all expeditions are explored', () => {
     expect(nextExpedition(EXPEDITION_ORDER)).toBeNull();
+  });
+
+  it('lists the expeditions in the suggested order (#235)', () => {
+    expect(EXPEDITIONS_IN_ORDER.map((p) => p.id)).toEqual([...EXPEDITION_ORDER]);
+    expect(EXPEDITIONS_IN_ORDER.every((p) => p.tier === 'A')).toBe(true);
   });
 
   describe('afterExpedition (Irizar cases)', () => {

@@ -93,32 +93,51 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
 .stage.m3d .top,.stage.m3d .bottom{background:none}
 .brand h1{margin:0;font-family:'Fraunces',Georgia,serif;font-weight:500;font-size:22px;line-height:1.05;letter-spacing:-.01em}
 .brand p{margin:2px 0 0;font-family:'Fraunces', Georgia, serif;font-size:13px;color:var(--chart-muted);line-height:1.3;}
-.reg{min-width:118px;border:1px solid var(--chart-ink);padding:12px 14px}
+/* The exploration log is a button: it drops down the six expeditions (#235). */
+.reg-wrap{position:relative}
+.reg{position:relative;display:block;min-width:118px;border:1px solid var(--chart-ink);padding:12px 36px 12px 14px;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.reg:hover{background:var(--btn-hover-bg)}
 .reg small{display:block;font-size:11px;line-height:1.1;text-transform:uppercase;letter-spacing:.08em;color:var(--chart-muted);
   font-family:'Fraunces', Georgia, serif;}
 .reg b{display:block;font-family:'Fraunces',Georgia,serif;font-size:17px;margin-top:2px}
-.reg .bar{height:3px;margin-top:5px;border-radius:0;background:var(--chart-rule);overflow:hidden}
+.reg .bar{display:block;height:3px;margin-top:5px;border-radius:0;background:var(--chart-rule);overflow:hidden}
 .reg .bar i{display:block;height:100%;background:var(--ocre);transition:width .8s ease}
+/* A chevron that points down, and up while the list is open. */
+.reg-chev{position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex}
+.reg-chev .ico{width:18px;height:18px;transform:rotate(-90deg);transition:transform .2s ease}
+.reg.open .reg-chev .ico{transform:rotate(90deg)}
+.reg-menu{position:absolute;top:calc(100% + 6px);right:0;width:min(360px,calc(100vw - 24px));max-height:calc(100dvh - 96px);overflow:auto;
+  border:1px solid var(--chart-ink);padding:2px 12px}
+.reg-menu ol{list-style:none;margin:0;padding:0}
+.reg-menu li:last-child .li{border-bottom:0}
+.reg-menu .li{min-height:48px;padding:10px 2px;gap:10px}
+.reg-menu .li strong{font-size:17px}
+.reg-menu .li .go{display:inline-block;max-width:none;margin-top:2px;font-size:12px;text-align:left}
+/* Gold as the expedition markers, with a near-white tick (3:1 over the gold; paper would be less). */
+.reg-menu .li.done .num{background:var(--ocre);border-color:var(--ocre);color:var(--ice)}
+.reg-menu .li.done .num svg{width:14px;height:14px}
+/* Explored: its title struck through. */
+.reg-menu .li.done strong{text-decoration:line-through;text-decoration-thickness:1.5px}
+/* Open, the list goes over the buttons at the bottom of the map. */
+.top:has(.reg.open){z-index:11}
 
 .bottom{position:absolute;left:0;right:0;bottom:0;padding:24px 16px 16px;display:flex;justify-content:space-between;align-items:flex-end;gap:10px;background:none;pointer-events:none;z-index:10}
 .bottom > *{pointer-events:auto}
 .brand{pointer-events:none}
-.reg-toggle{display:none}
 /* On a phone only the exploration log shows (#249); the title stays for screen readers. */
 @media (max-width:819.98px){
   .top .brand{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
-  /* The log shrinks to a small «1/6» pill with its bar, so the map stays free. */
-  .top .reg{margin-right:auto;min-width:0;padding:6px 12px}
+  /* The log shrinks to a small «1/6» pill with its bar, so the map stays free; it drops the list down to the right. */
+  .top .reg-wrap{margin-right:auto}
+  .top .reg{min-width:0;padding:6px 12px}
   .top .reg{display:grid;grid-template-columns:32px auto 32px;align-items:center}
   .top .reg b{grid-column:2;text-align:center;white-space:nowrap}
   .top .reg small{display:none}
   .top .reg .unit{display:none}
-  .top .reg.open .unit{display:inline;margin-left:.35em}
   .top .reg b{font-size:16px;margin-top:0}
   .top .reg .bar{grid-column:1 / -1}
-  .top .reg-toggle{display:flex;align-items:center;justify-content:center;grid-column:3;justify-self:end;width:32px;height:36px;margin:-6px -10px -6px 0;padding:0;border:0;background:transparent;color:inherit}
-  .top .reg-toggle .ico{width:18px;height:18px;transform:rotate(180deg);transition:transform .2s ease}
-  .top .reg.open .reg-toggle .ico{transform:none}
+  .top .reg-chev{position:static;transform:none;grid-column:3;justify-self:end;margin-right:-6px}
+  .top .reg-menu{left:0;right:auto}
 }
 .zoom{display:flex;flex-direction:column;gap:8px}
 .leftcol{display:flex;flex-direction:column;gap:10px;align-items:flex-start}
@@ -127,7 +146,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
   max-height:40dvh;
   overflow:auto;}
 .legend button.lt{border:0;background:transparent;padding:4px 2px;min-height:44px;display:flex;align-items:center;gap:6px;font-weight:700;font-size:16px;}
-/* Closed, the legend is one button as big as «Ver como lista» (#248). */
+/* Closed, the legend is one button as big as «Actividades» (#248). */
 .leftcol{--rail-w:12rem}
 .leftcol > .btn:not(.resume),.legend:not(.open){width:var(--rail-w)}
 .leftcol > .btn:not(.resume){justify-content:flex-start}
@@ -485,7 +504,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
   .btn.resume .rdetail{display:none}
 }
 
-/* On a phone the closed legend is a round button beside «Ver como lista» (#248); open, it takes a row of its own. */
+/* On a phone the closed legend is a round button beside «Actividades» (#248); open, it takes a row of its own. */
 @media (max-width:819.98px){
   .leftcol{display:grid;grid-template-columns:auto auto;justify-content:start;align-items:end;gap:10px}
   .leftcol > .btn.resume{grid-column:1 / -1}

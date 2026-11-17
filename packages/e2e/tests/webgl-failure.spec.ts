@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { mockOpenMeteo } from './weather-helpers.ts';
+import { LIST_BUTTON_LABEL } from '../../core/src/content/points.ts';
 
 // No check of console errors here: three.js and React both report the failure this file forces.
 
@@ -55,7 +56,7 @@ test('a 3D map that cannot create its canvas leaves a notice and a usable app, n
   await expect(alert).toHaveCount(0);
 
   // The app goes on working.
-  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
   await expect(page.getByRole('dialog', { name: 'Todos los puntos' })).toBeVisible();
 });
 

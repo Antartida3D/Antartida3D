@@ -1,8 +1,10 @@
 import { expect, test, type CDPSession, type Locator, type Page } from '@playwright/test';
-import { AVAILABLE_COUNT } from '../../core/src/content/points.ts';
+import { AVAILABLE_COUNT, LIST_BUTTON_LABEL } from '../../core/src/content/points.ts';
 import { clearStorage } from '../storage.ts';
 import { mockOpenMeteo } from './weather-helpers.ts';
 import { show3D } from './map-helpers.ts';
+
+const LIST_BUTTON_RE = new RegExp(`^${LIST_BUTTON_LABEL}$`);
 
 const log = (page: Page) => page.locator('.reg');
 
@@ -59,13 +61,13 @@ test.afterEach(() => {
 });
 
 test('dialogs close with Escape and return focus to their trigger', async ({ page }) => {
-  await tabTo(page, /^Ver como lista$/);
+  await tabTo(page, LIST_BUTTON_RE);
   await page.keyboard.press('Enter');
   await expect(page.getByRole('dialog', { name: 'Todos los puntos' })).toBeVisible();
   await expectFocused(page, 'Ver mapa');
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  await expectFocused(page, 'Ver como lista');
+  await expectFocused(page, LIST_BUTTON_LABEL);
 
   await page.keyboard.press('Enter');
   await expectFocused(page, 'Ver mapa');
@@ -79,11 +81,11 @@ test('dialogs close with Escape and return focus to their trigger', async ({ pag
   await expect(sheet.getByRole('button', { name: 'Cerrar ficha' })).toHaveCount(0);
   await page.keyboard.press('Escape');
   await expect(sheet).toHaveCount(0);
-  await expectFocused(page, 'Ver como lista');
+  await expectFocused(page, LIST_BUTTON_LABEL);
 });
 
 test('Océano is available and opens its own expedition', async ({ page }) => {
-  await tabTo(page, /^Ver como lista$/);
+  await tabTo(page, LIST_BUTTON_RE);
   await page.keyboard.press('Enter');
   const oceanoBtn = page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Océano/ });
   await expect(oceanoBtn).toBeVisible();
@@ -94,7 +96,7 @@ test('Océano is available and opens its own expedition', async ({ page }) => {
 });
 
 test('Fósiles is available and opens its own expedition', async ({ page }) => {
-  await tabTo(page, /^Ver como lista$/);
+  await tabTo(page, LIST_BUTTON_RE);
   await page.keyboard.press('Enter');
   const fosilesBtn = page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Fósiles/ });
   await expect(fosilesBtn).toBeVisible();
@@ -106,7 +108,7 @@ test('Fósiles is available and opens its own expedition', async ({ page }) => {
 });
 
 test('a point with verified content shows its sources; Poncho expedition cites its provenance', async ({ page }) => {
-  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
   await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Volcán en el hielo/ }).click();
   const erebus = page.getByRole('dialog', { name: 'Volcán en el hielo' });
   // Sources start folded so they do not push the sheet's actions out of view.
@@ -118,7 +120,7 @@ test('a point with verified content shows its sources; Poncho expedition cites i
   await expect(erebus.getByRole('link', { name: 'Erebus Breaks Through' })).toHaveAttribute('href', /^https:\/\/science\.nasa\.gov\//);
   await page.keyboard.press('Escape');
 
-  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
   await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Poncho/ }).click();
   // Poncho's map voyage switches to 3D; its intro is behind the shared loader until the map is ready.
   await expect(page.locator('.ld')).toHaveCount(0, { timeout: 10_000 });
@@ -142,7 +144,7 @@ test('a point with verified content shows its sources; Poncho expedition cites i
 
 test('on a phone a point sheet closes when dragged down, like the other sheets', async ({ page, isMobile }) => {
   test.skip(!isMobile, 'a phone gesture; on wide screens the sheet is a card');
-  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
   await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Volcán en el hielo/ }).click();
   const erebus = page.getByRole('dialog', { name: 'Volcán en el hielo' });
   await expect(erebus).toBeVisible();
@@ -153,7 +155,7 @@ test('on a phone a point sheet closes when dragged down, like the other sheets',
 
 test('on a phone a point sheet opens at half the screen, grows when dragged up, and is a point of interest (#148)', async ({ page, isMobile }) => {
   test.skip(!isMobile, 'a phone layout; on wide screens the sheet is a card');
-  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
   await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Volcán en el hielo/ }).click();
   const erebus = page.getByRole('dialog', { name: 'Volcán en el hielo' });
   await expect(erebus.locator('.tag.tc')).toHaveText('Punto de interés');
@@ -177,7 +179,7 @@ test('has no horizontal scroll', async ({ page }) => {
 
 test('on a phone the trip picker grows when its handle is dragged up, shrinks back and closes when dragged down', async ({ page, isMobile }) => {
   test.skip(!isMobile, 'the handle belongs to the phone layout; on wide screens the sheet is a card');
-  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
   await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Desde Ushuaia/ }).click();
   const sheet = page.locator('.sheet.voyage');
   const handle = page.locator('.sheet-handle');
@@ -223,13 +225,13 @@ test('on a phone the trip picker grows when its handle is dragged up, shrinks ba
   await drag(200, page.getByRole('button', { name: 'Zarpar' }));
   await expect(sheet).toHaveCount(0);
   await expect(page.locator('.vbar')).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Ver como lista' })).toBeVisible();
+  await expect(page.getByRole('button', { name: LIST_BUTTON_LABEL })).toBeVisible();
 });
 
-test('closed legend is a round button beside «Ver como lista», and the suggestion sits above both (#248)', async ({ page, isMobile }) => {
+test('closed legend is a round button beside «Actividades», and the suggestion sits above both (#248)', async ({ page, isMobile }) => {
   test.skip(!isMobile, 'on wide screens the legend starts open');
   const legend = page.locator('.legend');
-  const list = page.getByRole('button', { name: 'Ver como lista' });
+  const list = page.getByRole('button', { name: LIST_BUTTON_LABEL });
   await expect(legend.getByRole('button', { name: /Leyenda/ })).toHaveAttribute('aria-expanded', 'false');
   const [a, b] = [(await legend.boundingBox())!, (await list.boundingBox())!];
   expect(Math.abs(a.width - a.height)).toBeLessThan(1);
@@ -245,19 +247,6 @@ test('closed legend is a round button beside «Ver como lista», and the suggest
   }
 });
 
-test('on a phone the exploration log is a small pill that the arrow grows and shrinks (#249)', async ({ page, isMobile }) => {
-  test.skip(!isMobile, 'on wide screens the log is always open');
-  const reg = page.locator('.reg');
-  const toggle = reg.getByRole('button', { name: /registro de exploración/i });
-  await expect(reg.locator('.unit')).toBeHidden();
-  const small = (await reg.boundingBox())!.width;
-  await toggle.click();
-  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-  await expect(reg.locator('.unit')).toBeVisible();
-  expect((await reg.boundingBox())!.width).toBeGreaterThan(small);
-  await toggle.click();
-  await expect(reg.locator('.unit')).toBeHidden();
-});
 
 test('on a phone the legend starts closed, and a swipe left or down closes it (#114)', async ({ page, isMobile }) => {
   test.skip(!isMobile, 'on wide screens the legend starts open (next test)');

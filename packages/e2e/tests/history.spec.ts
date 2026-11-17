@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { clearStorage } from '../storage.ts';
 import { clickOrcadasMarker } from './orcadas-helpers.ts';
 import { mockOpenMeteo } from './weather-helpers.ts';
+import { LIST_BUTTON_LABEL } from '../../core/src/content/points.ts';
 
 let consoleErrors: string[] = [];
 
@@ -23,11 +24,11 @@ test.afterEach(() => {
   expect(consoleErrors, 'console errors (hydration mismatches, exceptions)').toEqual([]);
 });
 
-const openList = (page: Page) => page.getByRole('button', { name: 'Ver como lista' }).click();
+const openList = (page: Page) => page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
 const list = (page: Page) => page.getByRole('dialog', { name: 'Todos los puntos' });
 const stillInApp = async (page: Page) => {
   expect(page.url()).not.toBe('about:blank');
-  await expect(page.getByRole('button', { name: 'Ver como lista' })).toBeVisible();
+  await expect(page.getByRole('button', { name: LIST_BUTTON_LABEL })).toBeVisible();
 };
 /** Waits until the app has dropped its own history entry after a close done by the interface. */
 const historySettled = (page: Page) => page.waitForFunction(() => history.state === null);

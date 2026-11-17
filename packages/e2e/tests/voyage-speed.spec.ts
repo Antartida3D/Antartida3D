@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import { clearStorage } from '../storage.ts';
 import { mockOpenMeteo } from './weather-helpers.ts';
 import { show3D } from './map-helpers.ts';
+import { LIST_BUTTON_LABEL } from '../../core/src/content/points.ts';
 
 let consoleErrors: string[] = [];
 
@@ -26,7 +27,7 @@ test('holding «avanzar» the trip picks up speed little by little up to ×4, an
   test.setTimeout(90_000);
   await show3D(page);
   await expect(page.locator('canvas').first()).toBeVisible();
-  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
   await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Desde Ushuaia/ }).click();
   await page.getByRole('group', { name: 'Medio de transporte' }).getByRole('button', { name: /Irízar/ }).click();
   await page.getByRole('button', { name: 'Zarpar' }).click();
@@ -51,7 +52,7 @@ test('from farther the trip goes faster, so it does not crawl on the screen (#16
   test.setTimeout(90_000);
   await show3D(page);
   await expect(page.locator('canvas').first()).toBeVisible();
-  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
   await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Desde Ushuaia/ }).click();
   await page.getByRole('group', { name: 'Medio de transporte' }).getByRole('button', { name: /Irízar/ }).click();
   await page.getByRole('button', { name: 'Zarpar' }).click();

@@ -62,3 +62,5 @@ export const PONCHO_POINT = PTS.find((p) => p.id === 'poncho')!;
 /** Points whose expedition is a trip over the map (not a separate screen). */
 export const VOYAGE_POINTS: readonly MapPoint[] = [VOYAGE_POINT, PONCHO_POINT];
 export const AVAILABLE_COUNT = PTS.filter((p) => p.tier === 'A').length;
+/** Text of the map button that opens the list of points (#236). The e2e tests look it up by this name too. */
+export const LIST_BUTTON_LABEL = 'Actividades';

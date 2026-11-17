@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import { ORCADAS_GUIDING_QUESTION } from '../../core/src/content/orcadas.ts';
 import { mockOpenMeteo } from './weather-helpers.ts';
 import { MAP_2D_ENABLED } from './map-helpers.ts';
+import { LIST_BUTTON_LABEL } from '../../core/src/content/points.ts';
 
 let consoleErrors: string[] = [];
 
@@ -62,7 +63,7 @@ test('without WebGL the app falls back cleanly to 2D and «Relieve 3D» says how
   await expect(page.locator('canvas')).toHaveCount(0);
 
   // Flow still works: opening an expedition shows its fallback scene without WebGL
-  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
   const dialog = page.getByRole('dialog', { name: 'Todos los puntos' });
   await expect(dialog).toBeVisible();
   await dialog.getByRole('button', { name: /Estación Orcadas/ }).click();

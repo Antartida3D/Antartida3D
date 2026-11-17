@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { clearStorage } from '../storage.ts';
 import { mockOpenMeteo } from './weather-helpers.ts';
 import { show3D } from './map-helpers.ts';
+import { LIST_BUTTON_LABEL } from '../../core/src/content/points.ts';
 
 let consoleErrors: string[] = [];
 
@@ -22,7 +23,7 @@ test.afterEach(() => {
 });
 
 const startTrip = async (page: Page, transport: RegExp) => {
-  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
   // The button of the list, not the marker of the map behind it.
   await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Desde Ushuaia/ }).click();
   await page.getByRole('group', { name: 'Medio de transporte' }).getByRole('button', { name: transport }).click();
@@ -30,7 +31,7 @@ const startTrip = async (page: Page, transport: RegExp) => {
 };
 
 test('a quotation in a fact and the title of a source go between “ ” and in italics (#190)', async ({ page }) => {
-  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
   await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Desde Ushuaia/ }).click();
   await page.getByRole('group', { name: 'Medio de transporte' }).getByRole('button', { name: /Irízar/ }).click();
 

@@ -2,6 +2,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import { MAX_K, MIN_K } from '../../core/src/viewport.ts';
 import { show3D } from './map-helpers.ts';
 import { mockOpenMeteo } from './weather-helpers.ts';
+import { LIST_BUTTON_LABEL } from '../../core/src/content/points.ts';
 
 const zoomButton = (page: Page, name: 'Acercar' | 'Alejar') =>
   page.getByRole('button', { name, exact: true, includeHidden: true });
@@ -242,7 +243,7 @@ test('3D updates the far limit after resizing and during a voyage (#237)', async
 
   // The existing phone voyage layout hides the whole zoom group, independently of its limits.
   if (isMobile) return;
-  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
   await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Desde Ushuaia/ }).click();
   await page.getByRole('group', { name: 'Medio de transporte' }).getByRole('button', { name: /Irízar/ }).click();
   await page.getByRole('button', { name: 'Zarpar' }).click();

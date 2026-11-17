@@ -1,5 +1,6 @@
 import { expect, test, type CDPSession, type Page } from '@playwright/test';
 import { MAP_2D_ENABLED, NO_2D, show3D } from './map-helpers.ts';
+import { LIST_BUTTON_LABEL } from '../../core/src/content/points.ts';
 
 /**
  * One-finger zoom on a phone (#165): a double tap zooms in one step around the tapped point, and
@@ -228,6 +229,6 @@ test('the map and what lies over it cannot be selected, and what is there to rea
       return style.userSelect || style.getPropertyValue('-webkit-user-select');
     }, selector);
   for (const selector of ['.vp', '.brand h1', '.hint', '.mk']) expect(await selectable(selector), selector).toBe('none');
-  await page.getByRole('button', { name: 'Ver como lista' }).click();
+  await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
   expect(await selectable('.listview .inner')).toBe('text');
 });

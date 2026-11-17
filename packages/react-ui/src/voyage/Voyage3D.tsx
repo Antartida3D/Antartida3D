@@ -12,6 +12,7 @@ import {
   sledTrot,
   trotRate,
   findTransport,
+  PONCHO_TRANSPORT,
   TRANSPORTS,
   HELICOPTER_SHIP_RATIO,
   VEHICLE_MIN_SIZE,
@@ -265,14 +266,21 @@ export function Voyage3D({ bus, picker, reduced, overlay }: {
     };
   }, [camera, viewport, invalidate]);
 
-  // Opening the trip, before a vehicle is picked: down to where the first one leaves from, at the
-  // departure pose, so the picker opens over Ushuaia (#190). Without it the camera only came closer
-  // around whatever it was looking at (the trip's farthest zoom, ControlsBridge).
+  // Opening the trip, before it starts: down to where it leaves from, at the departure pose, so the
+  // picker opens over Ushuaia (#190) and Poncho's first panel over Base Esperanza (#255). Without it
+  // the camera only came closer around whatever it was looking at (the trip's farthest zoom,
+  // ControlsBridge): from the overview, the middle of the map.
   useEffect(() => {
-    if (!controls || !picker || bus.state) return;
-    const p = voyageAt(TRANSPORTS[0].kind, 0);
-    const target = { x: p.x - 500, y: 0, z: p.y - 500 };
-    const pos = { x: target.x + DEPARTURE_OFFSET.x, y: DEPARTURE_OFFSET.y, z: target.z + DEPARTURE_OFFSET.z };
+    if (!controls || bus.state) return;
+    // Without the picker the trip is the one of Poncho's team.
+    const kind = picker ? TRANSPORTS[0].kind : PONCHO_TRANSPORT.kind;
+    const p = voyageAt(kind, 0);
+    // The same pose the trip takes when it starts (below): the sled stands over its ground.
+    const sled = vehicleAt(kind, 0) === 'sled';
+    const offset = sled ? SLED_DEPARTURE_OFFSET : DEPARTURE_OFFSET;
+    const base = sled ? sledGround(kind, 0) : 0;
+    const target = { x: p.x - 500, y: base, z: p.y - 500 };
+    const pos = { x: target.x + offset.x, y: base + offset.y, z: target.z + offset.z };
     const pose = shiftAcross({ pos, target }, viewport.width > NARROW_PX ? PICKER_HALF_PX : 0, viewport.height);
     void controls.setLookAt(pose.pos.x, pose.pos.y, pose.pos.z, pose.target.x, pose.target.y, pose.target.z, !reduced);
     invalidate();

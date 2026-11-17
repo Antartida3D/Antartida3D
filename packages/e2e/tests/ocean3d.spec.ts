@@ -197,7 +197,7 @@ test.describe('Ocean 3D animation efficiency', () => {
     await expect(sheet).not.toBeVisible();
   });
 
-  test('hint, brand title, subtitle, and registration panel bounding boxes do not overlap at 390 px in 2D and 3D', async ({ page }) => {
+  test('on a phone the title is kept off screen and the hint and the exploration log do not overlap, in 2D and 3D (#249)', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
     await page.waitForTimeout(500);
@@ -205,23 +205,18 @@ test.describe('Ocean 3D animation efficiency', () => {
     const checkNoIntersections = async (mode: string) => {
       const hint = await page.locator('.hint').boundingBox();
       const brand = await page.locator('.brand').boundingBox();
-      const sub = await page.locator('.brand p').boundingBox();
       const reg = await page.locator('.reg').boundingBox();
 
       expect(hint, `${mode}: hint bounding box`).not.toBeNull();
-      expect(brand, `${mode}: brand bounding box`).not.toBeNull();
-      expect(sub, `${mode}: sub bounding box`).not.toBeNull();
       expect(reg, `${mode}: reg bounding box`).not.toBeNull();
+      expect(brand!.width, `${mode}: brand is off screen`).toBeLessThanOrEqual(4);
 
       const overlaps = (
         a: { x: number; y: number; width: number; height: number },
         b: { x: number; y: number; width: number; height: number }
       ) => !(a.x + a.width <= b.x || b.x + b.width <= a.x || a.y + a.height <= b.y || b.y + b.height <= a.y);
 
-      expect(overlaps(hint!, brand!), `${mode}: hint overlaps brand`).toBe(false);
-      expect(overlaps(hint!, sub!), `${mode}: hint overlaps subtitle`).toBe(false);
       expect(overlaps(hint!, reg!), `${mode}: hint overlaps registration panel`).toBe(false);
-      expect(overlaps(brand!, reg!), `${mode}: brand overlaps registration panel`).toBe(false);
     };
 
     // 1. Check in 2D

@@ -103,6 +103,23 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
 .bottom{position:absolute;left:0;right:0;bottom:0;padding:24px 16px 16px;display:flex;justify-content:space-between;align-items:flex-end;gap:10px;background:none;pointer-events:none;z-index:10}
 .bottom > *{pointer-events:auto}
 .brand{pointer-events:none}
+.reg-toggle{display:none}
+/* On a phone only the exploration log shows (#249); the title stays for screen readers. */
+@media (max-width:819.98px){
+  .top .brand{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+  /* The log shrinks to a small «1/6» pill with its bar, so the map stays free. */
+  .top .reg{margin-right:auto;min-width:0;padding:6px 12px}
+  .top .reg{display:grid;grid-template-columns:32px auto 32px;align-items:center}
+  .top .reg b{grid-column:2;text-align:center;white-space:nowrap}
+  .top .reg small{display:none}
+  .top .reg .unit{display:none}
+  .top .reg.open .unit{display:inline}
+  .top .reg b{font-size:16px;margin-top:0}
+  .top .reg .bar{grid-column:1 / -1}
+  .top .reg-toggle{display:flex;align-items:center;justify-content:center;grid-column:3;justify-self:end;width:32px;height:36px;margin:-6px -10px -6px 0;padding:0;border:0;background:transparent;color:inherit}
+  .top .reg-toggle .ico{width:18px;height:18px;transform:rotate(180deg);transition:transform .2s ease}
+  .top .reg.open .reg-toggle .ico{transform:none}
+}
 .zoom{display:flex;flex-direction:column;gap:8px}
 .leftcol{display:flex;flex-direction:column;gap:10px;align-items:flex-start}
 
@@ -110,6 +127,12 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
   max-height:40dvh;
   overflow:auto;}
 .legend button.lt{border:0;background:transparent;padding:4px 2px;min-height:44px;display:flex;align-items:center;gap:6px;font-weight:700;font-size:16px;}
+/* Closed, the legend is one button as big as «Ver como lista» (#248). */
+.leftcol{--rail-w:12rem}
+.leftcol > .btn:not(.resume),.legend:not(.open){width:var(--rail-w)}
+.leftcol > .btn:not(.resume){justify-content:flex-start}
+.legend:not(.open){padding:0;min-height:48px;border-radius:var(--chart-button-radius);overflow:hidden}
+.legend:not(.open) button.lt{width:100%;min-height:46px;justify-content:flex-start;padding:0 18px;font-family:'Fraunces',Georgia,serif;font-weight:500;font-size:18px;gap:8px}
 .legend ul{list-style:none;margin:4px 0 2px;padding:0;display:flex;flex-direction:column;gap:6px}
 .legend li{display:flex;align-items:center;gap:8px;font-size:13px;line-height:1.2}
 .legend .sw{flex:none;width:18px;height:18px;display:flex;align-items:center;justify-content:center}
@@ -446,12 +469,15 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
 @media (max-height:500px){.btn.next-btn{display:none}}
 /* The suggestion is lighter than «Continuar»: on a phone it shows only the name (the marker's tag already says «Siguiente»). */
 .btn.next-btn{max-width:none;white-space:nowrap;text-align:left;line-height:1.15}
+/* The arrow stands in for the hidden «Siguiente:» label on a phone (#248). */
+.btn.next-btn .ico{display:none}
 @media (max-width:819.98px){
-  .btn.next-btn{max-width:200px;white-space:normal;min-height:40px;padding-block:6px;font-size:14px}
+  .btn.next-btn{max-width:240px;min-width:var(--rail-w);white-space:normal;min-height:48px;padding-block:6px;font-size:18px}
   .btn.next-btn .lbl{display:none}
+  .btn.next-btn .ico{display:block}
 }
 /* On a phone «Continuar» is one short line: the step (chapter, point) is left out, its full text stays in the accessible name. */
 @media (max-width:819.98px){
-  .btn.resume:not(.next-btn){white-space:nowrap;min-height:40px;padding-block:6px;font-size:14px}
+  .btn.resume:not(.next-btn){white-space:nowrap;min-width:var(--rail-w);min-height:48px;padding-block:6px;font-size:18px}
   .btn.resume .rdetail{display:none}
 }

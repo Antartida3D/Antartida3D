@@ -355,7 +355,7 @@ test('compact view fits the viewport and keeps the expanded 3D legend scrollable
   });
   expect(compactLayout.legendTop).toBeGreaterThanOrEqual(compactLayout.topBottom);
   expect(compactLayout.bottomTop).toBeLessThanOrEqual(compactLayout.viewportBottom);
-  await expect(page.locator('.brand')).toBeInViewport({ ratio: 1 });
+  if (page.viewportSize()!.width >= 820) await expect(page.locator('.brand')).toBeInViewport({ ratio: 1 });
   await expect(page.getByRole('button', { name: 'Ver como lista', exact: true })).toBeInViewport({ ratio: 1 });
   if (MAP_2D_ENABLED) await expect(page.getByRole('button', { name: 'Relieve 3D', exact: true })).toBeInViewport({ ratio: 1 });
   await expect(page.getByRole('button', { name: 'Acercar', exact: true })).toBeInViewport({ ratio: 1 });

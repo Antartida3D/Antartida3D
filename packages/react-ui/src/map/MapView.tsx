@@ -712,15 +712,7 @@ export function MapView({
         <div className="bottom">
           {voyaging ? <span /> : (
           <div className="leftcol">
-            <Legend open={legend} onToggle={onToggleLegend} mode={mode} />
-            {/* Off, the claims open from the South Pole sheet; on, this control turns them off. */}
-            {is3D && claimsEnabled && <ClaimsControl enabled details={claimsDetails} onDetails={setClaimsDetails}
-              switchRef={claimsSwitch} detailsRef={claimsDetailsButton}
-              onToggle={() => {
-                setClaimsEnabled(false);
-                setClaimsStatus('loading');
-                vpRef.current?.focus();
-              }} />}
+            {/* «Siguiente» / «Continuar» go first: Leyenda and «Ver como lista» stay together, same size (#248). */}
             {(() => {
               const resumePoint = resume && phase === 'idle' && !voyaging && !welcome && !welcoming
                 ? PTS.find((p) => p.id === resume.id)
@@ -732,6 +724,7 @@ export function MapView({
                 return (
                   <button type="button" className="btn resume next-btn" aria-label={`Siguiente: ${nextPoint.title}`} onClick={() => { setSheet(null); setPendingOrcadas(null); openPoint(nextPoint); }}>
                     <span className="lbl">Siguiente: </span>{nextPoint.title}
+                    {Icon.next}
                   </button>
                 );
               }
@@ -758,6 +751,15 @@ export function MapView({
                 </button>
               ) : null;
             })()}
+            <Legend open={legend} onToggle={onToggleLegend} mode={mode} />
+            {/* Off, the claims open from the South Pole sheet; on, this control turns them off. */}
+            {is3D && claimsEnabled && <ClaimsControl enabled details={claimsDetails} onDetails={setClaimsDetails}
+              switchRef={claimsSwitch} detailsRef={claimsDetailsButton}
+              onToggle={() => {
+                setClaimsEnabled(false);
+                setClaimsStatus('loading');
+                vpRef.current?.focus();
+              }} />}
             <button type="button" className="btn" onClick={() => { setSheet(null); setPendingOrcadas(null); setList(true); }}>
               {Icon.list}
               Ver como lista

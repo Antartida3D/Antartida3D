@@ -179,7 +179,8 @@ test('on a trip the title and the exploration log give way, «Salir» is at the 
   await page.waitForFunction(() => (window as any).__cameraControls);
   const title = page.getByRole('heading', { level: 1, name: 'Antártida por descubrir' });
   const log = page.getByRole('status', { name: /Registro de exploración/ });
-  await expect(title).toBeInViewport();
+  // On a phone the title is already kept for screen readers only (#249).
+  if (page.viewportSize()!.width >= 820) await expect(title).toBeInViewport();
   await expect(log).toBeInViewport();
 
   await page.getByRole('button', { name: 'Ver como lista' }).click();
@@ -217,6 +218,6 @@ test('on a trip the title and the exploration log give way, «Salir» is at the 
   // Leaving brings the title and the log back.
   await leave.click();
   await expect(page.locator('.vbar')).toHaveCount(0);
-  await expect(title).toBeInViewport();
+  if (page.viewportSize()!.width >= 820) await expect(title).toBeInViewport();
   await expect(log).toBeInViewport();
 });

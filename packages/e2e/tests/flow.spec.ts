@@ -226,6 +226,37 @@ test('on a phone the trip picker grows when its handle is dragged up, shrinks ba
   await expect(page.getByRole('button', { name: 'Ver como lista' })).toBeVisible();
 });
 
+test('closed legend is as big as «Ver como lista», and the suggestion sits above both (#248)', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'on wide screens the legend starts open');
+  const legend = page.locator('.legend');
+  const list = page.getByRole('button', { name: 'Ver como lista' });
+  await expect(legend.getByRole('button', { name: /Leyenda/ })).toHaveAttribute('aria-expanded', 'false');
+  const [a, b] = [(await legend.boundingBox())!, (await list.boundingBox())!];
+  expect(Math.abs(a.width - b.width)).toBeLessThan(1);
+  expect(Math.abs(a.height - b.height)).toBeLessThan(1);
+  const next = page.locator('.btn.next-btn');
+  if (await next.count()) {
+    const n = (await next.boundingBox())!;
+    expect(n.y).toBeLessThan(a.y);
+    expect(n.width).toBeGreaterThanOrEqual(b.width - 1);
+    expect(n.height).toBeGreaterThanOrEqual(b.height - 1);
+  }
+});
+
+test('on a phone the exploration log is a small pill that the arrow grows and shrinks (#249)', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'on wide screens the log is always open');
+  const reg = page.locator('.reg');
+  const toggle = reg.getByRole('button', { name: /registro de exploración/i });
+  await expect(reg.locator('.unit')).toBeHidden();
+  const small = (await reg.boundingBox())!.width;
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(reg.locator('.unit')).toBeVisible();
+  expect((await reg.boundingBox())!.width).toBeGreaterThan(small);
+  await toggle.click();
+  await expect(reg.locator('.unit')).toBeHidden();
+});
+
 test('on a phone the legend starts closed, and a swipe left or down closes it (#114)', async ({ page, isMobile }) => {
   test.skip(!isMobile, 'on wide screens the legend starts open (next test)');
   const button = page.getByRole('button', { name: /Leyenda/ });

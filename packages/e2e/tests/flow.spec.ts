@@ -247,19 +247,6 @@ test('closed legend is a round button beside «Actividades», and the suggestion
   }
 });
 
-test('on a phone the exploration log is a small pill that the arrow grows and shrinks (#249)', async ({ page, isMobile }) => {
-  test.skip(!isMobile, 'on wide screens the log is always open');
-  const reg = page.locator('.reg');
-  const toggle = reg.getByRole('button', { name: /registro de exploración/i });
-  await expect(reg.locator('.unit')).toBeHidden();
-  const small = (await reg.boundingBox())!.width;
-  await toggle.click();
-  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-  await expect(reg.locator('.unit')).toBeVisible();
-  expect((await reg.boundingBox())!.width).toBeGreaterThan(small);
-  await toggle.click();
-  await expect(reg.locator('.unit')).toBeHidden();
-});
 
 test('on a phone the legend starts closed, and a swipe left or down closes it (#114)', async ({ page, isMobile }) => {
   test.skip(!isMobile, 'on wide screens the legend starts open (next test)');

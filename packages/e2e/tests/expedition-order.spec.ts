@@ -82,6 +82,40 @@ test('with nothing explored, shows Siguiente: Desde Ushuaia and marks its marker
   await expect(marker.locator('.mnext')).toHaveText('Siguiente');
 });
 
+test('the exploration log drops down the six expeditions with their state and opens the one chosen (#235)', async ({ page }) => {
+  await seedExplored(page, ['campana']);
+  const log = page.getByRole('button', { name: /Registro de exploración/ });
+  await expect(log).toHaveAttribute('aria-expanded', 'false');
+  // Narrower than 820 px (a phone held upright) it stays a small «1/6» pill (#249).
+  if (page.viewportSize()!.width < 820) await expect(page.locator('.reg .unit')).toBeHidden();
+
+  await log.click();
+  await expect(log).toHaveAttribute('aria-expanded', 'true');
+  const items = page.getByRole('list', { name: 'Expediciones' }).getByRole('button');
+  await expect(items).toHaveCount(AVAILABLE_COUNT);
+  // Explored: a tick instead of its number and its title struck through, said in its name.
+  await expect(items.nth(0)).toHaveAccessibleName('Desde Ushuaia, explorada');
+  await expect(items.nth(0).locator('.num svg')).toBeVisible();
+  await expect(items.nth(0).locator('strong')).toHaveCSS('text-decoration-line', 'line-through');
+  // The suggested next one keeps its tag; the rest show only number and title.
+  await expect(items.nth(1)).toHaveAccessibleName('Base Marambio, siguiente sugerida');
+  await expect(items.nth(1)).toContainText('Siguiente sugerida');
+  await expect(items.nth(1).locator('.num')).toHaveText('2');
+  await expect(items.nth(1).locator('strong')).toHaveCSS('text-decoration-line', 'none');
+  await expect(items.nth(2)).toHaveAccessibleName('Fósiles');
+  await expect(items.nth(2)).not.toContainText('Empezar expedición');
+  // Only expeditions: no point of interest.
+  await expect(page.locator('.reg-menu')).not.toContainText('Volcán');
+
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.reg-menu')).toHaveCount(0);
+  await expect(log).toBeFocused();
+
+  await log.click();
+  await items.filter({ hasText: 'Fósiles' }).click();
+  await expect(page.getByRole('heading', { name: 'Las rocas recuerdan' })).toBeVisible();
+});
+
 test('with campana explored, suggests Base Marambio and tags its own marker', async ({ page }) => {
   await seedExplored(page, ['campana']);
   await expect(page.locator('.btn.next-btn')).toHaveText('Siguiente: Base Marambio');

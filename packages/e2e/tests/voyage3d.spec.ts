@@ -179,7 +179,7 @@ test('on a trip the title and the exploration log give way, «Salir» is at the 
   await show3D(page);
   await page.waitForFunction(() => (window as any).__cameraControls);
   const title = page.getByRole('heading', { level: 1, name: 'Antártida por descubrir' });
-  const log = page.getByRole('status', { name: /Registro de exploración/ });
+  const log = page.getByRole('button', { name: /Registro de exploración/ });
   // On a phone the title is already kept for screen readers only (#249).
   if (page.viewportSize()!.width >= 820) await expect(title).toBeInViewport();
   await expect(log).toBeInViewport();

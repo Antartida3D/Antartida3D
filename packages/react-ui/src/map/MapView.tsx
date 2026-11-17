@@ -695,7 +695,7 @@ export function MapView({
             <h1>Antártida por descubrir</h1>
             <p>cuaderno de campo · desde Ushuaia</p>
           </div>
-          <ExplorationLog explored={explored} />
+          <ExplorationLog explored={explored} onPick={openPoint} />
         </header>
 
         {welcoming ? (

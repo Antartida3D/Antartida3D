@@ -248,21 +248,57 @@ test('dragging the map moves it while the next card stays open', async ({ page }
   await expect(card).toBeVisible();
   const vp = page.locator('.vp');
   const marker = page.locator('.vp .mk.next, .vp .mk.has-next').first();
-  const before = (await marker.boundingBox())!;
+  await expect(page.locator('section.ld')).toHaveCount(0);
+  await expect(vp).toBeVisible();
+  await expect(marker).toBeVisible();
+  // Framing waits for ten stable frames before it may pan again. Twelve consecutive samples
+  // of the visible marker and settled camera avoid measuring the temporary pose before that pan.
+  await page.waitForFunction(() => {
+    const el = document.querySelector<HTMLElement>('.vp .mk.next, .vp .mk.has-next');
+    if (!el) return false;
+    const rect = el.getBoundingClientRect();
+    const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
+    const cc = document.querySelector('.stage.m3d') ? (window as any).__cameraControls : null;
+    (window as any).__invalidate?.();
+    const cameraStill = !cc || (!cc.active &&
+      cc.getPosition(undefined, false).distanceTo(cc.getPosition(undefined, true)) < 1e-4 &&
+      cc.getTarget(undefined, false).distanceTo(cc.getTarget(undefined, true)) < 1e-4);
+    const state = (window as any).__nextCardDragReady ??= { x: NaN, y: NaN, frames: 0 };
+    const stable = rect.width > 0 && rect.height > 0 && hit?.closest('.mk.next, .mk.has-next') === el &&
+      cameraStill && Math.abs(rect.x - state.x) + Math.abs(rect.y - state.y) < 0.5;
+    state.frames = stable ? state.frames + 1 : 0;
+    state.x = rect.x;
+    state.y = rect.y;
+    if (state.frames < 12) return false;
+    delete (window as any).__nextCardDragReady;
+    return true;
+  }, null, { polling: 'raf', timeout: 15_000 });
+  const before = await marker.boundingBox();
+  expect(before).not.toBeNull();
 
-  const vpBox = (await vp.boundingBox())!;
-  const startX = vpBox.x + vpBox.width * 0.35;
-  const startY = vpBox.y + vpBox.height * 0.45;
-  await page.mouse.move(startX, startY);
+  const start = await vp.evaluate((el) => {
+    const rect = el.getBoundingClientRect();
+    for (const y of [0.2, 0.3, 0.4, 0.5, 0.6]) for (const x of [0.15, 0.3, 0.45, 0.6]) {
+      const point = { x: rect.x + rect.width * x, y: rect.y + rect.height * y };
+      const free = Array.from({ length: 7 }, (_, step) => {
+        const hit = document.elementFromPoint(point.x + 100 * step / 6, point.y + 50 * step / 6);
+        return hit && el.contains(hit) && !hit.closest('button') && (hit.tagName === 'CANVAS' || hit.closest('.layer'));
+      }).every(Boolean);
+      if (free) return point;
+    }
+    return null;
+  });
+  expect(start, 'the complete drag path is on the map, clear of cards and markers').not.toBeNull();
+  await page.mouse.move(start!.x, start!.y);
   await page.mouse.down();
-  await page.mouse.move(startX + 100, startY + 50, { steps: 6 });
+  await page.mouse.move(start!.x + 100, start!.y + 50, { steps: 6 });
   await page.mouse.up();
 
   // The 3D camera eases into place after the drag: wait for the marker to follow.
   await expect
     .poll(async () => {
-      const after = (await marker.boundingBox())!;
-      return Math.hypot(after.x - before.x, after.y - before.y);
+      const after = await marker.boundingBox();
+      return after ? Math.hypot(after.x - before!.x, after.y - before!.y) : 0;
     })
     .toBeGreaterThan(30);
   await expect(card).toBeVisible();

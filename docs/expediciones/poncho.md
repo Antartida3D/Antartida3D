@@ -50,6 +50,7 @@ La página es la del PDF del libro `[P1]` donde está el hecho principal de la f
 ### 3. `poncho-perro-guia` — Poncho va al frente (1962, tramo 0)
 
 - **Escena** (p. 12): en el regreso desde la Base San Martín, el instructor le da el puesto Número 1 del tiro; tiene un año y medio; cuando el trineo se detiene se echa y mira al conductor.
+- **Diorama** (una etapa por frase), delante de la Base San Martín vacía, entre el glaciar y el mar: 0 junto a la base, el tiro espera en fila con los arneses puestos y el instructor lleva a Poncho al frente, al puesto de Número 1; 1 el tiro completo, cinco yuntas y el líder (once perros, p. 12), sale siguiendo la huella del otro trineo, que va adelante por las mismas curvas (la fila sigue la huella como una onda); 2 el trineo se detiene, Poncho camina unos pasos, se da vuelta hacia el conductor y se echa despacio, y a la orden se levanta y sale rápido hacia adelante. Para que entren el otro trineo y el tiro completo, la escena muestra hasta 18 elementos a la vez. La base, en el estilo de la Base Esperanza del hito 1, sigue fotos de hoy: tres casas medianas separadas que miran al mar (la de la izquierda con los cajones naranjas y su escalera, la del medio con la bandera y el emblema, la de la derecha con la planta baja amarilla y el portón doble), mástiles, escaleras de madera y rocas con nieve. Es una ilustración (sección 4.6 de `poncho-fuentes.md`).
 - **Gancho:** «Más adelante lo esperaba un viaje hacia el sur.»
 - **Saber más:** llegada a San Martín el 25 de agosto y los 1.842 metros (p. 10); estado de la base (`O2`); diez días de instrucción (p. 12); perro-guía el resto de su vida (p. 12).
 
@@ -64,7 +65,7 @@ La página es la del PDF del libro `[P1]` donde está el hecho principal de la f
 
 - **Escena** (p. 18): un avión ha caído en el hielo y el mal tiempo impide buscarlo por aire; sale una patrulla de dos hombres y siete perros con Poncho al frente; al cuarto día, apenas olfatea el avión, acelera el paso.
 - **Diorama** (una etapa por frase): 0 el avión destrozado sobre el hielo, más grande que las personas (como un Cessna 185) y color crema para que se distinga de la nieve (la nariz clavada, la cola partida, un ala desprendida, un esquí y chapas sueltas), con los cuatro tripulantes esperando al lado, en plena ventisca; 1 llega la patrulla de dos hombres y siete perros por un rastro en S, con Poncho al frente olfateando: los perros y el trineo pisan su mismo rastro y siguen sus curvas, como una onda, y Poncho encuentra el avión; 2 el tiempo mejora (el libro: «al cuarto día, el clima había mejorado», p. 18) y los hombres de la patrulla dejan el trineo y van hacia los tripulantes. Cuatro tripulantes, dos hombres y siete perros son las cifras del libro (p. 17 y 18); la forma de los daños, los colores, las posturas, la escala y la ventisca son una ilustración.
-- **Foto:** pendiente. No se encontró una foto del AE-205 caído con fuente y licencia verificables (ver [poncho-fuentes.md](./poncho-fuentes.md), 4.5).
+- **Foto:** no lleva. No hay una foto del AE-205 caído con fuente y licencia verificables (ver [poncho-fuentes.md](./poncho-fuentes.md), 4.5).
 - **Gancho:** «Pero la gran marcha seguía su camino.»
 - **Saber más:** el avión Cessna 185B «AE-205» y el «blanqueo» (p. 17); tres jornadas entre grietas y ventiscas, los víveres que se tragó una grieta y el regreso de 1968 (p. 18).
 
@@ -76,7 +77,7 @@ La página es la del PDF del libro `[P1]` donde está el hecho principal de la f
 
 ### 7. `paracaidas` — Poncho paracaidista (1966, tramo 2)
 
-- **Escena** (p. 19): se abre la puerta del helicóptero, los perros saltan con paracaídas, aterrizan en el hielo y Poncho sale al frente del trineo a rescatar a una patrulla perdida.
+- **Escena** (p. 19), ilustración del relato, no un registro: el helicóptero entra volando, grande y alto, con dos oficiales esperando abajo; los tres perros bajan con paracaídas, chicos bajo el helicóptero y moviendo las patas como si nadaran; aterrizan en el hielo y Poncho sale al frente del trineo, con un hombre detrás, hasta llegar a los oficiales. La cantidad de personas y los tamaños son una ilustración (el libro no los da).
 - **Gancho:** «Pero otra tormenta ya lo esperaba.»
 - **Saber más:** Pato y Bucky, el arnés, el afecto del suboficial a cargo, el trineo desarmable y los oficiales que saltaron antes, el helicóptero S-55 y los 30 km al sur de Belgrano (p. 18 y 19).
 

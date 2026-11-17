@@ -71,7 +71,8 @@ describe('scenes of Poncho: the parts that come and go', () => {
       expect(sceneStaticTris(scene, flat, (y) => y)).toHaveLength(each.length);
       scene.elements.forEach((e) => {
         const tris = elementStaticTris(e, flat);
-        if (e.kind === 'prop') expect(tris.length, e.id).toBeGreaterThan(0);
+        // A prop on a path flies and is drawn apart, moving: it has no still faces.
+        if (e.kind === 'prop') (e.path ? expect(tris, e.id).toHaveLength(0) : expect(tris.length, e.id).toBeGreaterThan(0));
         // A curled dog lies on the bare ground, with no drift of snow under it (#261).
         if (e.kind === 'sled' || e.kind === 'dog') expect(tris).toHaveLength(0);
       });

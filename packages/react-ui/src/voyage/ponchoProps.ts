@@ -2,6 +2,7 @@ import { block, chunk, prism, quad, RELIEF_ICE, shift, type Tri, type Vec3 } fro
 import { VOXEL_PALETTE } from '../orcadas/stationModels.ts';
 import { loftAlongX, lowestY, rope, slab, snowMound, thinTriangle, tube } from './ponchoShapes.ts';
 import { buildBaseHut, buildEsperanzaBase, ESPERANZA_CLEARINGS } from './ponchoBase.ts';
+import { buildSanMartinBase, SAN_MARTIN_CLEARINGS } from './ponchoSanMartin.ts';
 
 /**
  * Low-poly props of Poncho's stops (rule 30, docs/diseno/estilo-voxel.md): the objects of the
@@ -465,6 +466,7 @@ export const PONCHO_PROP_IDS = [
   'nansenSled',
   'baseHut',
   'baseEsperanza',
+  'baseSanMartin',
 ] as const;
 
 export type PonchoPropId = (typeof PONCHO_PROP_IDS)[number];
@@ -495,6 +497,7 @@ const BUILDERS: Readonly<Record<PonchoPropId, readonly [string, () => Tri[], (re
   nansenSled: ['Trineo Nansen', buildNansenSled],
   baseHut: ['Casilla baja de la base', buildBaseHut],
   baseEsperanza: ['Base Esperanza: casa principal, contenedor con la bandera, muelle, casas y rocas', buildEsperanzaBase, ESPERANZA_CLEARINGS],
+  baseSanMartin: ['Base San Martín: tres casas frente al mar, cajones, escaleras, mástiles y rocas', buildSanMartinBase, SAN_MARTIN_CLEARINGS],
 };
 
 const extentOf = (tris: readonly Tri[]): [number, number, number] => {
@@ -526,4 +529,5 @@ export const PONCHO_PROPS: Readonly<Record<PonchoPropId, PonchoProp>> = {
   nansenSled: makeProp('nansenSled'),
   baseHut: makeProp('baseHut'),
   baseEsperanza: makeProp('baseEsperanza'),
+  baseSanMartin: makeProp('baseSanMartin'),
 };

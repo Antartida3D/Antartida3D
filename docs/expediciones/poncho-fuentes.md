@@ -195,9 +195,9 @@ Una foto con licencia libre, que se muestra en el modal de la parada «Nace Ponc
 
 La foto que se había mirado al principio del trabajo no tiene origen conocido y **no se usa**. El color de las casas en la escena sigue el naranja de los abrigos y las casas del diorama de Orcadas; la foto muestra casas más rojizas y no se presenta como dato de color de 1961.
 
-### 4.5. Foto del AE-205 para «Al rescate de un avión» (17 nov 2026): pendiente
+### 4.5. Foto del AE-205 para «Al rescate de un avión» (17 nov 2026): no se usa
 
-La parada debe mostrar una foto en el modal (#220). **Todavía no hay una que se pueda publicar.** Lo que se revisó el 2026-11-17:
+La parada «Al rescate de un avión» **no lleva foto**: el equipo lo decidió el 17 nov 2026, porque no se encontró ninguna que se pueda publicar. Queda como registro lo que se revisó el 2026-11-17:
 
 | Dónde | Qué hay | Por qué no se usa |
 | :--- | :--- | :--- |
@@ -206,4 +206,17 @@ La parada debe mostrar una foto en el modal (#220). **Todavía no hay una que se
 | AviationCorner.net (<https://www.aviationcorner.net/show_photo.asp?id=193979>) | Foto del Cessna 185B AE-205 | Derechos de su autor, sin licencia libre; no es el accidente |
 | Wikimedia Commons (búsqueda «Cessna 185 Antarctica», «AE-205», «Alitas de Cuero») | Nada del AE-205 | — |
 
-Opciones para resolverlo (decide el equipo): pedir permiso a quien publicó una foto del AE-205 (con la evidencia guardada), conseguir una foto de archivo del Ejército Argentino con su autorización, o usar una foto con licencia libre de un Cessna 185 con esquíes en la Antártida, marcada como ilustrativa («no es el AE-205»). **No se agregó ninguna foto sin fuente.**
+### 4.6. Foto de la Base San Martín (17 nov 2026)
+
+Una foto en dominio público que se muestra en el modal de la parada «Poncho va al frente» (`packages/core/src/content/poncho-photos.ts`, `san-martin.jpg`, reducida a 1280 px de ancho), junto a la de la Fundación Marambio, con su autor, la licencia y el enlace. También sirvió de referencia para modelar la base (`packages/react-ui/src/voyage/ponchoSanMartin.ts`), junto con fotos de hoy que aportó el equipo y que no están en el repo ni se muestran. La escena es una ilustración hecha a partir de fotos de hoy, no un plano de la base ni una imagen de 1962; el modal lo aclara.
+
+| Dato | Valor |
+|---|---|
+| Archivo | «San Martín Base, Antarctica.jpg», Wikimedia Commons: <https://commons.wikimedia.org/wiki/File:San_Mart%C3%ADn_Base,_Antarctica.jpg> |
+| Autor | Antartico (usuario de Wikimedia Commons; obra propia) |
+| Fecha de la foto | 26 de agosto de 2008 |
+| Licencia | Dominio público (PD-self, según la página del archivo) |
+| Consultada | 2026-11-17 |
+| Qué se tomó para el modelo | Casas de dos pisos con techos oscuros, mástiles de antena, escaleras de madera y rocas con nieve sobre un islote, el glaciar detrás y el mar al frente |
+
+La base estaba desocupada en 1962 (`[V2]`, de 02/1960 a 03/1976): la escena no pone a nadie en sus puertas. Una foto de Antarctica New Zealand de una línea de perros en una base argentina (1956-1958) **no se usa**: su licencia es CC BY-NC-ND, que no permite obras derivadas, y no confirma que sea San Martín.

@@ -4,9 +4,11 @@ import { useFrame, useThree } from '@react-three/fiber';
 import {
   SCENE_STRIDE,
   sceneElementShown,
+  sceneFallLift,
   sceneHop,
   scenePathLength,
   scenePersonPhase,
+  sceneRest,
   sceneWalk,
   printsShown,
   stageProgress,
@@ -22,6 +24,7 @@ import { buildBeltTris, ponchoPersonParts, ponchoPoseLift, ponchoWaistAt, type P
 import { DOG_HEAD_PIVOT, DOG_LEGS, DOG_LEG_PIVOT, dogHeadPitch, dogLegSwing, ponchoDogParts, type DogLeg } from './ponchoDog.ts';
 import { PONCHO_PALETTE, type DogPalette } from './ponchoModels.ts';
 import { PONCHO_PROPS } from './ponchoProps.ts';
+import { PONCHO_PROPS2, buildRescueRotor, RESCUE_ROTOR_AT } from './ponchoProps2.ts';
 import { DOG_SCALE, elementStaticTris, pathFootprints, type Ground } from './ponchoSceneBuild.ts';
 import { sceneHasShip, withShipWalkway } from './ponchoShip.ts';
 import { ROPE_SEGMENTS, ropeIndices, ropePoints, ropeVertexCount, fillRopeTube } from './ponchoRope.ts';
@@ -56,6 +59,12 @@ const PACK_DARKEN = 0.62;
 /** A dog of the team that lies curled: how much it is squashed, and how far it settles into the ground (so it does not float on a swell). */
 const CURLED_HEIGHT = 0.55;
 const CURLED_SINK = 0.03;
+/**
+ * A dog lying down at the end of a walk (`rest`, #218), as it goes down: its legs fold forward under it, front and hind, this far
+ * (radians, at full rest), and its body comes down by this part of the height of its hips (DOG_LEG_PIVOT), so it lies on them.
+ */
+const LIE_LEG_FOLD = 1.35;
+const LIE_DROP = 0.78;
 /** Sway of a dog standing (radians) and its speed (radians per second). A dog that goes does not bob: its legs trot. */
 const DOG_SWAY = 0.04;
 const DOG_SWAY_RATE = 1.3;
@@ -66,6 +75,12 @@ const DOG_SPAN = 0.3;
 const DOG_SLOPE_DEAD_ZONE = 0.12;
 /** The sled leans with the ground over this length (scene units). */
 const SLED_SPAN = 0.55;
+/** Turns of the rotor of a flying helicopter per second, and the slow bob of the aircraft in the air (scene units, radians per second). */
+const ROTOR_RATE = 14;
+const FLY_BOB = 0.05;
+const FLY_BOB_RATE = 1.7;
+/** Radians per second of the legs of a dog paddling as it comes down on its parachute. */
+const PADDLE_RATE = 9;
 /** Where the line is tied on a dog (its model frame: x ahead, y up): the back, over the hips. */
 const DOG_HARNESS: Vec3 = [-0.28, 0.58, 0];
 /** The line shows once both its ends are this grown. */
@@ -226,17 +241,27 @@ interface Spot {
   travel: number;
   /** Gone in at the door at the end of its walk (a path that boards): not drawn. */
   gone: boolean;
+  /** A dog that rests: how far it is lying down (0 standing, 1 down). */
+  lying: number;
 }
 
-function placeOf(e: SceneElement, path: ScenePath | undefined, t: number): Spot {
-  if (!path) return { x: e.x, z: e.z, yaw: e.yaw, moving: false, travel: 0, gone: false };
+function placeOf(e: SceneElement, path: ScenePath | undefined, t: number, paths: ReadonlyMap<string, ScenePath>, reduced: boolean): Spot {
+  if (!path) return { x: e.x, z: e.z, yaw: e.yaw, moving: false, travel: 0, gone: false, lying: e.curled ? 1 : 0 };
+  if (e.rest) {
+    // A dog that rests: at the end of its walk it lies down (with reduced motion it is shown so, lying where its walk ends),
+    // then gets up and goes on along its next path.
+    const then = e.rest.then ? paths.get(e.rest.then) : undefined;
+    const r = reduced ? { lying: 1, thenT: null } : sceneRest(path, e.rest, t);
+    const w = r.thenT !== null && then ? sceneWalk(then, r.thenT) : sceneWalk(path, reduced ? path.delay + path.duration : t);
+    return { x: w.x, z: w.z, yaw: w.yaw, moving: w.moving, travel: w.travel, gone: w.gone, lying: r.lying };
+  }
   const w = sceneWalk(path, t, e.lag ?? 0);
   // (cos, -sin) is where a yaw faces; its left is the next turn of 90 degrees.
   const dx = Math.cos(w.yaw);
   const dz = -Math.sin(w.yaw);
   const lead = e.lead ?? 0;
   const side = e.side ?? 0;
-  return { x: w.x + dx * lead - dz * side, z: w.z + dz * lead + dx * side, yaw: w.yaw, moving: w.moving, travel: w.travel, gone: w.gone };
+  return { x: w.x + dx * lead - dz * side, z: w.z + dz * lead + dx * side, yaw: w.yaw, moving: w.moving, travel: w.travel, gone: w.gone, lying: e.curled ? 1 : 0 };
 }
 
 /** The clock of an element at rest (reduced motion): the end of a walk, half way round a loop, and half way along a walk that boards (at its end they would be gone: the file stays in sight on its way). */
@@ -322,6 +347,15 @@ export function DioramaActors({ scene, step, ground, reduced }: { scene: SceneDe
     const tris = elementStaticTris(e, ground);
     return tris.length ? buildPolyGeometry(resolveRelief(tris, () => 0)) : null;
   }), [scene, ground]);
+  // A prop that follows a path flies (the helicopter): its body and its rotor, apart, so the rotor can spin.
+  const flyers = useMemo(() => scene.elements.map((e) => {
+    if (e.kind !== 'prop' || !e.path) return null;
+    return {
+      body: buildPolyGeometry(resolveRelief(PONCHO_PROPS2[e.id as keyof typeof PONCHO_PROPS2].tris, () => 0)),
+      rotor: buildPolyGeometry(resolveRelief(buildRescueRotor(), () => 0)),
+    };
+  }), [scene]);
+  const rotors = useRef<(Group | null)[]>([]);
   const prints = useMemo(() => (printed ? pathFootprints(printed, ground) : null), [printed, ground]);
   // Whoever walks does it on the gangway and the deck of the ship when the scene has one (the still parts stay seated on the ice).
   const walk = useMemo<Ground>(() => (sceneHasShip(scene) ? withShipWalkway(ground) : ground), [scene, ground]);
@@ -329,6 +363,7 @@ export function DioramaActors({ scene, step, ground, reduced }: { scene: SceneDe
 
   useEffect(() => () => stillGeometries.forEach((g) => g?.dispose()), [stillGeometries]);
   useEffect(() => () => printsGeometry.dispose(), [printsGeometry]);
+  useEffect(() => () => flyers.forEach((f) => { f?.body.dispose(); f?.rotor.dispose(); }), [flyers]);
   // With reduced motion switched on or off, or a new step, draw once more so everything settles.
   useEffect(() => invalidateAll(), [reduced, step, invalidateAll]);
   // Back on the page, the loop that stopped while it was hidden starts again.
@@ -351,14 +386,18 @@ export function DioramaActors({ scene, step, ground, reduced }: { scene: SceneDe
       grown.current[i] = p;
       if (p !== (shown ? 1 : 0)) settling = true;
       // The clock of the element runs from the moment it shows; it starts over each time it comes back.
-      clocks.current[i] = p <= 0 ? 0 : (clocks.current[i] ?? 0) + dt;
-      const t = reduced ? restClock(e.path ? paths.get(e.path) : undefined) : clocks.current[i];
+      // A team that waits for its sentence (walkFrom) stands at the start of its walk until then: its clock does not run.
+      const waiting = stepRef.current < (e.walkFrom ?? 0);
+      clocks.current[i] = p <= 0 ? 0 : (clocks.current[i] ?? 0) + (waiting ? 0 : dt);
+      const t = reduced ? (waiting ? 0 : restClock(e.path ? paths.get(e.path) : undefined)) : clocks.current[i];
       const grow = stageScale(p);
       const k = (e.scale ?? 1) * grow;
-      const spot = placeOf(e, e.path ? paths.get(e.path) : undefined, t);
+      const spot = placeOf(e, e.path ? paths.get(e.path) : undefined, t, paths, reduced);
       travels.current[i] = spot.travel;
       const gy = walk(spot.x, spot.z);
       const still = stills.current[i];
+      // Height over the ground on its fall (hanging half way down with reduced motion).
+      const lift = sceneFallLift(e, reduced && e.fall ? e.fall.duration / 2 : t);
       if (still) {
         // Grows out of its foot: the faces are already seated, so the group scales about the foot.
         const gx = e.x;
@@ -366,7 +405,9 @@ export function DioramaActors({ scene, step, ground, reduced }: { scene: SceneDe
         const base = ground(gx, gz);
         still.visible = p > 0;
         still.scale.setScalar(grow);
-        still.position.set(gx * (1 - grow), base * (1 - grow), gz * (1 - grow));
+        // It scales about its foot, which is where it hangs now; the faces are seated at the end of the fall.
+        const hung = e.fall ? lift - e.fall.to : 0;
+        still.position.set(gx * (1 - grow), (base + lift) * (1 - grow) + grow * hung, gz * (1 - grow));
       }
       if (e.kind === 'person') {
         const rig = rigs.current[i];
@@ -381,6 +422,15 @@ export function DioramaActors({ scene, step, ground, reduced }: { scene: SceneDe
       if (!node) return;
       node.visible = p > 0 && !spot.gone;
       if (p <= 0 || spot.gone) return;
+      if (e.kind === 'prop') {
+        // It flies along its path at its height, nose where it heads, rocking a little; the rotor spins (not with reduced motion).
+        const bob = reduced ? 0 : Math.sin(t * FLY_BOB_RATE) * FLY_BOB;
+        node.position.set(spot.x, gy + (e.lift ?? 0) + bob * k, spot.z);
+        node.rotation.set(0, spot.yaw, bob * 0.5, 'YZX');
+        node.scale.setScalar(k);
+        rotors.current[i]?.rotation.set(0, reduced ? 0 : t * ROTOR_RATE, 0);
+        return;
+      }
       if (e.kind === 'sled') {
         const fx = Math.cos(spot.yaw) * SLED_SPAN;
         const fz = -Math.sin(spot.yaw) * SLED_SPAN;
@@ -391,19 +441,23 @@ export function DioramaActors({ scene, step, ground, reduced }: { scene: SceneDe
         return;
       }
       // A dog sways a little where it stands, and its legs trot while it goes with the team.
-      const moving = spot.moving && !reduced;
-      const sway = reduced || e.curled ? 0 : Math.sin(t * DOG_SWAY_RATE + i) * DOG_SWAY;
-      const swing = dogLegSwing((spot.travel * Math.PI * 2) / DOG_STRIDE + i, moving);
+      const falling = !!e.fall && !reduced && t < e.fall.duration;
+      const moving = (spot.moving && !reduced) || falling;
+      // A dog that lies down (rest) folds its legs under it and comes down onto them; one curled up is squashed into a ball.
+      const lying = e.curled ? 0 : spot.lying;
+      const sway = reduced || e.curled || lying > 0 ? 0 : Math.sin(t * DOG_SWAY_RATE + i) * DOG_SWAY;
+      const swing = dogLegSwing(falling ? t * PADDLE_RATE + i : (spot.travel * Math.PI * 2) / DOG_STRIDE + i, moving);
       const legs = dogLegs.current[i];
-      if (legs) for (const leg of DOG_LEGS) legs[leg]?.rotation.set(0, 0, swing[leg]);
+      if (legs) for (const leg of DOG_LEGS) legs[leg]?.rotation.set(0, 0, swing[leg] + lying * LIE_LEG_FOLD);
       // The head tips about the neck: it bobs to the snow while the dog sniffs (not with reduced motion: level).
       dogHeads.current[i]?.rotation.set(0, 0, dogHeadPitch(t, !!e.sniff && !reduced));
-      node.position.set(spot.x, gy + (e.lift ?? 0) - (e.curled ? CURLED_SINK : 0), spot.z);
+      const drop = lying * LIE_DROP * DOG_LEG_PIVOT.frontLeft[1] * DOG_SCALE * k;
+      node.position.set(spot.x, gy + lift - (e.curled ? CURLED_SINK : 0) - drop, spot.z);
       // Going up a gangway it leans with the slope; on the ice's gentle bumps it stays level.
       const fx = Math.cos(spot.yaw) * DOG_SPAN;
       const fz = -Math.sin(spot.yaw) * DOG_SPAN;
       const slope = Math.atan2(walk(spot.x + fx, spot.z + fz) - walk(spot.x - fx, spot.z - fz), 2 * DOG_SPAN);
-      node.rotation.set(sway, spot.yaw, e.curled ? 0 : Math.sign(slope) * Math.max(0, Math.abs(slope) - DOG_SLOPE_DEAD_ZONE), 'YZX');
+      node.rotation.set(sway, spot.yaw, e.curled || lying > 0 ? 0 : Math.sign(slope) * Math.max(0, Math.abs(slope) - DOG_SLOPE_DEAD_ZONE), 'YZX');
       node.scale.set(DOG_SCALE * k, DOG_SCALE * k * (e.curled ? CURLED_HEIGHT : 1), DOG_SCALE * k);
       harnesses.set(i, placed(DOG_HARNESS, spot.x, gy, spot.z, spot.yaw, DOG_SCALE * k));
     });
@@ -455,6 +509,17 @@ export function DioramaActors({ scene, step, ground, reduced }: { scene: SceneDe
                   }}
                 />
               )}
+            </group>
+          );
+        }
+        const flyer = flyers[i];
+        if (flyer) {
+          return (
+            <group key={i} ref={(n) => void (nodes.current[i] = n)}>
+              <mesh geometry={flyer.body} material={vehicleMaterial} frustumCulled={false} />
+              <group position={RESCUE_ROTOR_AT as [number, number, number]} ref={(n) => void (rotors.current[i] = n)}>
+                <mesh geometry={flyer.rotor} material={vehicleMaterial} frustumCulled={false} />
+              </group>
             </group>
           );
         }

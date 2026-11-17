@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
-import { ponchoActOpeningAt, ponchoPhotoAt, previousVoyageCard, nextVoyageCard, voyageStops, type PonchoPhoto } from '@antartida/core';
+import { ponchoActOpeningAt, ponchoPhotosAt, previousVoyageCard, nextVoyageCard, voyageStops, type PonchoPhoto } from '@antartida/core';
 import ponchoPageUrl from '@antartida/core/assets/poncho/poncho-pagina.jpg';
 import sledTeamUrl from '@antartida/core/assets/poncho/perros-trineo.jpg';
 import esperanzaUrl from '@antartida/core/assets/poncho/esperanza.jpg';
+import sanMartinUrl from '@antartida/core/assets/poncho/san-martin.jpg';
 import { BottomSheet } from '../BottomSheet.tsx';
 import { useIsDesktop } from '../hooks.ts';
 import { Icon, Quoted } from '../ui.tsx';
@@ -15,7 +16,7 @@ import type { DioramaTour } from './PonchoDiorama.tsx';
 import type { VoyageController } from './useVoyage.ts';
 
 /** File of each photograph of a stop (PONCHO_PHOTOS in @antartida/core). */
-export const PONCHO_PHOTO_URL = { 'poncho-pagina.jpg': ponchoPageUrl, 'perros-trineo.jpg': sledTeamUrl, 'esperanza.jpg': esperanzaUrl } as const;
+export const PONCHO_PHOTO_URL = { 'poncho-pagina.jpg': ponchoPageUrl, 'perros-trineo.jpg': sledTeamUrl, 'esperanza.jpg': esperanzaUrl, 'san-martin.jpg': sanMartinUrl } as const;
 
 /**
  * «‹ Hito N de M ›» of the common card of a story told in order (where there is no scene): goes back to a stop already
@@ -50,7 +51,7 @@ export function PhotoCredit({ photo }: { photo: PonchoPhoto }) {
       {photo.credit && (
         <span>Foto: {photo.credit.author}. Licencia <a href={photo.credit.licenseUrl} target="_blank" rel="noreferrer">{photo.credit.license}</a>.</span>
       )}
-      <Cite id={`photo:${photo.stop}`} />
+      <Cite id={`photo:${photo.file}`} />
     </>
   );
 }
@@ -89,12 +90,13 @@ export function PonchoPanel({ voyage, tour }: { voyage: VoyageController; tour: 
   const desktop = useIsDesktop();
   const panel = tour.panelRef;
   const scroll = useRef<HTMLDivElement>(null);
-  const [photoOpen, setPhotoOpen] = useState(false);
+  // The photograph open in its modal, or null.
+  const [photoOpen, setPhotoOpen] = useState<PonchoPhoto | null>(null);
   const stops = voyageStops(state.kind);
   const last = state.card === stops.length - 1;
   const { milestone } = stops[state.card];
   const act = ponchoActOpeningAt(milestone.id);
-  const photo = ponchoPhotoAt(milestone.id);
+  const photos = ponchoPhotosAt(milestone.id);
   const { view } = tour;
   // The sentences told so far: each «Siguiente» adds one. The source of the book goes with the last one told.
   const told = tour.sentences.slice(0, view.step + 1);
@@ -123,12 +125,12 @@ export function PonchoPanel({ voyage, tour }: { voyage: VoyageController; tour: 
         </ul>
         {view.showsHook && milestone.hook && <p className="vhook">{milestone.hook}</p>}
         {/* The rest waits for the end of the story of the stop. */}
-        {view.last && photo && (
-          <button type="button" className="poncho-archive" onClick={() => setPhotoOpen(true)} aria-label="Abrir fotografía del archivo">
+        {view.last && photos.map((photo) => (
+          <button key={photo.file} type="button" className="poncho-archive" onClick={() => setPhotoOpen(photo)} aria-label={photos.length > 1 ? `Abrir fotografía del archivo: ${photo.alt}` : 'Abrir fotografía del archivo'}>
             <img src={PONCHO_PHOTO_URL[photo.file]} alt="" loading="lazy" />
             <span><small>Archivo fotográfico</small><b>{photo.caption}</b><span>Ver fotografía ↗</span></span>
           </button>
-        )}
+        ))}
         {view.last && milestone.more.length > 0 && (
           <MoreFold key={milestone.id}>
             <ul className="vfacts">{milestone.more.map((f) => <Fact key={f.text} fact={f} />)}</ul>
@@ -147,7 +149,7 @@ export function PonchoPanel({ voyage, tour }: { voyage: VoyageController; tour: 
         </button>
       </SheetActions>
 
-      {photo && photoOpen && <PhotoDialog photo={photo} onClose={() => setPhotoOpen(false)} />}
+      {photoOpen && <PhotoDialog photo={photoOpen} onClose={() => setPhotoOpen(null)} />}
     </>
   );
   return desktop ? (

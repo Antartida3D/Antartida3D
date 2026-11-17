@@ -49,7 +49,7 @@ export const voyageCited = (code: VoyageSourceCode): CitedSource => {
 
 /** The source of a photograph of the team of Poncho: it is listed after the sources of the trip. */
 export const ponchoPhotoCited = (photo: PonchoPhoto): CitedSource => ({
-  id: `photo:${photo.stop}`,
+  id: `photo:${photo.file}`,
   title: photo.caption,
   org: photo.source.publisher,
   url: photo.source.url,

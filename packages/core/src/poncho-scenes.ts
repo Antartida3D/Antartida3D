@@ -53,6 +53,12 @@ export interface ScenePath {
    * there, as if they went in. Not a loop.
    */
   readonly board?: boolean;
+  /**
+   * It is laid on the track of the path `follows` (#218): it goes along it (the trail of another sled, followed later), joins
+   * it (a dog brought to the head of a waiting file) or goes on from where it ends. Who walks the one and who walks the other
+   * are one file at different times, not two crossing walks (see `sceneSameTrack`).
+   */
+  readonly follows?: string;
 }
 
 export interface SceneElement {
@@ -84,6 +90,16 @@ export interface SceneElement {
   /** With a path: seconds behind the one at the point of the path (a litter in single file follows the same trail). */
   readonly lag?: number;
   /**
+   * With a path: the step from which it starts walking (#218). Before it, it stands where its walk begins (a team waiting
+   * harnessed in file, for a sentence, before it sets off in the next one).
+   */
+  readonly walkFrom?: number;
+  /**
+   * dog: once its walk is over it lies down (`after` seconds later, slowly, see `sceneRest`), stays down `hold` seconds, gets up
+   * and goes on along the path `then` (#218). The walk ends with a turn, so it lies facing where it came from.
+   */
+  readonly rest?: { readonly after: number; readonly hold: number; readonly then?: string };
+  /**
    * Stages: the element shows from step `appearAt` (default 0) and goes before step `until` (default:
    * stays), growing out of the ground and sinking back (see `stageProgress`). The steps are the shots.
    */
@@ -95,7 +111,16 @@ export interface SceneElement {
   readonly radius?: number;
   /** prop, dog: height over the ground it hangs at, in scene units (a dog under its parachute, and the parachute). */
   readonly lift?: number;
+  /**
+   * prop, dog: comes down from height `from` to height `to` (scene units over the ground) in `duration` s after it shows, at an even pace,
+   * and a dog paddles its legs on the way (a dog under its parachute, book p. 19). With reduced motion it hangs half way down.
+   */
+  readonly fall?: { readonly from: number; readonly to: number; readonly duration: number };
 }
+
+/** Height over the ground of an element `t` seconds after it showed: where it is on its fall, or its `lift`. */
+export const sceneFallLift = (e: SceneElement, t: number): number =>
+  e.fall ? e.fall.from + (e.fall.to - e.fall.from) * clamp01(t / e.fall.duration) : (e.lift ?? 0);
 
 /** How the camera looks at a scene when its card opens. */
 export interface SceneCamera {
@@ -135,6 +160,11 @@ export interface SceneDef {
   /** One shot per sentence of the stop's `essential` text, in order (a test keeps the count). */
   readonly shots: readonly SceneShot[];
   /**
+   * What rises behind a `station` (+z side): a mountain of rock and snow (the default) or a glacier, a wall of ice with a
+   * front of blue ice over the rocks of the shore (#218, the Base San Martín).
+   */
+  readonly backdrop?: 'mountain' | 'glacier';
+  /**
    * A blizzard over the stage (issue #220): snow blown by the wind and the far ground lost in it, from the first
    * step until step `until` (default: all of them). An illustration of the weather the stop tells, not a record.
    */
@@ -147,7 +177,7 @@ export const SHOT_ELEVATION_DEG: readonly [number, number] = [10, 70];
 export const SHOT_TARGET_HEIGHT: readonly [number, number] = [0, 1.6];
 
 /** Most elements and persons showing at once in a scene, and most in all (they are all built): draw calls on a phone. */
-export const MAX_SCENE_ELEMENTS = 15;
+export const MAX_SCENE_ELEMENTS = 18;
 export const MAX_SCENE_PEOPLE = 6;
 export const MAX_SCENE_TOTAL = 22;
 /** The ship of «En rompehielos hacia Belgrano» lies beyond the ice edge (z 4.7) and its foredeck is part of the stage: that scene needs more room than the others. */
@@ -272,42 +302,60 @@ export const PONCHO_SCENES: Readonly<Record<string, SceneDef>> = {
       shot(2, [2.0, 0.4, 0.2], 6.8, 30, -100),
     ],
   },
-  // The post of number one (book p. 10 and 11): 0 the instructor gives Poncho the lead of the team; 1 he follows the trail of the
-  // other sled with efficiency; 2 when the sled stops he lies down and turns to the driver.
+  // The post of number one, at the Base San Martín (book p. 12): 0 by the base, the team waits in file, harnessed; the
+  // instructor brings Poncho to the front, the post of number one. 1 the team sets off and follows the trail of the other sled,
+  // which goes ahead, along a winding track (they follow it like a wave). 2 the sled stops; Poncho walks on, turns round,
+  // lies down facing the driver and, at the order, gets up and goes forward quickly. A team of five pairs and a leader, eleven
+  // dogs (book p. 12). The base stood empty in 1962 ([V2]): nobody at its doors. Places and poses are an illustration.
   'poncho-perro-guia': {
-    setting: 'plain',
-    radius: 4.2,
+    setting: 'station',
+    backdrop: 'glacier',
+    radius: 6.6,
     elements: [
-      person(ORANGE, 1.6, -0.9, yawToward(1.6, -0.9, 0.4, 0.2), 'stand', 0, { until: 1 }),
-      sled(-2.3, 0, 0, { until: 1, radius: 0.8 }),
-      dog('pack', -0.7, -0.3, 0, { until: 1 }),
-      dog('pack', -0.7, 0.35, 0, { until: 1 }),
-      dog('poncho', -0.7, 1.0, 0, { until: 1, path: 'promoted' }),
-      // 1: the team follows the other sled along the trail, Poncho in front.
-      sled(-3.2, 0.9, 0, { appearAt: 1, until: 2, path: 'follow', radius: 0.8 }),
-      dog('pack', -3.2, 0.9, 0, { appearAt: 1, until: 2, path: 'follow', lead: 1.1, side: 0.28 }),
-      dog('pack', -3.2, 0.9, 0, { appearAt: 1, until: 2, path: 'follow', lead: 1.1, side: -0.28 }),
-      dog('poncho', -3.2, 0.9, 0, { appearAt: 1, until: 2, path: 'follow', lead: 2.1 }),
-      sled(0.2, -2.1, 0, { appearAt: 1, until: 2, path: 'other', radius: 0.8 }),
-      dog('pack', 0.2, -2.1, 0, { appearAt: 1, until: 2, path: 'other', lead: 1.1 }),
-      person(RED, 0.2, -2.1, 0, 'walk', 0, { appearAt: 1, until: 2, path: 'other', lead: -1.5 }),
-      // 2: the sled stands; Poncho lies in front of the driver and looks round at him.
-      sled(-2.2, 0.2, 0, { appearAt: 2, radius: 0.8 }),
-      dog('pack', -0.5, -0.1, 0, { appearAt: 2 }),
-      dog('pack', -0.5, 0.5, 0, { appearAt: 2 }),
-      dog('poncho', 0.7, 0.2, yawToward(0.7, 0.2, -2.3, -1.2), { appearAt: 2, curled: true }),
-      person(ORANGE, -2.4, -1.2, yawToward(-2.4, -1.2, 0.7, 0.2), 'stand', 0, { appearAt: 2 }),
+      // The base, behind the stage (poncho-sanmartin in react-ui lays it out), the houses looking at the sea.
+      prop('baseSanMartin', 0, 3.4, 0, 1, { radius: 0.01 }),
+      // Our team: it waits in file at the start of the trail during the first sentence and sets off in the second.
+      dog('pack', -2.4, -0.4, 0, { walkFrom: 1, path: 'trail', lag: 0.67, side: 0.26 }),
+      dog('pack', -2.4, -0.4, 0, { walkFrom: 1, path: 'trail', lag: 0.67, side: -0.26 }),
+      dog('pack', -2.4, -0.4, 0, { walkFrom: 1, path: 'trail', lag: 1.33, side: 0.26 }),
+      dog('pack', -2.4, -0.4, 0, { walkFrom: 1, path: 'trail', lag: 1.33, side: -0.26 }),
+      dog('pack', -2.4, -0.4, 0, { walkFrom: 1, path: 'trail', lag: 2.0, side: 0.26 }),
+      dog('pack', -2.4, -0.4, 0, { walkFrom: 1, path: 'trail', lag: 2.0, side: -0.26 }),
+      dog('pack', -2.4, -0.4, 0, { walkFrom: 1, path: 'trail', lag: 2.67, side: 0.26 }),
+      dog('pack', -2.4, -0.4, 0, { walkFrom: 1, path: 'trail', lag: 2.67, side: -0.26 }),
+      dog('pack', -2.4, -0.4, 0, { walkFrom: 1, path: 'trail', lag: 3.33, side: 0.26 }),
+      dog('pack', -2.4, -0.4, 0, { walkFrom: 1, path: 'trail', lag: 3.33, side: -0.26 }),
+      sled(-2.4, -0.4, 0, { walkFrom: 1, path: 'trail', lag: 4.33, radius: 0.8 }),
+      person(ORANGE, -2.4, -0.4, 0, 'walk', 0, { walkFrom: 1, path: 'trail', lag: 6.0 }),
+      // 0: the instructor brings Poncho to the front of the team.
+      dog('poncho', -4.4, 1.4, 0, { until: 1, path: 'promoted' }),
+      person(NAVY, -4.4, 1.4, 0, 'walk', 1.2, { until: 1, path: 'promoted', lag: 1.4 }),
+      // 1: Poncho at the front, on the trail of the other sled; the other team goes ahead and on, out of the stage.
+      dog('poncho', -2.4, -0.4, 0, { appearAt: 1, until: 2, path: 'trail', sniff: true }),
+      dog('pack', -4.16, -2.59, 0, { appearAt: 1, until: 2, path: 'ahead', side: 0.26 }),
+      dog('pack', -4.16, -2.59, 0, { appearAt: 1, until: 2, path: 'ahead', side: -0.26 }),
+      sled(-4.16, -2.59, 0, { appearAt: 1, until: 2, path: 'ahead', lag: 1.0, radius: 0.8 }),
+      person(RED, -4.16, -2.59, 0, 'walk', 0.7, { appearAt: 1, until: 2, path: 'ahead', lag: 2.67 }),
+      // 2: the sled has stopped; Poncho walks on, turns round to the driver, lies down, and at the order is up and away.
+      dog('poncho', 3.6, -2.0, 0, { appearAt: 2, path: 'turnBack', rest: { after: 0.4, hold: 2.4, then: 'go' } }),
     ],
     paths: [
-      { id: 'promoted', from: [-0.7, 1.0], via: [[0.2, 1.1]], to: [0.9, 0.1], delay: 1, duration: 4 },
-      { id: 'follow', from: [-3.2, 0.9], to: [1.2, 0.9], delay: 0.2, duration: 8 },
-      { id: 'other', from: [0.2, -2.1], to: [3.2, -2.1], delay: 0.2, duration: 10 },
+      // The trail: from the base out towards the sea and back along the shore, in bends.
+      { id: 'trail', from: [-2.4, -0.4], via: [[-4.4, -1.2], [-4.2, -2.6], [-1.6, -2.0], [1.2, -2.8]], to: [3.6, -2.0], delay: 0.3, duration: 13 },
+      // The other sled: the same trail, a little more than its own length ahead, and then up and away behind the base.
+      { id: 'ahead', follows: 'trail', from: [-4.16, -2.59], via: [[-1.6, -2.0], [1.2, -2.8], [3.6, -2.0], [5.6, 0.4]], to: [5.4, 2.8], delay: 0.3, duration: 13 },
+      // Poncho brought to his post: round the front of the waiting team to its head.
+      { id: 'promoted', follows: 'trail', from: [-4.4, 1.4], via: [[-3.8, 0.4]], to: [-2.5, -0.45], delay: 0.6, duration: 4 },
+      // At the stop: a few steps on and a turn, so he ends facing the driver behind him.
+      { id: 'turnBack', follows: 'trail', from: [3.6, -2.0], via: [[4.4, -2.3], [4.7, -1.7]], to: [4.1, -1.4], delay: 0.3, duration: 3.2 },
+      // At the order: a turn back to the front and away along the shore, quickly.
+      { id: 'go', follows: 'trail', from: [4.1, -1.4], via: [[3.7, -1.0], [4.3, -0.7]], to: [5.8, -1.0], delay: 0, duration: 2.2 },
     ],
-    camera: { distanceFactor: 1.05, elevationDeg: 42, azimuthDeg: -125 },
+    camera: { distanceFactor: 1.1, elevationDeg: 34, azimuthDeg: -80 },
     shots: [
-      shot(0, [-0.3, 0.4, 0], 8.5, 28, -100),
-      shot(1, [0, 0.3, 0], 8, 30, -95),
-      shot(2, [-0.8, 0.4, 0.1], 5.5, 22, -80),
+      shot(0, [-0.6, 0.8, 1.8], 13.5, 22, -86),
+      shot(1, [-0.4, 0.5, -1.2], 12.5, 30, -88),
+      shot(2, [2.4, 0.4, -1.2], 10.5, 26, -96),
     ],
   },
   // The ship takes the dogs to the south (book p. 14): the icebreaker afloat at the edge of the ice (poncho-ship.ts), whole, with
@@ -437,33 +485,41 @@ export const PONCHO_SCENES: Readonly<Record<string, SceneDef>> = {
       shot(2, [-0.8, 0.8, 0.2], 9, 22, -100),
     ],
   },
-  // From the air (book p. 18-19): 0 the helicopter on the ice with its door open; 1 the dogs come down on parachutes, paddling
-  // their legs; 2 they land and Poncho is already at the front of the sled.
+  // From the air (book p. 18-19): 0 the helicopter flying in over the ice, with its door open, and the two officers waiting below; 1 the three dogs come down on parachutes, small under it, paddling
+  // their legs; 2 they land and Poncho is already at the front of the sled, walking, with a man behind it.
   paracaidas: {
     setting: 'plain',
     radius: 4.2,
     elements: [
-      prop('rescueHelicopter', -2.3, 1.0, -0.4, 1, { until: 2, radius: 1.6 }),
-      person(ORANGE, 0.9, -0.5, yawToward(0.9, -0.5, -2.3, 1.0), 'stand', 0, { until: 1 }),
-      dog('poncho', 1.5, 0.4, yawToward(1.5, 0.4, -2.3, 1.0), { until: 1 }),
-      prop('dogParachute', 1.8, 1.8, 0, 1, { appearAt: 1, until: 2, lift: 1.0, radius: 0.3 }),
-      dog('pack', 1.8, 1.8, 0.6, { appearAt: 1, until: 2, lift: 0.96 }),
-      prop('dogParachute', 2.8, -0.2, 0, 1, { appearAt: 1, until: 2, lift: 0.6, radius: 0.3 }),
-      dog('poncho', 2.8, -0.2, 0, { appearAt: 1, until: 2, lift: 0.56 }),
-      prop('dogParachute', 0.6, -1.9, 0, 1, { appearAt: 1, until: 2, lift: 1.3, radius: 0.3 }),
-      dog('pack', 0.6, -1.9, -0.5, { appearAt: 1, until: 2, lift: 1.26 }),
-      sled(-1.6, -1.0, 0, { appearAt: 2, radius: 0.8 }),
-      dog('pack', -0.4, -0.7, 0, { appearAt: 2 }),
-      dog('pack', -0.4, -1.3, 0, { appearAt: 2 }),
-      dog('poncho', 0.6, -1.0, 0, { appearAt: 2 }),
-      person(RED, -2.4, -1.0, 0, 'haul', 0, { appearAt: 2 }),
+      // Flying, big and high (the people and the dogs are small below it, for the contrast): it comes in over the ice and hovers over the drop zone.
+      prop('rescueHelicopter', -3.4, 0.9, 0, 1, { until: 2, path: 'flight', lift: 6.5, radius: 0.1 }),
+      // The two officers who jumped first wait on the ice (book p. 18-19), looking up at it.
+      person(ORANGE, 2.3, -0.7, yawToward(2.3, -0.7, 0.4, 0.5), 'stand', 0, { scale: 0.45 }),
+      person(RED, 2.4, 0.2, yawToward(2.4, 0.2, 0.4, 0.5), 'stand', 1.9, { scale: 0.45 }),
+      // The three dogs (Poncho, Pato and Bucky) jump under the helicopter and come down on their parachutes, paddling their legs.
+      prop('dogParachute', 0.9, 1.0, 0, 0.45, { appearAt: 1, until: 2, radius: 0.2, fall: { from: 4.9, to: 0.05, duration: 9 } }),
+      dog('pack', 0.9, 1.0, 0.6, { appearAt: 1, until: 2, scale: 0.45, fall: { from: 4.88, to: 0.03, duration: 9 } }),
+      prop('dogParachute', 1.5, 0.6, 0, 0.45, { appearAt: 1, until: 2, radius: 0.2, fall: { from: 4.6, to: 0.05, duration: 10 } }),
+      dog('poncho', 1.5, 0.6, 0, { appearAt: 1, until: 2, scale: 0.45, fall: { from: 4.58, to: 0.03, duration: 10 } }),
+      prop('dogParachute', 0.1, 0.1, 0, 0.45, { appearAt: 1, until: 2, radius: 0.2, fall: { from: 4.8, to: 0.05, duration: 8 } }),
+      dog('pack', 0.1, 0.1, -0.5, { appearAt: 1, until: 2, scale: 0.45, fall: { from: 4.78, to: 0.03, duration: 8 } }),
+      // On the ice: the sled is ready and Poncho sets off at the front, with a man walking behind it, and goes up to the officers who wait.
+      sled(-1.4, -0.2, 0, { appearAt: 2, path: 'go', scale: 0.45, radius: 0.4 }),
+      dog('pack', -1.4, -0.2, 0, { appearAt: 2, path: 'go', lead: 0.5, side: 0.13, scale: 0.45 }),
+      dog('pack', -1.4, -0.2, 0, { appearAt: 2, path: 'go', lead: 0.5, side: -0.13, scale: 0.45 }),
+      dog('poncho', -1.4, -0.2, 0, { appearAt: 2, path: 'go', lead: 0.85, scale: 0.45 }),
+      person(NAVY, -1.4, -0.2, 0, 'walk', 0, { appearAt: 2, path: 'go', lead: -0.7, scale: 0.45 }),
     ],
-    paths: [],
+    paths: [
+      { id: 'flight', from: [-3.4, 0.9], to: [0.4, 0.5], delay: 0.3, duration: 8 },
+      // It ends where Poncho, in front, stands face to face with the two officers (at x 2.3 and 2.4): he gets to them, he does not go past.
+      { id: 'go', from: [-1.4, -0.2], to: [0.9, -0.2], delay: 1.2, duration: 7 },
+    ],
     camera: { distanceFactor: 1.1, elevationDeg: 40, azimuthDeg: -110 },
     shots: [
-      shot(0, [-0.3, 0.8, 0.6], 8, 24, -80),
-      shot(1, [1.6, 1.2, 0.2], 10, 22, -95),
-      shot(2, [-0.6, 0.4, -1.0], 6, 26, -100),
+      shot(0, [-0.6, 1.6, 0.3], 20, 22, -80),
+      shot(1, [0.8, 1.6, 0.3], 19, 22, -90),
+      shot(2, [0.8, 0.3, -0.2], 6, 26, -100),
     ],
   },
   // Lost compass (book p. 20): 0 the team walks in the storm; 1 the sled lies on its side and the men look for the compass
@@ -679,6 +735,30 @@ export const sceneStepCount = (scene: SceneDef): number => scene.shots.length;
 export const sceneBlizzard = (scene: SceneDef, step: number): boolean =>
   scene.blizzard !== undefined && step < (scene.blizzard.until ?? Number.POSITIVE_INFINITY);
 
+/** Seconds a dog takes to lie down, and to get up again (see `sceneRest`). */
+export const REST_DOWN_S = 0.9;
+export const REST_UP_S = 0.5;
+
+const easeInOut = (u: number): number => {
+  const k = clamp01(u);
+  return k * k * (3 - 2 * k);
+};
+
+/**
+ * A dog that rests at the end of its walk (#218), `t` seconds after it showed: how far it is lying (0 standing, 1 down; it
+ * goes down and gets up slowly, never in one frame), and, once it is up again, the clock of the path it goes on along
+ * (`then`), or null while it is still at the end of its first walk.
+ */
+export function sceneRest(path: ScenePath, rest: NonNullable<SceneElement['rest']>, t: number): { lying: number; thenT: number | null } {
+  const s = t - (path.delay + path.duration) - rest.after;
+  if (s <= 0) return { lying: 0, thenT: null };
+  if (s < REST_DOWN_S) return { lying: easeInOut(s / REST_DOWN_S), thenT: null };
+  const down = REST_DOWN_S + rest.hold;
+  if (s < down) return { lying: 1, thenT: null };
+  if (s < down + REST_UP_S) return { lying: 1 - easeInOut((s - down) / REST_UP_S), thenT: null };
+  return { lying: 0, thenT: rest.then ? s - down - REST_UP_S : null };
+}
+
 /** True when an element with these stages shows at `step`. */
 export const sceneElementShown = (e: Pick<SceneElement, 'appearAt' | 'until'>, step: number): boolean =>
   step >= (e.appearAt ?? 0) && step < (e.until ?? Infinity);
@@ -732,6 +812,20 @@ export function sceneTrack(scene: SceneDef, e: SceneElement, step = 0.2): (reado
   }
   return out;
 }
+
+/** The first path of the chain of `follows` that starts at `id`: the track it is laid on. */
+function trackRoot(scene: SceneDef, id: string): string {
+  let at = id;
+  for (let i = 0; i < scene.paths.length; i++) {
+    const next = scene.paths.find((p) => p.id === at)?.follows;
+    if (!next) break;
+    at = next;
+  }
+  return at;
+}
+
+/** True when two paths are the same track (the same path, or laid on one another through `follows`): their walkers are one file. */
+export const sceneSameTrack = (scene: SceneDef, a: string, b: string): boolean => trackRoot(scene, a) === trackRoot(scene, b);
 
 /** Height of the hop of someone who cheers at `phase` (always 0 or more). */
 export const sceneHop = (phase: number): number => SCENE_HOP * Math.max(0, Math.sin(phase)) ** 1.5;

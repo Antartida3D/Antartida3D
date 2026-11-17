@@ -66,4 +66,13 @@ export const POINT_DETAILS: Readonly<Record<string, { desc: string; sources: rea
       { label: 'Four unreported emperor penguin colonies discovered by satellite', org: 'Antarctic Science (Cambridge University Press)', url: 'https://www.cambridge.org/core/journals/antarctic-science/article/four-unreported-emperor-penguin-colonies-discovered-by-satellite/20956FD3E80F3604C21D0E2AA80FEF9B', consulted: '2026-11-13' },
     ],
   },
+  // #206: every sentence and its quote are in docs/puntos-proximamente-fuentes.md.
+  cerronevado: {
+    desc: 'Frente a la costa sur de la isla Cerro Nevado, sobre el hielo marino fijo, está la colonia de pingüino emperador más al norte que se conoce. La descubrieron científicos del Instituto Antártico Argentino desde un avión Twin Otter, el 20 de julio de 1997. Desde 2013 la estudian en campañas de agosto y septiembre: salen de Base Marambio, a unos 65 km, cruzan el hielo en motos de nieve y trineos, y acampan junto a un témpano. Según el año, los censos publicados van de 1.200 a unas 4.000 parejas. Está en una zona donde el clima cambia rápido: por eso seguirla es clave.',
+    sources: [
+      { label: 'A newly discovered breeding colony of Emperor Penguins (Coria y Montalti, Marine Ornithology 28, 2000)', org: 'Instituto Antártico Argentino · Marine Ornithology', url: 'https://www.marineornithology.org/PDF/28_2/28_2_5.pdf', consulted: '2026-11-17' },
+      { label: 'Pingüino emperador (M. M. Libertelli)', org: 'Instituto Antártico Argentino · Cancillería Argentina', url: 'https://cancilleria.gob.ar/userfiles/ut/pinguinoemperador.pdf', consulted: '2026-11-17' },
+      { label: 'Population size and condition of the Emperor Penguin colony of Snow Hill Island (Schiel, Güpner y Spitzenberger, Marine Ornithology 47, 2019)', org: 'Marine Ornithology', url: 'https://www.marineornithology.org/PDF/47_2/47_2_189-192.pdf', consulted: '2026-11-17' },
+    ],
+  },
 };

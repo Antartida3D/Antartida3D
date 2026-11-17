@@ -139,9 +139,10 @@ describe('fanning out crowded markers (#238)', () => {
 
   // Base Marambio, Fósiles (#7) and Poncho (#9, Base Esperanza) are close together at the tip of the
   // Peninsula: 10 to 12 map units apart, about 75 to 90 km. They never separate by zooming alone.
+  // The emperors of Cerro Nevado (#206) are 65 km south of Marambio, with them.
   const PHONE = { vw: 390, vh: 844 };
   const DESKTOP = { vw: 1440, vh: 900 };
-  const PENINSULA = ['marambio', 'fosiles', 'poncho'];
+  const PENINSULA = ['marambio', 'fosiles', 'poncho', 'cerronevado'];
 
   it('shows a marker for every point at any zoom and size, with no group', () => {
     for (const size of [PHONE, DESKTOP]) {
@@ -153,19 +154,19 @@ describe('fanning out crowded markers (#238)', () => {
     }
   });
 
-  it('keeps Marambio, Fósiles and Poncho apart on screen at any zoom, each with its line back to its real place', () => {
+  it('keeps Marambio, Fósiles, Poncho and Cerro Nevado apart on screen at any zoom, each with its line back to its real place', () => {
     for (const size of [PHONE, DESKTOP]) {
       const geo = geometry(size);
       for (let k = 1; k <= MAX_K; k += 0.25) {
         const view = { k, px: 0, py: 0 };
         const pts = buildMarkers(size, view, []).flatMap((m) => (m.kind === 'point' && PENINSULA.includes(m.key) ? [m] : []));
-        expect(pts).toHaveLength(3);
+        expect(pts).toHaveLength(PENINSULA.length);
         for (const m of pts) {
           const real = toScreen(geo, view, m.x, m.y);
           expect(m.left - m.dx, `${size.vw} ${k} ${m.key}`).toBeCloseTo(real.left);
           expect(m.top - m.dy, `${size.vw} ${k} ${m.key}`).toBeCloseTo(real.top);
         }
-        for (let i = 0; i < 3; i++) for (let j = i + 1; j < 3; j++) {
+        for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) {
           expect(Math.hypot(pts[i].left - pts[j].left, pts[i].top - pts[j].top), `${size.vw} ${k}`).toBeGreaterThan(markerGap(size.vw) - 0.01);
         }
       }

@@ -16,6 +16,12 @@ const { WHITE, ZINC } = VOXEL_PALETTE;
 const MODULE: readonly [number, number, number] = [3, 1.5, 1.2];
 const HUT_SCALE = 0.95;
 const FOOTING_LIFT = 0.015;
+/** Height of the stovepipe over its foot, and how far its foot sinks under the ridge (the slopes fall away from it). */
+export const STOVEPIPE_HEIGHT = 0.36;
+const STOVEPIPE_SINK = 0.06;
+
+/** Height of the ridge of a hut of `scale`: the top of the module (its height) scaled, with the footing lift. */
+export const hutRidgeY = (scale = HUT_SCALE): number => MODULE[2] * scale + FOOTING_LIFT * (scale / HUT_SCALE);
 
 export function buildBaseHut(scale = HUT_SCALE): Tri[] {
   const k = scale;
@@ -24,9 +30,14 @@ export function buildBaseHut(scale = HUT_SCALE): Tri[] {
     ([a, b, c, col]): Tri => [[a[0] * k, a[1] * k + FOOTING_LIFT * (k / HUT_SCALE), a[2] * k], [b[0] * k, b[1] * k + FOOTING_LIFT * (k / HUT_SCALE), b[2] * k], [c[0] * k, c[1] * k + FOOTING_LIFT * (k / HUT_SCALE), c[2] * k], col],
   );
   const out: Tri[] = [...body];
-  // A stovepipe on the roof and snow drifted against the long walls and the ends (laid out for HUT_SCALE; `m` follows the scale).
+  // A stovepipe that rises from the ridge of the roof (its foot sunk a little into the slopes, so it never floats), and snow
+  // drifted against the long walls and the ends (laid out for HUT_SCALE; `m` follows the scale).
   const m = k / HUT_SCALE;
-  out.push(...block(-0.9 * m, 1.62 * m, 0, 0.12 * m, 0.3 * m, 0.12 * m, ZINC), ...block(-0.9 * m, 1.8 * m, 0, 0.18 * m, 0.04 * m, 0.18 * m, WHITE));
+  const pipeFoot = hutRidgeY(k) - STOVEPIPE_SINK * m;
+  out.push(
+    ...block(-0.9 * m, pipeFoot + STOVEPIPE_HEIGHT * m / 2, 0, 0.12 * m, STOVEPIPE_HEIGHT * m, 0.12 * m, ZINC),
+    ...block(-0.9 * m, pipeFoot + (STOVEPIPE_HEIGHT + 0.02) * m, 0, 0.18 * m, 0.04 * m, 0.18 * m, WHITE),
+  );
   const [lx, lz] = [MODULE[0] * k, MODULE[1] * k];
   for (const [x, z, rx, rz, s] of [[0, lz / 2 + 0.1 * m, 1.1 * m, 0.28 * m, 301], [-lx / 2 - 0.05 * m, 0.1 * m, 0.35 * m, 0.55 * m, 302], [lx / 2 + 0.05 * m, -0.1 * m, 0.35 * m, 0.55 * m, 303], [0, -lz / 2 - 0.1 * m, 1.0 * m, 0.25 * m, 304]] as const) {
     out.push(...snowMound(x, z, rx, rz, 0.06, s, 7));
@@ -121,6 +132,22 @@ function lettering(text: string, center: Vec3, u: Vec3, n: Vec3, pixel: number, 
 /** The main house: long side along z, its gable end (balcony and sign) to -z, towards the sea. Size of the model, before it is placed. */
 export const ESPERANZA_MAIN = { length: 6.4, width: 2.8, wall: 2.5, ridge: 0.95 } as const;
 
+/** The sign «BASE ESPERANZA» on the gable end: its board, the pixel of its letters, and the room it keeps from the slopes of the roof. */
+export const ESPERANZA_SIGN = { width: 1.62, height: 0.22, pixel: 0.026, margin: 0.05 } as const;
+
+/** Half the width of the gable end at height `y` (zero at the ridge, half the house at the top of the wall). */
+export const esperanzaGableHalf = (y: number): number => {
+  const { width: W, wall: H, ridge: R } = ESPERANZA_MAIN;
+  return (W / 2) * Math.min(1, Math.max(0, 1 - (y - H) / R));
+};
+
+/** Height of the middle of the sign: as high under the ridge as its top corners can go and still stay inside the gable. */
+export function esperanzaSignY(): number {
+  const { width: W, wall: H, ridge: R } = ESPERANZA_MAIN;
+  const top = H + R * (1 - (ESPERANZA_SIGN.width / 2 + ESPERANZA_SIGN.margin) / (W / 2));
+  return top - ESPERANZA_SIGN.height / 2;
+}
+
 /**
  * The main house of Esperanza, after its photographs: a long two-storey building whose gable end looks at the sea, with a
  * wooden balcony across the upper floor, the sign «BASE ESPERANZA» under the ridge and wide dark windows below; the rear of
@@ -155,8 +182,12 @@ export function buildEsperanzaMainHouse(): Tri[] {
   out.push(...plate([0, 0.55, front], uF, nF, 0.42, 0.95, 0.02, GLASS_DARK));
   for (const x of [-0.85, -0.25]) out.push(...windowOn([x, 1.9, front], uF, nF, 0.42, 0.5, CREAM));
   out.push(...plate([0.75, 1.75, front], uF, nF, 0.42, 0.8, 0.02, GLASS_DARK));
-  // The sign under the ridge, with its letters.
-  out.push(...plate([0, H + 0.34, front], uF, nF, 1.75, 0.3, 0.025, CREAM), ...lettering('BASE ESPERANZA', [0, H + 0.34, front], uF, nF, 0.028, SIGN_INK));
+  // The sign under the ridge, with its letters, wholly inside the gable (its top corners under the slopes of the roof).
+  const signY = esperanzaSignY();
+  out.push(
+    ...plate([0, signY, front], uF, nF, ESPERANZA_SIGN.width, ESPERANZA_SIGN.height, 0.025, CREAM),
+    ...lettering('BASE ESPERANZA', [0, signY, front], uF, nF, ESPERANZA_SIGN.pixel, SIGN_INK),
+  );
   // The balcony: a wooden floor across the upper storey on posts, and its railing with crossed braces.
   const bz = front - 0.3;
   const floorY = 1.32;

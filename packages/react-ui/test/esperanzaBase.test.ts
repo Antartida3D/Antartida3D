@@ -3,8 +3,16 @@ import { describe, expect, it } from 'vitest';
 import '../src/voyage/sightingModels.ts';
 import { PONCHO_SCENES } from '@antartida/core';
 import { normalOf, type Tri } from '../src/voyage/lowPoly.ts';
+import { VOXEL_PALETTE } from '../src/orcadas/stationModels.ts';
 import {
+  buildBaseHut,
   buildEsperanzaMainHouse,
+  ESPERANZA_MAIN,
+  ESPERANZA_SIGN,
+  esperanzaGableHalf,
+  esperanzaSignY,
+  hutRidgeY,
+  STOVEPIPE_HEIGHT,
   buildFlagContainer,
   ESPERANZA_CLEARINGS,
   ESPERANZA_HUTS,
@@ -38,6 +46,28 @@ describe('Base Esperanza (#261)', () => {
     // 13 letters of a 5-row pixel font: well over a hundred pixels, two faces each, all turned to the sea (-z).
     expect(letters.length).toBeGreaterThan(200);
     for (const t of letters) expect(normalOf(t)[2]).toBeLessThan(-0.99);
+  });
+
+  it('keeps the sign and its letters inside the gable end: nothing sticks out over the slopes of the roof', () => {
+    const y = esperanzaSignY();
+    const top = y + ESPERANZA_SIGN.height / 2;
+    expect(y - ESPERANZA_SIGN.height / 2).toBeGreaterThan(ESPERANZA_MAIN.wall);
+    expect(ESPERANZA_SIGN.width / 2).toBeLessThan(esperanzaGableHalf(top));
+    const letters = buildEsperanzaMainHouse().filter((t) => t[3] === SIGN_INK);
+    for (const [a, b, c] of letters) for (const p of [a, b, c]) expect(Math.abs(p[0])).toBeLessThan(esperanzaGableHalf(p[1]));
+    for (const [a, b, c] of letters) for (const p of [a, b, c]) expect(Math.abs(p[0])).toBeLessThan(ESPERANZA_SIGN.width / 2);
+  });
+
+  it('stands the stovepipe of a hut on its roof, not floating over it', () => {
+    for (const scale of [0.95, 1.1, 1.3]) {
+      // The pipe: the faces of the column over the point where it stands (x = -0.9 for the scale of 0.95).
+      const m = scale / 0.95;
+      const pipe = buildBaseHut(scale).filter(([a, b, c, col]) => col === VOXEL_PALETTE.ZINC && [a, b, c].every((p) => Math.abs(p[0] + 0.9 * m) < 0.1 * m && Math.abs(p[2]) < 0.1 * m));
+      expect(pipe.length).toBeGreaterThan(0);
+      const ys = pipe.flatMap(([a, b, c]) => [a[1], b[1], c[1]]);
+      expect(Math.min(...ys), `scale ${scale}`).toBeLessThan(hutRidgeY(scale));
+      expect(Math.max(...ys), `scale ${scale}`).toBeGreaterThan(hutRidgeY(scale) + STOVEPIPE_HEIGHT * 0.5);
+    }
   });
 
   it('paints the flag on the side of the container that looks at the sea', () => {

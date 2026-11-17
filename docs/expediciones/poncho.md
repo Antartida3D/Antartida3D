@@ -63,6 +63,8 @@ La página es la del PDF del libro `[P1]` donde está el hecho principal de la f
 ### 5. `rescate-ae-205` — Al rescate de un avión (1965, tramo 2, trineo)
 
 - **Escena** (p. 18): un avión ha caído en el hielo y el mal tiempo impide buscarlo por aire; sale una patrulla de dos hombres y siete perros con Poncho al frente; al cuarto día, apenas olfatea el avión, acelera el paso.
+- **Diorama** (una etapa por frase): 0 el avión destrozado sobre el hielo, más grande que las personas (como un Cessna 185) y color crema para que se distinga de la nieve (la nariz clavada, la cola partida, un ala desprendida, un esquí y chapas sueltas), con los cuatro tripulantes esperando al lado, en plena ventisca; 1 llega la patrulla de dos hombres y siete perros por un rastro en S, con Poncho al frente olfateando: los perros y el trineo pisan su mismo rastro y siguen sus curvas, como una onda, y Poncho encuentra el avión; 2 el tiempo mejora (el libro: «al cuarto día, el clima había mejorado», p. 18) y los hombres de la patrulla dejan el trineo y van hacia los tripulantes. Cuatro tripulantes, dos hombres y siete perros son las cifras del libro (p. 17 y 18); la forma de los daños, los colores, las posturas, la escala y la ventisca son una ilustración.
+- **Foto:** pendiente. No se encontró una foto del AE-205 caído con fuente y licencia verificables (ver [poncho-fuentes.md](./poncho-fuentes.md), 4.5).
 - **Gancho:** «Pero la gran marcha seguía su camino.»
 - **Saber más:** el avión Cessna 185B «AE-205» y el «blanqueo» (p. 17); tres jornadas entre grietas y ventiscas, los víveres que se tragó una grieta y el regreso de 1968 (p. 18).
 

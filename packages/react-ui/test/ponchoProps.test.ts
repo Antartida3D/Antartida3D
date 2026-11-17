@@ -17,7 +17,7 @@ const EXPECTED_BOX: Readonly<Record<PonchoPropId, readonly [number, number, numb
   flaggedCanes: [1.5, 1.05, 0.45],
   haulLine: [2.5, 0.1, 0.45],
   crevasseBridge: [2.0, 0.15, 1.0],
-  crashedPlane: [3.7, 1.9, 4.5],
+  crashedPlane: [5.2, 1.5, 5.4], // a wreck field: nose, torn-off tail and wing, ski and panels strewn about
   iceTunnelEntrance: [1.95, 0.95, 2.3],
   nansenSled: [2.3, 0.95, 0.75],
   baseHut: [3.7, 1.9, 2.3],

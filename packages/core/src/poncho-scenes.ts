@@ -134,6 +134,11 @@ export interface SceneDef {
   readonly camera: SceneCamera;
   /** One shot per sentence of the stop's `essential` text, in order (a test keeps the count). */
   readonly shots: readonly SceneShot[];
+  /**
+   * A blizzard over the stage (issue #220): snow blown by the wind and the far ground lost in it, from the first
+   * step until step `until` (default: all of them). An illustration of the weather the stop tells, not a record.
+   */
+  readonly blizzard?: { readonly until?: number };
 }
 
 /** Limits of a shot: the diorama's camera never comes closer than a dog's size, nor leaves the stage far behind. */
@@ -142,8 +147,8 @@ export const SHOT_ELEVATION_DEG: readonly [number, number] = [10, 70];
 export const SHOT_TARGET_HEIGHT: readonly [number, number] = [0, 1.6];
 
 /** Most elements and persons showing at once in a scene, and most in all (they are all built): draw calls on a phone. */
-export const MAX_SCENE_ELEMENTS = 14;
-export const MAX_SCENE_PEOPLE = 5;
+export const MAX_SCENE_ELEMENTS = 15;
+export const MAX_SCENE_PEOPLE = 6;
 export const MAX_SCENE_TOTAL = 22;
 /** The ship of «En rompehielos hacia Belgrano» lies beyond the ice edge (z 4.7) and its foredeck is part of the stage: that scene needs more room than the others. */
 export const MAX_SCENE_RADIUS = 6.8;
@@ -353,38 +358,51 @@ export const PONCHO_SCENES: Readonly<Record<string, SceneDef>> = {
       shot(2, [1.8, 0.4, 0.4], 10, 26, -105),
     ],
   },
-  // The little plane that came down (book p. 17-18): 0 it lies on the ice and a man and Poncho look at it; 1 the patrol
-  // sets out, Poncho at the front; 2 he smells the plane and quickens his pace, the team behind him.
+  // The plane that came down (book p. 17-18): 0 the wreck on the ice, in a blizzard, the four survivors waiting by it; 1 the patrol
+  // of two men and seven dogs comes along a winding trail, Poncho at the front sniffing, and finds it; 2 the weather has
+  // cleared and the men of the patrol reach the survivors. The numbers (four survivors, two men, seven dogs) are the
+  // book's; the poses, the places and the waiting are an illustration of the rescue.
+  // The team follows Poncho in single pairs on his very trail (`lag`), so it bends with the trail like a wave.
   'rescate-ae-205': {
     setting: 'plain',
     radius: 4.5,
     elements: [
-      prop('crashedPlane', 2.8, 1.6, 0.5, 0.85, { radius: 1.4 }),
-      person(NAVY, -1.8, -0.6, yawToward(-1.8, -0.6, 2.8, 1.6), 'stand', 0, { until: 1 }),
-      dog('poncho', -1.2, -0.9, yawToward(-1.2, -0.9, 2.8, 1.6), { until: 1 }),
-      sled(-3.8, -2.4, 0.3, { appearAt: 1, until: 2, path: 'patrol', radius: 0.8 }),
-      dog('pack', -3.8, -2.4, 0, { appearAt: 1, until: 2, path: 'patrol', lead: 1.0, side: 0.28 }),
-      dog('pack', -3.8, -2.4, 0, { appearAt: 1, until: 2, path: 'patrol', lead: 1.0, side: -0.28 }),
-      dog('pack', -3.8, -2.4, 0, { appearAt: 1, until: 2, path: 'patrol', lead: 1.6, side: 0.28 }),
-      dog('pack', -3.8, -2.4, 0, { appearAt: 1, until: 2, path: 'patrol', lead: 1.6, side: -0.28 }),
-      dog('poncho', -3.8, -2.4, 0, { appearAt: 1, until: 2, path: 'patrol', lead: 2.2 }),
-      person(ORANGE, -3.8, -2.4, 0, 'walk', 0, { appearAt: 1, until: 2, path: 'patrol', lead: -1.5 }),
-      person(RED, -3.8, -2.4, 0, 'walk', 1.5, { appearAt: 1, until: 2, path: 'patrol', lead: -2.5 }),
-      dog('poncho', -1.0, 0.0, 0, { appearAt: 2, path: 'dash' }),
-      sled(-3.6, -1.0, 0, { appearAt: 2, path: 'late', radius: 0.8 }),
-      person(ORANGE, -3.6, -1.0, 0, 'walk', 0, { appearAt: 2, path: 'late', lead: -1.6 }),
+      // Bigger than the people, as a Cessna 185 is (about 8 m long and 11 m of wing): an illustration, not a measure.
+      prop('crashedPlane', 2.7, 1.5, 0.5, 1.25, { radius: 2.4 }),
+      dog('poncho', -4.2, -1.5, 0, { appearAt: 1, path: 'patrol', sniff: true }),
+      dog('pack', -4.2, -1.5, 0, { appearAt: 1, path: 'patrol', lag: 0.75, side: 0.26 }),
+      dog('pack', -4.2, -1.5, 0, { appearAt: 1, path: 'patrol', lag: 0.75, side: -0.26 }),
+      dog('pack', -4.2, -1.5, 0, { appearAt: 1, path: 'patrol', lag: 1.5, side: 0.26 }),
+      dog('pack', -4.2, -1.5, 0, { appearAt: 1, path: 'patrol', lag: 1.5, side: -0.26 }),
+      dog('pack', -4.2, -1.5, 0, { appearAt: 1, path: 'patrol', lag: 2.25, side: 0.26 }),
+      dog('pack', -4.2, -1.5, 0, { appearAt: 1, path: 'patrol', lag: 2.25, side: -0.26 }),
+      sled(-4.2, -1.5, 0, { appearAt: 1, path: 'patrol', lag: 3.7, radius: 0.8 }),
+      person(ORANGE, -4.2, -1.5, 0, 'walk', 0, { appearAt: 1, until: 2, path: 'patrol', lag: 5.7 }),
+      person(RED, -4.2, -1.5, 0, 'walk', 1.5, { appearAt: 1, until: 2, path: 'patrol', lag: 7.0 }),
+      person(ORANGE, -2.8, -0.2, 0, 'walk', 0, { appearAt: 2, path: 'toDoor' }),
+      person(RED, -1.0, -3.3, 0, 'walk', 1.5, { appearAt: 2, path: 'toTail' }),
+      // The four survivors wait by the wreck from the first sentence on (book p. 17-18: they survived and waited for help).
+      person(NAVY, -0.2, 1.6, yawToward(-0.2, 1.6, 2.6, 1.4), 'stand', 0),
+      person(RED, 0.6, 3.4, yawToward(0.6, 3.4, 2.6, 1.4), 'tend', 1.1),
+      person(ORANGE, 1.2, 3.8, yawToward(1.2, 3.8, 2.6, 1.4), 'stand', 2.3),
+      person(NAVY, 4.3, -1.0, yawToward(4.3, -1.0, 2.6, 1.4), 'stand', 0.7),
     ],
     paths: [
-      { id: 'patrol', from: [-3.8, -2.4], via: [[-2.2, -1.6]], to: [-1.2, -2.0], delay: 0.2, duration: 9 },
-      { id: 'dash', from: [-1.0, 0.0], to: [1.0, 0.9], delay: 0.5, duration: 2.5 },
-      { id: 'late', from: [-3.6, -1.0], to: [-0.6, -1.4], delay: 0.5, duration: 8 },
+      // An S through the drifts, ending by the wreck where Poncho smells it.
+      { id: 'patrol', from: [-4.2, -1.5], via: [[-3.4, -2.3], [-2.4, -1.4], [-1.4, -2.2], [-0.4, -1.5]], to: [0.4, -0.9], delay: 0.2, duration: 8 },
+      // The two men leave the sled and go to the plane to help the men out.
+      { id: 'toDoor', from: [-2.8, -0.2], via: [[-1.2, 0.35]], to: [0.0, 0.3], delay: 0.3, duration: 4.5 },
+      { id: 'toTail', from: [-1.0, -3.3], via: [[0.1, -2.9]], to: [1.4, -1.5], delay: 0.3, duration: 4.5 },
     ],
     camera: { distanceFactor: 1.1, elevationDeg: 40, azimuthDeg: -115 },
     shots: [
-      shot(0, [0.6, 0.6, 0.5], 8.5, 28, -95),
-      shot(1, [-2.4, 0.4, -1.8], 7, 26, -85),
-      shot(2, [0.2, 0.4, 0.5], 7, 24, -100),
+      shot(0, [2.0, 0.6, 1.0], 10, 28, -95),
+      shot(1, [0.0, 0.4, -0.6], 10, 30, -95),
+      shot(2, [1.4, 0.5, 0.4], 10, 26, -100),
     ],
+    // Bad weather keeps the planes on the ground and the patrol marches through blizzards; on the fourth day it has
+    // cleared (book p. 18), so the last stage is calm.
+    blizzard: { until: 2 },
   },
   // The march that goes on (book p. 15-16): 0 two sleds of dogs go on, Poncho guiding them; 1 he goes ahead, over a snow
   // bridge and past canes, to find the dangers; 2 the patrol goes through the peaks of the Santa Fe mountains.
@@ -656,6 +674,10 @@ export function printPlace(path: ScenePath, k: number): { x: number; z: number; 
 
 /** Steps of a scene: one per shot, which is one per sentence of the stop. */
 export const sceneStepCount = (scene: SceneDef): number => scene.shots.length;
+
+/** Whether the blizzard of the scene (if it has one) blows at `step`. */
+export const sceneBlizzard = (scene: SceneDef, step: number): boolean =>
+  scene.blizzard !== undefined && step < (scene.blizzard.until ?? Number.POSITIVE_INFINITY);
 
 /** True when an element with these stages shows at `step`. */
 export const sceneElementShown = (e: Pick<SceneElement, 'appearAt' | 'until'>, step: number): boolean =>

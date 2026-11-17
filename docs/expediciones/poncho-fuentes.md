@@ -194,3 +194,16 @@ Una foto con licencia libre, que se muestra en el modal de la parada «Nace Ponc
 | Uso | Reducida a 1280 px de ancho; es una foto actual, no de 1961, y el modal lo dice |
 
 La foto que se había mirado al principio del trabajo no tiene origen conocido y **no se usa**. El color de las casas en la escena sigue el naranja de los abrigos y las casas del diorama de Orcadas; la foto muestra casas más rojizas y no se presenta como dato de color de 1961.
+
+### 4.5. Foto del AE-205 para «Al rescate de un avión» (17 nov 2026): pendiente
+
+La parada debe mostrar una foto en el modal (#220). **Todavía no hay una que se pueda publicar.** Lo que se revisó el 2026-11-17:
+
+| Dónde | Qué hay | Por qué no se usa |
+| :--- | :--- | :--- |
+| Libro `[P1]` (PDF de la Fundación Marambio, <https://www.marambio.aq/pdf/poncho.pdf>) | La única imagen del capítulo VIII (p. 17) es un retrato de un perro atado frente a unas carpas; el libro no trae foto del avión | No muestra el avión. Además, los derechos de las fotos del libro siguen pendientes (5.1) |
+| AirHistory.net, matrícula AE-205 (<https://www.airhistory.net/registration/AE-205>) | Dos fotos del Cessna U-17A AE-205 (serie 185-0643) en Campo de Mayo, 1995 y 2014, ya reparado | Son fotos con derechos de sus autores, sin licencia libre, y no muestran el accidente |
+| AviationCorner.net (<https://www.aviationcorner.net/show_photo.asp?id=193979>) | Foto del Cessna 185B AE-205 | Derechos de su autor, sin licencia libre; no es el accidente |
+| Wikimedia Commons (búsqueda «Cessna 185 Antarctica», «AE-205», «Alitas de Cuero») | Nada del AE-205 | — |
+
+Opciones para resolverlo (decide el equipo): pedir permiso a quien publicó una foto del AE-205 (con la evidencia guardada), conseguir una foto de archivo del Ejército Argentino con su autorización, o usar una foto con licencia libre de un Cessna 185 con esquíes en la Antártida, marcada como ilustrativa («no es el AE-205»). **No se agregó ninguna foto sin fuente.**

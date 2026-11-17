@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import type { Group } from 'three';
 import { Canvas, useFrame } from '@react-three/fiber';
+import { CanvasGuard } from '../CanvasGuard.tsx';
 import { buildBoxGeometry, vehicleMaterial, type Box } from './vehicles.ts';
 import { buildPolyGeometry, type Tri, type Vec3 } from './lowPoly.ts';
 
@@ -61,15 +62,17 @@ export function ModelPreview({ boxes, tris, shade, motion, reduced, lift = 0, se
   const moves = motion !== 'still' && !reduced;
   return (
     <div className={sea ? 'vpreview sea' : 'vpreview'} aria-hidden="true">
-      <Canvas
-        frameloop={moves ? 'always' : 'demand'}
-        dpr={[1, 1.5]}
-        gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }}
-        camera={{ fov: 30, near: 0.1, far: 20, position: [0, 0.62 + lift, 1.55] }}
-        onCreated={({ camera }) => camera.lookAt(0, lift, 0)}
-      >
-        {children ?? <Model boxes={boxes} tris={tris} shade={shade} motion={motion} reduced={reduced} />}
-      </Canvas>
+      <CanvasGuard>
+        <Canvas
+          frameloop={moves ? 'always' : 'demand'}
+          dpr={[1, 1.5]}
+          gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }}
+          camera={{ fov: 30, near: 0.1, far: 20, position: [0, 0.62 + lift, 1.55] }}
+          onCreated={({ camera }) => camera.lookAt(0, lift, 0)}
+        >
+          {children ?? <Model boxes={boxes} tris={tris} shade={shade} motion={motion} reduced={reduced} />}
+        </Canvas>
+      </CanvasGuard>
     </div>
   );
 }

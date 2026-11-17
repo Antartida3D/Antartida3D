@@ -70,6 +70,7 @@ import {
 import { boxShade, buildPolyGeometry, type Tri } from '../voyage/lowPoly.ts';
 import { vehicleMaterial } from '../voyage/vehicles.ts';
 import { canUseWebGL, CONTEXT_RESTORE_MS } from '../webgl.ts';
+import { CanvasGuard } from '../CanvasGuard.tsx';
 import {
   HOTSPOTS,
   VIEW_BEARING_DEG,
@@ -2374,136 +2375,138 @@ export const StationScene = memo(function StationScene({
 
   return (
     <div className="orc-scene-wrap" aria-hidden="true">
-      <Canvas
-        style={{
-          position: 'absolute',
-          inset: 0,
-          width: '100%',
-          height: '100%',
-          background: 'var(--paper, #F3EBDD)',
-        }}
-        frameloop="demand"
-        // Low quality also renders fewer pixels: the sky and ink passes cost per pixel.
-        dpr={lowQuality ? 0.7 : 1}
-        shadows={false}
-        gl={{
-          antialias: true,
-          powerPreference: 'high-performance',
-          alpha: false,
-          preserveDrawingBuffer: true,
-        }}
-        camera={{
-          fov: 42,
-          near: 0.5,
-          far: 400,
-          position: [20, 9, 26],
-        }}
-        onCreated={({ gl }) => {
-          const dom = gl.domElement;
-          // A browser may drop the context of a page in the background and give it back on return:
-          // wait for it before falling back to the 2D drawing, which would stay until a reload.
-          let fallbackTimer = 0;
-          dom.addEventListener('webglcontextlost', (e) => {
-            e.preventDefault();
-            fallbackTimer = window.setTimeout(() => setWebglOk(false), CONTEXT_RESTORE_MS);
-          });
-          dom.addEventListener('webglcontextrestored', () => window.clearTimeout(fallbackTimer));
-        }}
-      >
-        <SceneClock reduced={reduced} lowQuality={lowQuality} />
-        {/* Reduced motion draws on demand: sparse frames would read as a slow GPU. */}
-        {!reduced && (
-          <PerformanceMonitor
-            key={monitorRun}
-            bounds={() => qualityFpsBounds(lowQuality)}
-            flipflops={QUALITY_FLIPFLOPS}
-            onIncline={() => {
-              setLowQuality(false);
-              setEnablePost(true);
-            }}
-            onDecline={() => {
-              setLowQuality(true);
-              setEnablePost(false);
-            }}
+      <CanvasGuard onFail={() => setWebglOk(false)}>
+        <Canvas
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            background: 'var(--paper, #F3EBDD)',
+          }}
+          frameloop="demand"
+          // Low quality also renders fewer pixels: the sky and ink passes cost per pixel.
+          dpr={lowQuality ? 0.7 : 1}
+          shadows={false}
+          gl={{
+            antialias: true,
+            powerPreference: 'high-performance',
+            alpha: false,
+            preserveDrawingBuffer: true,
+          }}
+          camera={{
+            fov: 42,
+            near: 0.5,
+            far: 400,
+            position: [20, 9, 26],
+          }}
+          onCreated={({ gl }) => {
+            const dom = gl.domElement;
+            // A browser may drop the context of a page in the background and give it back on return:
+            // wait for it before falling back to the 2D drawing, which would stay until a reload.
+            let fallbackTimer = 0;
+            dom.addEventListener('webglcontextlost', (e) => {
+              e.preventDefault();
+              fallbackTimer = window.setTimeout(() => setWebglOk(false), CONTEXT_RESTORE_MS);
+            });
+            dom.addEventListener('webglcontextrestored', () => window.clearTimeout(fallbackTimer));
+          }}
+        >
+          <SceneClock reduced={reduced} lowQuality={lowQuality} />
+          {/* Reduced motion draws on demand: sparse frames would read as a slow GPU. */}
+          {!reduced && (
+            <PerformanceMonitor
+              key={monitorRun}
+              bounds={() => qualityFpsBounds(lowQuality)}
+              flipflops={QUALITY_FLIPFLOPS}
+              onIncline={() => {
+                setLowQuality(false);
+                setEnablePost(true);
+              }}
+              onDecline={() => {
+                setLowQuality(true);
+                setEnablePost(false);
+              }}
+            />
+          )}
+          <SkyAndLighting
+            sunDir={sunDir}
+            sunElevationDeg={sunElevationDeg}
+            cloudOktas={cloudOktas}
+            windVec={windVec}
+            reduced={reduced}
           />
-        )}
-        <SkyAndLighting
-          sunDir={sunDir}
-          sunElevationDeg={sunElevationDeg}
-          cloudOktas={cloudOktas}
-          windVec={windVec}
-          reduced={reduced}
-        />
-        <IsthmusTerrain sunDir={sunDir} sunElevationDeg={sunElevationDeg} />
-        <StageDetails />
-        <BayOcean
-          month={month}
-          sunDir={sunDir}
-          windKmh={windKmh}
-          windVec={windVec}
-          seaIce={seaIce}
-          reduced={reduced}
-        />
-        <StationElements
-          arrival={arrival}
-          buildings={buildings}
-          isNight={isNight}
-          windKmh={windKmh}
-          windDirDeg={windDirDeg}
-          seaIce={seaIce}
-          reduced={reduced}
-          showHelicopter={sceneArrival.helicopterOnPad}
-          screenOpen={screenOpen && (reduced || !hasMainHouse || observerAtScreen)}
-          leaving={leaving}
-          onVehicleArrivalDone={handleVehicleArrivalDone}
-          onDepartureDone={onDepartureDone}
-        />
-        <WindDetails
-          windKmh={windKmh}
-          windDirDeg={windDirDeg}
-          hasMainHouse={hasMainHouse}
-          reduced={reduced}
-        />
-        <StationFauna
-          animals={animals}
-          seaIce={seaIce}
-          reduced={reduced}
-          arrival={arrival}
-        />
-        <StationCameraAndProjection
-          arrival={arrival}
-          vehicleDone={vehicleDone}
-          focus={screenOpen ? 'screen' : focus}
-          reduced={reduced}
-          panelExpanded={panelExpanded}
-          panelHidden={panelHidden}
-          overlayRef={overlayRef}
-          screenNoZoomRef={screenNoZoomRef}
-          onReady={onReady}
-          onCameraSettled={handleCameraSettled}
-        />
-        <LifeDetails
-          month={month}
-          animals={animals}
-          hasMainHouse={hasMainHouse}
-          screenOpen={screenOpen}
-          reduced={reduced}
-          screenNoZoomRef={screenNoZoomRef}
-          onObserverAtScreen={handleObserverAtScreen}
-        />
-        <StationSnowfall
-          month={month}
-          windKmh={windKmh}
-          windVec={windVec}
-          reduced={reduced}
-          lowQuality={lowQuality}
-        />
-        {enablePost && !lowQuality && (
-          <EffectComposer multisampling={0}>
-            <InkEffect />
-          </EffectComposer>
-        )}
-      </Canvas>
+          <IsthmusTerrain sunDir={sunDir} sunElevationDeg={sunElevationDeg} />
+          <StageDetails />
+          <BayOcean
+            month={month}
+            sunDir={sunDir}
+            windKmh={windKmh}
+            windVec={windVec}
+            seaIce={seaIce}
+            reduced={reduced}
+          />
+          <StationElements
+            arrival={arrival}
+            buildings={buildings}
+            isNight={isNight}
+            windKmh={windKmh}
+            windDirDeg={windDirDeg}
+            seaIce={seaIce}
+            reduced={reduced}
+            showHelicopter={sceneArrival.helicopterOnPad}
+            screenOpen={screenOpen && (reduced || !hasMainHouse || observerAtScreen)}
+            leaving={leaving}
+            onVehicleArrivalDone={handleVehicleArrivalDone}
+            onDepartureDone={onDepartureDone}
+          />
+          <WindDetails
+            windKmh={windKmh}
+            windDirDeg={windDirDeg}
+            hasMainHouse={hasMainHouse}
+            reduced={reduced}
+          />
+          <StationFauna
+            animals={animals}
+            seaIce={seaIce}
+            reduced={reduced}
+            arrival={arrival}
+          />
+          <StationCameraAndProjection
+            arrival={arrival}
+            vehicleDone={vehicleDone}
+            focus={screenOpen ? 'screen' : focus}
+            reduced={reduced}
+            panelExpanded={panelExpanded}
+            panelHidden={panelHidden}
+            overlayRef={overlayRef}
+            screenNoZoomRef={screenNoZoomRef}
+            onReady={onReady}
+            onCameraSettled={handleCameraSettled}
+          />
+          <LifeDetails
+            month={month}
+            animals={animals}
+            hasMainHouse={hasMainHouse}
+            screenOpen={screenOpen}
+            reduced={reduced}
+            screenNoZoomRef={screenNoZoomRef}
+            onObserverAtScreen={handleObserverAtScreen}
+          />
+          <StationSnowfall
+            month={month}
+            windKmh={windKmh}
+            windVec={windVec}
+            reduced={reduced}
+            lowQuality={lowQuality}
+          />
+          {enablePost && !lowQuality && (
+            <EffectComposer multisampling={0}>
+              <InkEffect />
+            </EffectComposer>
+          )}
+        </Canvas>
+      </CanvasGuard>
     </div>
   );
 });

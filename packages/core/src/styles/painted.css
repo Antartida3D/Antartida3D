@@ -370,6 +370,9 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
 .webgl-note .wn-title{font-weight:700;font-size:15px}
 .webgl-note ol{margin:0 0 6px;padding-left:20px}
 .webgl-note .btn{min-height:40px;font-size:14px;padding:0 14px}
+/* The notice of a 3D that failed after the start (#242): over everything, in the middle, without blocking the app. */
+.webgl-note.fail3d{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:30;width:max-content;max-width:min(360px,calc(100vw - 32px))}
+.webgl-note .wn-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;margin-top:10px}
 .m3d .legend{max-height:min(420px,max(48px,calc(100dvh - 260px)));overflow-y:auto;overscroll-behavior:contain}
 .m3d .legend ul{max-height:min(250px,30dvh);overflow-y:auto;overscroll-behavior:contain}
 .claims-actions{display:flex;align-items:center;gap:6px}

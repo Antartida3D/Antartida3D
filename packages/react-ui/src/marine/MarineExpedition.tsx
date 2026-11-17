@@ -5,6 +5,7 @@ import {
 } from '@antartida/core';
 import { BottomSheet, type OpenSheetSize } from '../BottomSheet.tsx';
 import { useIsDesktop } from '../hooks.ts';
+import { CanvasGuard } from '../CanvasGuard.tsx';
 import { KindChip } from '../orcadas/KindChip.tsx';
 import { useSceneFrame } from '../sceneFrame.tsx';
 import { Icon } from '../ui.tsx';
@@ -164,7 +165,7 @@ export function MarineExpedition({ reduced, webgl, resume, onProgress, onLeave }
   return <section className={`orc marine-expedition${!desktop && sheetSize === 'tall' ? ' is-panel-expanded' : ''}${!desktop && sheetSize === 'peek' ? ' is-panel-peek' : ''}`} ref={root} aria-label="Expedición Océano">
     <div className={`marine-stage${under ? ' is-under' : ''}`}>
       {use3D
-        ? <Suspense fallback={<div className="marine-loading" role="status">Bajando bajo el hielo…</div>}><Scene view={stop.view} state={state} reduced={reduced} reset={reset} shift={shift} /></Suspense>
+        ? <CanvasGuard onFail={() => setGraphicsLost(true)}><Suspense fallback={<div className="marine-loading" role="status">Bajando bajo el hielo…</div>}><Scene view={stop.view} state={state} reduced={reduced} reset={reset} shift={shift} /></Suspense></CanvasGuard>
         : <figure className="marine-fallback">
           {stop.view === 'web' ? <WebDiagram selected={state.selected} /> : <p>{MARINE_VIEW_TEXT[stop.view]}</p>}
           <figcaption>Recorrido en texto · todas las paradas e interacciones siguen disponibles.</figcaption>

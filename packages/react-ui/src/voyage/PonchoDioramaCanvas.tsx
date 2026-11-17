@@ -3,6 +3,7 @@ import { BackSide, BufferAttribute, Color, MeshBasicMaterial, SphereGeometry } f
 import { Canvas, useThree } from '@react-three/fiber';
 import { CameraControls, CameraControlsImpl, PerformanceMonitor } from '@react-three/drei';
 import { SHOT_DISTANCE, shotPose, type SceneDef } from '@antartida/core';
+import { CanvasGuard } from '../CanvasGuard.tsx';
 import { buildPolyGeometry } from './lowPoly.ts';
 import { DioramaActors } from './PonchoDioramaActors.tsx';
 import { DIORAMA_FOG_FAR, buildDioramaWorld } from './ponchoDioramaGround.ts';
@@ -140,28 +141,30 @@ export function PonchoDioramaCanvas({ scene, step, reduced, onLost }: {
   useEffect(() => () => window.clearTimeout(fallbackTimer.current), []);
   const first = shotPose(scene.shots[0]);
   return (
-    <Canvas
-      className="pdio-canvas"
-      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', background: `#${SKY_HAZE.toString(16)}` }}
-      frameloop="demand"
-      // Low quality also renders fewer pixels, as in the station of Orcadas.
-      dpr={lowQuality ? 0.7 : 1}
-      shadows={false}
-      gl={{ antialias: true, powerPreference: 'high-performance' }}
-      camera={{ fov: FOV, near: 0.1, far: CAMERA_FAR, position: first.eye }}
-      onCreated={({ gl }) => {
-        const dom = gl.domElement;
-        // A browser may drop the context of a page in the background and give it back on return: wait for it.
-        dom.addEventListener('webglcontextlost', (e) => {
-          e.preventDefault();
-          fallbackTimer.current = window.setTimeout(() => lost.current(), CONTEXT_RESTORE_MS);
-        });
-        dom.addEventListener('webglcontextrestored', () => window.clearTimeout(fallbackTimer.current));
-      }}
-    >
-      {/* Reduced motion draws on demand: sparse frames would read as a slow GPU. */}
-      {!reduced && <PerformanceMonitor bounds={() => (lowQuality ? [24, 27] : [36, 42])} flipflops={4} onIncline={() => setLowQuality(false)} onDecline={() => setLowQuality(true)} />}
-      <Stage scene={scene} step={step} reduced={reduced} />
-    </Canvas>
+    <CanvasGuard onFail={() => lost.current()}>
+      <Canvas
+        className="pdio-canvas"
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', background: `#${SKY_HAZE.toString(16)}` }}
+        frameloop="demand"
+        // Low quality also renders fewer pixels, as in the station of Orcadas.
+        dpr={lowQuality ? 0.7 : 1}
+        shadows={false}
+        gl={{ antialias: true, powerPreference: 'high-performance' }}
+        camera={{ fov: FOV, near: 0.1, far: CAMERA_FAR, position: first.eye }}
+        onCreated={({ gl }) => {
+          const dom = gl.domElement;
+          // A browser may drop the context of a page in the background and give it back on return: wait for it.
+          dom.addEventListener('webglcontextlost', (e) => {
+            e.preventDefault();
+            fallbackTimer.current = window.setTimeout(() => lost.current(), CONTEXT_RESTORE_MS);
+          });
+          dom.addEventListener('webglcontextrestored', () => window.clearTimeout(fallbackTimer.current));
+        }}
+      >
+        {/* Reduced motion draws on demand: sparse frames would read as a slow GPU. */}
+        {!reduced && <PerformanceMonitor bounds={() => (lowQuality ? [24, 27] : [36, 42])} flipflops={4} onIncline={() => setLowQuality(false)} onDecline={() => setLowQuality(true)} />}
+        <Stage scene={scene} step={step} reduced={reduced} />
+      </Canvas>
+    </CanvasGuard>
   );
 }

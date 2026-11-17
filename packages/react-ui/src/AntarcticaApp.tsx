@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import {
   APPROACH_MS,
   DIVE_MS,
@@ -30,11 +30,13 @@ import {
   type MapPoint,
   type ResumePoint,
 } from '@antartida/core';
+import { Failed3DNotice } from './CanvasGuard.tsx';
 import { useBackLayer, useLoadingStore, useReducedMotion, useTimers } from './hooks.ts';
 import { LoadingScreen } from './loading/LoadingScreen.tsx';
 import { MapView, type Layer3DProps, type Phase, type ViewMode } from './map/MapView.tsx';
 import { Filters } from './ui.tsx';
 import { NARROW_PX } from './voyage/useVoyage.ts';
+import { scene3DFailure } from './webgl.ts';
 
 const loadOrcadas = () => import('./orcadas/OrcadasExpedition.tsx');
 const OrcadasExpedition = lazy(() => loadOrcadas().then((m) => ({ default: m.OrcadasExpedition })));
@@ -116,6 +118,9 @@ export function AntarcticaApp() {
   // With the 2D map off, a 3D load error (or a lost WebGL context) switches to the 2D map on its own.
   const failed3D = useLoadingStore(map3dLoadingStore).error !== null && !MAP_2D_ENABLED;
   const can3D = webglSupported === true && !failed3D;
+  // A 3D canvas that failed after the start, on the map or in an expedition: the app tells it once (#242).
+  const sceneFailed = useSyncExternalStore(scene3DFailure.subscribe, scene3DFailure.getSnapshot, () => false);
+  const [failNoticeClosed, setFailNoticeClosed] = useState(false);
   // First visit: the map comes close to «Desde Ushuaia» (#115). True until MapView has shown it.
   const [welcome, setWelcome] = useState(false);
   const [map3dLoaderDismissed, setMap3dLoaderDismissed] = useState(false);
@@ -398,6 +403,10 @@ export function AntarcticaApp() {
             />
           )}
         </Suspense>
+      )}
+      {/* On the map the notice waits for the loading screen, which tells the error itself while it is up. */}
+      {(failed3D || sceneFailed) && !failNoticeClosed && (screen !== 'map' || map3dLoaderDismissed) && (
+        <Failed3DNotice onClose={() => setFailNoticeClosed(true)} />
       )}
     </div>
   );

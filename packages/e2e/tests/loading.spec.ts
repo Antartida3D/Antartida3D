@@ -267,6 +267,8 @@ test.describe('Loading screen', () => {
     const off = page.getByRole('button', { name: 'Relieve 3D apagado: ver cómo activarlo' });
     await expect(off).toBeVisible();
     await expect(page.getByRole('button', { name: 'Mapa 2D' })).toHaveCount(0);
+    // The app tells the failure by itself, without waiting for a click (#242).
+    await expect(page.getByRole('alert').filter({ hasText: 'No pudimos mostrar el 3D en este dispositivo' })).toBeVisible();
     await off.click();
     const note = page.getByRole('dialog', { name: 'No pudimos cargar el relieve 3D' });
     await expect(note).toContainText('No pudimos cargar la malla del relieve.');

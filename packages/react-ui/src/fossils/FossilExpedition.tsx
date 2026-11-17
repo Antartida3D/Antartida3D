@@ -20,6 +20,7 @@ import chitonPhoto from '@antartida/core/assets/fossils/quiton.webp';
 import { BottomSheet, type OpenSheetSize } from '../BottomSheet.tsx';
 import { FossilTimeline } from './FossilTimeline.tsx';
 import { useIsDesktop } from '../hooks.ts';
+import { CanvasGuard } from '../CanvasGuard.tsx';
 import { KindChip } from '../orcadas/KindChip.tsx';
 import { useSceneFrame } from '../sceneFrame.tsx';
 import { Icon, Quoted } from '../ui.tsx';
@@ -178,7 +179,7 @@ export function FossilExpedition({ reduced, webgl, resume, onProgress, onLeave }
   const photo = FOSSIL_PHOTOS[shown];
   return <section className={`orc fossil-expedition${!desktop && sheetSize === 'tall' ? ' is-panel-expanded' : ''}${!desktop && sheetSize === 'peek' ? ' is-panel-peek' : ''}`} ref={root} aria-label="Expedición Fósiles">
     <div className="fossil-stage">
-      {use3D ? <Suspense fallback={<div className="fossil-loading" role="status">Abriendo el cuaderno de campo…</div>}><Scene view={stop.view} state={state} reduced={reduced} reset={reset} shift={shift} /></Suspense> : <figure className="fossil-fallback"><img src={PHOTO_URL[fallbackId]} alt={fallback.alt} /><figcaption>{fallback.caption}<br />{fallback.credit}{fallback.note && <span>{fallback.note}</span>}<span>Recorrido en fotografías · todas las paradas e interacciones siguen disponibles.</span>{stop.id === 'animal' && state.reconstructed && <span>Reconstrucción ilustrativa: un dinosaurio herbívoro, de cuerpo bajo y protegido por placas óseas.</span>}</figcaption></figure>}
+      {use3D ? <CanvasGuard onFail={() => setGraphicsLost(true)}><Suspense fallback={<div className="fossil-loading" role="status">Abriendo el cuaderno de campo…</div>}><Scene view={stop.view} state={state} reduced={reduced} reset={reset} shift={shift} /></Suspense></CanvasGuard> : <figure className="fossil-fallback"><img src={PHOTO_URL[fallbackId]} alt={fallback.alt} /><figcaption>{fallback.caption}<br />{fallback.credit}{fallback.note && <span>{fallback.note}</span>}<span>Recorrido en fotografías · todas las paradas e interacciones siguen disponibles.</span>{stop.id === 'animal' && state.reconstructed && <span>Reconstrucción ilustrativa: un dinosaurio herbívoro, de cuerpo bajo y protegido por placas óseas.</span>}</figcaption></figure>}
     </div>
     <div className="fossil-location"><span className="fossil-location-dot" /><span>{place}<small>{stop.chapter === 'past' ? 'Ambientes reconstruidos' : 'Antártida · cuaderno de expedición'}</small></span></div>
     {use3D && <button type="button" className="fossil-reset" aria-label="Restablecer vista de la escena" onClick={() => setReset((v) => v + 1)}>{Icon.reset}</button>}

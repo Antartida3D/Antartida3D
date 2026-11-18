@@ -44,3 +44,16 @@
 .vnote .vpinicon{flex:none;color:var(--ocre)}
 .vnote.missed{border-style:dashed;border-color:var(--chart-muted);background:transparent;color:var(--chart-muted);font-weight:400}
 .vnote.missed svg{color:var(--chart-muted);opacity:.6}
+/* The photograph of an expedition, in the middle of the screen (#309): the archive modal of Fósiles and Marambio, for all. */
+/* Over the panels (20) and under the sources view (29-30), which opens from a citation of its caption. */
+.photo-modal-scrim{position:fixed;inset:0;z-index:25;display:flex;align-items:center;justify-content:center;padding:16px;background:var(--modal-backdrop)}
+.photo-modal{width:min(650px,calc(100vw - 32px));max-height:calc(100dvh - 40px);padding:25px;border:var(--modal-border);border-radius:var(--chart-radius);background:var(--modal-bg);color:var(--modal-fg);box-sizing:border-box;overflow:auto;outline:none}
+.photo-modal-head{display:flex;align-items:center;justify-content:space-between;gap:15px}
+.photo-modal-head h2{font:28px 'Fraunces',serif;margin:0}
+.photo-modal-figure{margin:20px 0 0}
+.photo-modal-figure img{display:block;width:100%;max-height:63dvh;object-fit:contain}
+.photo-modal-figure figcaption{display:flex;flex-direction:column;gap:7px;margin-top:15px;font-size:12px;line-height:1.5}
+.photo-modal-figure figcaption b{font-size:14px;font-weight:400}
+.photo-modal a{color:var(--deep);text-underline-offset:3px}
+@media (max-width:520px){.photo-modal{padding:18px}.photo-modal-head h2{font-size:22px}}
+

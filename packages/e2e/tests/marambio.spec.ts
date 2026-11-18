@@ -111,7 +111,8 @@ test.describe('with WebGL', () => {
     await expect(dialog.getByRole('img', { name: photos[0].alt })).toBeVisible();
     await expect(dialog).toContainText(`Fecha de la cámara: ${photos[0].date}`);
     await expect(dialog).toContainText('Eduardo Olivero');
-    await expect(dialog.getByRole('button', { name: 'Volver' })).toBeFocused();
+    // The modal of every photograph (#309): its «Cerrar» takes the focus, as in the archive of Fósiles.
+    await expect(dialog.getByRole('button', { name: 'Cerrar' })).toBeFocused();
     await page.keyboard.press('Escape');
     await expect(dialog).toHaveCount(0);
     await expect(card).toBeFocused();

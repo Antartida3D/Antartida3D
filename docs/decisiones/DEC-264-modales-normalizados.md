@@ -41,3 +41,8 @@ Cada expedición había resuelto a su manera cómo citar, cómo plegar lo secund
 - [Issue #190](https://github.com/Antartida3D/Antartida3D/issues/190): una tarjeta abierta para conocer el lugar muestra todo sin «Saber más».
 - [DEC-234](DEC-234-componentes-de-interfaz.md): botones con una sola definición y un solo primario.
 - [DEC-177](DEC-177-primarios-a-la-derecha.md): el primario va último, a la derecha.
+
+## Actualización de vigencia (18 de noviembre de 2026)
+
+El punto 1 sigue vigente para todos los modales salvo las fotos: la foto de una expedición (Poncho, Marambio y Fósiles) se abre en un modal centrado común, `PhotoModal`, el que hizo Rocío para Fósiles y Marambio antes de esta decisión ([DEC-309-2](DEC-309-2-modal-de-fotos-centrado.md)). El resto de esta decisión no cambia.
+

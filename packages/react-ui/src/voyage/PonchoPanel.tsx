@@ -9,6 +9,7 @@ import { useIsDesktop } from '../hooks.ts';
 import { Icon, Quoted } from '../ui.tsx';
 import { MoreFold } from '../sheet/MoreFold.tsx';
 import { Cite } from '../sheet/Cite.tsx';
+import { PhotoModal } from '../sheet/PhotoModal.tsx';
 import { SheetActions } from '../sheet/SheetActions.tsx';
 import { SheetHeader } from '../sheet/SheetHeader.tsx';
 import { Fact } from './Fact.tsx';
@@ -56,26 +57,14 @@ export function PhotoCredit({ photo }: { photo: PonchoPhoto }) {
   );
 }
 
-/** The photograph of a stop in a modal, big, with its caption and source (the format of the photographs of Fósiles). */
+/** The photograph of a stop, big in the middle of the screen, with its caption and source: the modal of every expedition (#309). */
 function PhotoDialog({ photo, onClose }: { photo: PonchoPhoto; onClose: () => void }) {
-  const ref = useRef<HTMLElement>(null);
   return (
-    // Escape and arrows are the modal's: the diorama behind does not leave or change step with them.
-    <div className="sheet-isolate" onKeyDown={(e) => e.stopPropagation()}>
-      <BottomSheet className="voyage poncho-photo-sheet" labelledBy="poncho-photo-title" sheetRef={ref} onClose={onClose} layer="top">
-        <SheetHeader title="Archivo fotográfico" titleId="poncho-photo-title" />
-        <figure className="poncho-photo">
-          <img src={PONCHO_PHOTO_URL[photo.file]} alt={photo.alt} />
-          <figcaption>
-            <Quoted text={photo.caption} />
-            <PhotoCredit photo={photo} />
-          </figcaption>
-        </figure>
-        <SheetActions>
-          <button type="button" className="btn primary" onClick={onClose}>Volver</button>
-        </SheetActions>
-      </BottomSheet>
-    </div>
+    <PhotoModal src={PONCHO_PHOTO_URL[photo.file]} alt={photo.alt} onClose={onClose}>
+      {/* One line of text, so its quotation marks do not break it in pieces. */}
+      <span><Quoted text={photo.caption} /></span>
+      <PhotoCredit photo={photo} />
+    </PhotoModal>
   );
 }
 

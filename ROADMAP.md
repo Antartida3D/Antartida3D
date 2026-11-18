@@ -63,7 +63,7 @@ Entrega tardía no se evalúa.
 - [ ] Declaración de uso de IA en el README
 - [ ] Declaración de ideas preexistentes (si las hay)
 - [ ] Video de hasta 3 minutos mostrando funcionamiento
-- [ ] Slides para pitch de hasta 5 minutos
+- [ ] Slides para pitch de hasta 5 minutos. Guion con tiempos y cronómetro de ensayo: [`docs/entrega/guion-pitch.html`](docs/entrega/guion-pitch.html) (#101)
 
 ## Criterios de evaluación (100 pts)
 

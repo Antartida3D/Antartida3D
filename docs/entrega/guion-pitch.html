@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pitch Antártida por descubrir</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&display=swap">
+<style>
+/* Layout: una hoja de campo angosta; barra de ensayo fija arriba, bloques del guion en orden de tiempo. */
+:root{
+  --paper:#F3E8D2; --wash:#EDDFC0; --ink:#403536; --muted:#655D56; --rule:#B9B0A5;
+  --voz-a:#1E3E5C; --voz-b:#A4471F; --on-voz:#F8F1E3; --now:#E4D3AE;
+  --display:"Fraunces", Georgia, "Times New Roman", serif;
+  --body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#1E1A17; --wash:#29231F; --ink:#EFE4CF; --muted:#B8AA97; --rule:#4A413A;
+    --voz-a:#8FB4D8; --voz-b:#E39066; --on-voz:#1E1A17; --now:#3A3029; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#1E1A17; --wash:#29231F; --ink:#EFE4CF; --muted:#B8AA97; --rule:#4A413A;
+  --voz-a:#8FB4D8; --voz-b:#E39066; --on-voz:#1E1A17; --now:#3A3029; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--paper); color:var(--ink); font-family:var(--body); font-size:17px; line-height:1.6}
+body::before{content:""; position:fixed; inset:0 0 auto; height:env(safe-area-inset-top,0px); z-index:10; background:var(--wash)}
+.wrap{max-width:720px; margin:0 auto; padding-left:max(16px, env(safe-area-inset-left,0px)); padding-right:max(16px, env(safe-area-inset-right,0px))}
+
+/* Barra de ensayo */
+.bar{position:sticky; top:env(safe-area-inset-top,0px); z-index:5; background:var(--wash); border-bottom:1px solid var(--rule)}
+.bar .wrap{display:flex; flex-wrap:wrap; align-items:center; gap:10px 16px; padding-block:10px}
+.clock{font-family:var(--display); font-size:28px; font-weight:600; font-variant-numeric:tabular-nums; min-width:4.2ch}
+.clock.over{color:var(--voz-b)}
+.now-label{flex:1 1 180px; min-width:0; font-size:15px; color:var(--muted)}
+.now-label strong{color:var(--ink)}
+.controls{display:flex; gap:8px}
+button{font:500 16px var(--display); color:var(--ink); background:var(--paper); border:1px solid var(--rule); border-radius:9px; padding:8px 14px; min-height:44px; cursor:pointer}
+button:hover{filter:brightness(.96)}
+button.primary{background:var(--voz-a); color:var(--on-voz); border-color:var(--voz-a)}
+button:focus-visible, input:focus-visible{outline:3px solid var(--voz-a); outline-offset:2px}
+
+/* Cabecera */
+header{padding-block:28px 8px}
+.eyebrow{font:500 12px var(--display); letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin:0}
+h1{font-family:var(--display); font-weight:500; font-size:clamp(30px,6vw,42px); line-height:1.08; margin:6px 0 10px; text-wrap:balance}
+.lead{color:var(--muted); margin:0; max-width:60ch}
+
+/* Voces */
+
+/* Línea de tiempo */
+.timeline{margin:22px 0 4px}
+.track{display:flex; height:14px; border-radius:7px; overflow:hidden; gap:2px}
+.track span{display:block}
+.track .a{background:var(--voz-a)} .track .b{background:var(--voz-b)}
+.ticks{display:flex; justify-content:space-between; font-size:13px; color:var(--muted); font-variant-numeric:tabular-nums; margin-top:4px}
+
+/* Bloques */
+main{padding-block:8px 24px}
+.block{padding:20px 16px; margin:0 -16px; border-radius:13px; transition:background .3s}
+.block + .block{border-top:1px solid var(--rule)}
+.block.is-now{background:var(--now); border-top-color:transparent}
+.block.is-now + .block{border-top-color:transparent}
+.head{display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 12px}
+.time{font-variant-numeric:tabular-nums; font-size:14px; color:var(--muted); min-width:7.5ch}
+h2{font-family:var(--display); font-weight:500; font-size:24px; line-height:1.2; margin:0; flex:1 1 auto}
+.lines{display:flex; flex-direction:column; gap:10px; margin-top:12px}
+.say{margin:0; font-size:19px; line-height:1.55; max-width:62ch}
+.do{margin:0; font-size:15px; font-style:italic; color:var(--muted); background:var(--wash); border-radius:9px; padding:6px 12px; justify-self:start; width:fit-content; max-width:100%}
+.do b{font-style:normal; font-weight:700; letter-spacing:.06em; font-size:12px; text-transform:uppercase; margin-right:6px}
+
+/* Consejos */
+.tips{padding-block:8px 40px}
+.tips h2{margin-bottom:12px}
+.tips ul{margin:0; padding-left:20px; display:flex; flex-direction:column; gap:10px; max-width:64ch}
+.tips li strong{font-family:var(--display); font-weight:600}
+.note{font-size:14px; color:var(--muted); margin-top:20px; max-width:64ch}
+@media (prefers-reduced-motion: reduce){.block{transition:none}}
+@media (max-width:420px){ .say{font-size:18px} h2{font-size:22px} }
+</style>
+</head>
+<body>
+<div class="bar" role="region" aria-label="Cronómetro de ensayo">
+  <div class="wrap">
+    <span class="clock" id="clock" aria-live="off">0:00</span>
+    <span class="now-label" id="nowLabel">Tocá <strong>Empezar</strong> para ensayar con cronómetro.</span>
+    <div class="controls">
+      <button type="button" class="primary" id="toggle">Empezar</button>
+      <button type="button" id="reset">Reiniciar</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">SoberaníaTech · Eje 2 · Equipo DOT ENV</p>
+    <h1>Guion del pitch de <i>Antártida por descubrir</i></h1>
+    <p class="lead">Unos 4 min 30 s, con una sola voz. El límite es 5 minutos, así que queda medio minuto de margen. Orden: problema, solución, impacto y cómo implementarlo. Cada bloque dice qué diapositiva va en pantalla.</p>
+
+    <div class="timeline" aria-hidden="true">
+      <div class="track"><span class="a" style="flex:1"></span></div>
+      <div class="ticks"><span>0:00</span><span>4:30</span></div>
+    </div>
+  </header>
+
+  <main>
+    <section class="block" data-start="0" data-end="10" data-title="Antes de empezar">
+      <div class="head"><span class="time">0:00–0:10</span><h2>Antes de empezar</h2></div>
+      <div class="lines">
+        <p class="do"><b>Diapositiva 1</b>QR de la aplicación.</p>
+        <p class="say">Antes de arrancar, escaneen el QR: es la aplicación, ya está publicada. No hay que instalar nada.</p>
+      </div>
+    </section>
+
+    <section class="block" data-start="10" data-end="30" data-title="Apertura">
+      <div class="head"><span class="time">0:10–0:30</span><h2>Apertura</h2></div>
+      <div class="lines">
+        <p class="do"><b>Diapositiva 2</b>Falta de información · el nombre de la provincia.</p>
+        <p class="say">Somos cinco estudiantes fueguinos de Sistemas de la UNTDF.</p>
+        <p class="say">Y a pesar de que nuestra provincia se llama Tierra del Fuego, Antártida e Islas del Atlántico Sur, ninguno de nosotros aprendió sobre la Antártida en la escuela.</p>
+        <p class="do"><b>Pausa</b>Dos segundos. Mirar al jurado.</p>
+        <p class="say">Nos pareció raro no conocer una parte de nuestra propia provincia.</p>
+      </div>
+    </section>
+
+    <section class="block" data-start="30" data-end="75" data-title="Problema">
+      <div class="head"><span class="time">0:30–1:15</span><h2>Problema</h2></div>
+      <div class="lines">
+        <p class="do"><b>Diapositiva 3</b>Vivimos en la puerta · 90 %.</p>
+        <p class="say">Y vivimos en la puerta: según INFUETUR, cerca del 90 % del tránsito de cruceros turísticos antárticos del mundo pasa por el puerto de Ushuaia.</p>
+        <p class="say">La información sobre la Antártida existe, y es mucha. Pero está repartida en publicaciones científicas, series de datos y archivos oficiales. Para leerla hace falta conocimiento previo. Y las historias más interesantes, las de las personas que estuvieron ahí, casi nadie las conoce.</p>
+        <p class="say">Entonces el problema es este: la información verificada sobre la Antártida es difícil de encontrar y difícil de entender para el público general.</p>
+      </div>
+    </section>
+
+    <section class="block" data-start="75" data-end="150" data-title="Solución y demo">
+      <div class="head"><span class="time">1:15–2:30</span><h2>Solución y demo</h2></div>
+      <div class="lines">
+        <p class="do"><b>Diapositiva 4</b>Seis expediciones, seis preguntas. Después, la aplicación en vivo.</p>
+        <p class="say"><i>Antártida por descubrir</i> es una página web con un mapa 3D de la Antártida. El relieve es real: sale de Bedmap3, del British Antarctic Survey.</p>
+        <p class="do"><b>En pantalla</b>El mapa. Girarlo y acercarse.</p>
+        <p class="say">En el mapa hay seis expediciones. Cada una empieza con una pregunta. Por ejemplo: «¿Cuánto cambió el clima de la isla Laurie en 120 años?». Para responderla, se recorre la Base Orcadas con su serie de temperatura real.</p>
+        <p class="do"><b>En pantalla</b>Abrir Orcadas y mostrar la serie del siglo.</p>
+        <p class="say">También contamos historias reales. Poncho fue un perro polar del Ejército Argentino. Eduardo Olivero, el abuelo de Rocío, encontró el primer dinosaurio de la Antártida. Para esa expedición usamos fotos de su archivo familiar, con permiso de la familia.</p>
+        <p class="do"><b>En pantalla</b>Fósiles o Poncho: una sola parada.</p>
+        <p class="say">Cada dato tiene su fuente, a un toque de distancia. Y lo que es una reconstrucción o una simulación está marcado en pantalla.</p>
+        <p class="do"><b>En pantalla</b>La etiqueta «Reconstrucción ilustrada» y un «Saber más» con su fuente.</p>
+      </div>
+    </section>
+
+    <section class="block" data-start="150" data-end="175" data-title="Impacto">
+      <div class="head"><span class="time">2:30–2:55</span><h2>Impacto</h2></div>
+      <div class="lines">
+        <p class="do"><b>Diapositiva 5</b>Para cualquier persona.</p>
+        <p class="say">En un solo lugar, cualquier persona puede aprender sobre la Antártida sin conocimiento previo: un estudiante, un docente, un turista.</p>
+        <p class="say">Además, todas las fuentes están publicadas. Cualquier persona puede revisar de dónde sale cada dato.</p>
+      </div>
+    </section>
+
+    <section class="block" data-start="175" data-end="225" data-title="Cómo llega a la gente">
+      <div class="head"><span class="time">2:55–3:45</span><h2>Cómo llega a la gente</h2></div>
+      <div class="lines">
+        <p class="do"><b>Diapositiva 6</b>La gente ya está en el muelle.</p>
+        <p class="say">¿Y cómo llega esto a la gente? Empezamos por quienes ya están acá.</p>
+        <p class="say">Según INFUETUR, en la temporada 2023-2024 pasaron más de 173 mil cruceristas por el puerto de Ushuaia. Y según IAATO, más de 118 mil personas visitaron la Antártida en la temporada 2024-2025.</p>
+        <p class="say">El público ya está en el muelle.</p>
+        <p class="do"><b>Diapositiva 7</b>¿Y si esto estuviera en el puerto?</p>
+        <p class="say">Imagínense un tótem táctil en las casillas de excursiones del puerto. El turista toca el mapa, recorre las expediciones y se acerca a la ventanilla con ganas de ir.</p>
+      </div>
+    </section>
+
+    <section class="block" data-start="225" data-end="255" data-title="Cómo lo pensamos">
+      <div class="head"><span class="time">3:45–4:15</span><h2>Cómo lo pensamos</h2></div>
+      <div class="lines">
+        <p class="do"><b>Diapositiva 8</b>Primero escuelas, después turismo, lo que falta.</p>
+        <p class="say">Así lo pensamos. Primero, las escuelas de la provincia: la web sigue gratis y es un link, no hay que instalar nada.</p>
+        <p class="say">Después, el turismo: proponemos una licencia por temporada para el tótem, con las salidas de agencias y guías dentro del mapa. Siempre marcado como publicidad, y nunca mezclado con la ciencia.</p>
+        <p class="say">Es una propuesta: todavía no la probamos con agencias ni con escuelas.</p>
+      </div>
+    </section>
+
+    <section class="block" data-start="255" data-end="270" data-title="Cierre">
+      <div class="head"><span class="time">4:15–4:30</span><h2>Cierre</h2></div>
+      <div class="lines">
+        <p class="do"><b>Diapositiva 9</b>Gracias y el QR.</p>
+        <p class="say">La Antártida es parte de nuestra provincia. Queremos que cada fueguino, y cada persona que nos visita, pueda descubrirla.</p>
+        <p class="say">El QR sigue ahí: sigan explorando. Gracias.</p>
+      </div>
+    </section>
+  </main>
+
+  <section class="tips" aria-labelledby="tipsTitle">
+    <h2 id="tipsTitle">Consejos para el ensayo</h2>
+    <ul>
+      <li><strong>Ordená el peso según la nota.</strong> «Pertinencia al eje y al territorio» vale 25 de 100 puntos y además decide un empate. La parte de «somos fueguinos» es el centro del pitch, no un adorno. «Rigor de contenidos» vale 20: mostrá una fuente en pantalla, no solo la nombres.</li>
+      <li><strong>Que la demo cuente la historia.</strong> Mostrá tres cosas como máximo: el mapa, una expedición y una fuente. Ensayá el recorrido exacto, sin explorar en vivo.</li>
+      <li><strong>Tené un plan B.</strong> Llevá un video de la demo grabado y la aplicación compilada (<code>dist/</code>) en una notebook, por si no hay internet. El mismo video sirve para el entregable de hasta 3 minutos.</li>
+      <li><strong>Una idea por diapositiva.</strong> Pocas palabras y una imagen grande o una captura. El texto del guion lo dicen ustedes; no lo pongan en la diapositiva.</li>
+      <li><strong>No digas lo que no tiene fuente.</strong> Evitá cifras inventadas, como «el 90 % de los fueguinos no sabe…». Lo que vivieron ustedes alcanza como prueba, y es más creíble.</li>
+      <li><strong>Marcá lo que todavía es propuesta.</strong> El tótem y la licencia para agencias todavía no existen. Decilo con «proponemos», como en el guion.</li>
+      <li><strong>Ensayá con el cronómetro de arriba.</strong> El bloque que toca se marca solo. Si te pasás, recortá primero «Cómo llega a la gente», no la demo.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+(function(){
+  var blocks = Array.prototype.slice.call(document.querySelectorAll('.block'));
+  var clock = document.getElementById('clock');
+  var label = document.getElementById('nowLabel');
+  var toggle = document.getElementById('toggle');
+  var reset = document.getElementById('reset');
+  var LIMIT = 300, PLAN = 270;
+  var running = false, startedAt = 0, elapsed = 0, timer = null;
+
+  function fmt(s){ s = Math.floor(s); return Math.floor(s/60) + ':' + String(s%60).padStart(2,'0'); }
+
+  function render(){
+    var t = elapsed + (running ? (Date.now() - startedAt)/1000 : 0);
+    clock.textContent = fmt(t);
+    clock.classList.toggle('over', t > LIMIT);
+    var current = null;
+    blocks.forEach(function(b){
+      var on = (running || t > 0) && t >= +b.dataset.start && t < +b.dataset.end;
+      b.classList.toggle('is-now', on);
+      if (on) current = b;
+    });
+    if (!running && t === 0) { label.innerHTML = 'Tocá <strong>Empezar</strong> para ensayar con cronómetro.'; return; }
+    if (current) {
+      var left = Math.max(0, +current.dataset.end - t);
+      label.innerHTML = '<strong>' + current.dataset.title + '</strong> · quedan ' + fmt(left) + ' del bloque';
+    } else if (t > LIMIT) {
+      label.innerHTML = '<strong>Pasaste los 5 minutos.</strong> Recortá «Cómo llega a la gente».';
+    } else if (t >= PLAN) {
+      label.innerHTML = '<strong>Fuera de plan.</strong> Quedan ' + fmt(LIMIT - t) + ' hasta el límite.';
+    }
+  }
+
+  function scrollToNow(){
+    var b = document.querySelector('.block.is-now');
+    if (b && b.dataset.seen !== '1') {
+      blocks.forEach(function(x){ x.dataset.seen = ''; });
+      b.dataset.seen = '1';
+      var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      b.scrollIntoView({behavior: reduce ? 'auto' : 'smooth', block: 'start'});
+    }
+  }
+
+  toggle.addEventListener('click', function(){
+    if (running) {
+      elapsed += (Date.now() - startedAt)/1000; running = false; clearInterval(timer);
+      toggle.textContent = 'Seguir';
+    } else {
+      startedAt = Date.now(); running = true;
+      timer = setInterval(function(){ render(); scrollToNow(); }, 250);
+      toggle.textContent = 'Pausar';
+    }
+    render(); scrollToNow();
+  });
+  reset.addEventListener('click', function(){
+    running = false; clearInterval(timer); elapsed = 0;
+    blocks.forEach(function(x){ x.dataset.seen = ''; });
+    toggle.textContent = 'Empezar'; render();
+  });
+  render();
+})();
+</script>
+</body>
+</html>

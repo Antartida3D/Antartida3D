@@ -28,6 +28,7 @@ import { Quoted } from '../ui.tsx';
 import { Cite, Cites } from '../sheet/Cite.tsx';
 import { SheetActions } from '../sheet/SheetActions.tsx';
 import { BackButton } from '../sheet/BackButton.tsx';
+import { PhotoModal } from '../sheet/PhotoModal.tsx';
 import { SheetHeader } from '../sheet/SheetHeader.tsx';
 import { SheetText } from '../sheet/SheetText.tsx';
 import { SourcesContext } from '../sheet/SourcesContext.ts';
@@ -98,25 +99,15 @@ function marambioSeason(): MonthStripSeason {
 const SEASON = marambioSeason();
 
 /** Always-visible label of the scene: it is an illustrated reconstruction, and what that means. */
-/** A photograph of the archive, full size with its caption and credit. Escape, a tap outside or «Cerrar» close it. */
+/** A photograph of the archive, big in the middle of the screen with its caption and credit: the modal of every expedition (#309). */
 function PhotoDialog({ photo, onClose }: { photo: MarambioPhoto; onClose: () => void }) {
-  const ref = useRef<HTMLElement>(null);
   return (
-    <BottomSheet className="voyage mar-photo" labelledBy="mar-photo-title" sheetRef={ref} onClose={onClose} layer="top">
-      <SheetHeader title="Archivo fotográfico" titleId="mar-photo-title" />
-      <figure>
-        <img src={PHOTO_URL[photo.id]} alt={photo.alt} />
-        <figcaption>
-          <b>{photo.caption}</b>
-          <span>{photo.date ? `Fecha de la cámara: ${photo.date}` : 'Sin fecha ni lugar registrados'}</span>
-          <span>{MARAMBIO_PHOTO_CREDIT}</span>
-          <Cite id="photo-archive" />
-        </figcaption>
-      </figure>
-      <SheetActions>
-        <button type="button" className="btn primary" onClick={onClose}>Volver</button>
-      </SheetActions>
-    </BottomSheet>
+    <PhotoModal src={PHOTO_URL[photo.id]} alt={photo.alt} onClose={onClose}>
+      <b>{photo.caption}</b>
+      <span>{photo.date ? `Fecha de la cámara: ${photo.date}` : 'Sin fecha ni lugar registrados'}</span>
+      <span>{MARAMBIO_PHOTO_CREDIT}</span>
+      <Cite id="photo-archive" />
+    </PhotoModal>
   );
 }
 

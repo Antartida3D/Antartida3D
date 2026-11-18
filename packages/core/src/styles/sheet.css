@@ -59,8 +59,6 @@
 .sheet-kinds{margin:4px 0 8px;display:flex;flex-wrap:wrap;gap:6px}
 .sources-notice{margin:6px 0;font-size:13px}
 
-/* Wraps a modal opened over a screen that handles keys of its own, so they do not reach it. */
-.sheet-isolate{display:contents}
 .next-sheet .sheet-actions .btn{font-size:15px;min-height:44px}
 
 /* The last card of a fold has no line under it: the row of actions, or the edge of the sheet, already has one. */

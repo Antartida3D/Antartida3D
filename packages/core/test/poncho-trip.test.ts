@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  PONCHO_MILESTONES, PONCHO_SEGMENTS, advanceVoyage, buildCurve, buildTrip, closeVoyageCard, expeditionAt, findTransport, project,
-  quizScore, startVoyage, vehicleAt, voyageArrived, voyageAt, voyageLength, voyageProgress, voyageStops,
+  PIN_SAME_PLACE, PONCHO_MILESTONES, PONCHO_SEGMENTS, advanceVoyage, buildCurve, buildTrip, closeVoyageCard, expeditionAt, findTransport, project,
+  quizScore, startVoyage, vehicleAt, voyageArrived, voyageAt, voyageLength, voyagePinShown, voyageProgress, voyageStops,
 } from '../src/index.ts';
 
 const dist = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(a.x - b.x, a.y - b.y);
@@ -126,5 +126,34 @@ describe('legs of a trip', () => {
     const ends = PONCHO_SEGMENTS.map((leg) => ({ first: leg.waypoints[0], last: leg.waypoints[leg.waypoints.length - 1], vehicle: leg.vehicle }));
     for (let i = 1; i < ends.length; i++) expect(ends[i].first).toEqual(ends[i - 1].last);
     for (const leg of ends) expect(['sled', 'ship']).toContain(leg.vehicle);
+  });
+});
+
+describe('pins of the trip of Poncho that share a place (#309)', () => {
+  const stops = voyageStops('dogs');
+  const last = stops.length - 1;
+
+  it('has the ship to Belgrano and the last stop on the same place as the departure, at Esperanza', () => {
+    for (const i of [3, last]) expect(Math.hypot(stops[i].pin.x - stops[0].pin.x, stops[i].pin.y - stops[0].pin.y)).toBeLessThan(PIN_SAME_PLACE);
+  });
+
+  it('shows a single pin there: the last one passed, or the next stop when it is one of them', () => {
+    const at = (reached: number) => [0, 3, last].filter((i) => voyagePinShown('dogs', i, reached));
+    // Reading the first stops: the pin of the first one, to go back into it.
+    expect(at(1)).toEqual([0]);
+    expect(at(2)).toEqual([0]);
+    // The ship to Belgrano is next: its pin, still to be reached; once passed, it stays the pin of the place.
+    expect(at(3)).toEqual([3]);
+    expect(at(4)).toEqual([3]);
+    expect(at(5)).toEqual([3]);
+    // The last stop is next: its pin.
+    expect(at(last)).toEqual([last]);
+  });
+
+  it('shows every pin of its own place, and the trips from Ushuaia keep no pin at their departure', () => {
+    for (const i of [1, 2, 4, 5]) for (const reached of [1, 3, last]) expect(voyagePinShown('dogs', i, reached)).toBe(true);
+    expect(voyagePinShown('ship', 0, 1)).toBe(false);
+    const ushuaia = voyageStops('ship');
+    for (let i = 1; i < ushuaia.length; i++) expect(voyagePinShown('ship', i, 1)).toBe(true);
   });
 });

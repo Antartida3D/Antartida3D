@@ -9,7 +9,7 @@ const DIR = new URL('../src/styles/', import.meta.url);
 /** Sheets that may give a component its look. */
 const OWNERS = ['tokens.css', 'components.css'];
 /** Classes whose look lives only in `components.css`. */
-const COMPONENTS = ['btn', 'iconbtn', 'pill', 'vchip', 'vnote'];
+const COMPONENTS = ['btn', 'iconbtn', 'pill', 'vchip', 'vnote', 'photo-modal'];
 /** Properties that make the look. Size, spacing, type and layout stay free for each screen. */
 const LOOK = ['background', 'background-color', 'color', 'border', 'border-color'];
 /** Hex colors written by hand outside `tokens.css` (illustrations, charts). It may go down, not up. */

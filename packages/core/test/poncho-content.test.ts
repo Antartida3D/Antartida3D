@@ -175,9 +175,10 @@ describe('acts of the story', () => {
 });
 
 describe('route log of the trip of Poncho', () => {
-  it('has between 8 and 12 one-sentence lines, in order of the trip, on legs of the route', () => {
+  // The ship back to Esperanza got its own two lines (#309), so that no leg of the trip shows an empty log: up to 14.
+  it('has between 8 and 14 one-sentence lines, in order of the trip, on legs of the route', () => {
     expect(PONCHO_LOG.length).toBeGreaterThanOrEqual(8);
-    expect(PONCHO_LOG.length).toBeLessThanOrEqual(12);
+    expect(PONCHO_LOG.length).toBeLessThanOrEqual(14);
     for (let i = 0; i < PONCHO_LOG.length; i++) {
       const { leg, at, fact } = PONCHO_LOG[i]!;
       expect(Number.isInteger(leg)).toBe(true);
@@ -204,7 +205,7 @@ describe('route log of the trip of Poncho', () => {
     }
   });
 
-  it('gives the line that corresponds to the progress of the trip, and none where the leg has none', () => {
+  it('gives the line that corresponds to the progress of the trip, on every leg', () => {
     const lines = new Set<string>();
     for (const { leg, at, fact } of PONCHO_LOG) {
       const [from, to] = tripLegRange('dogs', leg);
@@ -212,8 +213,11 @@ describe('route log of the trip of Poncho', () => {
       lines.add(fact.text);
     }
     expect(lines.size).toBe(PONCHO_LOG.length);
-    const [shipFrom, shipTo] = tripLegRange('dogs', 3);
-    expect(logLineAt('dogs', (shipFrom + shipTo) / 2)).toBeNull();
+    // Every leg of the trip has a line: the ship back to Esperanza too (#309), so the log is never empty.
+    for (let leg = 0; leg < tripLegCount('dogs'); leg++) {
+      const [from, to] = tripLegRange('dogs', leg);
+      expect(logLineAt('dogs', (from + to) / 2), `leg ${leg}`).not.toBeNull();
+    }
     expect(logLineAt('ship', 0.5)).toBeNull();
     // The last leg is the sled patrol at Esperanza (DEC-223): at the very end of the trip its last line still shows.
     expect(logLineAt('dogs', 1)).not.toBeNull();
@@ -222,7 +226,7 @@ describe('route log of the trip of Poncho', () => {
   it('forces a leg for the steps of a trip that does not animate the path', () => {
     const [from, to] = tripLegRange('dogs', 2);
     expect(logLineAt('dogs', (from + to) / 2, 2)).not.toBeNull();
-    expect(logLineAt('dogs', 0, 3)).toBeNull();
+    expect(logLineAt('dogs', 0, 3)).not.toBeNull();
   });
 });
 

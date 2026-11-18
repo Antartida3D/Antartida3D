@@ -28,6 +28,7 @@ import {
   shipWaterY,
   sightingsInView,
   storyInOrder,
+  voyagePinShown,
   stormAt,
   vehicleAt,
   transferAt,
@@ -318,7 +319,9 @@ export function Voyage3D({ bus, picker, reduced, overlay }: {
 
   // One pin per milestone ahead of the departure, so the user sees them coming.
   const stops = kind ? voyageStops(kind) : [];
-  const pins = useMemo(() => (kind ? voyageStops(kind).slice(1).map((stop) => stop.pin) : []), [kind]);
+  // A trip from Ushuaia has no pin at its departure; the story of Poncho has one there too (#309): `first` is the stop of pin 0.
+  const first = kind !== null && storyInOrder(kind) ? 0 : 1;
+  const pins = useMemo(() => (kind ? voyageStops(kind).slice(first).map((stop) => stop.pin) : []), [kind, first]);
   const pinGroups = useRef<(Group | null)[]>([]);
   const story = kind !== null && storyInOrder(kind);
   const labels = near ? near.split(',').map(Number) : [];
@@ -418,9 +421,10 @@ export function Voyage3D({ bus, picker, reduced, overlay }: {
       pin.scale.setScalar(Math.max(MIN_PIN, camera.position.distanceTo(pin.position) * PIN_PER_DISTANCE));
       pin.quaternion.copy(camera.quaternion); // always facing the camera
       // Grey once its milestone was read, not just passed: the ones left unread stand out (#157).
-      (pin.children[0] as Mesh).material = bus.opened.includes(stops[i + 1].milestone.id) ? pinMaterial.read : pinMaterial.unread;
-      // A pin is drawn over everything: the one of the base would cover the helicopter that lands on it.
-      pin.visible = bus.transfer === null || i < pins.length - 1;
+      (pin.children[0] as Mesh).material = bus.opened.includes(stops[i + first].milestone.id) ? pinMaterial.read : pinMaterial.unread;
+      // A pin is drawn over everything: the one of the base would cover the helicopter that lands on it. Where stops of a story
+      // share a place only one pin shows (#309).
+      pin.visible = (bus.transfer === null || i < pins.length - 1) && voyagePinShown(s.kind, i + first, s.reached);
     });
 
     if (trailMesh.current) trailMesh.current.visible = !bus.back;
@@ -574,26 +578,26 @@ export function Voyage3D({ bus, picker, reduced, overlay }: {
           {/* A pin opens its milestone, passed or still ahead: the trip does not stop at it (#157), and whoever
               wants to read about a place need not get there first (#190). A real button, over its head. In a
               story told in order only the ones passed. Never the arrival: its card opens by itself. */}
-          {(story ? i + 1 < passed : passed > 0) && i + 1 < pins.length && (
+          {(story ? i + first < passed && voyagePinShown(kind!, i + first, passed) : passed > 0) && i + first < stops.length - 1 && (
             <Html
               position={[0, PIN_HEAD_Y, 0]}
               center
-              calculatePosition={labels.includes(i + 1) && stops[i + 1].milestone.place ? labelOnScreen : undefined}
+              calculatePosition={labels.includes(i + first) && stops[i + first].milestone.place ? labelOnScreen : undefined}
               portal={overlay as RefObject<HTMLElement>}
               zIndexRange={[3, 3]}
             >
               <button
                 type="button"
                 className="vpin"
-                onClick={() => bus.openStop(i + 1)}
-                aria-label={`Hito: ${stops[i + 1].milestone.title}. Tocá para leerlo.`}
-                title={stops[i + 1].milestone.title}
+                onClick={() => bus.openStop(i + first)}
+                aria-label={`Hito: ${stops[i + first].milestone.title}. Tocá para leerlo.`}
+                title={stops[i + first].milestone.title}
               />
               {/* Near the vehicle and unread, its name shows by itself, so it is not gone by unnoticed (#190).
                   The same action as the pin, which is the one the keyboard and screen readers reach. */}
-              {labels.includes(i + 1) && (
-                <button type="button" className="vpinlabel" tabIndex={-1} aria-hidden="true" onClick={() => bus.openStop(i + 1)}>
-                  {stops[i + 1].milestone.title}
+              {labels.includes(i + first) && (
+                <button type="button" className="vpinlabel" tabIndex={-1} aria-hidden="true" onClick={() => bus.openStop(i + first)}>
+                  {stops[i + first].milestone.title}
                 </button>
               )}
             </Html>

@@ -95,11 +95,12 @@ test('the photograph of a stop opens in a modal and Escape closes it without lea
   await archive.click();
   const modal = page.getByRole('dialog', { name: 'Archivo fotográfico' });
   await expect(modal).toBeVisible();
+  // A citation of the photograph opens the sources and closes the photograph (#309): one Escape closes the sources.
   await modal.getByRole('button', { name: /^Fuente / }).click();
+  await expect(modal).toHaveCount(0);
   await expect(page.getByRole('dialog', { name: 'Fuentes' }).locator('.sources-card[aria-current] a')).toHaveAttribute('href', /^https:\/\//);
   await page.keyboard.press('Escape');
-  await page.keyboard.press('Escape');
-  await expect(modal).toHaveCount(0);
+  await expect(page.getByRole('dialog', { name: 'Fuentes' })).toHaveCount(0);
   await expect(panel.getByRole('heading', { name: stop.title })).toBeVisible();
   await expect(archive).toBeFocused();
   const base = panel.getByRole('button', { name: /^Abrir fotografía del archivo: La Base San Martín/ });
@@ -123,9 +124,11 @@ test('the photograph of Esperanza at the end of the first stop names its author 
   await expect(modal.getByRole('img')).toBeVisible();
   await expect(modal).toContainText('Godot13');
   await expect(modal.getByRole('link', { name: 'CC BY-SA 4.0' })).toHaveAttribute('href', 'https://creativecommons.org/licenses/by-sa/4.0/');
+  // Its citation opens the sources and closes the photograph (#309); Escape closes the sources and the stop stays open.
   await modal.getByRole('button', { name: /^Fuente / }).click();
+  await expect(modal).toHaveCount(0);
   await expect(page.getByRole('dialog', { name: 'Fuentes' }).locator('.sources-card[aria-current] a')).toHaveAttribute('href', /^https:\/\/commons\.wikimedia\.org\//);
   await page.keyboard.press('Escape');
-  await page.keyboard.press('Escape');
-  await expect(modal).toHaveCount(0);
+  await expect(page.getByRole('dialog', { name: 'Fuentes' })).toHaveCount(0);
+  await expect(panel.getByRole('button', { name: 'Abrir fotografía del archivo' })).toBeVisible();
 });

@@ -29,6 +29,7 @@ import { SceneLocation } from '../SceneLocation.tsx';
 import { Icon, Quoted } from '../ui.tsx';
 import { Cites } from '../sheet/Cite.tsx';
 import { MoreFold } from '../sheet/MoreFold.tsx';
+import { PhotoModal } from '../sheet/PhotoModal.tsx';
 import { SheetActions } from '../sheet/SheetActions.tsx';
 import { BackButton } from '../sheet/BackButton.tsx';
 import { SheetHeader } from '../sheet/SheetHeader.tsx';
@@ -215,10 +216,9 @@ export function FossilExpedition({ reduced, webgl, resume, onProgress, onLeave }
       </article>
       <SheetActions><button type="button" className="btn primary" onClick={() => setModal(null)}>Volver</button></SheetActions>
     </BottomSheet>}
-    {modal?.kind === 'photo' && <BottomSheet className="voyage fossil-sheet" labelledBy="fossil-photo-title" sheetRef={dialog} onClose={() => setModal(null)}>
-      <SheetHeader title="Archivo de campo" titleId="fossil-photo-title" />
-      <figure className="fossil-archive-full"><img src={PHOTO_URL[shown]} alt={photo.alt} /><figcaption><b>{photo.caption}</b>{photo.note && <span className="fossil-photo-note">{photo.note}</span>}<span>{photo.credit}<Cites ids={[photo.source]} /></span></figcaption></figure>
-      <SheetActions><button type="button" className="btn primary" onClick={() => setModal(null)}>Volver</button></SheetActions>
-    </BottomSheet>}
+    {/* The photograph, in the middle of the screen: the modal of every expedition (#309). */}
+    {modal?.kind === 'photo' && <PhotoModal src={PHOTO_URL[shown]} alt={photo.alt} title="Archivo de campo" onClose={() => setModal(null)}>
+      <b>{photo.caption}</b>{photo.note && <span className="fossil-photo-note">{photo.note}</span>}<span>{photo.credit}<Cites ids={[photo.source]} /></span>
+    </PhotoModal>}
   </section></SourcesContext.Provider>;
 }

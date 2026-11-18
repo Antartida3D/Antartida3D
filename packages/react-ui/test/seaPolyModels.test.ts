@@ -74,13 +74,38 @@ describe('general map low-poly sea fauna (penguins, seal & cetaceans)', () => {
     }
   });
 
-  it('paints the orca eye patch on the skin of the head, with no faces of its own (#312)', () => {
-    const key = (p: readonly number[]) => p.map((v) => v.toFixed(6)).join(',');
-    const skin = new Set(ORCA_PARTS.body.filter((t) => t[3] !== WHITE).flatMap(([a, b, c]) => [a, b, c].map(key)));
-    const patch = ORCA_PARTS.body.filter(([a, b, c, col]) => col === WHITE && Math.min(a[0], b[0], c[0]) > 0.3 && Math.min(a[1], b[1], c[1]) > -0.05);
-    expect(patch.length).toBeGreaterThanOrEqual(4);
-    // Every corner of a white face is a corner of the black skin round it: no box glued on.
-    for (const [a, b, c] of patch) for (const p of [a, b, c]) expect(skin.has(key(p)), key(p)).toBe(true);
+  it('lays the orca eye patch flush on the head as a long teardrop on each side (#312)', () => {
+    // The white faces of the head, above the belly.
+    const patch = ORCA_PARTS.body.filter(([a, b, c, col]) =>
+      col === WHITE && Math.min(a[0], b[0], c[0]) > 0.28 && Math.max(a[0], b[0], c[0]) < 0.45 && Math.min(a[1], b[1], c[1]) > -0.06);
+    const skin = ORCA_PARTS.body.filter((t) => t[3] !== WHITE);
+    /** |z| of the skin on one side at (x, y): where a ray along z meets its faces. */
+    const skinZ = (x: number, y: number, side: number) => {
+      let z = -Infinity;
+      for (const [a, b, c] of skin) {
+        if (Math.sign(a[2] + b[2] + c[2]) !== side) continue;
+        const d = (b[1] - c[1]) * (a[0] - c[0]) + (c[0] - b[0]) * (a[1] - c[1]);
+        if (Math.abs(d) < 1e-12) continue;
+        const u = ((b[1] - c[1]) * (x - c[0]) + (c[0] - b[0]) * (y - c[1])) / d;
+        const v = ((c[1] - a[1]) * (x - c[0]) + (a[0] - c[0]) * (y - c[1])) / d;
+        if (u < -1e-9 || v < -1e-9 || u + v > 1 + 1e-9) continue;
+        z = Math.max(z, Math.abs(u * a[2] + v * b[2] + (1 - u - v) * c[2]));
+      }
+      return z;
+    };
+    for (const side of [1, -1]) {
+      const corners = patch.filter(([a, b, c]) => Math.sign(a[2] + b[2] + c[2]) === side).flatMap(([a, b, c]) => [a, b, c]);
+      expect(corners.length).toBeGreaterThanOrEqual(30);
+      // No relief and no box: every corner sits on the skin, lifted just enough not to flicker.
+      for (const [x, y, z] of corners) {
+        const gap = Math.abs(z) - skinZ(x, y, side);
+        expect(gap).toBeGreaterThan(0);
+        expect(gap).toBeLessThan(0.003);
+      }
+      const xs = corners.map(([x]) => x);
+      const ys = corners.map(([, y]) => y);
+      expect((Math.max(...xs) - Math.min(...xs)) / (Math.max(...ys) - Math.min(...ys))).toBeGreaterThanOrEqual(2.5);
+    }
   });
 
   it('gives the orca a dorsal fin that narrows and thins towards its tip (#312)', () => {

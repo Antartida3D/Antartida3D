@@ -127,7 +127,7 @@ El punto se quitó del mapa el 17 nov 2026 ([#277](https://github.com/Antartida3
 
 ## `cerronevado` — Pingüinos de Cerro Nevado (#206)
 
-El punto abre una escena propia con cuatro puntos (`packages/core/src/content/cerro-nevado.ts`). Sus textos reparten las mismas oraciones de la ficha y suman estas, con su cita:
+El punto abre una escena propia con cuatro puntos (`packages/core/src/content/cerro-nevado.ts`), sobre la pantalla común de los puntos de interés desde #310. Sus textos reparten las mismas oraciones de la ficha y suman estas, con su cita:
 
 | Texto de la escena | Fuente | Cita |
 |---|---|---|

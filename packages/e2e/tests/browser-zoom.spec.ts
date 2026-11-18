@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { openOrcadasFromMap } from './orcadas-helpers.ts';
+import { openOrcadasFromMap, gotoOrcadasChapter } from './orcadas-helpers.ts';
 import { MAP_2D_ENABLED, NO_2D, show3D } from './map-helpers.ts';
 import { LIST_BUTTON_LABEL } from '../../core/src/content/points.ts';
 
@@ -294,10 +294,7 @@ test('Orcadas: Ctrl wheel keeps optical zoom and follows the normal off-centre w
 
 test('Observation slider: modified browser zoom keys pass through without recording a reading', async ({ page }) => {
   await openOrcadasFromMap(page);
-  await page
-    .getByRole('navigation', { name: 'Capítulos de la expedición' })
-    .getByRole('button', { name: /Observar/ })
-    .click();
+  await gotoOrcadasChapter(page, /Observar/);
   await expect(page.getByRole('heading', { level: 2, name: 'Observación del día' })).toBeVisible();
   await page.locator('details.orc-obs-more > summary').click();
   const pressureTab = page.getByRole('tab', { name: /^Presión atmosférica/ });

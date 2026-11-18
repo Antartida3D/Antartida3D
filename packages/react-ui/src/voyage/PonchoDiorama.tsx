@@ -14,7 +14,7 @@ import {
 } from '@antartida/core';
 import type { OpenSheetSize } from '../BottomSheet.tsx';
 import { useIsDesktop } from '../hooks.ts';
-import { KindChip } from '../orcadas/KindChip.tsx';
+import { SceneBadge } from '../SceneBadge.tsx';
 import { useSceneFrame } from '../sceneFrame.tsx';
 import { Icon } from '../ui.tsx';
 
@@ -149,10 +149,7 @@ export function PonchoDiorama({ scene, essential, reduced, entry, hasBefore, onN
         <span>Volver al mapa</span>
       </button>
       {/* One single notice that this is an illustration. */}
-      <div className="pdio-badge">
-        <KindChip kind="recon" label="Reconstrucción ilustrada" />
-        <p>Dibujo para ver la escena a escala humana: las posturas y los lugares son una ilustración del relato, no un registro.</p>
-      </div>
+      <SceneBadge help={<p>Dibujo para ver la escena a escala humana: las posturas y los lugares son una ilustración del relato, no un registro.</p>} />
       {children(tour)}
     </div>
   );

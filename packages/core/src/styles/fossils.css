@@ -5,15 +5,8 @@
    on a portrait phone it sits between the top bar and the bottom sheet. */
 .fossil-stage { position: absolute; inset: 0; z-index: 0; background: color-mix(in srgb, var(--paper) 80%, var(--glacier)); overflow: hidden; }
 .fossil-stage canvas { touch-action: none; }
-.fossil-location { position: absolute; z-index: 4; top: calc(var(--scene-top, 0px) + 14px); left: 24px; display: flex; align-items: flex-start; gap: 10px; pointer-events: none; font-size: 12px; padding: 8px 12px; background: color-mix(in srgb, var(--paper) 92%, transparent); border: 1.5px solid var(--ink); border-radius: var(--chart-radius); }
-.fossil-location small { display: block; font-size: 10px; color: var(--pencil); margin-top: 4px; }
-.fossil-location-dot { width: 7px; height: 7px; border: 2px solid var(--oxide); border-radius: 50%; margin-top: 2px; }
 .fossil-reset { position: absolute; z-index: 4; top: calc(var(--scene-top, 0px) + 14px); right: calc(var(--scene-side, 0px) + 16px); width: 44px; height: 44px; border: 1.5px solid var(--chart-ink); border-radius: 50%; background: var(--chart-paper); color: var(--chart-ink); padding: 10px; }
 .fossil-reset svg { width: 100%; height: 100%; }
-.fossil-scene-note { gap: 4px; }
-.fossil-scene-note small { padding: 2px 6px; font-size: 11px; color: var(--chart-ink); background: color-mix(in srgb, var(--chart-paper) 88%, transparent); border-radius: 4px; }
-.fossil-found { position: absolute; z-index: 4; bottom: calc(var(--scene-sheet, 0px) + 80px); left: calc((100% - var(--scene-side, 0px)) / 2); transform: translateX(-50%) rotate(-2deg); padding: 10px 16px; font: 22px 'Caveat', cursive; background: var(--paper); white-space: nowrap; box-shadow: 1px 2px 0 color-mix(in srgb, var(--ink) 20%, transparent); pointer-events: none; }
-.fossil-found small { display: block; font: 10px 'Atkinson Hyperlegible', sans-serif; margin-top: 4px; }
 .fossil-eyebrow { font-size: 12px; color: var(--pencil); margin: 0 0 8px; line-height: 1.5; }
 .fossil-line { font-size: 16px; line-height: 1.55; margin: 0 0 20px; }
 
@@ -33,18 +26,13 @@
 }
 @media (max-width: 899px) and (min-height: 501px) {
   .fossil-stage { top: var(--scene-top, 0px); bottom: var(--scene-sheet, 45dvh); }
-  .fossil-location { top: calc(var(--scene-top, 0px) + 10px); left: 12px; font-size: 10px; padding: 6px 9px; }
-  .fossil-location small { font-size: 9px; }
   .fossil-reset { top: calc(var(--scene-top, 0px) + 10px); right: 12px; }
-  .fossil-scene-note small { display: none; }
-  .fossil-found { bottom: calc(var(--scene-sheet, 0px) + 50px); font-size: 18px; max-width: calc(100% - 50px); white-space: normal; text-align: center; }
   .fossil-fallback figcaption { bottom: 40px; font-size: 10px; }
   .fossil-line { font-size: 15px; line-height: 1.5; margin-bottom: 16px; }
 }
 @media (orientation: landscape) and (max-height: 500px) {
-  .fossil-location { top: calc(var(--scene-top, 0px) + 8px); left: 8px; }
-  .fossil-reset { top: calc(var(--scene-top, 0px) + 8px); }
-  .fossil-scene-note small { display: none; }
+  /* The location label takes the right corner (shared label), so the reset goes to the left one. */
+  .fossil-reset { top: calc(var(--scene-top, 0px) + 8px); left: 8px; right: auto; }
   .fossil-line { font-size: 14px; }
 }
 .fossil-expedition button { cursor: pointer; }
@@ -63,8 +51,8 @@
 .fossil-archive b { font-size: 14px; font-weight: 400; }
 .fossil-archive span > span { font-size: 11px; text-decoration: underline; text-underline-offset: 3px; }
 .fossil-expedition button:disabled { cursor: default; opacity: .48; }
-.fossil-interaction { border-left: 2px solid var(--ocre); padding: 3px 0 3px 15px; margin: 0 0 22px; }
-.fossil-interaction .fossil-action { display: block; border-radius: var(--chart-button-radius); font-size: 13px; margin: 8px 0; padding: 10px 13px; }
+.fossil-interaction { padding: 3px 0; margin: 0 0 22px; }
+.fossil-interaction .fossil-action { display: block; width: 100%; border-radius: var(--chart-button-radius); font-size: 13px; margin: 8px 0; padding: 10px 13px; }
 .fossil-interaction small { display: block; font-size: 11px; color: var(--pencil); line-height: 1.5; }
 .fossil-rubbing { display: flex; align-items: center; gap: 5px; }
 .fossil-rubbing > span:not(:last-child) { width: 13px; height: 4px; background: color-mix(in srgb, var(--ink) 18%, transparent); }
@@ -91,7 +79,7 @@
 .fossil-archive-full figcaption { display: flex; flex-direction: column; gap: 7px; margin-top: 15px; font-size: 12px; line-height: 1.5; }
 .fossil-fallback { margin: 0; height: 100%; position: relative; background: var(--paper); }
 .fossil-fallback > img { width: 100%; height: 100%; object-fit: cover; opacity: .85; }
-.fossil-fallback figcaption { position: absolute; bottom: 70px; left: 20px; right: 20px; padding: 12px; background: var(--paper); font-size: 11px; line-height: 1.5; }
+.fossil-fallback figcaption { position: absolute; bottom: 70px; left: 20px; right: 20px; padding: 12px; background: var(--paper); font-size: 11px; line-height: 1.5; border: 1px dashed color-mix(in srgb, var(--ink) 50%, transparent); }
 .fossil-fallback figcaption span { display: block; margin-top: 7px; }
 @media (prefers-reduced-motion: reduce) { .fossil-expedition * { scroll-behavior: auto; transition: none !important; animation: none !important; } }
 

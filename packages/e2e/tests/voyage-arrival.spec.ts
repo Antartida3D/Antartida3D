@@ -137,8 +137,8 @@ test.describe('arrival at Base Marambio on the trip from Ushuaia', () => {
     const bar = page.getByRole('group', { name: 'Del Irízar a la base' });
     await expect(bar.getByText(/Sea King lleva la carga y el personal/)).toBeVisible();
     await expect(bar.getByText(/La animación es ilustrativa/)).toBeVisible();
-    // Its only button is the source of the fact.
-    await expect(bar.getByRole('button')).toHaveText(['[18]']);
+    // Its only button, besides the «?» of the scene label, is the source of the fact.
+    await expect(bar.locator('button:not(.orc-scene-help-btn)')).toHaveText(['[18]']);
     await expect(card).toBeHidden();
 
     // The helicopter lands by itself and the card comes back: the notes tell the answer, and the summary is there.

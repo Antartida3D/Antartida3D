@@ -13,6 +13,10 @@
 7. Un botón nuevo usa `.btn` y sus variantes. No se crea una clase propia que repita el aspecto de un botón.
 8. Un color nuevo se agrega como token en `tokens.css`, no suelto en una regla.
 9. Los modales de contenido usan los componentes de `packages/react-ui/src/sheet/` y `BottomSheet`, no una solución propia: `SheetHeader` (encabezado), `SheetText` (texto), `MoreFold` («Saber más»), `SheetActions` (fila de botones, un solo `.btn.primary`), `Cite` (cita `[N]`) y `SourcesView` (vista de fuentes única). No se agrega un `<dialog>`, un fondo ni una fila de botones propios, ni estilos en línea en un modal.
+10. El encabezado de una expedición es `ExpeditionTop` (`packages/react-ui/src/ExpeditionTop.tsx`), no un `<header className="orc-top">` propio. Sin barra ni título; el selector de mes va en `tools`.
+11. Un botón que queda solo en una barra, un panel o un modal ocupa todo el ancho de su contenedor, en celular y en escritorio.
+12. El cartel de ubicación de una escena es `SceneLocation` y la nota manuscrita de una parada es `.scene-found`. Ninguna expedición define el suyo.
+13. La etiqueta de la escena («Reconstrucción ilustrada» con su «?») es `SceneBadge`, abajo a la izquierda en todas las expediciones. Ninguna dibuja la suya.
 
 ## Guardián
 Prueba de las reglas 1, 2, 3, 5 y 6.

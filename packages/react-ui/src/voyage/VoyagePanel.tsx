@@ -36,6 +36,7 @@ import { SheetHeader } from '../sheet/SheetHeader.tsx';
 import { SheetText } from '../sheet/SheetText.tsx';
 import { SourcesContext } from '../sheet/SourcesContext.ts';
 import { SourcesView } from '../sheet/SourcesView.tsx';
+import { SceneBadge } from '../SceneBadge.tsx';
 import { Fact, tripSourcesContext } from './Fact.tsx';
 import { PonchoDiorama } from './PonchoDiorama.tsx';
 import { HitoNav, PONCHO_PHOTO_URL, PhotoCredit, PonchoPanel } from './PonchoPanel.tsx';
@@ -318,12 +319,18 @@ function MilestoneCard({ voyage, animated, onExit }: {
  * Shown while the helicopter flies from the ship to the base: the arrival card steps aside, so the
  * map shows. The hop is part of the arrival and cannot be skipped: it lasts a few seconds.
  */
+/** The same label as the expeditions, over the left end of the bar (#297). */
+function TripBadge() {
+  return <SceneBadge className="vbar-badge" help={<p>El recorrido es una reconstrucción ilustrada: los vehículos y los animales están agrandados para que se vean.</p>} />;
+}
+
 function TransferBar() {
   const ref = useRef<HTMLDivElement>(null);
   // No button to take the focus: the title holds it, so it is not lost while the hop plays.
   useFocusReturn(true, ref, '.vnext');
   return (
     <div className="vbar" role="group" aria-label={VOYAGE_TRANSFER.title} ref={ref}>
+      <TripBadge />
       <p className="vnext" tabIndex={-1}><strong>{VOYAGE_TRANSFER.title}</strong></p>
       <ul className="vfacts">
         {VOYAGE_TRANSFER.facts.map((f) => <Fact key={f.text} fact={f} />)}
@@ -437,6 +444,7 @@ function TravelBar({ voyage, animated, onExit }: { voyage: VoyageController; ani
         and the bar keeps only what moves the trip. */}
     <button type="button" className="btn vleave" onClick={onExit} aria-label="Salir del viaje">Salir</button>
     <div className="vbar" role="group" aria-label="Controles del viaje">
+      <TripBadge />
       {/* The route log: a line of the book while the team travels between stops. Where the path is not animated, one per step. */}
       {state.kind === 'dogs' && (
         <ul className="vfacts vlog" aria-live="polite" aria-label="Diario de ruta">

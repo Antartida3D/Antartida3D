@@ -73,6 +73,26 @@ test('while travelling the camera cannot back off as far as the overview, and ca
   expect(await settledDistance(page)).toBeGreaterThan(far * 2);
 });
 
+test('leaving a trip puts the camera back on the overview of the whole map, not on the ship', async ({ page }) => {
+  test.setTimeout(90_000);
+  await show3D(page);
+  await page.waitForFunction(() => (window as any).__cameraControls && (window as any).__invalidate);
+  const overview = await settledDistance(page);
+
+  await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
+  await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Desde Ushuaia/ }).click();
+  await page.getByRole('group', { name: 'Medio de transporte' }).getByRole('button', { name: /Irízar/ }).click();
+  await page.getByRole('button', { name: 'Zarpar' }).click();
+  await page.getByRole('button', { name: 'Próximo hito', exact: true }).click();
+  // The camera followed the ship down.
+  expect(await settledDistance(page)).toBeLessThan(overview / 3);
+
+  await page.getByRole('button', { name: 'Salir del viaje' }).click();
+  await expect(page.getByRole('button', { name: 'Próximo hito', exact: true })).toHaveCount(0);
+  // The camera starts moving after the trip closes, so poll instead of reading once.
+  await expect.poll(async () => settledDistance(page), { timeout: 15_000 }).toBeGreaterThan(overview * 0.9);
+});
+
 test('opening Poncho brings the camera down to Base Esperanza, where the trip leaves from (#255)', async ({ page }) => {
   test.setTimeout(90_000);
   await page.emulateMedia({ reducedMotion: 'no-preference' });

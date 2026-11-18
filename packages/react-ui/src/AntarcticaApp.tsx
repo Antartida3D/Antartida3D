@@ -109,8 +109,8 @@ export function AntarcticaApp() {
   const [activePoint, setActivePoint] = useState<MapPoint>(() => PTS.find((p) => p.id === directScreen()) ?? EXPEDITION_POINT);
   // Expedition just finished: the map offers the next one in a card (#75).
   const [finished, setFinished] = useState<{ id: string; line: string } | null>(null);
-  // On a phone the legend starts closed: open, it covers much of the map (#114).
-  const [legend, setLegend] = useState(() => typeof window === 'undefined' || window.innerWidth >= NARROW_PX);
+  // On a phone the legend starts closed: open, it covers much of the map (#114). Also on its side, where it covers the suggested marker.
+  const [legend, setLegend] = useState(() => typeof window === 'undefined' || (window.innerWidth >= NARROW_PX && window.innerHeight > 500));
   const [returned, setReturned] = useState(false);
   // null until checked: the view toggle waits for it, so it does not flash as «not available».
   const [webglSupported, setWebglSupported] = useState<boolean | null>(() =>

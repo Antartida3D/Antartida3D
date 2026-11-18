@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { clearStorage } from '../storage.ts';
 import { ORCADAS_CLIMATE } from '../../core/src/content/orcadas-series.ts';
 import { beaufort, observationFor, type Reading } from '../../core/src/orcadas.ts';
-import { openOrcadasFromMap } from './orcadas-helpers.ts';
+import { openOrcadasFromMap, gotoOrcadasChapter } from './orcadas-helpers.ts';
 
 const primary = (page: Page) => page.locator('.sheet-actions .btn.primary');
 
@@ -17,10 +17,7 @@ function currentExpectedReading(): Reading {
 
 async function openOrcadasObservation(page: Page) {
   await openOrcadasFromMap(page);
-  await page
-    .getByRole('navigation', { name: 'Capítulos de la expedición' })
-    .getByRole('button', { name: /Observar/ })
-    .click();
+  await gotoOrcadasChapter(page, /Observar/);
   await expect(
     page.getByRole('heading', { level: 2, name: 'Observación del día' })
   ).toBeVisible();
@@ -209,10 +206,7 @@ test.describe('Orcadas · observación', () => {
     expect(overflow).toBeLessThanOrEqual(0);
 
     // Advance to Responder and verify seal + folded "Tu observación del día" with 4 of 4
-    await page
-      .getByRole('navigation', { name: 'Capítulos de la expedición' })
-      .getByRole('button', { name: /Responder/ })
-      .click();
+    await gotoOrcadasChapter(page, /Responder/);
     await expect(page.getByRole('heading', { level: 2, name: 'La respuesta' })).toBeVisible();
     await expect(page.locator('.orc-done-summary')).toContainText('4 de 4 lecturas dentro del margen');
     await page.locator('details.sheet-more', { hasText: 'Tu observación del día' }).locator('> summary').click();

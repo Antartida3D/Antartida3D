@@ -11,9 +11,9 @@ const next = (page: Page) => page.locator('.marine-next');
 async function toChapter(page: Page, label: string) {
   const button = page.getByRole('button', { name: label });
   if (await button.isVisible()) return button.click();
-  const chapter = MARINE_CHAPTERS.find((c) => c.label === label)!.id;
-  // One more press than stops: the first one looks under the ice.
-  for (let i = 0; i <= MARINE_STOPS.findIndex((s) => s.chapter === chapter); i++) await next(page).click();
+  // Three stops show a second look before «Siguiente» goes on (#283), so count by where the panel says it is, not by presses.
+  const where = page.locator('.marine-panel .sheet-label').first();
+  for (let i = 0; i < 30 && !(await where.innerText()).startsWith(`${label} ·`); i++) await next(page).click();
 }
 
 let consoleErrors: string[] = [];
@@ -47,11 +47,11 @@ test('opens Océano from the map, does every observation and completes it', asyn
 
   // The first «Siguiente» looks under the ice; the next one goes on.
   await next(page).click();
-  await expect(page.locator('.marine-location')).toContainText('Bajo el hielo marino');
+  await expect(page.locator('.scene-location')).toContainText('Bajo el hielo marino');
   await next(page).click();
 
   await act('Aumentar tamaño');
-  await expect(page.locator('.marine-found')).toContainText('Aumento esquemático');
+  await expect(page.locator('.scene-found')).toContainText('Aumento esquemático');
   await next(page).click();
 
   // The krill stop says who eats it, with no button.
@@ -60,7 +60,7 @@ test('opens Océano from the map, does every observation and completes it', asyn
 
   // The humpback filters as soon as its stop opens.
   await expect(page.locator('.marine-steps')).toContainText('entre las barbas');
-  await expect(page.locator('.marine-found')).toHaveText('Filtra con barbas');
+  await expect(page.locator('.scene-found')).toHaveText('Filtra con barbas');
   await next(page).click();
 
   // The camera follows the minke with no button.
@@ -70,7 +70,7 @@ test('opens Océano from the map, does every observation and completes it', asyn
   // As in the first stop, the first «Siguiente» of the emperor stop looks under the water.
   await expect(next(page)).toHaveText('Mirar bajo el agua');
   await next(page).click();
-  await expect(page.locator('.marine-location')).toContainText('Bajo el hielo marino');
+  await expect(page.locator('.scene-location')).toContainText('Bajo el hielo marino');
   await next(page).click();
   // The camera follows the dive with no button.
   await expect(page.getByRole('button', { name: /Seguir una inmersión/ })).toHaveCount(0);
@@ -117,10 +117,14 @@ test('the keyboard alone walks every stop, and the sources open from a [N] and c
   // The opening stop goes under the ice first.
   await next(page).focus();
   await page.keyboard.press('Enter');
-  await expect(page.locator('.marine-location')).toContainText('Bajo el hielo marino');
+  await expect(page.locator('.scene-location')).toContainText('Bajo el hielo marino');
   for (let i = 1; i < MARINE_STOPS.length; i++) {
-    await next(page).focus();
-    await page.keyboard.press('Enter');
+    // The emperor and orca stops show a second look first, with the same heading.
+    const twoLooks = i > 1 && ['emperor-hunt', 'orcas'].includes(MARINE_STOPS[i - 1].id);
+    for (let press = 0; press < (twoLooks ? 2 : 1); press++) {
+      await next(page).focus();
+      await page.keyboard.press('Enter');
+    }
     await expect(page.getByRole('heading', { level: 2, name: MARINE_STOPS[i].title })).toBeFocused();
   }
   await expect(next(page)).toHaveText(/Terminar expedición/);

@@ -8,6 +8,7 @@ import { BottomSheet, type OpenSheetSize } from '../BottomSheet.tsx';
 import { useIsDesktop } from '../hooks.ts';
 import { CanvasGuard } from '../CanvasGuard.tsx';
 import { useSceneFrame } from '../sceneFrame.tsx';
+import { ExpeditionTop } from '../ExpeditionTop.tsx';
 import { Icon } from '../ui.tsx';
 import { Cites } from '../sheet/Cite.tsx';
 import { SheetActions } from '../sheet/SheetActions.tsx';
@@ -16,11 +17,14 @@ import { SourcesContext } from '../sheet/SourcesContext.ts';
 import { SourcesView } from '../sheet/SourcesView.tsx';
 import { FoodWebPanel, WebDiagram } from './FoodWeb.tsx';
 import { MagnifyButton } from './MagnifyButton.tsx';
-import { PinIcon } from '../voyage/PinIcon.tsx';
+import { SceneBadge } from '../SceneBadge.tsx';
+import { SceneLocation } from '../SceneLocation.tsx';
 
 const Scene = lazy(() => import('./MarineScene.tsx').then((m) => ({ default: m.MarineScene })));
 
 const SOURCES = MARINE_CITED;
+/** What the scene is: the «?» of its label says it, and so does the list of sources. */
+const SCENE_NOTICE = 'Las escenas son ilustraciones inspiradas en mares antárticos, no el registro de un lugar. Cada estudio conserva el sitio donde se hizo.';
 /** Part of the screen the small sheet takes on a phone (`--orc-sheet` of `.orc` in orcadas.css). */
 const SMALL_SHEET = 0.45;
 
@@ -191,39 +195,24 @@ export function MarineExpedition({ reduced, webgl, resume, onProgress, onLeave }
           <figcaption>Recorrido en texto · todas las paradas e interacciones siguen disponibles.</figcaption>
         </figure>}
     </div>
-    <div className="marine-location"><PinIcon /><span>Mar de Weddell · escena ilustrativa<small>{under ? 'Bajo el hielo marino' : 'Sobre el hielo marino'}</small></span></div>
+    <SceneBadge help={<p>{SCENE_NOTICE}</p>} onSources={() => setSourcesOpen(true)} />
+    <SceneLocation place="Mar de Weddell · escena ilustrativa" detail={under ? 'Bajo el hielo marino' : 'Sobre el hielo marino'} />
     {/* The magnifying glass hangs from an alga of the 3D scene (MarineScene); without 3D it floats over the stage. */}
     {stop.id === 'tiny' && !use3D && <MagnifyButton floating magnified={state.magnified} onToggle={magnify} />}
-    {stop.id === 'tiny' && state.magnified && <div className="marine-found">Aumento esquemático<small>En la realidad no se ven a simple vista</small></div>}
-    {stop.id === 'humpback' && state.filtered && <div className="marine-found">Filtra con barbas</div>}
-    {stop.id === 'emperor-dive' && state.dived && <div className="marine-found">Atrapa presas de a una</div>}
-    {stop.id === 'teeth' && <div className="marine-found">Filtra con dientes<small>Entra el krill · sale el agua por los costados</small></div>}
-    {stop.id === 'orcas' && <div className="marine-found">{state.example ? 'Una ola hecha en grupo' : 'Una familia que caza junta'}{state.example && <small>Orcas tipo B · oeste de la Península · ilustración</small>}</div>}
-    {stop.id === 'minke' && <div className="marine-found">Embestidas cortas<small>Contra los parches de krill, bajo el hielo</small></div>}
-    {stop.id === 'leopard' && <div className="marine-found">Morder y chupar</div>}
-    <header className="orc-top" ref={top}>
-      <div className="orc-top-r1">
-        <button type="button" className="pill orc-top-btn" aria-label="Volver al mapa" onClick={() => onLeave(false)}>{Icon.back}<span>Mapa</span></button>
-        <div className="orc-top-title"><strong>Océano</strong><span>{MARINE_QUESTION}</span></div>
-      </div>
-      <nav className="orc-steps-nav" aria-label="Capítulos de Océano">
-        <ol className="orc-steps">
-          {MARINE_CHAPTERS.map((c, i) => {
-            const current = c.id === stop.chapter;
-            return <li key={c.id} className="orc-step-item">
-              <button type="button" className={`orc-step-btn${current ? ' is-current' : ''}`} aria-current={current ? 'step' : undefined} aria-label={`${i + 1} ${c.label}`} onClick={() => dispatch({ type: 'chapter', chapter: c.id })}>
-                <span className="orc-step-num" aria-hidden="true">{i + 1}</span><span className="orc-step-name">{c.label}</span>
-              </button>
-            </li>;
-          })}
-        </ol>
-      </nav>
-    </header>
+    {stop.id === 'tiny' && state.magnified && <div className="scene-found">Aumento esquemático<small>En la realidad no se ven a simple vista</small></div>}
+    {stop.id === 'humpback' && state.filtered && <div className="scene-found">Filtra con barbas</div>}
+    {stop.id === 'emperor-dive' && state.dived && <div className="scene-found">Atrapa presas de a una</div>}
+    {stop.id === 'teeth' && <div className="scene-found">Filtra con dientes<small>Entra el krill · sale el agua por los costados</small></div>}
+    {stop.id === 'orcas' && <div className="scene-found">{state.example ? 'Una ola hecha en grupo' : 'Una familia que caza junta'}{state.example && <small>Orcas tipo B · oeste de la Península · ilustración</small>}</div>}
+    {stop.id === 'minke' && <div className="scene-found">Embestidas cortas<small>Contra los parches de krill, bajo el hielo</small></div>}
+    {stop.id === 'leopard' && <div className="scene-found">Morder y chupar</div>}
+    <ExpeditionTop topRef={top} onMap={() => onLeave(false)} chaptersLabel="Capítulos de Océano" onChapter={(id) => dispatch({ type: 'chapter', chapter: id })}
+      chapters={MARINE_CHAPTERS.map((c) => ({ id: c.id, label: c.label, current: c.id === stop.chapter }))} />
     {desktop
       ? <section className="orc-panel marine-panel" ref={panel} aria-labelledby="marine-title">{content}</section>
       : <BottomSheet className="orc-panel marine-panel" labelledBy="marine-title" sheetRef={panel} floor="peek" ceiling={overflows ? 'tall' : 'small'} size={sheetSize} onSize={setSheetSize}>{content}</BottomSheet>}
     {sourcesOpen && <SourcesView list={SOURCES} highlight={highlight} place={MARINE_QUESTION}
-      notice="Las escenas son ilustraciones inspiradas en mares antárticos, no el registro de un lugar. Cada estudio conserva el sitio donde se hizo."
+      notice={SCENE_NOTICE}
       onClose={() => setSourcesOpen(false)} />}
   </section></SourcesContext.Provider>;
 }

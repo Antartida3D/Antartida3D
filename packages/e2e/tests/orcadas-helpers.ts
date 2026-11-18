@@ -30,3 +30,21 @@ export async function openOrcadasFromMap(page: Page) {
   await clickOrcadasMarker(page);
   await startOrcadasFromIntro(page);
 }
+
+/**
+ * Goes to a chapter of Orcadas. Where the chapters are shown (a wide screen or a phone on its side) it
+ * taps the chapter; on an upright phone the chapters are hidden (#297), so it walks the panel's main button.
+ */
+export async function gotoOrcadasChapter(page: Page, name: RegExp) {
+  const nav = page.getByRole('navigation', { name: 'Capítulos de la expedición' });
+  if (await nav.isVisible()) {
+    await nav.getByRole('button', { name }).click();
+    return;
+  }
+  const kicker = page.locator('.orc-kicker').first();
+  for (let i = 0; i < 40; i++) {
+    if (name.test((await kicker.innerText()).split('·').pop() ?? '')) return;
+    await page.locator('.sheet-actions .btn.primary').click();
+  }
+  throw new Error(`Chapter ${name} not reached`);
+}

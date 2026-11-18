@@ -816,4 +816,82 @@ test.describe('3D relief view', () => {
     expect(totalMove, `samples=${JSON.stringify(samples.slice(0, 3))}`).toBeGreaterThan(20);
     expect(maxDrift, `bad=${JSON.stringify(samples.filter((s) => s.drift > 0.5).slice(0, 8))}`).toBeLessThan(0.5);
   });
+
+  test('closing a close-up PointSheet with Volver al mapa restores the previous 3D camera pose', async ({ page }) => {
+    await page.goto('/');
+    await show3D(page);
+    await page.waitForFunction(() => Boolean((window as any).__cameraControls));
+    await cameraSettled(page);
+
+    const before = await page.evaluate(() => {
+      const cc = (window as any).__cameraControls;
+      return {
+        distance: cc.distance as number,
+        pos: cc.getPosition().toArray() as number[],
+        target: cc.getTarget().toArray() as number[],
+      };
+    });
+
+    await page.locator('[data-key="testigos"] button').evaluate((b: HTMLElement) => b.click());
+    const sheet = page.getByRole('dialog', { name: 'Testigos de hielo' });
+    await expect(sheet).toBeVisible();
+    await cameraSettled(page);
+
+    const zoomedIn = await page.evaluate(() => (window as any).__cameraControls.distance as number);
+    expect(zoomedIn).toBeLessThan(10);
+
+    await sheet.getByRole('button', { name: 'Volver al mapa' }).click();
+    await expect(sheet).not.toBeVisible();
+    await cameraSettled(page);
+
+    const after = await page.evaluate(() => {
+      const cc = (window as any).__cameraControls;
+      return {
+        distance: cc.distance as number,
+        pos: cc.getPosition().toArray() as number[],
+        target: cc.getTarget().toArray() as number[],
+      };
+    });
+
+    expect(after.distance).toBeCloseTo(before.distance, 1);
+    before.pos.forEach((v, i) => expect(after.pos[i]).toBeCloseTo(v, 1));
+    before.target.forEach((v, i) => expect(after.target[i]).toBeCloseTo(v, 1));
+
+    // Also preserves an arbitrary mid-zoom/pan pose when reopening and closing with Escape.
+    await page.evaluate(() => {
+      const cc = (window as any).__cameraControls;
+      cc.moveTo(-20, 0, 15, false);
+      cc.dollyTo(180, false);
+      (window as any).__invalidate();
+    });
+    await cameraSettled(page);
+    const customBefore = await page.evaluate(() => {
+      const cc = (window as any).__cameraControls;
+      return {
+        distance: cc.distance as number,
+        pos: cc.getPosition().toArray() as number[],
+        target: cc.getTarget().toArray() as number[],
+      };
+    });
+
+    await page.locator('[data-key="testigos"] button').evaluate((b: HTMLElement) => b.click());
+    await expect(sheet).toBeVisible();
+    await cameraSettled(page);
+    expect(await page.evaluate(() => (window as any).__cameraControls.distance as number)).toBeLessThan(10);
+
+    await page.keyboard.press('Escape');
+    await expect(sheet).not.toBeVisible();
+    await cameraSettled(page);
+    const customAfter = await page.evaluate(() => {
+      const cc = (window as any).__cameraControls;
+      return {
+        distance: cc.distance as number,
+        pos: cc.getPosition().toArray() as number[],
+        target: cc.getTarget().toArray() as number[],
+      };
+    });
+    expect(customAfter.distance).toBeCloseTo(customBefore.distance, 1);
+    customBefore.pos.forEach((v, i) => expect(customAfter.pos[i]).toBeCloseTo(v, 1));
+    customBefore.target.forEach((v, i) => expect(customAfter.target[i]).toBeCloseTo(v, 1));
+  });
 });

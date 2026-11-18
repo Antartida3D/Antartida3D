@@ -222,3 +222,34 @@ test('on a trip the title and the exploration log give way, «Salir» is at the 
   if (page.viewportSize()!.width >= 820) await expect(title).toBeInViewport();
   await expect(log).toBeInViewport();
 });
+
+// drei only rewrites the z-index of a ring when it moves on screen: with the camera still, an open card
+// kept the rings' z-index and the ring of another animal was drawn over its text.
+test('an open sighting card goes over the rings of the other animals, with the camera still', async ({ page }) => {
+  test.skip(page.viewportSize()!.width < 821, 'the card opens beside its ring only on wide screens');
+  test.setTimeout(60_000);
+  await page.goto('/');
+  await show3D(page);
+  await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
+  await page.getByRole('button', { name: /Desde Ushuaia.*(Empezar expedición|Siguiente sugerida)/ }).click();
+  await page.getByRole('group', { name: 'Medio de transporte' }).getByRole('button', { name: /ARA Almirante Irízar/ }).click();
+  await page.getByRole('button', { name: 'Zarpar' }).click();
+
+  const spots = page.getByRole('button', { name: /^Avistaje: / });
+  await expect(spots.first()).toBeAttached();
+  // By keyboard: at the start the rings of the first animals overlap, and a click lands on another ring.
+  await spots.first().press('Enter');
+  const card = page.locator('.vpop');
+  await expect(card).toBeVisible();
+
+  // The card and its ring share the wrapper drei positions: it must be over every other wrapper.
+  const [open, others] = await card.evaluate((el) => {
+    const mine = el.parentElement!.parentElement!;
+    const z = (e: Element) => Number(getComputedStyle(e).zIndex) || 0;
+    const rest = [...document.querySelectorAll('.vspot')]
+      .map((b) => b.parentElement!.parentElement!)
+      .filter((w) => w !== mine);
+    return [z(mine), Math.max(0, ...rest.map(z))];
+  });
+  expect(open).toBeGreaterThan(others);
+});

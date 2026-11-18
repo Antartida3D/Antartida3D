@@ -56,24 +56,6 @@ for (const mode of ['Mapa 2D', 'Relieve 3D'] as const) {
     const markers = page.locator('.vp .mk');
     await expect(markers.first()).toBeVisible();
     const before = await markers.count();
-    if (test.info().project.use.hasTouch) {
-      // A first tap leaves a marker label open, raised to the top of the map (#54).
-      const freeMarker = () =>
-        page.evaluate(() => {
-          for (const el of document.querySelectorAll('.vp .mk')) {
-            const r = el.getBoundingClientRect();
-            const x = r.left + r.width / 2;
-            const y = r.top + r.height / 2;
-            if (r.width > 0 && el.contains(document.elementFromPoint(x, y))) return { x, y };
-          }
-          return null;
-        });
-      // 3D markers are placed once the camera settles: wait for one that is free to tap.
-      await expect.poll(freeMarker, { message: 'a marker free to tap' }).not.toBeNull();
-      const spot = (await freeMarker())!;
-      await page.touchscreen.tap(spot.x, spot.y);
-      await expect(page.locator('.vp .mk.shown')).toHaveCount(1);
-    }
 
     await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
     const list = page.getByRole('dialog', { name: 'Todos los puntos' });

@@ -64,6 +64,8 @@
 .vspot.seen svg{border-color:var(--chart-muted);background:color-mix(in srgb,var(--chart-muted) 30%,var(--chart-paper))}
 /* The model inside must stay in view: only the line changes. */
 .vspot:hover,.vspot:focus-visible{border:3px solid var(--ocre)}
+/* An open card goes over every other ring, even before the camera moves (drei writes z-index inline). */
+.vspot-wrap.open{z-index:6!important}
 @keyframes vspot{from{box-shadow:0 0 0 0 color-mix(in srgb,var(--ocre) 80%,transparent)}to{box-shadow:0 0 0 16px transparent}}
 /* Card of an animal, opened from its circle on wide screens: the trip controls stay where they are. */
 .vpop{position:absolute;left:48px;bottom:48px;width:300px;padding:12px 14px;border:2px solid var(--chart-ink);border-radius:var(--chart-radius);pointer-events:auto;text-align:left;animation:fadein .2s ease both}
@@ -76,13 +78,14 @@
 .vsighting svg{width:34px;height:34px;flex:none;color:var(--deep)}
 .vlatin{margin:0;font-style:italic;color:var(--chart-muted)}
 /* How the expedition works: the question and the notes that answer it. */
-.vexp{margin:10px 0;padding:10px 12px;border:0;border-radius:0;}
+/* No frame since the cartographic refresh (3a27b73): no side padding either, or it reads as an indent. */
+.vexp{margin:0;padding:0;border:0;border-radius:0;}
 .vquiz{margin:0;padding:0;border:0;display:flex;flex-direction:column;gap:6px}
 .vquiz legend{padding:0;margin-bottom:6px;font-weight:700}
 .vquiz .btn{width:100%;min-height:48px;height:auto;padding:8px 14px;justify-content:flex-start;text-align:left;white-space:normal}
 .vquiz .btn:disabled{opacity:1;cursor:default}
 .vquiz .vsmall{margin:2px 0 0;min-height:1.2em}
-.vnotebook{margin:10px 0;padding:10px 12px;border:0;border-radius:0;}
+.vnotebook{margin:10px 0;padding:10px 0;border:0;border-radius:0;}
 .vnotebook p{margin:0 0 8px}
 .vnotebook ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
 @media (prefers-reduced-motion:reduce){.vspot{animation:none}}

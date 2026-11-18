@@ -5,12 +5,11 @@ import { labelSide, type LabelSide } from './labels.ts';
 import { geometry, toScreen, type Size, type View } from './viewport.ts';
 
 /**
- * What a press on a marker does. Labels are closed: a finger has no hover, so its first press
- * shows the label and the second one opens; a mouse or the keyboard already see the label
- * (hover, focus) and open at once.
+ * What a press on a marker does. Any activation — touch, mouse or keyboard — opens the marker
+ * directly on the first press, while hover, keyboard focus or the guide still surface its label.
  */
-export function markerPress(shown: string | null, key: string, touch: boolean): 'show' | 'open' {
-  return touch && shown !== key ? 'show' : 'open';
+export function markerPress(_shown: string | null, _key: string, _touch: boolean): 'show' | 'open' {
+  return 'open';
 }
 
 interface MarkerBase {
@@ -72,7 +71,7 @@ export function buildMarkers(
     const pos = projector(p.x, p.y);
     return pos.visible === false ? [] : [{ p, pos }];
   });
-  const offsets = fanOffsets(shown.map((s) => s.pos), markerGap(size.vw));
+  const offsets = fanOffsets(shown.map((s) => s.pos), markerGap(size.vw, size.vh));
   shown.forEach(({ p, pos }, i) => {
     const { dx, dy } = offsets[i];
     const isA = p.tier === 'A';

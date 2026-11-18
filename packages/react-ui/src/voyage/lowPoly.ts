@@ -338,21 +338,30 @@ export function chunk(cx: number, cy: number, cz: number, sx: number, sy: number
 }
 
 const PENGUIN_BLACK = 0x1f2a36;
+const EMPEROR_BACK = 0x3b4956;
 const PENGUIN_WHITE = 0xf7fafb;
-const EMPEROR_YELLOW = 0xf2c14e;
-const EMPEROR_BILL = 0xe59a6b;
+const EMPEROR_YELLOW = 0xf4b634;
+const EMPEROR_CHEST = 0xf6e7a8;
+const EMPEROR_BILL = 0xd97d8a;
 
 /**
- * Emperor penguin, low-poly: an upright body (black back, white front facing +x), the head with its
- * yellow ear patches and the long bill. `k` is its height.
+ * Emperor penguin, low-poly: slate-grey back, jet-black head and throat, golden ear patches on the
+ * sides of the lower head, pale yellow upper chest fading into white belly, black feet and a
+ * rose-tinted lower bill. `k` is its height.
  */
 export function emperor(x: number, z: number, k: number, facing = 0): Tri[] {
-  const front = (i: number) => {
+  const isFront = (i: number) => {
     const a = (i + 0.5) / 7;
-    return a < 0.22 || a > 0.78 ? PENGUIN_WHITE : PENGUIN_BLACK;
+    return a < 0.22 || a > 0.78;
   };
-  const body = lathe(0, 0, [[0, 0.17], [0.3, 0.22], [0.62, 0.18], [0.78, 0.12]], 7, (i, band) => (band < 2 ? front(i) : i === 1 || i === 5 ? EMPEROR_YELLOW : front(i)));
-  const head = lathe(0.03, 0, [[0.76, 0.12], [0.9, 0.11], [1, 0]], 7, (i) => (i === 1 || i === 5 ? EMPEROR_YELLOW : PENGUIN_BLACK));
+  const body = lathe(0, 0, [[0, 0.17], [0.3, 0.22], [0.62, 0.18], [0.78, 0.12]], 7, (i, band) => {
+    if (isFront(i)) return band === 2 ? EMPEROR_CHEST : PENGUIN_WHITE;
+    if (band === 2 && (i === 1 || i === 5)) return EMPEROR_YELLOW;
+    return EMPEROR_BACK;
+  });
+  const head = lathe(0.03, 0, [[0.76, 0.12], [0.9, 0.11], [1, 0]], 7, (i, band) =>
+    band === 0 && (i === 1 || i === 5) ? EMPEROR_YELLOW : PENGUIN_BLACK,
+  );
   const bill: Tri[] = [
     [[0.12, 0.86, 0.025], [0.12, 0.86, -0.025], [0.27, 0.82, 0], PENGUIN_BLACK],
     [[0.12, 0.84, -0.025], [0.12, 0.84, 0.025], [0.27, 0.82, 0], EMPEROR_BILL],

@@ -155,7 +155,7 @@ export const TRANSPORTS: readonly Transport[] = [
       { text: 'En marzo de 2026 salió de Ushuaia con 65 toneladas de carga y 260 tambores y tubos de combustible, gas y aceites para las bases.', kind: 'real', sources: ['O22'] },
       // How they are used at Marambio is the question of the arrival: it is not told here.
       { text: 'Lleva dos helicópteros Sea King.', kind: 'real', sources: ['O16'] },
-      { text: 'Aproximadamente 52 horas lleva navegar a 14 nudos los 1.350 km del recorrido dibujado hasta frente a la Base Marambio. Los 1.000 km hasta la Península llevan unas 39 (cálculo propio).', kind: 'estimate', sources: [] },
+      { text: 'Aproximadamente 52 horas lleva navegar a 14 nudos los 1.350 km del recorrido dibujado hasta frente a la Base Marambio. Los 1.000 km hasta la Península llevan aproximadamente unas 39 horas (cálculo propio).', kind: 'estimate', sources: [] },
     ],
   },
   {
@@ -260,9 +260,9 @@ export const MILESTONES: readonly Milestone[] = [
     kinds: BOTH,
     essential: { text: 'Unos 800 km de mar abierto entre el Cabo de Hornos y las islas Shetland del Sur. Tiene fama de ser uno de los mares más bravos del planeta: es famoso por sus temporales.', kind: 'real', sources: ['I6', 'O46'] },
     more: [
-      { text: 'Acá se registraron vientos de más de 50 nudos (unos 93 km/h, conversión propia) y olas de 10 metros. Los temporales se deben a las bajas presiones y a un fondo de más de 4.000 metros.', kind: 'real', sources: ['O46'] },
+      { text: 'Se han registrado vientos de más de 50 nudos (unos 93 km/h, conversión propia) y olas de 10 metros. Los temporales se deben a las bajas presiones y a un fondo de más de 4.000 metros.', kind: 'real', sources: ['O46'] },
       { text: 'La tormenta dibujada en el mapa es ilustrativa: no muestra el tiempo de hoy ni el lugar exacto de un temporal.', kind: 'illustrative', sources: [] },
-      { text: 'Por acá pasa la corriente más caudalosa del planeta. La Corriente Circumpolar Antártica mueve en promedio 173,3 millones de metros cúbicos de agua por segundo, medidos entre 2007 y 2011. Es un 30 % más de lo que se creía.', kind: 'real', sources: ['I6'] },
+      { text: 'Por aquí fluye la corriente más caudalosa del planeta. La Corriente Circumpolar Antártica mueve en promedio 173,3 millones de metros cúbicos de agua por segundo, medidos entre 2007 y 2011. Es un 30 % más de lo que se creía.', kind: 'real', sources: ['I6'] },
       { text: 'En la campaña 2024/25 el Irízar cruzó el Drake “en menos de dos días”, a 14 nudos de promedio.', kind: 'real', sources: ['O16'] },
     ],
   },
@@ -315,7 +315,7 @@ export const MILESTONES: readonly Milestone[] = [
 
 /** Tourism is only context here: it is not a playable transport. */
 export const VOYAGE_TOURISM_NOTE: VoyageFact = {
-  text: 'Por Ushuaia también pasa entre el 85 % y el 90 % del turismo antártico. Acá viajás en los medios de la ciencia.',
+  text: 'Por Ushuaia también pasa entre el 85 % y el 90 % del turismo antártico.',
   kind: 'real',
   sources: ['U3'],
 };
@@ -368,7 +368,7 @@ export const EXPEDITION: Readonly<Record<string, ExpeditionStop>> = {
   },
   'mar-abierto': {
     notes: [
-      { kind: 'ship', fact: real('A las bases se les lleva por mar combustible, víveres, materiales de construcción, repuestos, maquinaria y material científico.', 'O43') },
+      { kind: 'ship', fact: real('Los suministros de las bases son transportados por vía marítima, como por ejemplo combustible, víveres, materiales de construcción, repuestos, maquinaria y material científico.', 'O43') },
       { only: 'irizar', fact: real('En una sola etapa de la campaña 2022-23 el Irízar movió 565 toneladas de carga y más de 630.000 litros de gasoil antártico.', 'O41') },
     ],
   },
@@ -455,7 +455,7 @@ export interface Sighting {
  */
 export const SIGHTINGS: readonly Sighting[] = [
   // Beagle Channel
-  { id: 'cormoran', name: 'Cormorán imperial', latin: 'Leucocarbo atriceps', icon: 'bird', anchor: [-68, -54.89], offset: -0.2, brief: true,
+  { id: 'cormoran', name: 'Cormorán imperial', latin: 'Leucocarbo atriceps', icon: 'bird', anchor: [-67.9, -54.89], offset: -0.2, brief: true,
     fact: { text: 'Es el ave marina más abundante del canal. Anida en colonias en islas del sector argentino: se contaron 7.703 nidos activos.', kind: 'real', sources: ['O20', 'O30'] } },
   { id: 'eclaireurs', name: 'Faro Les Éclaireurs', latin: 'Canal Beagle', icon: 'lighthouse', anchor: [-67.88, -54.89], offset: 0, brief: true, place: [-68.083, -54.871],
     fact: { text: 'Es una torre de piedra de 11 m, pintada de rojo y blanco. Entró en servicio el 23 de diciembre de 1920. El nombre de los islotes, “los exploradores”, se lo puso el capitán francés Louis Ferdinand Martial.', kind: 'real', sources: ['O35'] } },
@@ -469,7 +469,7 @@ export const SIGHTINGS: readonly Sighting[] = [
     fact: { text: 'Fue bautizado Faro del Fin del Mundo. Lo puso en servicio el 25 de mayo de 1884 la División Expedicionaria al Atlántico Sur, al mando del comodoro Augusto Lasserre. Es Monumento Histórico Nacional.', kind: 'real', sources: ['O40'] } },
   // Drake Passage
   { id: 'albatros', name: 'Albatros errante', latin: 'Diomedea exulans', icon: 'bird', anchor: [-66.45, -57.3], offset: 4,
-    fact: { text: 'Los que crían en Georgias del Sur se mueven desde el sur de Brasil hasta la Península Antártica. Para alimentarse se alejan hasta 4.000 km de su colonia.', kind: 'real', sources: ['I11'] } },
+    fact: { text: 'Los albatros errantes que anidan en las islas Georgias del Sur recorren el mar desde el sur de Brasil hasta la Península Antártica. En la época de cría, un albatros errante puede alejarse hasta 4.000 km de su colonia para buscar alimento.', kind: 'real', sources: ['I11'] } },
   { id: 'petrel-gigante', name: 'Petrel gigante del sur', latin: 'Macronectes giganteus', icon: 'bird', anchor: [-66.33, -58.6], offset: -4.5,
     fact: { text: 'Es carroñero: en lo que regurgitan sus pichones aparecen sobre todo restos de pingüino y también carne de foca.', kind: 'real', sources: ['I12'] } },
   { id: 'delfin-cruzado', name: 'Delfín cruzado', latin: 'Lagenorhynchus cruciger', icon: 'dolphin', anchor: [-63.4, -60.75], offset: 4,

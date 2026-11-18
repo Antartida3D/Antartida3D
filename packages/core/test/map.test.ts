@@ -59,6 +59,11 @@ describe('fanning out crowded markers (#238)', () => {
     expect(fanOffsets([at(0, 0), at(MARKER_GAP_PX, 0), at(500, 500)])).toEqual([{ dx: 0, dy: 0 }, { dx: 0, dy: 0 }, { dx: 0, dy: 0 }]);
   });
 
+  it('uses the compact mobile gap on short landscape viewports (#273)', () => {
+    expect(markerGap(844, 390)).toBe(MARKER_GAP_PX);
+    expect(markerGap(1440, 900)).toBeGreaterThan(MARKER_GAP_PX);
+  });
+
   it('separates two crowded markers to the minimum gap along the line between them, and nothing else moves', () => {
     const ps = [at(100, 100), at(120, 100), at(600, 600)];
     const o = fanOffsets(ps);
@@ -221,11 +226,10 @@ describe('markers and labels', () => {
     }
   });
 
-  it('shows the label on a first touch and opens on the second; a mouse or the keyboard open at once', () => {
-    expect(markerPress(null, 'campana', true)).toBe('show');
+  it('opens on the first touch just like a mouse click or keyboard activation', () => {
+    expect(markerPress(null, 'campana', true)).toBe('open');
     expect(markerPress('campana', 'campana', true)).toBe('open');
-    // Touching another marker shows that one instead.
-    expect(markerPress('campana', 'orcadas', true)).toBe('show');
+    expect(markerPress('campana', 'orcadas', true)).toBe('open');
     expect(markerPress(null, 'campana', false)).toBe('open');
   });
 

@@ -38,6 +38,7 @@ import {
   markerGap,
   markerLift,
   SEA_POINTS,
+  MARAMBIO_POINT,
   type Geometry,
   type MapPoint,
   type Marker,
@@ -246,6 +247,7 @@ function ControlsBridge({
   const gl = useThree((s) => s.gl);
   const initialized = useRef(false);
   const approach = useRef<{ from: CameraPose; to: CameraPose; startMs: number } | null>(null);
+  const preVisitPoseRef = useRef<{ pos: Vector3; target: Vector3 } | null>(null);
   const live = useRef({ size, geo, onCameraRest, onZoomAvailabilityChange });
   live.current = { size, geo, onCameraRest, onZoomAvailabilityChange };
   const lastZoomAvailability = useRef<ZoomAvailability | null>(null);
@@ -274,10 +276,12 @@ function ControlsBridge({
     (window as unknown as { __gl?: unknown }).__gl = gl;
 
     if (phase === 'approach') {
+      preVisitPoseRef.current = null;
       const from = { pos: cc.getPosition(new Vector3()), target: cc.getTarget(new Vector3()) };
       approach.current = { from, to: divePose3D(diveTarget), startMs: performance.now() };
       invalidate();
     } else if (phase === 'dive') {
+      preVisitPoseRef.current = null;
       const dur = reduced ? 0 : 1.5;
       const dive = divePose3D(diveTarget);
       cc.setLookAt(
@@ -291,7 +295,7 @@ function ControlsBridge({
       );
     } else if (!initialized.current) {
       initialized.current = true;
-      const home = homePose3D(size.vw / size.vh);
+      const home = homePose3D(size.vw / size.vh, undefined, size.vh);
       cc.setLookAt(home.pos.x, home.pos.y, home.pos.z, home.target.x, home.target.y, home.target.z, false);
     }
   }, [phase, reduced, diveTarget]);
@@ -349,19 +353,28 @@ function ControlsBridge({
       endDistance = clampDistance(cc.distance / cmd.factor);
       cc.dollyTo(endDistance, smooth);
     } else if (cmd.type === 'home' && voyaging) {
+      preVisitPoseRef.current = null;
       // The camera stays on the vehicle: the overview of the trip is as far as it may go.
       endDistance = cc.maxDistance;
       cc.dollyTo(endDistance, smooth);
     } else if (cmd.type === 'home') {
-      const home = homePose3D(aspect);
-      endDistance = homeDistance3D(aspect);
+      preVisitPoseRef.current = null;
+      const home = homePose3D(aspect, undefined, size.vh);
+      endDistance = homeDistance3D(aspect, size.vh);
       cc.setLookAt(home.pos.x, home.pos.y, home.pos.z, home.target.x, home.target.y, home.target.z, smooth);
     } else if (cmd.type === 'focus') {
+      preVisitPoseRef.current = null;
       const t = poseFromView(size, geo, cmd.view).target;
-      endDistance = clampDistance(distanceFromK3D(aspect, cmd.view.k));
+      endDistance = clampDistance(distanceFromK3D(aspect, cmd.view.k, size.vh));
       cc.moveTo(t.x, 0, t.z, smooth);
       cc.dollyTo(endDistance, smooth);
     } else if (cmd.type === 'visit') {
+      if (!preVisitPoseRef.current) {
+        preVisitPoseRef.current = {
+          pos: cc.getPosition(new Vector3(), true),
+          target: cc.getTarget(new Vector3(), true),
+        };
+      }
       // Down to the model on the relief, looking at it from above at an angle, from where the camera is.
       const at = pointFocus(cmd.id);
       endDistance = cmd.distance;
@@ -380,6 +393,15 @@ function ControlsBridge({
       );
       void cc.dollyTo(cmd.distance, smooth);
       void cc.rotatePolarTo(VISIT_POLAR, smooth);
+    } else if (cmd.type === 'leave') {
+      const prev = preVisitPoseRef.current;
+      preVisitPoseRef.current = null;
+      if (!prev) return;
+      endDistance = prev.pos.distanceTo(prev.target);
+      cc.setLookAt(prev.pos.x, prev.pos.y, prev.pos.z, prev.target.x, prev.target.y, prev.target.z, smooth);
+      onCameraRest(viewFrom3D(size, geo, prev.target, endDistance));
+      invalidate();
+      return;
     } else if (cmd.type === 'pan') {
       // Move the target over the ground, in the camera's own left/right and forward directions.
       const upp = (2 * cc.distance * Math.tan((FOV * Math.PI) / 360)) / size.vh; // world units per px
@@ -412,7 +434,7 @@ function ControlsBridge({
       const ground = groundTarget(cc.getPosition(eye.current, true), cc.getTarget(target.current, true));
       if (ground) void cc.setTarget(ground.x, ground.y, ground.z, !reduced);
     }
-    const at = fromWorld(cc.getTarget(target.current));
+    const at = fromWorld(cc.getTarget(target.current, true));
     cc.minDistance = minCameraDistance(at.x, at.y);
     // Measured where the camera is heading, not where it is: a move passing by on its way (the trip
     // from the overview down to the ship at departure) would be cut short at the limit (#181).
@@ -446,7 +468,7 @@ function ControlsBridge({
       enabled={phase !== 'approach' && phase !== 'dive' && phase !== 'travel'}
       minDistance={ICE_MIN_DISTANCE}
       // Travelling, the camera stays near the vehicle: farther it gets lost among the lands (#167).
-      maxDistance={voyaging ? voyageMaxDistance3D(size.vw / size.vh) : homeDistance3D(size.vw / size.vh)}
+      maxDistance={voyaging ? voyageMaxDistance3D(size.vw / size.vh, size.vh) : homeDistance3D(size.vw / size.vh, size.vh)}
     />
   );
 }
@@ -483,7 +505,7 @@ function ProjectMarkers({
     // places, each with a line back to its own (#238): the spread is worked out here, from where the
     // camera really puts them, since the tilt and the turn change how close they look. Sea markers
     // stay out of it, and go behind: a moving ship must not push the points around.
-    const gap = markerGap(size.width);
+    const gap = markerGap(size.width, size.height);
     // A marker just out of the screen is hidden but still takes its room, up to a gap past the edge:
     // if it stopped counting the moment it left, its neighbours would jump back (#253).
     const roomX = 1.1 + (2 * gap) / size.width;
@@ -540,6 +562,11 @@ function ProjectMarkers({
 
       if (sm.point.id === 'sea-irizar') {
         const state = irizarStateAtTime(uTime);
+        // Hide the ship marker near Marambio so it does not crowd the Peninsula markers.
+        if (Math.hypot(state.x - MARAMBIO_POINT.x, state.y - MARAMBIO_POINT.y) < 32) {
+          btn.style.display = 'none';
+          continue;
+        }
         mapX = state.x;
         mapY = state.y;
       } else if (sm.point.targetSpecies) {
@@ -626,7 +653,7 @@ export function Map3DLayer({
   const [enablePost, setEnablePost] = useState(true);
   const [lowQuality, setLowQuality] = useState(false);
 
-  const homeStart = homePose3D(size.vw / size.vh);
+  const homeStart = homePose3D(size.vw / size.vh, undefined, size.vh);
 
   const seaMarkers = useMemo<SeaMarker[]>(
     () =>

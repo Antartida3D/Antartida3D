@@ -69,7 +69,7 @@ export function ArrivalPicker({
       <p className="orc-intro-recon">
         <KindChip kind="recon" label="Reconstrucción ilustrada" />
       </p>
-      <p className="vsmall">La expedición arranca en {MONTH_NAMES[arrivalMonth(value) - 1]}, temporada de visitas.</p>
+      <p className="vsmall">La expedición arranca en {MONTH_NAMES[arrivalMonth(value) - 1]}, dentro de la temporada de visitas (noviembre a marzo).</p>
       {transportFact && (
         <ul className="vfacts">
           <li className="vfact"><span><Quoted text={transportFact.text} /><Cites ids={transportFact.sourceIds} /></span></li>

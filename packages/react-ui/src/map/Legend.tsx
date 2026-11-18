@@ -84,7 +84,7 @@ export function Legend({ open, onToggle, mode = '2d' }: { open: boolean; onToggl
           <ul aria-label="Contenido de la leyenda">
             <li><span className="sw"><span className="a" /></span><span><b>Expedición disponible</b></span></li>
             <li><span className="sw"><span className="b" /></span><span>Ampliación prevista</span></li>
-            <li><span className="sw"><span className="c" /></span><span>Punto de interés</span></li>
+            <li><span className="sw"><span className="c">{Icon.info}</span></span><span>Punto de interés</span></li>
             {mode === '3d' && (
               <li><span className="sw"><span className="sea">{Icon.sea}</span></span><span>Vida en el mar</span></li>
             )}

@@ -32,3 +32,7 @@ Quien probó el recorrido lo encontró confuso en varias versiones: con un panel
 ## Estado de implementación y verificación
 
 Implementado en la rama del issue #211. Pruebas de `@antartida/core` y e2e (`packages/e2e/tests/poncho-diorama.spec.ts` y `poncho-map.spec.ts`) a 390 y 1440 px pasadas el 16 de noviembre de 2026. Pendientes en otros issues: que cada hito defina sus escenas (#215 a #225) y los puntos tocables (#228).
+
+## Actualización de vigencia (18 de noviembre de 2026)
+
+La barra de viaje de Poncho ya no tiene el botón «‹ Hito N»: ofrece la parada donde está el equipo con el chip «Leído · título» de los viajes desde Ushuaia ([DEC-309](DEC-309-barra-de-viaje-como-ushuaia.md)). El resto de esta decisión (el panel como el de Fósiles, una frase por vez, «Atrás» y «Siguiente», «Volver al mapa» y «Continuar») sigue vigente.

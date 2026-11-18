@@ -370,7 +370,13 @@ function routeLogLine(state: VoyageState, animated: boolean): VoyageFact | null 
   return logLineAt(state.kind, (from + next.t) / 2, next.milestone.segment);
 }
 
-function TravelBar({ voyage, animated, onExit }: { voyage: VoyageController; animated: boolean; onExit: () => void }) {
+function TravelBar({ voyage, animated, onExit, onRead }: {
+  voyage: VoyageController;
+  animated: boolean;
+  onExit: () => void;
+  /** The chip of the stop the vehicle is at: reads it (again). */
+  onRead: (index: number) => void;
+}) {
   const state = voyage.state!;
   const bar = useRef<HTMLElement>(null);
   const trip = useRef<HTMLParagraphElement>(null);
@@ -412,8 +418,9 @@ function TravelBar({ voyage, animated, onExit }: { voyage: VoyageController; ani
   }, [bus, animated]);
 
   const next = voyageStops(state.kind)[state.reached].milestone;
-  // The trip of Poncho opens every milestone by itself: there is none to offer, only to go back into (the button of the row).
-  const stop = here >= 0 && !storyInOrder(state.kind) ? voyageStops(state.kind)[here].milestone : null;
+  // The milestone the vehicle is at or just went by, offered as a chip to read (again), as in every trip (#309). In the story of
+  // Poncho, whose stops open by themselves, going back along the route (◀) is how a stop already told is reached again.
+  const stop = here >= 0 ? voyageStops(state.kind)[here].milestone : null;
   const question = stop ? expeditionAt(stop.id, state.transport).question : null;
   const read = stop ? voyage.opened.includes(stop.id) : false;
   /** Handlers of a press-and-hold button that moves the trip forward or back. */
@@ -468,7 +475,7 @@ function TravelBar({ voyage, animated, onExit }: { voyage: VoyageController; ani
           <button
             type="button"
             className={'vchip' + (read ? ' read' : '')}
-            onClick={() => voyage.openMilestone(here)}
+            onClick={() => onRead(here)}
             aria-label={`${read ? 'Volver a leer' : 'Leer'} el hito: ${stop.title}`}
           >
             <span className="vchipk">{read ? 'Leído' : 'Leer'}</span>{stop.title}
@@ -490,12 +497,6 @@ function TravelBar({ voyage, animated, onExit }: { voyage: VoyageController; ani
       <div className="row">
         {/* Where the trip is not animated (2D map, reduced motion) it goes step by step. Animated, holding
             «avanzar» picks up speed (#166): a button to jump ahead was one too many (#190). */}
-        {/* In the story the stop the team is at is gone back into whole, scene and panel, not read apart. */}
-        {storyInOrder(state.kind) && here >= 0 && (
-          <button type="button" className="btn ghost vhere" onClick={() => voyage.openMilestone(here)} aria-label={`Volver al hito: ${voyageStops(state.kind)[here].milestone.title}`}>
-            ‹ Hito {here + 1}
-          </button>
-        )}
         {!animated && <button type="button" className="btn primary vgo" onClick={voyage.skip}>Próximo hito</button>}
         {animated && (
           <button
@@ -547,6 +548,23 @@ export function VoyagePanel({ voyage, transport, animated, webgl, reduced, onExi
   const [sources, setSources] = useState<VoyageSourceCode | null>(null);
   // Stops whose diorama lost its WebGL context for good: they show the common card from then on.
   const [lost, setLost] = useState<readonly string[]>([]);
+  // A stop of Poncho read again from the chip of the bar shows its card (text, beside the map), not its scene, until the
+  // card is closed (#309). Its pin on the map is the way back into the scene.
+  const [asCards, setAsCards] = useState(false);
+  useEffect(() => {
+    if ((state?.card ?? -1) < 0) setAsCards(false);
+  }, [state?.card]);
+  // The pin of a stop goes into it, whole: its scene is tried again even if it lost its WebGL context before (#309).
+  voyage.bus.openStop = (index) => {
+    const id = state ? voyageStops(state.kind)[index]?.milestone.id : undefined;
+    if (id) setLost((l) => (l.includes(id) ? l.filter((x) => x !== id) : l));
+    setAsCards(false);
+    voyage.openMilestone(index);
+  };
+  const readCard = (index: number) => {
+    if (state && storyInOrder(state.kind)) setAsCards(true);
+    voyage.openMilestone(index);
+  };
   // At which sentence the next stop is entered: the first, except when coming back from the one after it.
   const enterAt = useRef<DioramaEntry>('start');
   // The stop that opened has read it: the next one opens at its first sentence unless the user goes back again.
@@ -560,7 +578,7 @@ export function VoyagePanel({ voyage, transport, animated, webgl, reduced, onExi
   const diorama = (at: VoyageState) => {
     const { milestone } = voyageStops(at.kind)[at.card];
     const scene = at.kind === 'dogs' && webgl && !lost.includes(milestone.id) ? sceneOf(milestone.id) : undefined;
-    if (!scene) return <MilestoneCard key={at.card} voyage={voyage} animated={animated} onExit={onExit} />;
+    if (!scene || asCards) return <MilestoneCard key={at.card} voyage={voyage} animated={animated} onExit={onExit} />;
     const before = previousVoyageCard(at);
     const after = nextVoyageCard(at);
     return (
@@ -594,7 +612,7 @@ export function VoyagePanel({ voyage, transport, animated, webgl, reduced, onExi
       ? <TransferBar />
     : state.card >= 0
       ? diorama(state)
-      : <TravelBar voyage={voyage} animated={animated} onExit={() => onExit(false)} />;
+      : <TravelBar voyage={voyage} animated={animated} onExit={() => onExit(false)} onRead={readCard} />;
   const trip = state?.transport ?? transport;
   const context = tripSourcesContext(trip, setSources);
   return (

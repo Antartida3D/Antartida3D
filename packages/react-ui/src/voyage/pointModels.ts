@@ -27,8 +27,8 @@ const ICE_TOWER = 0xddf0fa;
 // Thwaites: pale ice wall tone blended with relief snow for V-shaped crevasses.
 const CREVASSE_ICE = 0xc9e0ee;
 // Vostok: section of the ice sheet, the lake and the bed (illustrative colors).
-const GLACIAL_ICE = 0x9ccfe6;
-const GLACIAL_ICE_DEEP = 0x5f9fc6;
+export const GLACIAL_ICE = 0x9ccfe6;
+export const GLACIAL_ICE_DEEP = 0x5f9fc6;
 const LAKE_WATER = 0x1d4f7a;
 export const BEDROCK = 0x4a4e54;
 // Belgrano II: Bertrab granite, grey to pink (EIA of CONAE, Antarctic Treaty Secretariat).
@@ -735,7 +735,7 @@ const DRILL = { x: -0.06, z: -0.06 };
  * sled with boxes and ice cores, the trench entrance and the satellite dish. It stands on the snow of
  * the relief itself. Illustration, not to scale.
  */
-const TESTIGOS: Tri[] = [
+export const TESTIGOS: Tri[] = [
   ...archTent(DRILL.x, DRILL.z, 0.44, 0.27, 0.17, TENT, TENT_SHADE),
   ...block(DRILL.x + 0.221, 0.04, DRILL.z, 0.004, 0.08, 0.06, BLACK),
   // The drill tower through the roof, with its braces.

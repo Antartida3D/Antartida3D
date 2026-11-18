@@ -40,6 +40,8 @@ Desde #286 el punto abre una escena propia (`packages/core/src/content/polo-scen
 
 ## `testigos` — Testigos de hielo
 
+Desde #288 el punto abre una escena propia (`packages/core/src/content/testigos-scene.ts`). Sus tres puntos tienen una oración cada uno, sin agregar ninguna. Una prueba controla que el texto de los hechos reales de la escena sea exactamente esta ficha.
+
 > Cuando la nieve se compacta y se vuelve hielo, el aire que quedaba entre los cristales queda encerrado en burbujas: son muestras de la atmósfera de otras épocas. En el Domo C, el proyecto europeo EPICA perforó hasta 3.260 m y obtuvo un registro de unos 800.000 años. En 2025, Beyond EPICA llegó a la roca a 2.800 m en Little Dome C, con hielo que guarda un registro continuo del clima de hasta 1,2 millones de años.
 
 | Oración | Fuente | Cita |

@@ -61,9 +61,11 @@ const loadPolo = () => import('./polo/PoloExpedition.tsx');
 const PoloExpedition = lazy(() => loadPolo().then((m) => ({ default: m.PoloExpedition })));
 const loadBelgrano = () => import('./belgrano/BelgranoExpedition.tsx');
 const BelgranoExpedition = lazy(() => loadBelgrano().then((m) => ({ default: m.BelgranoExpedition })));
+const loadTestigos = () => import('./testigos/TestigosExpedition.tsx');
+const TestigosExpedition = lazy(() => loadTestigos().then((m) => ({ default: m.TestigosExpedition })));
 
-/** The screens a map point opens. Thwaites, Vostok, the South Pole and Belgrano II are points of interest with a scene of their own (#280, #281, #286, #287), not expeditions (isScenePoint). */
-const EXPEDITIONS = { orcadas: loadOrcadas, marambio: loadMarambio, fosiles: loadFossils, oceano: loadMarine, thwaites: loadThwaites, vostok: loadVostok, polo: loadPolo, belgrano: loadBelgrano } as const;
+/** The screens a map point opens. Thwaites, Vostok, the South Pole, Belgrano II and the ice cores are points of interest with a scene of their own (#280, #281, #286, #287, #288), not expeditions (isScenePoint). */
+const EXPEDITIONS = { orcadas: loadOrcadas, marambio: loadMarambio, fosiles: loadFossils, oceano: loadMarine, thwaites: loadThwaites, vostok: loadVostok, polo: loadPolo, belgrano: loadBelgrano, testigos: loadTestigos } as const;
 type ExpeditionId = keyof typeof EXPEDITIONS;
 const isExpedition = (id: string): id is ExpeditionId => id in EXPEDITIONS;
 /** `?expedicion=fosiles` or `?expedicion=oceano` opens that expedition directly, to share it or review it. */
@@ -414,6 +416,8 @@ export function AntarcticaApp() {
             <PoloExpedition reduced={reduced} onLeave={() => leave(false)} />
           ) : screen === 'belgrano' ? (
             <BelgranoExpedition reduced={reduced} onLeave={() => leave(false)} />
+          ) : screen === 'testigos' ? (
+            <TestigosExpedition reduced={reduced} onLeave={() => leave(false)} />
           ) : screen === 'oceano' ? (
             <MarineExpedition
               reduced={reduced}

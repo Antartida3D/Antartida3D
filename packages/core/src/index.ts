@@ -28,6 +28,7 @@ export * from './content/thwaites-scene.ts';
 export * from './content/vostok-scene.ts';
 export * from './content/polo-scene.ts';
 export * from './content/belgrano-scene.ts';
+export * from './content/testigos-scene.ts';
 export * from './scene-points.ts';
 export * from './fossils.ts';
 export * from './content/marine.ts';

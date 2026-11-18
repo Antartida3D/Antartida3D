@@ -394,3 +394,5 @@ En cumplimiento con las bases de la hackatón, se declara el uso de herramientas
   > Revisión paso a paso con quien lleva el issue; implementación, modelos low-poly de la jorobada, la minke y la foca leopardo, pruebas, capturas y documentación con asistencia de IA. La aleta de la minke antártica se verificó en la ficha de NOAA Fisheries. Los modelos y las escenas son ilustraciones; no se agregaron datos nuevos.
 - **Fechas de congelamiento y de entrega (#324):**
   > Actualización de las fechas en `AGENTS.md` y `ROADMAP.md` y registro de la decisión con asistencia de IA, a partir del pedido del equipo y del formulario de entrega.
+- **Guion del pitch (#101):**
+  > Estructura, redacción y página del guion (`docs/entrega/guion-pitch.html`) con asistencia de IA, a partir de lo que dictó el equipo y de los criterios de evaluación de las bases. El equipo revisó y corrigió el texto. Las cifras de turismo salen de la presentación del equipo, con sus fuentes (INFUETUR e IAATO). No se agregaron datos nuevos a la aplicación.

@@ -84,6 +84,21 @@ Tiempos medidos en [`docs/rendimiento/e2e.md`](docs/rendimiento/e2e.md).
 
 Cada PR declara su impacto documental y registra las decisiones nuevas o reemplazadas. Ver [control de documentación](docs/control-documentacion.md) para el formato, la comprobación local y la activación del requisito en GitHub.
 
+## Licencia
+
+Copyright (C) 2026 Equipo DOT ENV, formado por las personas que figuran en «Integrantes».
+
+El código y el material propio de este repositorio se publican con la [Licencia Pública General de GNU, versión 3](LICENSE) (`GPL-3.0-only`). Cualquier persona puede usar, estudiar, modificar y redistribuir el proyecto. Quien distribuya una versión modificada debe publicarla con la misma licencia y conservar el aviso de autoría. El proyecto se entrega sin garantía. La decisión y sus motivos están en [DEC-321](docs/decisiones/DEC-321-licencia-gpl-3.md).
+
+El material propio es el código fuente, los textos de la aplicación, los modelos de bloques y low-poly, las ilustraciones y la documentación.
+
+La licencia **no** cubre lo siguiente:
+
+- **Datos y recursos de terceros:** conservan su propia licencia y su atribución, detalladas en «Fuentes y licencias». Esto incluye los archivos de `packages/core/src/assets/` generados a partir de esos datos (relieve, batimetría, costas).
+- **Fotografías de `packages/core/src/assets/fossils/` y `packages/core/src/assets/marambio/`:** el origen y el permiso de cada una están en [`docs/expediciones/fosiles-fuentes.md`](docs/expediciones/fosiles-fuentes.md) y [`docs/expediciones/base-marambio.md`](docs/expediciones/base-marambio.md). Las del archivo de E. B. Olivero se publican con autorización de la familia solo para este proyecto. No se pueden reutilizar sin un permiso nuevo.
+- **Fotografías de `packages/core/src/assets/poncho/`:** su autorización está pendiente, como registra [`docs/expediciones/poncho-fuentes.md`](docs/expediciones/poncho-fuentes.md). No se pueden reutilizar.
+- **Librerías y tipografías:** cada una mantiene su licencia (MIT y SIL Open Font License 1.1).
+
 ## Fuentes y licencias
 
 - **Reclamos territoriales antárticos (#108):** capa opcional del mapa 3D, desactivada al cargar. Se abre desde el modal de entrada de **El Polo Sur** con **Ver reclamos territoriales** (#128, #286); con la capa encendida, el interruptor **Reclamos territoriales** la apaga. Muestra superficies transparentes de colores intensos, con bordes punteados y banderas; los botones por país permiten distinguir superposiciones. Incluye los siete países reclamantes y Pedro I como reclamo insular separado de Tierra de la Reina Maud. Ofrece **Sectores con mar** (referencia geográfica hasta 60° S) y **Solo tierra y hielo** sobre Bedmap3. El color de un sector sobre el mar no significa soberanía ni ZEE. Las fichas de los siete países describen sus reclamos y enlazan las fuentes. Banderas con ubicación y escala ilustrativas. Fuentes nacionales, Tratado Antártico, metodología y licencias en [`docs/reclamos-antarticos-fuentes.md`](docs/reclamos-antarticos-fuentes.md).
@@ -167,6 +182,8 @@ Cada PR declara su impacto documental y registra las decisiones nuevas o reempla
 
 En cumplimiento con las bases de la hackatón, se declara el uso de herramientas de inteligencia artificial en el desarrollo de los prototipos:
 
+- **Licencia del proyecto (#321):**
+  > Comparación de licencias, lectura de las bases y redacción de la sección «Licencia», del registro de la decisión y del issue con asistencia de IA. El texto de la licencia es el oficial, sin cambios. La elección de la licencia fue del equipo.
 - **Botones de zoom en sus límites (#237):**
   > Implementación y pruebas con asistencia de Codex, a partir del pedido del usuario de ocultar «+» al máximo acercamiento y «−» al máximo alejamiento. Los botones conservan su espacio, reaparecen al salir del límite y trasladan el foco si corresponde. El comportamiento cubre el relieve 3D y el respaldo 2D; se documenta en [DEC-237](docs/decisiones/DEC-237-botones-zoom.md). No se agregaron datos ni fuentes.
 - **Sistema visual cartográfico y migración local de la UI:**

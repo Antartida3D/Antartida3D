@@ -168,7 +168,7 @@ export const PONCHO_MILESTONES: readonly Milestone[] = [
     title: 'La última proeza y el retiro',
     anchor: DUSE_BAY,
     kinds: ['dogs'],
-    essential: book(21, 'Otra tormenta: una ventisca sorprende a la patrulla a unos doce kilómetros de Esperanza, el trineo vuelca y la brújula se hunde en la nieve, pero los hombres siguen a Poncho y, después de dos horas a ciegas, ven las luces de la base. Pasan los años y en su legajo aparece cada vez más una frase corta, “No trabajó”: Poncho ya no corre a la par de los perros jóvenes. Un verano lo llevan a bordo del rompehielos rumbo a Ushuaia, donde vive tranquilo en el hotel de un viejo compañero de patrulla, hasta que una mañana de primavera de 1978 ya no despierta.'),
+    essential: book(21, 'Otra tormenta: una ventisca sorprende a la patrulla a unos doce kilómetros de Esperanza, el trineo vuelca y la brújula se hunde en la nieve, pero los hombres siguen a Poncho y, después de dos horas a ciegas, ven las luces de la base. Pasan los años y en su legajo aparece cada vez más una frase corta, “No trabajó”: Poncho ya no corre a la par de los perros jóvenes. Un verano lo llevan a bordo del rompehielos rumbo a Ushuaia, una excepción, en mérito a su prestigio; allí vive tranquilo en el hotel de un viejo compañero de patrulla, llega a vivir casi 18 años, mucho más que otros perros grandes, y una mañana de primavera de 1978, en el jardín, ya no despierta.'),
     hook: 'Así termina el camino de Poncho.',
     more: [
       // The lost compass (1967).
@@ -177,14 +177,14 @@ export const PONCHO_MILESTONES: readonly Milestone[] = [
       book(20, 'El oficial a cargo clavó tres cañas con banderolas donde habían volcado, para volver a buscar la brújula.'),
       book(20, 'Después de dos horas de andar a ciegas, ya de noche, los hombres vieron las luces de la base: Poncho los había llevado hasta Esperanza. Tres días después, cuando pasó el temporal, recuperaron la brújula y los vehículos.'),
       // The retirement and the way to Ushuaia (1973).
-      book(21, 'Ya no corría a la par de los perros jóvenes y se cansaba en las patrullas largas. Que dejara la Antártida fue una excepción, en mérito a su prestigio.'),
+      book(21, 'Ya no corría a la par de los perros jóvenes y se cansaba en las patrullas largas.'),
       book(5, 'En 1973 lo trasladaron en el rompehielos hasta Ushuaia, donde lo recibió una familia que lo alojó en su hotel Antártida.'),
       // His last years in Ushuaia (1973-1978).
       book(21, 'En Ushuaia lo recibió un viejo compañero de patrulla, que había dejado el Ejército y tenía un hotel llamado Antártida. Poncho llevaba a los niños a pasear en un trineo improvisado, por las calles.'),
       book(21, 'En Ushuaia descubrió un mundo nuevo: conoció a los niños, los árboles, los caballos y las moscas, y allí hacía calor.'),
       book(22, 'En 1976 sufrió un accidente y un veterinario aconsejó sacrificarlo, pero la familia se negó.'),
       book(5, 'En 1977 y 1978 tiró de un trineo con niños fueguinos en desfiles y exhibiciones.'),
-      book(22, 'Llegó a vivir casi 18 años, mucho más que otros perros grandes. Se intentó conservar su cuerpo, pero la taxidermia no prosperó.'),
+      book(22, 'Se intentó conservar su cuerpo, pero la taxidermia no prosperó.'),
     ],
   },
 ];

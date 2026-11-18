@@ -80,6 +80,19 @@ describe('the last stop of Poncho (#223)', () => {
     for (const p of ship.paths) for (const q of [p.from, ...(p.via ?? []), p.to]) expect(Math.hypot(q[0], q[1])).toBeLessThanOrEqual(ship.radius);
   });
 
+  it('shows Poncho old when he no longer works, and keeps him well behind the man on the gangway', () => {
+    const second = scene.elements.find((e) => (e.appearAt ?? 0) === 1 && e.id === 'poncho')!;
+    expect(second.old).toBe(true);
+    const ship = scene.then!.scene;
+    const poncho = ship.elements.find((e) => e.id === 'poncho')!;
+    const man = ship.elements.find((e) => e.kind === 'person')!;
+    expect(poncho.old).toBe(true);
+    // Seconds behind the man, at the pace of the walk: more than two of a dog's length apart (0.32 each of body).
+    const board = ship.paths.find((p) => p.id === 'board')!;
+    const apart = (((poncho.lag ?? 0) - (man.lag ?? 0)) / board.duration) * scenePathLength(board);
+    expect(apart).toBeGreaterThan(4 * 0.32);
+  });
+
   it('shows the young team going off and Poncho walking away from it, alone, at its second sentence', () => {
     const second = scene.elements.filter((e) => (e.appearAt ?? 0) === 1);
     expect(second.filter((e) => e.id === 'poncho')).toHaveLength(1);

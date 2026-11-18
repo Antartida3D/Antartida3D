@@ -15,6 +15,10 @@ const PONCHO_EAR_DARK = 0x3b3a3a;
 export const PONCHO_EYE_ALMOND = 0x8a5a2b;
 export const PONCHO_NOSE = 0x1f2a36;
 const PONCHO_TAIL_WHITE = 0xfaf6ec;
+// Poncho grown old (#223): the cream greys and the face goes white.
+const PONCHO_OLD_COAT = 0xe2dccd;
+const PONCHO_OLD_SHADE = 0xc6bfae;
+const PONCHO_OLD_MUZZLE = 0xeeece6;
 
 // Pack dogs and the Nansen sled.
 const PACK_GREY = 0xb4b2aa;
@@ -64,6 +68,9 @@ export const PONCHO_PALETTE: DogPalette = {
   ear: PONCHO_EAR_DARK,
   tail: PONCHO_TAIL_WHITE,
 };
+
+/** Poncho in his last years (#223): a greyer coat and a white face; the same ears, patches and tail. */
+export const PONCHO_OLD_PALETTE: DogPalette = { ...PONCHO_PALETTE, coat: PONCHO_OLD_COAT, shade: PONCHO_OLD_SHADE, muzzle: PONCHO_OLD_MUZZLE };
 
 const packPalette = (coat: number, shade: number, patch: number): DogPalette => ({
   coat,

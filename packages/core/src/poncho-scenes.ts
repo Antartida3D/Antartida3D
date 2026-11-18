@@ -85,6 +85,8 @@ export interface SceneElement {
   readonly side?: number;
   /** dog: sniffs the snow, its head bobbing down and up while it goes (issue #217). */
   readonly sniff?: boolean;
+  /** dog: Poncho grown old (#223): a greyer face, the head low and a slow walk. */
+  readonly old?: boolean;
   /** dog: lying curled on the ground, with no drift of snow under it (#261). */
   readonly curled?: boolean;
   /** With a path: seconds behind the one at the point of the path (a litter in single file follows the same trail). */
@@ -237,7 +239,8 @@ const FAREWELL_SHIP: SceneDef = {
     prop('icebreakerShip', 1.6, 3.6, 0, 1, { radius: 0.01 }),
     prop('cargoCrates', 3.5, 2.4, Math.PI, 1, { radius: 0.9 }),
     person(NAVY, -3.4, -0.4, 0, 'walk', 0, { path: 'board' }),
-    dog('poncho', -3.4, -0.4, 0, { path: 'board', lag: 1.2 }),
+    // Old and slow behind the man, well apart from him on the gangway.
+    dog('poncho', -3.4, -0.4, 0, { path: 'board', lag: 3, old: true }),
   ],
   paths: [
     {
@@ -246,7 +249,8 @@ const FAREWELL_SHIP: SceneDef = {
       via: [[-2.5, 0.5], [-1.5, 0.3], [-0.7, 1.2], [SHIP_GANGWAY_FOOT[0], SHIP_GANGWAY_FOOT[1] - 0.4], SHIP_GANGWAY_FOOT, SHIP_GANGWAY_TOP, [SHIP_GANGWAY_TOP[0] + 0.5, SHIP_GANGWAY_TOP[1] + 0.08]],
       to: SHIP_DOOR,
       delay: 0.3,
-      duration: 12,
+      // Slower than the file of «En rompehielos hacia Belgrano» (12 s): the pace of an old dog.
+      duration: 18,
       board: true,
     },
   ],
@@ -543,20 +547,21 @@ export const PONCHO_SCENES: Readonly<Record<string, SceneDef>> = {
       dog('poncho', -3.6, -1.2, 0, { until: 1, path: 'arrive', lead: 2.6 }),
       person(NAVY, -3.6, -1.2, 0, 'walk', 0, { until: 1, path: 'arrive', lead: -1.6 }),
       person(ORANGE, -3.6, -1.2, 0, 'walk', 1.7, { until: 1, path: 'arrive', lead: -1.1, side: 0.8 }),
-      // 1: the young team goes off with the sled, and Poncho walks slowly the other way, alone.
-      sled(0.2, -1.6, 0, { appearAt: 1, path: 'leave', radius: 0.8 }),
-      dog('pack', 0.2, -1.6, 0, { appearAt: 1, path: 'leave', lead: 1.1, side: 0.28 }),
-      dog('pack', 0.2, -1.6, 0, { appearAt: 1, path: 'leave', lead: 1.1, side: -0.28 }),
-      dog('pack', 0.2, -1.6, 0, { appearAt: 1, path: 'leave', lead: 1.85, side: 0.28 }),
-      dog('pack', 0.2, -1.6, 0, { appearAt: 1, path: 'leave', lead: 1.85, side: -0.28 }),
-      person(RED, 0.2, -1.6, 0, 'walk', 0, { appearAt: 1, path: 'leave', lead: -1.6 }),
-      dog('poncho', -0.6, -0.4, Math.PI, { appearAt: 1, path: 'apart' }),
+      // 1: the young team goes off with the sled to -x, away from the huts of the base (on +x by the shore), and Poncho, old,
+      // walks slowly the other way, alone.
+      sled(1.2, -1.7, Math.PI, { appearAt: 1, path: 'leave', radius: 0.8 }),
+      dog('pack', 1.2, -1.7, Math.PI, { appearAt: 1, path: 'leave', lead: 1.1, side: 0.28 }),
+      dog('pack', 1.2, -1.7, Math.PI, { appearAt: 1, path: 'leave', lead: 1.1, side: -0.28 }),
+      dog('pack', 1.2, -1.7, Math.PI, { appearAt: 1, path: 'leave', lead: 1.85, side: 0.28 }),
+      dog('pack', 1.2, -1.7, Math.PI, { appearAt: 1, path: 'leave', lead: 1.85, side: -0.28 }),
+      person(RED, 1.2, -1.7, Math.PI, 'walk', 0, { appearAt: 1, path: 'leave', lead: -1.6 }),
+      dog('poncho', 0.6, -0.2, 0, { appearAt: 1, path: 'apart', old: true }),
     ],
     paths: [
-      { id: 'arrive', from: [-3.6, -1.2], to: [1.4, -0.8], delay: 0.3, duration: 9 },
-      { id: 'leave', from: [0.2, -1.6], to: [3.8, -1.9], delay: 0.6, duration: 8 },
+      { id: 'arrive', from: [-3.6, -1.2], to: [0.2, -0.9], delay: 0.3, duration: 9 },
+      { id: 'leave', from: [1.2, -1.7], to: [-3.4, -2.0], delay: 0.6, duration: 8 },
       // Slowly, the other way from the team: a walk of 2 units in 10 s.
-      { id: 'apart', from: [-0.6, -0.4], to: [-2.5, 0.2], delay: 1.2, duration: 10 },
+      { id: 'apart', from: [0.6, -0.2], to: [2.2, 0.6], delay: 1.2, duration: 10 },
     ],
     camera: { distanceFactor: 1.05, elevationDeg: 42, azimuthDeg: -112 },
     shots: [

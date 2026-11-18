@@ -22,7 +22,7 @@ import { VOXEL_PALETTE } from '../orcadas/stationModels.ts';
 import { boxShade, buildPolyGeometry, resolveRelief, type Vec3 } from './lowPoly.ts';
 import { buildBeltTris, ponchoPersonParts, ponchoPoseLift, ponchoWaistAt, type PersonPose, type PersonVariant } from './ponchoPeople.ts';
 import { DOG_HEAD_PIVOT, DOG_LEGS, DOG_LEG_PIVOT, dogHeadPitch, dogLegSwing, ponchoDogParts, type DogLeg } from './ponchoDog.ts';
-import { PONCHO_PALETTE, type DogPalette } from './ponchoModels.ts';
+import { PONCHO_OLD_PALETTE, PONCHO_PALETTE, type DogPalette } from './ponchoModels.ts';
 import { PONCHO_PROPS } from './ponchoProps.ts';
 import { PONCHO_PROPS2, buildRescueRotor, RESCUE_ROTOR_AT } from './ponchoProps2.ts';
 import { DOG_SCALE, elementStaticTris, pathFootprints, type Ground } from './ponchoSceneBuild.ts';
@@ -73,6 +73,9 @@ const DOG_STRIDE = 0.45;
 /** A dog leans with the ground over this length, but only past this slope (radians): the gentle bumps of the ice leave it level, a gangway tilts it. */
 const DOG_SPAN = 0.3;
 const DOG_SLOPE_DEAD_ZONE = 0.12;
+/** An old dog (#223): how far its head hangs (radians, about the neck) and how much its back sags (a share of its height). */
+const OLD_HEAD_DOWN = 0.35;
+const OLD_HEIGHT = 0.93;
 /** The sled leans with the ground over this length (scene units). */
 const SLED_SPAN = 0.55;
 /** Turns of the rotor of a flying helicopter per second, and the slow bob of the aircraft in the air (scene units, radians per second). */
@@ -124,7 +127,7 @@ interface Shared {
 let shared: Shared | null = null;
 function sharedGeometry(): Shared {
   return (shared ??= {
-    dogs: { poncho: dogGeometry(PONCHO_PALETTE), pack: dogGeometry(darkened(PONCHO_PALETTE, PACK_DARKEN)) },
+    dogs: { poncho: dogGeometry(PONCHO_PALETTE), pack: dogGeometry(darkened(PONCHO_PALETTE, PACK_DARKEN)), old: dogGeometry(PONCHO_OLD_PALETTE) },
     // The ground faces of the prop (colored as the relief) would drag along with a moving sled: left out.
     sled: buildPolyGeometry(PONCHO_PROPS.nansenSled.tris.filter((t) => t[3] >= 0)),
     woodBar: buildBoxGeometry([[0, 0, 0, 1, 1, 1, WOOD_LIGHT]]),
@@ -450,7 +453,8 @@ export function DioramaActors({ scene, step, ground, reduced }: { scene: SceneDe
       const legs = dogLegs.current[i];
       if (legs) for (const leg of DOG_LEGS) legs[leg]?.rotation.set(0, 0, swing[leg] + lying * LIE_LEG_FOLD);
       // The head tips about the neck: it bobs to the snow while the dog sniffs (not with reduced motion: level).
-      dogHeads.current[i]?.rotation.set(0, 0, dogHeadPitch(t, !!e.sniff && !reduced));
+      // An old dog (#223) carries it low all the time.
+      dogHeads.current[i]?.rotation.set(0, 0, e.old ? -OLD_HEAD_DOWN : dogHeadPitch(t, !!e.sniff && !reduced));
       const drop = lying * LIE_DROP * DOG_LEG_PIVOT.frontLeft[1] * DOG_SCALE * k;
       node.position.set(spot.x, gy + lift - (e.curled ? CURLED_SINK : 0) - drop, spot.z);
       // Going up a gangway it leans with the slope; on the ice's gentle bumps it stays level.
@@ -458,7 +462,7 @@ export function DioramaActors({ scene, step, ground, reduced }: { scene: SceneDe
       const fz = -Math.sin(spot.yaw) * DOG_SPAN;
       const slope = Math.atan2(walk(spot.x + fx, spot.z + fz) - walk(spot.x - fx, spot.z - fz), 2 * DOG_SPAN);
       node.rotation.set(sway, spot.yaw, e.curled || lying > 0 ? 0 : Math.sign(slope) * Math.max(0, Math.abs(slope) - DOG_SLOPE_DEAD_ZONE), 'YZX');
-      node.scale.set(DOG_SCALE * k, DOG_SCALE * k * (e.curled ? CURLED_HEIGHT : 1), DOG_SCALE * k);
+      node.scale.set(DOG_SCALE * k, DOG_SCALE * k * (e.curled ? CURLED_HEIGHT : e.old ? OLD_HEIGHT : 1), DOG_SCALE * k);
       harnesses.set(i, placed(DOG_HARNESS, spot.x, gy, spot.z, spot.yaw, DOG_SCALE * k));
     });
 
@@ -534,7 +538,7 @@ export function DioramaActors({ scene, step, ground, reduced }: { scene: SceneDe
             </group>
           );
         }
-        const dog = sharedGeometry().dogs[e.id];
+        const dog = sharedGeometry().dogs[e.old ? 'old' : e.id];
         return (
           <group key={i}>
             {stillNode}

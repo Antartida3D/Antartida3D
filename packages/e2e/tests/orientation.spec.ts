@@ -6,6 +6,7 @@ import { PONCHO_MILESTONES } from '../../core/src/content/poncho.ts';
 import { MILESTONES } from '../../core/src/content/ushuaia.ts';
 import { CHAPTERS } from '../../core/src/orcadas.ts';
 import { show3D } from './map-helpers.ts';
+import { gotoOrcadasChapter } from './orcadas-helpers.ts';
 import { LIST_BUTTON_LABEL } from '../../core/src/content/points.ts';
 
 const PLANE_MILESTONES = MILESTONES.filter((m) => m.kinds.includes('plane'));
@@ -152,9 +153,8 @@ test.describe('resume last expedition', () => {
     const section = page.getByRole('region', { name: 'Expedición Estación Orcadas' });
     await expect(section).toBeVisible();
 
-    const chaptersNav = section.getByRole('navigation', { name: 'Capítulos de la expedición' });
-    await chaptersNav.getByRole('button').nth(1).click();
-    await expect(chaptersNav.getByRole('button').nth(1)).toHaveAttribute('aria-current', 'step');
+    await gotoOrcadasChapter(page, /Observar/);
+    await expect(section.locator('.orc-step-btn').nth(1)).toHaveAttribute('aria-current', 'step');
 
     await section.getByRole('button', { name: 'Volver al mapa' }).click();
     const resumeBtn = page.getByRole('button', {
@@ -167,7 +167,7 @@ test.describe('resume last expedition', () => {
     await resumeBtn.click();
 
     await expect(section).toBeVisible();
-    await expect(chaptersNav.getByRole('button').nth(1)).toHaveAttribute('aria-current', 'step');
+    await expect(section.locator('.orc-step-btn').nth(1)).toHaveAttribute('aria-current', 'step');
   });
 
   test('resumes Océano at exact stop after reload', async ({ page }) => {
@@ -180,6 +180,8 @@ test.describe('resume last expedition', () => {
     await expect(section).toBeVisible();
 
     const nextBtn = section.locator('.marine-next');
+    // The first press looks under the ice (#283), the next two go on.
+    await nextBtn.click();
     await nextBtn.click();
     await nextBtn.click();
     await expect(section).toContainText(`parada 3 de ${MARINE_STOPS.length}`);

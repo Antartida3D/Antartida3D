@@ -385,6 +385,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
 /* The notice of a 3D that failed after the start (#242): over everything, in the middle, without blocking the app. */
 .webgl-note.fail3d{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:30;width:max-content;max-width:min(360px,calc(100vw - 32px))}
 .webgl-note .wn-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;margin-top:10px}
+.webgl-note .wn-actions > .btn:only-child{flex:1}
 .m3d .legend{max-height:min(420px,max(48px,calc(100dvh - 260px)));overflow-y:auto;overscroll-behavior:contain}
 .m3d .legend ul{max-height:min(250px,30dvh);overflow-y:auto;overscroll-behavior:contain}
 .claims-actions{display:flex;align-items:center;gap:6px}
@@ -478,7 +479,8 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
 }
 /* On a phone «Continuar» is one short line: the step (chapter, point) is left out, its full text stays in the accessible name. */
 @media (max-width:819.98px){
-  .btn.resume:not(.next-btn){white-space:nowrap;min-height:48px;padding-block:6px;padding-inline:10px;font-size:15px}
+  /* Two lines when the title does not fit (#297): the whole step stays readable at 360 px. */
+  .btn.resume:not(.next-btn){white-space:normal;text-wrap:balance;text-align:center;line-height:1.15;min-height:48px;padding-block:6px;padding-inline:10px;font-size:15px}
   .btn.resume:not(.next-btn) .ico{margin-left:6px}
   .btn.resume .rdetail{display:none}
 }

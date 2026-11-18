@@ -3,7 +3,7 @@ import { AVAILABLE_COUNT, LIST_BUTTON_LABEL } from '../../core/src/content/point
 import { clearStorage } from '../storage.ts';
 import { ORCADAS_GUIDING_QUESTION, ORCADAS_INTRO_DESC, factById } from '../../core/src/content/orcadas.ts';
 import { answerFor } from '../../core/src/orcadas.ts';
-import { clickOrcadasMarker, openOrcadasFromMap } from './orcadas-helpers.ts';
+import { clickOrcadasMarker, openOrcadasFromMap, gotoOrcadasChapter } from './orcadas-helpers.ts';
 import { mockOpenMeteo } from './weather-helpers.ts';
 import { MAP_2D_ENABLED, show3D } from './map-helpers.ts';
 
@@ -239,10 +239,7 @@ test('completes the full mobile tour without typing any numbers (390x844 and 360
 
 test('opens Orcadas from the 2D map, completes it, and updates the log', async ({ page }) => {
   await openOrcadasFromMap(page);
-  await page
-    .getByRole('navigation', { name: 'Capítulos de la expedición' })
-    .getByRole('button', { name: /Responder/ })
-    .click();
+  await gotoOrcadasChapter(page, /Responder/);
   await page.getByRole('button', { name: 'Terminar expedición' }).click();
 
   await expect(log(page)).toContainText(`1/${AVAILABLE_COUNT}`);
@@ -425,10 +422,7 @@ test('never renders facts from unverified sources in any chapter or tour stop (w
   const stepNames = ['Llegar', 'Observar', 'Viajar', 'Responder'];
 
   for (const stepName of stepNames) {
-    await page
-      .getByRole('navigation', { name: 'Capítulos de la expedición' })
-      .getByRole('button', { name: new RegExp(stepName) })
-      .click();
+    await gotoOrcadasChapter(page, new RegExp(stepName));
 
     while (true) {
       await openAllDetailsInPanel(page);
@@ -451,10 +445,7 @@ test('at most one TourCard is visible and zero fact cards appear outside details
 
   const chapters = ['Llegar', 'Observar', 'Viajar', 'Responder'];
   for (const name of chapters) {
-    await page
-      .getByRole('navigation', { name: 'Capítulos de la expedición' })
-      .getByRole('button', { name: new RegExp(name) })
-      .click();
+    await gotoOrcadasChapter(page, new RegExp(name));
 
     while (true) {
       const counts = await page.evaluate(() => {
@@ -483,10 +474,7 @@ test('B4: resetting panel scroll on chapter change', async ({ page }) => {
   await openOrcadasFromMap(page);
 
   // Navigate to Viajar and advance to its last stop (4 de 4), opening details so scroll container overflows on desktop too
-  await page
-    .getByRole('navigation', { name: 'Capítulos de la expedición' })
-    .getByRole('button', { name: /Viajar/ })
-    .click();
+  await gotoOrcadasChapter(page, /Viajar/);
   await expect(page.getByRole('heading', { level: 2, name: 'Viaje en el tiempo' })).toBeVisible();
   while ((await primary(page).innerText()).trim() === 'Siguiente') {
     await primary(page).click();
@@ -545,19 +533,13 @@ test('B1: observation month stays fixed when changing scene month', async ({ pag
   await openOrcadasFromMap(page);
 
   // 1. Confirm temperature reading in Observar
-  await page
-    .getByRole('navigation', { name: 'Capítulos de la expedición' })
-    .getByRole('button', { name: /Observar/ })
-    .click();
+  await gotoOrcadasChapter(page, /Observar/);
   await expect(page.getByRole('heading', { level: 2, name: 'Observación del día' })).toBeVisible();
   await page.locator('.orc-obs-confirm-btn').first().click();
   await expect(page.locator('.orc-obs-feedback')).toBeVisible();
 
   // Check Responder sentence and summary before changing scene month
-  await page
-    .getByRole('navigation', { name: 'Capítulos de la expedición' })
-    .getByRole('button', { name: /Responder/ })
-    .click();
+  await gotoOrcadasChapter(page, /Responder/);
   await expect(page.getByRole('heading', { level: 2, name: 'La respuesta' })).toBeVisible();
   const sentenceBefore = await page.locator('.orc-answer-sentence').textContent();
   const summaryBefore = await page.locator('.orc-done-summary > p').textContent();
@@ -703,24 +685,19 @@ test('at 844x390 landscape the chapter h2 and primary button are in the viewport
   expect(scrollTop).toBe(0);
 });
 
-test('at 360x740 the 4 chapter buttons are >= 44 px high and the nav does not scroll horizontally', async ({ page }) => {
+test('at 360x740 the chapters are hidden and the header row fits without scrolling', async ({ page }) => {
   const vp = page.viewportSize() ?? { width: 1440, height: 900 };
   test.skip(vp.width !== 360 || vp.height !== 740, 'Compact 360x740 test only');
 
   await openOrcadasFromMap(page);
 
-  const stepBtns = page.locator('.orc-step-btn');
-  expect(await stepBtns.count()).toBe(4);
-  for (let i = 0; i < 4; i++) {
-    const box = (await stepBtns.nth(i).boundingBox())!;
-    expect(box.height).toBeGreaterThanOrEqual(44);
-  }
-
-  const navScrolls = await page.evaluate(() => {
-    const nav = document.querySelector('.orc-steps-nav');
-    return nav ? nav.scrollWidth > nav.clientWidth : false;
+  await expect(page.locator('.orc-steps-nav')).not.toBeVisible();
+  const row = await page.evaluate(() => {
+    const r1 = document.querySelector('.orc-top-r1')!;
+    return { fits: r1.scrollWidth <= r1.clientWidth, right: r1.getBoundingClientRect().right };
   });
-  expect(navScrolls).toBe(false);
+  expect(row.fits).toBe(true);
+  expect(row.right).toBeLessThanOrEqual(360);
 });
 
 test('on mobile the observation sheet opens tall with the thermometer plate and confirm button in the viewport', async ({
@@ -730,7 +707,7 @@ test('on mobile the observation sheet opens tall with the thermometer plate and 
   test.skip(vp.width > 420, 'Mobile portrait only test');
 
   await openOrcadasFromMap(page);
-  await page.locator('.orc-step-btn').nth(1).click();
+  await gotoOrcadasChapter(page, /Observar/);
   await expect(page.getByRole('heading', { level: 2, name: 'Observación del día' })).toBeVisible();
 
   const panel = page.locator('.orc-panel.sheet');

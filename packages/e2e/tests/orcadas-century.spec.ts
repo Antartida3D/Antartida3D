@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { clearStorage } from '../storage.ts';
 import { answerFor, climateFor } from '../../core/src/orcadas.ts';
-import { openOrcadasFromMap } from './orcadas-helpers.ts';
+import { openOrcadasFromMap, gotoOrcadasChapter } from './orcadas-helpers.ts';
 
 let consoleErrors: string[] = [];
 
@@ -25,10 +25,7 @@ test('Viajar: renders annual series chart, folds legend and two-segment trend in
 }) => {
   await openOrcadasFromMap(page);
 
-  await page
-    .getByRole('navigation', { name: 'Capítulos de la expedición' })
-    .getByRole('button', { name: /Viajar/ })
-    .click();
+  await gotoOrcadasChapter(page, /Viajar/);
   await expect(page.getByRole('heading', { level: 2, name: 'Viaje en el tiempo' })).toBeVisible();
 
   const overflow = await page.evaluate(
@@ -75,10 +72,7 @@ test('Responder: with user reading, sentence matches answerFor, chart shows thre
   await openOrcadasFromMap(page);
 
   // 1. Enter temperature guess -3.0 in Observar via Ajuste fino
-  await page
-    .getByRole('navigation', { name: 'Capítulos de la expedición' })
-    .getByRole('button', { name: /Observar/ })
-    .click();
+  await gotoOrcadasChapter(page, /Observar/);
   await expect(page.getByRole('heading', { level: 2, name: 'Observación del día' })).toBeVisible();
 
   await page.locator('details.orc-obs-fine > summary').click();
@@ -88,10 +82,7 @@ test('Responder: with user reading, sentence matches answerFor, chart shows thre
   await expect(page.locator('.orc-obs-feedback')).toBeVisible();
 
   // 2. Navigate to Responder
-  await page
-    .getByRole('navigation', { name: 'Capítulos de la expedición' })
-    .getByRole('button', { name: /Responder/ })
-    .click();
+  await gotoOrcadasChapter(page, /Responder/);
   await expect(page.getByRole('heading', { level: 2, name: 'La respuesta' })).toBeVisible();
 
   await expect(page.locator('.orc-question')).toContainText('¿Cuánto cambió el clima');
@@ -131,10 +122,7 @@ test('Responder: without reading shows monthly mean, reference line, and Volver 
 }) => {
   await openOrcadasFromMap(page);
 
-  await page
-    .getByRole('navigation', { name: 'Capítulos de la expedición' })
-    .getByRole('button', { name: /Responder/ })
-    .click();
+  await gotoOrcadasChapter(page, /Responder/);
   await expect(page.getByRole('heading', { level: 2, name: 'La respuesta' })).toBeVisible();
 
   const currentMonth = new Date().getMonth() + 1;

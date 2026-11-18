@@ -80,13 +80,6 @@
   background: #f7fafb;
 }
 
-/* No chapter buttons under the top bar here: on a phone the month chip goes right below it. */
-@media (max-width: 899px), (max-height: 500px) {
-  .mar .orc-month-strip-wrap {
-    top: 72px;
-  }
-}
-
 /* Cerro Nevado (#206) shares the layout of Marambio (.mar): only its own pieces here. */
 .cn .orc-hs {
   left: 0;

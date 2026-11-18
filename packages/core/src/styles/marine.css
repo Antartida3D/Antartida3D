@@ -5,29 +5,15 @@
    on a portrait phone it sits between the top bar and the bottom sheet. */
 .marine-stage { position: absolute; inset: 0; z-index: 0; background: color-mix(in srgb, var(--paper) 80%, var(--glacier)); overflow: hidden; }
 .marine-stage canvas { touch-action: none; }
-/* No top bar: «Mapa» and, where they fit, the chapters float over the scene, which reaches the top of the screen. */
-.marine-expedition .orc-top { background: none; border: 0; box-shadow: none; }
-.marine-expedition .orc-top-r1 { pointer-events: none; }
-.marine-expedition .orc-top-btn { pointer-events: auto; }
-.marine-expedition .orc-top-title { display: none; }
-/* On a wide screen, at the bottom left corner of the scene, where nothing else is. */
-.marine-location { position: absolute; z-index: 4; bottom: 24px; left: 24px; display: flex; align-items: center; gap: 8px; pointer-events: none; font: 500 14px/1.2 'Fraunces', Georgia, serif; color: var(--chart-ink); padding: 7px 12px; background: var(--chart-paper); border: var(--btn-border); border-radius: var(--chart-button-radius); }
-.marine-location small { display: block; font: 400 12px/1.3 'Atkinson Hyperlegible', sans-serif; color: var(--chart-ink); margin-top: 2px; }
-/* The pin of the map, in ochre like the pins of the notebook (.vnote). */
-.marine-location .vpinicon { flex: none; width: 16px; height: 22px; color: var(--ocre); }
 /* The button that magnifies the phytoplankton: small, over the alga it hangs from, with a line down to it. */
 .marine-magnify { min-height: 36px; padding: 0 10px; gap: 5px; font-size: 13px; white-space: nowrap; }
 .marine-magnify .ico { width: 18px; height: 18px; }
 .marine-callout { position: absolute; left: 0; bottom: 14px; transform: translateX(-50%); }
 .marine-callout::after { content: ''; position: absolute; left: 50%; top: 100%; width: 2px; height: 14px; margin-left: -1px; background: var(--chart-ink); }
 .marine-magnify.is-floating { position: absolute; z-index: 4; top: calc(var(--scene-top, 0px) + 14px); left: 24px; }
-.marine-found { position: absolute; z-index: 4; bottom: calc(var(--scene-sheet, 0px) + 80px); left: calc((100% - var(--scene-side, 0px)) / 2); transform: translateX(-50%) rotate(-2deg); padding: 10px 16px; font: 22px 'Caveat', cursive; background: var(--paper); white-space: nowrap; box-shadow: 1px 2px 0 color-mix(in srgb, var(--ink) 20%, transparent); pointer-events: none; }
-.marine-found small { display: block; font: 10px 'Atkinson Hyperlegible', sans-serif; margin-top: 4px; }
 .marine-eyebrow { font-size: 12px; color: var(--pencil); margin: 0 0 8px; line-height: 1.5; }
 .marine-line { font-size: 16px; line-height: 1.55; margin: 0 0 20px; }
 @media (max-width: 899px) and (min-height: 501px) {
-  /* A phone does not show the chapters: the panel says the stop, and «Siguiente» and the back arrow walk them. */
-  .marine-expedition .orc-steps-nav { display: none; }
   /* The scene fills the screen and never changes size: folding or raising the sheet covers more or less of it, but the
      camera keeps its framing. MarineExpedition moves the view up by half the small sheet, so the scene sits above it. */
   .marine-stage { inset: 0; }
@@ -36,16 +22,11 @@
   /* Folded, the sheet says the title of the stop, not its number. */
   .marine-expedition .orc-panel.peek .orc-chapter-h2 { display: block; }
   .marine-expedition .orc-panel.peek .sheet-label { display: none; }
-  /* On the row of «Mapa», at the other end. */
-  .marine-location { top: 8px; right: 12px; bottom: auto; left: auto; z-index: 5; font-size: 13px; padding: 5px 10px; gap: 6px; }
-  .marine-location small { font-size: 11px; }
   .marine-magnify.is-floating { top: calc(var(--scene-top, 0px) + 10px); left: 12px; }
-  .marine-found { bottom: calc(var(--scene-sheet, 0px) + 50px); font-size: 18px; max-width: calc(100% - 50px); white-space: normal; text-align: center; }
   .marine-fallback figcaption { bottom: 40px; font-size: 10px; }
   .marine-line { font-size: 15px; line-height: 1.5; margin-bottom: 16px; }
 }
 @media (orientation: landscape) and (max-height: 500px) {
-  .marine-location { top: calc(var(--scene-top, 0px) + 8px); right: calc(var(--scene-side, 0px) + 8px); bottom: auto; left: auto; }
   .marine-line { font-size: 14px; }
 }
 /* Beside the scene the panel keeps one height for every stop, so «Siguiente» stays in the same place and the visitor

@@ -53,7 +53,7 @@ test('on mobile touch, one finger pans target without tilting and two-finger pin
   // Pick a y-row on the visible canvas clear of the header strip, bottom sheet, and hotspot buttons.
   const findCanvasY = (xOffsets: number[]) =>
     page.evaluate((offsets) => {
-      const strip = document.querySelector('.orc-month-strip-wrap')?.getBoundingClientRect();
+      const strip = document.querySelector('.orc-top')?.getBoundingClientRect();
       const panel = document.querySelector('.orc-panel')?.getBoundingClientRect();
       const minY = Math.round((strip?.bottom ?? 100) + 24);
       const maxY = Math.round((panel?.top ?? window.innerHeight * 0.5) - 24);

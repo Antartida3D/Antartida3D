@@ -9,7 +9,6 @@ import {
   seaIceAt,
   type FactKind,
 } from '@antartida/core';
-import { useMediaQuery } from '../hooks.ts';
 import { FactList } from './FactList.tsx';
 import { KindChip } from './KindChip.tsx';
 import { SunArc } from './time/SunArc.tsx';
@@ -106,8 +105,6 @@ export function MonthStrip({
       },
     [season, hour, onHour]
   );
-  // The whole strip only where the scene has room for it: a phone, upright or on its side, gets the chip.
-  const isDesktop = useMediaQuery('(min-width: 900px) and (min-height: 501px)');
   const [open, setOpen] = useState(false);
 
   const normMonth = (((month - 1) % 12) + 12) % 12 + 1;
@@ -151,17 +148,8 @@ export function MonthStrip({
 
   const currentMonthData = monthsData[normMonth - 1] ?? monthsData[0]!;
 
+  // Move focus into the active month when opening, and return to the chip on close.
   useEffect(() => {
-    if (isDesktop) setOpen(false);
-  }, [isDesktop]);
-
-  // Move focus into the active month when opening on mobile, and return to the chip on close.
-  useEffect(() => {
-    if (isDesktop) {
-      wasOpenRef.current = false;
-      returnFocusRef.current = false;
-      return;
-    }
     if (open && !wasOpenRef.current) {
       btnRefs.current[normMonthRef.current - 1]?.focus();
     } else if (!open && wasOpenRef.current && returnFocusRef.current) {
@@ -169,10 +157,10 @@ export function MonthStrip({
     }
     wasOpenRef.current = open;
     returnFocusRef.current = false;
-  }, [open, isDesktop]);
+  }, [open]);
 
   useEffect(() => {
-    if (isDesktop || !open) return;
+    if (!open) return;
     const onPointerDown = (e: PointerEvent) => {
       const target = e.target as Element | null;
       if (wrapRef.current?.contains(target)) return;
@@ -196,7 +184,7 @@ export function MonthStrip({
     };
     document.addEventListener('pointerdown', onPointerDown);
     return () => document.removeEventListener('pointerdown', onPointerDown);
-  }, [isDesktop, open]);
+  }, [open]);
 
   const stepMonth = (key: string): number | null => {
     if (key === 'ArrowLeft' || key === 'ArrowDown') {
@@ -240,10 +228,8 @@ export function MonthStrip({
 
   const handleSelectMonth = (m: number) => {
     onMonth(m);
-    if (!isDesktop) {
-      returnFocusRef.current = true;
-      setOpen(false);
-    }
+    returnFocusRef.current = true;
+    setOpen(false);
   };
 
   const stripBody = (
@@ -305,57 +291,51 @@ export function MonthStrip({
       className="orc-month-strip-wrap"
       aria-label={place.asideLabel}
     >
-      {isDesktop ? (
-        stripBody
-      ) : (
-        <>
-          <button
-            ref={chipRef}
-            type="button"
-            className="orc-month-chip"
-            aria-expanded={open}
-            aria-controls={POPOVER_ID}
-            aria-label={`Mes: ${monthName}. Cambiar mes`}
-            onClick={() => {
-              if (open) {
-                returnFocusRef.current = true;
-                setOpen(false);
-              } else {
-                setOpen(true);
-              }
-            }}
-            onKeyDown={handleChipKeyDown}
-          >
-            <span className="orc-month-chip-name">{chipMonthLabel}</span>
-            <span className="orc-month-chip-bars" aria-hidden="true">
-              <MonthBars
-                daylightPct={currentMonthData.daylightPct}
-                stripe={currentMonthData.stripe}
-                stripeClass={place.stripeClass}
-              />
-            </span>
-            <span className="orc-month-chip-caret" aria-hidden="true">
-              ▾
-            </span>
-          </button>
+      <button
+        ref={chipRef}
+        type="button"
+        className="orc-month-chip"
+        aria-expanded={open}
+        aria-controls={POPOVER_ID}
+        aria-label={`Mes: ${monthName}. Cambiar mes`}
+        onClick={() => {
+          if (open) {
+            returnFocusRef.current = true;
+            setOpen(false);
+          } else {
+            setOpen(true);
+          }
+        }}
+        onKeyDown={handleChipKeyDown}
+      >
+        <span className="orc-month-chip-name">{chipMonthLabel}</span>
+        <span className="orc-month-chip-bars" aria-hidden="true">
+          <MonthBars
+            daylightPct={currentMonthData.daylightPct}
+            stripe={currentMonthData.stripe}
+            stripeClass={place.stripeClass}
+          />
+        </span>
+        <span className="orc-month-chip-caret" aria-hidden="true">
+          ▾
+        </span>
+      </button>
 
-          {open && (
-            <div
-              id={POPOVER_ID}
-              className="orc-month-popover"
-              onKeyDown={(e) => {
-                if (e.key === 'Escape') {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  returnFocusRef.current = true;
-                  setOpen(false);
-                }
-              }}
-            >
-              {stripBody}
-            </div>
-          )}
-        </>
+      {open && (
+        <div
+          id={POPOVER_ID}
+          className="orc-month-popover"
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              e.preventDefault();
+              e.stopPropagation();
+              returnFocusRef.current = true;
+              setOpen(false);
+            }
+          }}
+        >
+          {stripBody}
+        </div>
       )}
     </aside>
   );

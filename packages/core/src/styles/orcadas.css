@@ -35,13 +35,110 @@
 .orc-scene-badge {
   position: absolute;
   left: 12px;
-  bottom: calc(var(--orc-sheet) + 10px);
+  bottom: calc(var(--orc-sheet, 0px) + 10px);
   top: auto;
   z-index: 5;
   pointer-events: none;
   display: flex;
   flex-direction: column-reverse;
   align-items: flex-start;
+}
+
+/* What the scene shows and where (#297): one label for every expedition, the design of Océano. Wide, at the bottom left;
+   upright phone, on the row of «Mapa» at the other end; phone on its side, beside the panel. */
+.scene-location {
+  position: absolute;
+  z-index: 4;
+  bottom: var(--scene-location-bottom, 24px);
+  left: 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+  font: 500 14px/1.2 'Fraunces', Georgia, serif;
+  color: var(--chart-ink);
+  padding: 7px 12px;
+  background: var(--chart-paper);
+  border: var(--btn-border);
+  border-radius: var(--chart-button-radius);
+}
+
+.scene-location small {
+  display: block;
+  font: 400 12px/1.3 'Atkinson Hyperlegible', sans-serif;
+  color: var(--chart-ink);
+  margin-top: 2px;
+}
+
+/* The pin of the map, in ochre like the pins of the notebook (.vnote). */
+.scene-location .vpinicon {
+  flex: none;
+  width: 16px;
+  height: 22px;
+  color: var(--ocre);
+}
+
+/* The handwritten note a stop leaves over the scene when its interaction is done. */
+.scene-found {
+  position: absolute;
+  z-index: 4;
+  bottom: calc(var(--scene-sheet, 0px) + 80px);
+  left: calc((100% - var(--scene-side, 0px)) / 2);
+  transform: translateX(-50%) rotate(-2deg);
+  padding: 10px 16px;
+  font: 22px 'Caveat', cursive;
+  background: var(--paper);
+  white-space: nowrap;
+  box-shadow: 1px 2px 0 color-mix(in srgb, var(--ink) 20%, transparent);
+  pointer-events: none;
+}
+
+.scene-found small {
+  display: block;
+  font: 10px 'Atkinson Hyperlegible', sans-serif;
+  margin-top: 4px;
+}
+
+/* The label of the scene holds the bottom left corner of a wide screen: the location sits above it. */
+@media (min-width: 900px) and (min-height: 501px) {
+  .marine-expedition,
+  .fossil-expedition {
+    --scene-location-bottom: 84px;
+  }
+}
+
+@media (max-width: 899px) and (min-height: 501px) {
+  .scene-location {
+    top: 8px;
+    right: 12px;
+    bottom: auto;
+    left: auto;
+    z-index: 5;
+    font-size: 13px;
+    padding: 5px 10px;
+    gap: 6px;
+  }
+
+  .scene-location small {
+    font-size: 11px;
+  }
+
+  .scene-found {
+    bottom: calc(var(--scene-sheet, 0px) + 50px);
+    font-size: 18px;
+    max-width: calc(100% - 50px);
+    white-space: normal;
+    text-align: center;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .scene-location {
+    top: calc(var(--scene-top, 0px) + 8px);
+    right: calc(var(--scene-side, 0px) + 8px);
+    bottom: auto;
+    left: auto;
+  }
 }
 
 .orc-scene-badge-row {
@@ -162,16 +259,17 @@
   left: 0;
   right: 0;
   top: 0;
-  z-index: 5;
+  /* Above the hotspots (11): the month popover opens from here and must cover them (#297). */
+  z-index: 12;
   padding: 8px 12px 10px;
   display: flex;
   flex-direction: column;
   gap: 6px;
 
   pointer-events: none;
+}
 
-  border-bottom:1px solid var(--chart-rule);}
-
+/* No bar (#297, as Océano in #283): «Mapa», its actions and the chapters float over the scene. */
 .orc-top > * {
   pointer-events: auto;
 }
@@ -179,8 +277,19 @@
 .orc-top-r1 {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
+  pointer-events: none;
+}
+
+.orc-top-btn,
+.orc-top-tools {
+  pointer-events: auto;
+}
+
+/* The month chip: on a phone at the far right of the row; wide, the chapters push themselves right. */
+.orc-top-tools {
+  margin-left: auto;
+  position: relative;
 }
 
 .orc-top-btn {
@@ -188,36 +297,6 @@
   padding: 0 12px;
   font-size: 14px;
   box-shadow:none;
-}
-
-.orc-top-title {
-  flex: 1;
-  min-width: 0;
-  text-align: center;
-}
-
-.orc-top-title strong {
-  display: block;
-  font-family: 'Fraunces', Georgia, serif;
-  font-size: 16px;
-  line-height: 1.1;
-  color: var(--chart-ink);
-
-  font-weight:500;}
-
-.orc-top-title span {
-  display: block;
-  font-size: 12px;
-  color: var(--chart-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-@media (max-width: 420px) {
-  .orc-top-title span {
-    display: none;
-  }
 }
 
 /* Chapter step navigation */
@@ -762,17 +841,11 @@
   cursor: pointer;
 }
 
-/* MonthStrip */
+/* MonthStrip: a chip in the row of «Mapa» (#297); the strip opens under it. */
 .orc-month-strip-wrap {
-  position: absolute;
-  /* Below the header and chapter buttons on a portrait phone. */
-  top: 114px;
-  left: 8px;
-  right: auto;
+  position: relative;
   width: fit-content;
   max-width: calc(100vw - 16px);
-  /* Above the hotspots, so the open popover and «Saber más» stay usable. */
-  z-index: 12;
 }
 
 .orc-month-chip {
@@ -826,10 +899,13 @@
 .orc-month-popover {
   position: absolute;
   top: calc(100% + 6px);
-  left: 0;
-  width: calc(100vw - 16px);
-  max-width: 420px;
+  /* On a phone the chip sits at the right edge, so the popover opens leftwards and stays on screen. */
+  left: auto;
+  right: 0;
+  width: min(420px, calc(100vw - 16px));
   max-height: calc(100dvh - 176px);
+  /* Above the hotspots and the chapter panel, so «Saber más» stays usable. */
+  z-index: 15;
   overflow-y: auto;
   overflow-x: hidden;
   box-sizing: border-box;
@@ -1242,22 +1318,16 @@
     align-items: center;
     justify-content: space-between;
     gap: 18px;
-
-  border-bottom:1px solid var(--chart-rule);}
+  }
 
   .orc-top-r1 {
     flex: 0 0 auto;
     gap: 14px;
   }
 
-  .orc-top-title {
-    text-align: left;
+  .orc-top-tools {
+    margin-left: 0;
   }
-
-  .orc-top-title strong {
-    font-size: 20px;
-
-  font-weight:500;}
 
   /* Same width and right edge as the chapter panel below, so the steps sit centred over it. */
   .orc-steps-nav {
@@ -1302,12 +1372,10 @@
     margin-bottom: 6px;
   }
 
-  .orc-month-strip-wrap {
-    top: 86px;
-    left: 24px;
+  /* Wide, the chip is the first thing after the actions, so the popover opens rightwards from it. */
+  .orc-month-popover {
+    left: 0;
     right: auto;
-    width: 380px;
-    z-index: 15;
   }
 
   .orc-month-details {
@@ -1414,6 +1482,13 @@
   }
 }
 
+/* A portrait phone does not show the chapters: the panel says the stop, and «Siguiente» and the back arrow walk them (#297). */
+@media (max-width: 899px) and (min-height: 501px) {
+  .orc-steps-nav {
+    display: none;
+  }
+}
+
 /* Landscape phones (max-height: 500px): use desktop side panel on right */
 @media ((orientation: landscape) and (max-height: 500px)) {
   .orc-top {
@@ -1422,12 +1497,15 @@
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-
-  border-bottom:1px solid var(--chart-rule);}
+  }
 
   .orc-top-r1 {
     flex: 0 0 auto;
     gap: 8px;
+  }
+
+  .orc-top-tools {
+    margin-left: 0;
   }
 
   .orc-top-btn {
@@ -1436,20 +1514,6 @@
     font-size: 13px;
 
   box-shadow:none;}
-
-  .orc-top-title {
-    text-align: left;
-  }
-
-  .orc-top-title strong {
-    font-size: 15px;
-
-  font-weight:500;}
-
-  .orc-top-title span {
-    font-size: 12px;
-    display: block;
-  }
 
   .orc-steps-nav {
     width: auto;
@@ -1508,13 +1572,11 @@
   line-height:1.4;
   color:var(--chart-muted);}
 
-  .orc-month-strip-wrap {
-    top: 58px;
-    z-index: 15;
-  }
-
   /* The open strip stays left of the chapter panel, and scrolls inside the short screen. */
   .orc-month-popover {
+    /* The chip is beside «Mapa» here, not at the right edge: the popover opens rightwards from it. */
+    left: 0;
+    right: auto;
     width: calc(54vw - 24px);
     max-height: calc(100dvh - 116px);
   }

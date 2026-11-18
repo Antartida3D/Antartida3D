@@ -265,6 +265,13 @@ export function MapView({
     setSheet(null);
   };
 
+  // Leaving a trip: the camera was on the vehicle, so it goes back to the overview of the whole map.
+  const wasVoyaging = useRef(voyaging);
+  useEffect(() => {
+    if (wasVoyaging.current && !voyaging && live.current.is3D) queue3D({ type: 'home' });
+    wasVoyaging.current = voyaging;
+  }, [voyaging]);
+
   // Browser «back» closes the top layer instead of leaving the app (#185).
   useBackLayer(list, () => setList(false));
   useBackLayer(!!sheet, closeSheet);

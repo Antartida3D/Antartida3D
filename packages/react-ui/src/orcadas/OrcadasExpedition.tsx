@@ -28,7 +28,8 @@ import {
 } from '@antartida/core';
 import { BottomSheet, type OpenSheetSize } from '../BottomSheet.tsx';
 import { useFocusReturn, useIsDesktop, useMediaQuery } from '../hooks.ts';
-import { Icon } from '../ui.tsx';
+import { ExpeditionTop } from '../ExpeditionTop.tsx';
+import { SceneBadge } from '../SceneBadge.tsx';
 import { Answer } from './Answer.tsx';
 import { SheetActions } from '../sheet/SheetActions.tsx';
 import { SheetHeader } from '../sheet/SheetHeader.tsx';
@@ -37,7 +38,6 @@ import { SourcesView } from '../sheet/SourcesView.tsx';
 import { FactCard, FactList } from './FactList.tsx';
 import { HOTSPOTS, Hotspots, type HotspotId } from './Hotspots.tsx';
 import { Journey } from './Journey.tsx';
-import { KindChip } from './KindChip.tsx';
 import { MonthStrip } from './MonthStrip.tsx';
 import { Observation } from './observation/Observation.tsx';
 import { StationScene } from './StationScene.tsx';
@@ -47,6 +47,8 @@ import { TourCard } from './TourCard.tsx';
 function chapterFocus(chapter: Chapter, tourIndex: number): HotspotId {
   return tourStop(chapter, tourIndex)?.spot ?? 'overview';
 }
+
+const SCENE_FACT = factsFor('scene')[0];
 
 function primaryButtonText(chapter: Chapter): string {
   switch (chapter) {
@@ -59,47 +61,6 @@ function primaryButtonText(chapter: Chapter): string {
     case 'answer':
       return 'Terminar expedición';
   }
-}
-
-function SceneBadge({ onOpenSource }: { onOpenSource?: (id: string) => void }) {
-  const [open, setOpen] = useState(false);
-  const fact = useMemo(() => factsFor('scene')[0], []);
-  return (
-    <div className="orc-scene-badge">
-      <div className="orc-scene-badge-row">
-        <KindChip kind="recon" label="Reconstrucción ilustrada" />
-        {fact && (
-          <button
-            type="button"
-            className="orc-scene-help-btn"
-            aria-expanded={open}
-            onClick={() => setOpen((v) => !v)}
-            aria-label="Ayuda sobre la reconstrucción ilustrada"
-          >
-            ?
-          </button>
-        )}
-      </div>
-      {open && fact && (
-        <div className="orc-scene-help-popover" role="note">
-          <p>{fact.text}</p>
-          <p>
-            Armamos una maqueta con nueve elementos reales de la base —con las formas y colores de OpenStreetMap sobre fotos satelitales de 2019— y los pusimos en fila para que los puedas ver bien. Las alturas son aproximadas, agrandamos los animales, los instrumentos y la bandera para que no se pierdan, y tanto el terreno como la pingüinera y el helicóptero (que aparece de noviembre a marzo) son ilustrativos.{' '}
-            <button
-              type="button"
-              className="orc-scene-sources-link"
-              onClick={() => {
-                setOpen(false);
-                onOpenSource?.('osm-site');
-              }}
-            >
-              Ver fuentes
-            </button>
-          </p>
-        </div>
-      )}
-    </div>
-  );
 }
 
 export function OrcadasExpedition({
@@ -500,19 +461,12 @@ export function OrcadasExpedition({
           overlayRef={hotspotsRef}
         />
 
-        {/* Month strip fixed over scene */}
-        <MonthStrip
-          month={s.month}
-          hour={s.hour}
-          onMonth={(month) => dispatch({ type: 'month', month })}
-          onHour={(hour) => dispatch({ type: 'hour', hour })}
-        />
-
         {/* Always-visible scene reconstruction label with help toggle */}
         <SceneBadge
-          onOpenSource={(id) => {
+          help={<><p>{SCENE_FACT?.text}</p><p>Armamos una maqueta con nueve elementos reales de la base —con las formas y colores de OpenStreetMap sobre fotos satelitales de 2019— y los pusimos en fila para que los puedas ver bien. Las alturas son aproximadas, agrandamos los animales, los instrumentos y la bandera para que no se pierdan, y tanto el terreno como la pingüinera y el helicóptero (que aparece de noviembre a marzo) son ilustrativos.</p></>}
+          onSources={() => {
             if (openSpot) setOpenSpot(null);
-            setHighlightSource(id);
+            setHighlightSource('osm-site');
             if (!s.panel) dispatch({ type: 'togglePanel' });
           }}
         />
@@ -547,23 +501,11 @@ export function OrcadasExpedition({
         />
 
         {/* Top Navigation Header */}
-        <header className="orc-top">
-          <div className="orc-top-r1">
-            <button
-              type="button"
-              className="pill orc-top-btn"
-              onClick={() => beginLeave(false)}
-              aria-label="Volver al mapa"
-            >
-              {Icon.back}
-              <span>Mapa</span>
-            </button>
-
-            <div className="orc-top-title">
-              <strong>Estación Orcadas</strong>
-              <span>{ORCADAS_GUIDING_QUESTION}</span>
-            </div>
-
+        <ExpeditionTop
+          onMap={() => beginLeave(false)}
+          chaptersLabel="Capítulos de la expedición"
+          onChapter={(id) => dispatch({ type: 'goto', chapter: id })}
+          actions={
             <button
               type="button"
               className="pill orc-top-btn"
@@ -576,35 +518,20 @@ export function OrcadasExpedition({
                 dispatch({ type: 'togglePanel' });
               }}
               aria-expanded={s.panel}
-                          >
+            >
               Fuentes
             </button>
-          </div>
-
-          <nav className="orc-steps-nav" aria-label="Capítulos de la expedición">
-            <ol className="orc-steps">
-              {CHAPTERS.map((ch, i) => {
-                const isCurrent = s.chapter === ch;
-                const isVisited = s.visited.includes(ch);
-                return (
-                  <li key={ch} className="orc-step-item">
-                    <button
-                      type="button"
-                      className={`orc-step-btn${isCurrent ? ' is-current' : isVisited ? ' is-visited' : ''}`}
-                      aria-current={isCurrent ? 'step' : undefined}
-                      onClick={() => dispatch({ type: 'goto', chapter: ch })}
-                    >
-                      <span className="orc-step-num" aria-hidden="true">
-                        {i + 1}
-                      </span>
-                      <span className="orc-step-name">{CHAPTER_NAMES[ch]}</span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ol>
-          </nav>
-        </header>
+          }
+          tools={
+            <MonthStrip
+              month={s.month}
+              hour={s.hour}
+              onMonth={(month) => dispatch({ type: 'month', month })}
+              onHour={(hour) => dispatch({ type: 'hour', hour })}
+            />
+          }
+          chapters={CHAPTERS.map((ch) => ({ id: ch, label: CHAPTER_NAMES[ch], current: s.chapter === ch, visited: s.visited.includes(ch) }))}
+        />
 
         {/* Field Notebook Chapter Panel: a side card on wide screens, a bottom sheet on phones */}
         {isDesktop ? (

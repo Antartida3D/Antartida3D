@@ -22,7 +22,9 @@ import { BottomSheet, type OpenSheetSize } from '../BottomSheet.tsx';
 import { useIsDesktop } from '../hooks.ts';
 import { KindChip } from '../orcadas/KindChip.tsx';
 import { MonthStrip, type MonthStripSeason } from '../orcadas/MonthStrip.tsx';
-import { Icon, Quoted } from '../ui.tsx';
+import { ExpeditionTop } from '../ExpeditionTop.tsx';
+import { SceneBadge } from '../SceneBadge.tsx';
+import { Quoted } from '../ui.tsx';
 import { Cite, Cites } from '../sheet/Cite.tsx';
 import { SheetActions } from '../sheet/SheetActions.tsx';
 import { SheetHeader } from '../sheet/SheetHeader.tsx';
@@ -95,54 +97,6 @@ function marambioSeason(): MonthStripSeason {
 const SEASON = marambioSeason();
 
 /** Always-visible label of the scene: it is an illustrated reconstruction, and what that means. */
-function SceneBadge({ onOpenSource, storm, onStorm }: { onOpenSource: (id: string) => void; storm: boolean; onStorm: () => void }) {
-  const [open, setOpen] = useState(false);
-  const helpRef = useRef<HTMLButtonElement>(null);
-  const facts = marambioFacts('scene');
-  return (
-    <div className="orc-scene-badge">
-      <div className="orc-scene-badge-row">
-        <KindChip kind="recon" label="Reconstrucción ilustrada" />
-        <button
-          type="button"
-          className="orc-scene-help-btn"
-          ref={helpRef}
-          aria-expanded={open}
-          onClick={() => setOpen((v) => !v)}
-          aria-label="Ayuda sobre la reconstrucción ilustrada"
-        >
-          ?
-        </button>
-      </div>
-      {/* Blows a blizzard over the base and explains it (#263): its own row, over the label. */}
-      <button type="button" className="btn mar-storm-btn" aria-pressed={storm} onClick={onStorm}>
-        {storm ? 'Calmar la ventisca' : 'Ver una ventisca'}
-      </button>
-      {open && (
-        <div className="orc-scene-help-popover" role="note">
-          {facts.map((f) => (
-            <p key={f.id}><Quoted text={f.text} /></p>
-          ))}
-          <p>
-            <button
-              type="button"
-              className="orc-scene-sources-link"
-              onClick={() => {
-                // The link goes away with the note: the focus stays in the page, on its button.
-                helpRef.current?.focus();
-                setOpen(false);
-                onOpenSource(MARAMBIO_OSM_SOURCE_ID);
-              }}
-            >
-              Ver fuentes
-            </button>
-          </p>
-        </div>
-      )}
-    </div>
-  );
-}
-
 /** A photograph of the archive, full size with its caption and credit. Escape, a tap outside or «Cerrar» close it. */
 function PhotoDialog({ photo, onClose }: { photo: MarambioPhoto; onClose: () => void }) {
   const ref = useRef<HTMLElement>(null);
@@ -357,9 +311,16 @@ export function MarambioExpedition({
         storm={storm}
       />
 
-      <MonthStrip month={month} onMonth={setMonth} season={SEASON} />
-
-      <SceneBadge onOpenSource={openSources} storm={storm} onStorm={toggleStorm} />
+      <SceneBadge
+        help={marambioFacts('scene').map((f) => <p key={f.id}><Quoted text={f.text} /></p>)}
+        onSources={() => openSources(MARAMBIO_OSM_SOURCE_ID)}
+        extra={
+          // Blows a blizzard over the base and explains it (#263): its own row, over the label.
+          <button type="button" className="btn mar-storm-btn" aria-pressed={storm} onClick={toggleStorm}>
+            {storm ? 'Calmar la ventisca' : 'Ver una ventisca'}
+          </button>
+        }
+      />
 
       <div className="orc-hotspots" ref={overlayRef} role="group" aria-label="Puntos de interés de la base">
         {MARAMBIO_SPOTS.map((s, i) => {
@@ -397,21 +358,11 @@ export function MarambioExpedition({
         </button>
       </div>
 
-      <header className="orc-top">
-        <div className="orc-top-r1">
-          <button type="button" className="pill orc-top-btn" onClick={() => onLeave(false)} aria-label="Volver al mapa">
-            {Icon.back}
-            <span>Mapa</span>
-          </button>
-          <div className="orc-top-title">
-            <strong>{MARAMBIO_TITLE}</strong>
-            <span>{MARAMBIO_GUIDING_QUESTION}</span>
-          </div>
-          <button type="button" className="pill orc-top-btn" ref={sourcesBtn} aria-haspopup="dialog" onClick={() => openSources(null)}>
-            Fuentes
-          </button>
-        </div>
-      </header>
+      <ExpeditionTop
+        onMap={() => onLeave(false)}
+        actions={<button type="button" className="pill orc-top-btn" ref={sourcesBtn} aria-haspopup="dialog" onClick={() => openSources(null)}>Fuentes</button>}
+        tools={<MonthStrip month={month} onMonth={setMonth} season={SEASON} />}
+      />
 
       {isDesktop ? (
         <div className="orc-panel" role="region" aria-labelledby="mar-panel-title">

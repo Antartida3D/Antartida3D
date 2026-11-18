@@ -2,6 +2,20 @@ import { expect, test, type Page } from '@playwright/test';
 import { AVAILABLE_COUNT } from '../../core/src/content/points.ts';
 import { show3D } from './map-helpers.ts';
 
+/**
+ * Goes to the first stop of a chapter: taps it where the chapters are shown; on an upright phone
+ * they are hidden (#297), so it walks the stops with «Siguiente».
+ */
+async function toChapter(page: Page, label: RegExp) {
+  const chapters = page.getByRole('navigation', { name: 'Capítulos de Fósiles' });
+  if (await chapters.isVisible()) return chapters.getByRole('button', { name: label }).click();
+  for (let i = 0; i < 20; i++) {
+    if (label.test((await page.locator('.fossil-panel .sheet-label').first().innerText()).split('·')[0])) return;
+    await page.getByRole('button', { name: 'Siguiente', exact: true }).click();
+  }
+  throw new Error(`Chapter ${label} not reached`);
+}
+
 let errors: string[] = [];
 test.beforeEach(async ({ page }) => {
   errors = [];
@@ -17,14 +31,13 @@ async function open(page: Page) {
 
 test('explores the four fossils and three habitats, opens sources and records completion', async ({ page }) => {
   await open(page);
-  const chapters = page.getByRole('navigation', { name: 'Capítulos de Fósiles' });
   // The geological time line lights each find as its chapter is reached.
   const timeline = page.locator('.fossil-timeline');
   await expect(timeline).toContainText('0 de 4 hallazgos');
   await expect(timeline).toContainText('Amonites: Cretácico tardío, por descubrir.');
   await expect(page.locator('.fossil-stage canvas')).toBeVisible();
   await expect(page.locator('.fossil-stage canvas')).toHaveAttribute('data-ready', 'true');
-  await chapters.getByRole('button', { name: /Amonites/ }).click();
+  await toChapter(page, /Amonites/);
   for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'Limpiar el sedimento' }).click();
   await expect(page.getByRole('button', { name: 'Ya se ve la espiral' })).toBeDisabled();
   await page.getByRole('button', { name: 'Siguiente', exact: true }).click();
@@ -38,11 +51,11 @@ test('explores the four fossils and three habitats, opens sources and records co
 
   await expect(timeline).toContainText('1 de 4 hallazgos');
   await expect(timeline).toContainText('Amonites: Cretácico tardío, encontrado, en este capítulo.');
-  await chapters.getByRole('button', { name: /Plesiosaurio/ }).click();
+  await toChapter(page, /Plesiosaurio/);
   await page.getByRole('button', { name: 'Seguir la columna' }).click();
   await expect(page.getByRole('button', { name: 'Siguiendo la columna' })).toHaveAttribute('aria-pressed', 'true');
 
-  await chapters.getByRole('button', { name: /Dinosaurio/ }).click();
+  await toChapter(page, /Dinosaurio/);
   // The tooth is examined on its own stop, not on the find before it.
   await expect(page.getByRole('heading', { name: 'Algo asomaba de la roca' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Examinar el diente' })).toHaveCount(0);

@@ -273,9 +273,9 @@ test('3D updates the far limit after resizing and during a voyage (#237)', async
   await page.getByRole('button', { name: 'Salir del viaje' }).click();
   await expect.poll(async () => (await cameraRange(page)).max).toBeCloseTo(overview.max, 2);
   await settled3D(page);
-  // The viewport can move farther away again when the trip releases its smaller maximum.
-  await expect(farther).toBeVisible();
-  await expect(farther).toBeEnabled();
+  // The camera comes back to the overview when the trip ends, as far as it may go: nothing farther is left.
+  await expect.poll(async () => (await cameraRange(page)).distance, { timeout: 15_000 }).toBeCloseTo(overview.max, 0);
+  await expect(farther).toBeHidden();
 });
 
 test('3D updates zoom buttons within four frames of the wheel destination, before motion rests (#237)', async ({ page }, testInfo) => {

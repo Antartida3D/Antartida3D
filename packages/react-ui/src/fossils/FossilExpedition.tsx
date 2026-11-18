@@ -22,8 +22,10 @@ import { BottomSheet, type OpenSheetSize } from '../BottomSheet.tsx';
 import { FossilTimeline } from './FossilTimeline.tsx';
 import { useIsDesktop } from '../hooks.ts';
 import { CanvasGuard } from '../CanvasGuard.tsx';
-import { KindChip } from '../orcadas/KindChip.tsx';
 import { useSceneFrame } from '../sceneFrame.tsx';
+import { ExpeditionTop } from '../ExpeditionTop.tsx';
+import { SceneBadge } from '../SceneBadge.tsx';
+import { SceneLocation } from '../SceneLocation.tsx';
 import { Icon, Quoted } from '../ui.tsx';
 import { Cites } from '../sheet/Cite.tsx';
 import { MoreFold } from '../sheet/MoreFold.tsx';
@@ -183,37 +185,23 @@ export function FossilExpedition({ reduced, webgl, resume, onProgress, onLeave }
     <div className="fossil-stage">
       {use3D ? <CanvasGuard onFail={() => setGraphicsLost(true)}><Suspense fallback={<div className="fossil-loading" role="status">Abriendo el cuaderno de campo…</div>}><Scene view={stop.view} state={state} reduced={reduced} reset={reset} shift={shift} /></Suspense></CanvasGuard> : <figure className="fossil-fallback"><img src={PHOTO_URL[fallbackId]} alt={fallback.alt} /><figcaption>{fallback.caption}<br />{fallback.credit}{fallback.note && <span>{fallback.note}</span>}<span>Recorrido en fotografías · todas las paradas e interacciones siguen disponibles.</span>{stop.id === 'animal' && state.reconstructed && <span>Reconstrucción ilustrativa: un dinosaurio herbívoro, de cuerpo bajo y protegido por placas óseas.</span>}</figcaption></figure>}
     </div>
-    <div className="fossil-location"><span className="fossil-location-dot" /><span>{place}<small>{stop.chapter === 'past' ? 'Ambientes reconstruidos' : 'Antártida · cuaderno de expedición'}</small></span></div>
+    <SceneLocation place={place} detail={stop.chapter === 'past' ? 'Ambientes reconstruidos' : 'Antártida · cuaderno de expedición'} />
     {use3D && <button type="button" className="fossil-reset" aria-label="Restablecer vista de la escena" onClick={() => setReset((v) => v + 1)}>{Icon.reset}</button>}
-    <div className="orc-scene-badge fossil-scene-note">
-      <div className="orc-scene-badge-row"><KindChip kind={use3D ? 'recon' : 'real'} label={use3D ? 'Reconstrucción ilustrativa' : 'Fotografía de archivo'} /></div>
-      <small>{use3D ? 'Arrastrá para mirar alrededor · tamaños exagerados' : 'Archivo fotográfico con créditos al abrir la foto'}</small>
-    </div>
-    {stop.id === 'spiral' && state.cleaned === FOSSIL_CLEAN_STEPS && <div className="fossil-found" role="status">01 · La espiral apareció</div>}
-    {stop.id === 'giants' && <div className="fossil-found">01 · Amonite gigante<small>Forma y movimiento ilustrativos</small></div>}
-    {stop.id === 'vega' && state.column && <div className="fossil-found">02 · Una columna, de la cabeza a la cola</div>}
-    {stop.id === 'swimmer' && <div className="fossil-found">02 · Un reptil marino<small>Forma, color y nado ilustrativos</small></div>}
-    {stop.id === 'tooth' && state.tooth && <div className="fossil-found">03 · Una mandíbula. Un diente.</div>}
-    {stop.id === 'slab' && state.measured && <div className="fossil-found">04 · 17 mm, del centro a la punta</div>}
-    <header className="orc-top" ref={top}>
-      <div className="orc-top-r1">
-        <button type="button" className="pill orc-top-btn" aria-label="Volver al mapa" onClick={() => onLeave(false)}>{Icon.back}<span>Mapa</span></button>
-        <div className="orc-top-title"><strong>Fósiles</strong><span>{FOSSIL_QUESTION}</span></div>
-        <button type="button" className="pill orc-top-btn" aria-haspopup="dialog" ref={sourcesBtn} onClick={() => openSource(null)}>Fuentes</button>
-      </div>
-      <nav className="orc-steps-nav" aria-label="Capítulos de Fósiles">
-        <ol className="orc-steps">
-          {FOSSIL_CHAPTERS.map((c, i) => {
-            const current = c.id === stop.chapter;
-            return <li key={c.id} className="orc-step-item">
-              <button type="button" className={`orc-step-btn${current ? ' is-current' : visitedChapters.has(c.id) ? ' is-visited' : ''}`} aria-current={current ? 'step' : undefined} aria-label={`${i + 1} ${c.label}`} onClick={() => dispatch({ type: 'chapter', chapter: c.id })}>
-                <span className="orc-step-num" aria-hidden="true">{i + 1}</span><span className="orc-step-name">{c.label}</span>
-              </button>
-            </li>;
-          })}
-        </ol>
-      </nav>
-    </header>
+    <SceneBadge
+      kind={use3D ? 'recon' : 'real'}
+      label={use3D ? undefined : 'Fotografía de archivo'}
+      help={<p>{use3D ? 'Las escenas son ilustrativas: los animales y los ambientes son una primera interpretación visual y los tamaños están exagerados.' : 'Archivo fotográfico con créditos al abrir la foto.'}</p>}
+      onSources={() => openSource(null)}
+    />
+    {stop.id === 'spiral' && state.cleaned === FOSSIL_CLEAN_STEPS && <div className="scene-found" role="status">01 · La espiral apareció</div>}
+    {stop.id === 'giants' && <div className="scene-found">01 · Amonite gigante<small>Forma y movimiento ilustrativos</small></div>}
+    {stop.id === 'vega' && state.column && <div className="scene-found">02 · Una columna, de la cabeza a la cola</div>}
+    {stop.id === 'swimmer' && <div className="scene-found">02 · Un reptil marino<small>Forma, color y nado ilustrativos</small></div>}
+    {stop.id === 'tooth' && state.tooth && <div className="scene-found">03 · Una mandíbula. Un diente.</div>}
+    {stop.id === 'slab' && state.measured && <div className="scene-found">04 · 17 mm, del centro a la punta</div>}
+    <ExpeditionTop topRef={top} onMap={() => onLeave(false)} chaptersLabel="Capítulos de Fósiles" onChapter={(id) => dispatch({ type: 'chapter', chapter: id })}
+      actions={<button type="button" className="pill orc-top-btn" aria-haspopup="dialog" ref={sourcesBtn} onClick={() => openSource(null)}>Fuentes</button>}
+      chapters={FOSSIL_CHAPTERS.map((c) => ({ id: c.id, label: c.label, current: c.id === stop.chapter, visited: visitedChapters.has(c.id) }))} />
     {desktop ? <section className="orc-panel fossil-panel" ref={panel} aria-labelledby="fossil-title">{content}</section> : <BottomSheet className="orc-panel fossil-panel" labelledBy="fossil-title" sheetRef={panel} floor="peek" size={sheetSize} onSize={setSheetSize}>{content}</BottomSheet>}
     {modal?.kind === 'sources' && <SourcesView list={SOURCES} highlight={modal.id} place={FOSSIL_QUESTION}
       notice={['Las escenas son ilustrativas. Cada parada identifica la fuente de su relato y de sus evidencias.', 'Para seguir completando con Eduardo: especie y medidas de los amonites elegidos, relato de su hallazgo, fecha y lugar de cada fotografía del archivo y nuevos testimonios. Los modelos de los animales son una primera interpretación visual.']}

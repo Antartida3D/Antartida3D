@@ -85,6 +85,11 @@
   left: 0;
   top: 0;
 }
+/* The current temperature of the card (#285), under the question: the card pulls it up, here it keeps its gap. */
+.scene-pt .sheet-temp {
+  margin: 4px 0 0;
+  min-height: 0;
+}
 .scene-pt-no3d {
   margin: 0;
   font-size: 13px;

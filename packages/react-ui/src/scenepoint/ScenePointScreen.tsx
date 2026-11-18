@@ -13,6 +13,7 @@ import { SheetActions } from '../sheet/SheetActions.tsx';
 import { SheetHeader } from '../sheet/SheetHeader.tsx';
 import { SourcesContext } from '../sheet/SourcesContext.ts';
 import { SourcesView } from '../sheet/SourcesView.tsx';
+import { TemperatureLine } from '../map/TemperatureLine.tsx';
 
 /** What the screen hands its 3D scene. */
 export interface SceneSlotProps<S extends string> {
@@ -100,7 +101,12 @@ export function ScenePointScreen<S extends string>({
       <div className="orc-panel-scroll">
         <SheetHeader label={`Punto ${index + 1} de ${spots.length}`} title={spot.label} titleId={titleId} titleClass="orc-chapter-h2" titleFocusable />
         <div className="orc-chapter-content">
-          {index === 0 && <p className="orc-question">{question}</p>}
+          {index === 0 && (
+            <>
+              <p className="orc-question">{question}</p>
+              <TemperatureLine pointId={point.id} />
+            </>
+          )}
           <p className="orc-lead">{spot.subtitle}</p>
           {noWebGL && <p className="scene-pt-no3d">Sin gráficos 3D en este navegador: el recorrido sigue en palabras.</p>}
           <div className="orc-facts-list">

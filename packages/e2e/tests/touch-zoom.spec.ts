@@ -200,7 +200,7 @@ for (const mode of ['Mapa 2D', 'Relieve 3D'] as const) {
     await expect(page.locator('.vp .mk.shown')).toHaveCount(0);
     await expect(dialogs).toHaveCount(0);
 
-    // Zooming moved the marker: find it again, then tap it twice quickly (#54).
+    // Zooming moved the marker: find it again, then tap it once to open it directly (#289).
     const again = await page.evaluate((label) => {
       for (const el of document.querySelectorAll('.vp .mk')) {
         if (el.getAttribute('aria-label') !== label) continue;
@@ -212,7 +212,6 @@ for (const mode of ['Mapa 2D', 'Relieve 3D'] as const) {
     }, marker.label);
     // After the zoom the point may have left the screen or another marker may cover it; then use the first spot.
     const target = again ?? (await freeMarker())!;
-    await tap(cdp, target);
     await tap(cdp, target);
     await expect(dialogs.first()).toBeVisible();
   });

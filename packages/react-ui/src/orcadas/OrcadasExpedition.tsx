@@ -84,7 +84,7 @@ function SceneBadge({ onOpenSource }: { onOpenSource?: (id: string) => void }) {
         <div className="orc-scene-help-popover" role="note">
           <p>{fact.text}</p>
           <p>
-            Disposición ilustrativa, no a escala: una selección de los edificios de la base, con su forma y sus colores según OpenStreetMap (imágenes Maxar 2019), acomodados en fila para que se vean; alturas aproximadas; animales, instrumentos y bandera agrandados para que se vean; relieve y pingüinera ilustrativos; helicóptero ilustrativo, se muestra en la temporada de visitas.{' '}
+            Armamos una maqueta con nueve elementos reales de la base —con las formas y colores de OpenStreetMap sobre fotos satelitales de 2019— y los pusimos en fila para que los puedas ver bien. Las alturas son aproximadas, agrandamos los animales, los instrumentos y la bandera para que no se pierdan, y tanto el terreno como la pingüinera y el helicóptero (que aparece de noviembre a marzo) son ilustrativos.{' '}
             <button
               type="button"
               className="orc-scene-sources-link"
@@ -389,7 +389,7 @@ export function OrcadasExpedition({
             {s.chapter === 'arrival' && (
               <div className="orc-chapter-content">
                 <p className="orc-lead">
-                  Acá se mide el tiempo sin pausa desde 1903.
+                  Llegaste a la isla Laurie. Date una vuelta por la base para ver dónde está, cómo llegan los relevos y qué pasó acá desde 1903.
                 </p>
                 {tourCardElement}
               </div>

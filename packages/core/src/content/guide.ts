@@ -30,7 +30,7 @@ export const GUIDE_GESTURES = {
 
 export const GUIDE_PIN = {
   title: 'Tocá un punto para viajar',
-  place: '**Punteado:** un punto de interés con una ficha corta.',
+  place: '**Azul (i):** un punto de interés con una ficha corta.',
 } as const;
 
 export const GUIDE_REGISTRY = {

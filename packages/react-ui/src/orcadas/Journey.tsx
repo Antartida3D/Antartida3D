@@ -99,8 +99,10 @@ export function Journey({
                       .join(' · ')}
                   </strong>
                   <span>
-                    Si la tendencia es significativa lo dice el estudio citado (Zazulie,
-                    Rusticucci y Solomon, 2010), no este cálculo.
+                    La media móvil de 11 años suaviza los saltos de cada año para que se vea la
+                    tendencia de fondo, y las dos rectas muestran el cambio antes y después de 1950.
+                    Que la suba posterior a 1950 sea real y no una casualidad estadística lo prueba
+                    el estudio de Zazulie, Rusticucci y Solomon (2010).
                   </span>
                 </div>
               </div>

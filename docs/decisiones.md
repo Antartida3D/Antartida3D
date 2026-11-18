@@ -175,7 +175,7 @@ Pedido de quien lleva el issue: los bordes del mapa se veían color crema y borr
 Pedido de quien lleva el issue: los carteles de los marcadores no están abiertos de entrada, para que dé curiosidad tocar el marcador.
 
 - **Ningún cartel abierto de entrada**, ni en el relieve 3D ni en el mapa 2D. Vale para todos los marcadores: expediciones, ampliaciones previstas, próximamente y puntos del mar.
-- **Celular (toque o lápiz):** el primer toque muestra el cartel del marcador. El segundo toque abre la expedición o la ficha. Tocar otro marcador muestra el cartel de ese otro. Tocar el mapa cierra el cartel.
+- **Celular (toque o lápiz) *(reemplazada por [DEC-289-2](decisiones/DEC-289-2-toque-directo-marcadores.md))*:** el primer toque muestra el cartel del marcador. El segundo toque abre la expedición o la ficha. Tocar otro marcador muestra el cartel de ese otro. Tocar el mapa cierra el cartel.
 - **Mouse:** pasar el cursor por encima muestra el cartel. Un clic abre.
 - **Teclado:** el foco muestra el cartel. Enter abre.
 - **Grupos de marcadores:** ya no existen; los marcadores que se pisan se abren en abanico con una línea a su lugar ([DEC-238](decisiones/DEC-238-marcadores-en-abanico.md)).

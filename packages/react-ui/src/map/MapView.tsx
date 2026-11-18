@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import {
-  CERRO_NEVADO_ID, DOUBLE_TAP_ZOOM, DRAG_THRESHOLD, EXPEDITION_POINT, HOME, KEY_PAN, LIST_BUTTON_LABEL, MAP_2D_ENABLED, MAX_K, MIN_K, ONE_FINGER_IDLE, PONCHO_POINT, PONCHO_TRANSPORT, PTS, TRANSPORTS, VOYAGE_POINTS, ZOOM_MS,
+  DOUBLE_TAP_ZOOM, DRAG_THRESHOLD, EXPEDITION_POINT, HOME, KEY_PAN, LIST_BUTTON_LABEL, MAP_2D_ENABLED, MAX_K, MIN_K, ONE_FINGER_IDLE, PONCHO_POINT, PONCHO_TRANSPORT, PTS, TRANSPORTS, VOYAGE_POINTS, ZOOM_MS,
   afterExpedition, buildMarkers, isGuideOpen, diveView, focusWorld, freeArea, needsFraming, markerPress, geometry, isWheelNotch, keyView, nextExpedition, oneFingerDown, oneFingerMove, oneFingerUp, panBy, resumeDetail, welcomeView, wheelFactor, zoomAround, zoomCenter,
   type ArrivalId, type FirstVisitEvent, type FirstVisitState, type MapPoint, type Marker, type OneFingerZoomState, type ResumePoint, type SeaPoint, type Size, type TransportId, type View, type ClaimsCoverage, type ZoomAvailability,
 } from '@antartida/core';
@@ -44,6 +44,8 @@ export type Camera3DCommand =
   | { type: 'focus'; view: View }
   /** Fly down to the model of a point, this close (world units): MapPoint.closeUp. */
   | { type: 'visit'; id: string; distance: number }
+  /** Return from the close-up of a point to where the camera was before visiting it. */
+  | { type: 'leave' }
   | { type: 'pan'; dx: number; dy: number }
   | { type: 'rotate'; deg: number };
 
@@ -248,20 +250,24 @@ export function MapView({
   const live = useRef({ size, view, phase, is3D });
   live.current = { size, view, phase, is3D };
 
-  // Browser «back» closes the top layer instead of leaving the app (#185).
-  useBackLayer(list, () => setList(false));
-  useBackLayer(!!sheet, () => setSheet(null));
-  useBackLayer(!!pendingIntro && phase === 'idle', () => setPendingIntro(null));
-  useBackLayer(voyaging, () => onEndVoyage?.(false));
-  useBackLayer(showCard, dismissCard);
-  useBackLayer(is3D && claimsEnabled && claimsDetails && !sheet, closeClaimsDetails);
-
   /** Moves the 3D camera; `send3D` when the user asked for it. */
   const queue3D = (cmd: Camera3DCommand) => setCommand((c) => ({ n: (c?.n ?? 0) + 1, cmd }));
   const send3D = (cmd: Camera3DCommand) => {
     queue3D(cmd);
     setTouched(true);
   };
+  const closeSheet = () => {
+    if (is3D && sheet && 'closeUp' in sheet && sheet.closeUp) queue3D({ type: 'leave' });
+    setSheet(null);
+  };
+
+  // Browser «back» closes the top layer instead of leaving the app (#185).
+  useBackLayer(list, () => setList(false));
+  useBackLayer(!!sheet, closeSheet);
+  useBackLayer(!!pendingIntro && phase === 'idle', () => setPendingIntro(null));
+  useBackLayer(voyaging, () => onEndVoyage?.(false));
+  useBackLayer(showCard, dismissCard);
+  useBackLayer(is3D && claimsEnabled && claimsDetails && !sheet, closeClaimsDetails);
 
   useEffect(() => {
     if (is3D) return;
@@ -589,8 +595,7 @@ export function MapView({
 
   const openPoint = (p: MapPoint | SeaPoint) => {
     if (onStartVoyage && VOYAGE_POINTS.some((v) => v.id === p.id)) onStartVoyage(p as MapPoint);
-    // Cerro Nevado is a point of interest with a scene of its own (#206): it opens like an expedition.
-    else if ('tier' in p && (p.tier === 'A' || p.id === CERRO_NEVADO_ID)) {
+    else if ('tier' in p && p.tier === 'A') {
       if (phase === 'idle') {
         // One sheet at a time: the intro replaces the trip from Ushuaia, as starting Orcadas did before.
         if (voyaging) onEndVoyage?.(false);
@@ -747,7 +752,7 @@ export function MapView({
               const nextPoint = !resumePoint && next && phase === 'idle' && !voyaging && !hideNextBtn && !showCard ? next : null;
               if (nextPoint) {
                 return (
-                  <button type="button" className="btn resume next-btn" aria-label={`Siguiente: ${nextPoint.title}`} onClick={() => { setSheet(null); setPendingIntro(null); openPoint(nextPoint); }}>
+                  <button type="button" className="btn resume next-btn" aria-label={`Siguiente: ${nextPoint.title}`} onClick={() => { closeSheet(); setPendingIntro(null); openPoint(nextPoint); }}>
                     <span className="lbl">Siguiente: </span>{nextPoint.title}
                     {Icon.next}
                   </button>
@@ -783,7 +788,7 @@ export function MapView({
                 setClaimsStatus('loading');
                 vpRef.current?.focus();
               }} />}
-            <button type="button" className="btn" onClick={() => { setSheet(null); setPendingIntro(null); setList(true); }}>
+            <button type="button" className="btn" onClick={() => { closeSheet(); setPendingIntro(null); setList(true); }}>
               {Icon.list}
               {LIST_BUTTON_LABEL}
             </button>
@@ -832,7 +837,7 @@ export function MapView({
           <ClaimsDetails selection={claimsSelection} coverage={claimsCoverage} status={claimsStatus}
             onSelect={setClaimsSelection} onCoverage={setClaimsCoverage} onClose={closeClaimsDetails} />
         )}
-        {sheet && <PointSheet point={sheet} onClose={() => setSheet(null)} fallbackFocus={() => vpRef.current} preview={is3D} reduced={reduced}
+        {sheet && <PointSheet point={sheet} onClose={closeSheet} fallbackFocus={() => vpRef.current} preview={is3D} reduced={reduced}
           onMap={is3D && 'closeUp' in sheet && !!sheet.closeUp}
           action={is3D && sheet.id === CLAIMS_POINT_ID ? { label: claimsEnabled ? 'Ver reclamos en el mapa' : 'Ver reclamos territoriales', onClick: showClaims } : undefined} />}
         {pendingIntro && pendingIntro.id !== EXPEDITION_POINT.id && phase === 'idle' && (

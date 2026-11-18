@@ -221,11 +221,10 @@ describe('markers and labels', () => {
     }
   });
 
-  it('shows the label on a first touch and opens on the second; a mouse or the keyboard open at once', () => {
-    expect(markerPress(null, 'campana', true)).toBe('show');
+  it('opens on the first touch just like a mouse click or keyboard activation', () => {
+    expect(markerPress(null, 'campana', true)).toBe('open');
     expect(markerPress('campana', 'campana', true)).toBe('open');
-    // Touching another marker shows that one instead.
-    expect(markerPress('campana', 'orcadas', true)).toBe('show');
+    expect(markerPress('campana', 'orcadas', true)).toBe('open');
     expect(markerPress(null, 'campana', false)).toBe('open');
   });
 

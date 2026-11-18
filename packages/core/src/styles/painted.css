@@ -46,17 +46,18 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
 .mk{position:absolute;width:48px;height:48px;margin:-24px 0 0 -24px;padding:0;border:0;background:transparent;pointer-events:auto;display:flex;align-items:center;justify-content:center;border-radius:50%}
 .mk.ta{z-index:2}
 .mk .dot{position:relative;display:block;border-radius:50%}
-.mk.ta .dot{width:22px;height:22px;background:var(--ocre);border:2.5px solid var(--chart-ink);box-shadow:0 0 0 3px color-mix(in srgb, var(--chart-paper) 90%, transparent)}
+.mk.ta .dot{width:22px;height:22px;background:var(--ocre);border:2px solid var(--chart-ink);box-shadow:0 0 0 3px color-mix(in srgb, var(--chart-paper) 90%, transparent);display:flex;align-items:center;justify-content:center}
 .mk.ta .pulse{position:absolute;inset:-9px;border-radius:50%;border:2px solid var(--ocre);animation:pulse 2.4s ease-out infinite}
 .mk.ta.done .dot{background:#F7FAFB}
 .mk.ta.done .pulse{display:none}
-.mk.ta .dot svg{position:absolute;inset:2px;width:13px;height:13px}
+.mk.ta .dot svg{width:14px;height:14px;display:block;flex:none}
 @keyframes pulse{0%{transform:scale(.6);opacity:.9}100%{transform:scale(1.7);opacity:0}}
 .mk.tb .dot{width:16px;height:16px;background:var(--chart-wash);border:2px solid var(--chart-muted);
   border-color:var(--chart-ink);}
 .mk.tb .dot::after{content:'';position:absolute;inset:3px;border-radius:50%;
   background:var(--chart-ink);}
-.mk.tc .dot{width:15px;height:15px;background:rgba(247,250,251,.55);border:1.6px dashed var(--chart-muted)}
+.mk.tc .dot{width:20px;height:20px;background:var(--deep);border:2px solid var(--chart-paper);box-shadow:0 0 0 1.5px var(--chart-ink);color:var(--ice);display:flex;align-items:center;justify-content:center}
+.mk.tc .dot svg{width:12px;height:12px;display:block;flex:none}
 .mk.tsea{z-index:1}
 .mk.tsea .dot{width:22px;height:22px;background:var(--chart-paper);border:2px solid var(--chart-ink);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px rgba(30,62,92,.22)}
 .mk.tsea .dot svg{width:14px;height:14px;display:block}
@@ -85,7 +86,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
 .mlabel strong{display:block;font-family:'Fraunces',Georgia,serif;font-size:14px;font-weight:700}
 .mlabel span{display:block;font-size:12px;color:var(--chart-muted)}
 .mk.ta .mlabel{background:var(--chart-paper);border-color:var(--chart-ink)}
-.mk.tc .mlabel{background:var(--chart-paper);border-style:dashed}
+.mk.tc .mlabel{background:var(--chart-paper);border-color:var(--deep)}
 
 .top{position:absolute;left:0;right:0;top:0;padding:12px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;background:none;pointer-events:none;z-index:10}
 .top > *{pointer-events:auto}
@@ -160,7 +161,8 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
 .sw .a{width:14px;height:14px;border-radius:50%;background:var(--ocre);border:2px solid var(--chart-ink)}
 .sw .b{width:12px;height:12px;border-radius:50%;background:var(--chart-wash);border:2px solid var(--chart-muted);
   border-color:var(--chart-ink);}
-.sw .c{width:12px;height:12px;border-radius:50%;border:1.5px dashed var(--chart-muted)}
+.sw .c{width:16px;height:16px;border-radius:50%;background:var(--deep);border:2px solid var(--chart-paper);box-shadow:0 0 0 1px var(--chart-ink);color:var(--ice);display:flex;align-items:center;justify-content:center}
+.sw .c svg{width:10px;height:10px;display:block;flex:none}
 .sw .sea{width:14px;height:14px;border-radius:50%;background:var(--chart-paper);border:1.5px solid var(--chart-ink);display:flex;align-items:center;justify-content:center}
 .sw .sea svg{width:10px;height:10px;display:block}
 .hint{position:absolute;left:50%;top:128px;transform:translateX(-50%);font-family:'Caveat',cursive;font-size:19px;color:var(--chart-ink);background:color-mix(in srgb, var(--chart-paper) 92%, transparent);padding:2px 12px;border-radius:12px;white-space:nowrap;pointer-events:none;transition:opacity .5s;z-index:9}
@@ -194,7 +196,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--deep);outl
 .tag.ta{background:var(--ocre);color:var(--ink)}
 .tag.tb{background:var(--chart-wash);color:var(--chart-ink);border:1.5px solid var(--chart-muted);
   border-color:var(--chart-ink);}
-.tag.tc{background:transparent;color:var(--chart-muted);border:1.5px dashed var(--chart-muted)}
+.tag.tc{background:var(--deep);color:var(--ice);border:1.5px solid var(--chart-ink)}
 .tag.tsea{background:var(--chart-paper);color:var(--deep);border:1.5px solid var(--deep)}
 .row{display:flex;gap:10px;flex-wrap:wrap}
 /* Una acción principal sola se alinea con el alcance del pulgar en el celular. */

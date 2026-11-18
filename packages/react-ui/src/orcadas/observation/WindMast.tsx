@@ -385,12 +385,12 @@ export function WindMast({
       {/* Beaufort scale is revealed ONLY AFTER the user records their wind reading */}
       {hasGuessed ? (
         <div className="orc-obs-beaufort" role="status">
-          <strong>Escala Beaufort:</strong> fuerza {bf.force} · <span>{bf.name}</span> (rumbo{' '}
+          <strong>Escala Beaufort:</strong> fuerza {bf.force} · <span>{bf.name}</span> (viento del{' '}
           {rumbo})
         </div>
       ) : (
         <div className="orc-obs-beaufort is-pending">
-          <span>Anotá la velocidad del contador para revelar el grado en la escala Beaufort.</span>
+          <span>Anotá la velocidad para ver qué fuerza tiene este viento en la escala Beaufort.</span>
         </div>
       )}
     </div>

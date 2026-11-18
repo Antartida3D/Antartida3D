@@ -27,7 +27,7 @@ const SHEET_MIN_PX = 56;
  * A modal sheet (the default) is the one container of every dialog of the app (#264): it brings its own
  * scrim that closes it when tapped, keeps Tab inside, and gives the focus back to whoever opened it.
  */
-export function BottomSheet({ className = '', labelledBy, sheetRef, onClose, floor = 'closed', modal = true, scrim, layer, initialFocus = '.btn.primary', fallbackFocus, size: sizeProp, onSize, children }: {
+export function BottomSheet({ className = '', labelledBy, sheetRef, onClose, floor = 'closed', modal = true, scrim, layer, initialFocus = '.btn.primary', fallbackFocus, size: sizeProp, onSize, ceiling = 'tall', children }: {
   /** Extra classes for the sheet, next to `sheet grows`. */
   className?: string;
   /** Id of the heading that names the dialog. */
@@ -53,15 +53,20 @@ export function BottomSheet({ className = '', labelledBy, sheetRef, onClose, flo
   /** Size set by the page; without it the sheet keeps its own, starting small. */
   size?: OpenSheetSize;
   onSize?: (size: OpenSheetSize) => void;
+  /** Tallest size: 'small' when all the content already shows at that size, so raising the sheet would only show empty paper. */
+  ceiling?: 'small' | 'tall';
   children: ReactNode;
 }) {
   const [ownSize, setOwnSize] = useState<OpenSheetSize>('small');
   const size = sizeProp ?? ownSize;
   const expanded = size === 'tall';
-  const setSize = (next: OpenSheetSize) => {
+  const setSize = (wanted: OpenSheetSize) => {
+    const next = ceiling === 'small' && wanted === 'tall' ? 'small' : wanted;
     setOwnSize(next);
     onSize?.(next);
   };
+  /** Height of the sheet at its small size, as last seen: how far a sheet with a small ceiling follows the finger. */
+  const smallHeight = useRef(0);
   const persistent = floor === 'peek';
   const isDialog = !persistent && modal;
   const showScrim = scrim ?? isDialog;
@@ -79,13 +84,15 @@ export function BottomSheet({ className = '', labelledBy, sheetRef, onClose, flo
     const sheet = sheetRef.current;
     if (!sheet) return;
     drag.current = { y, height: sheet.getBoundingClientRect().height };
+    if (size === 'small') smallHeight.current = drag.current.height;
     setDragging(true);
   };
   const follow = (y: number) => {
     const sheet = sheetRef.current;
     if (!drag.current || !sheet) return;
     // The sheet follows the finger, up to its tall size.
-    const limit = (sheet.parentElement?.clientHeight ?? window.innerHeight) * EXPANDED;
+    const tall = (sheet.parentElement?.clientHeight ?? window.innerHeight) * EXPANDED;
+    const limit = ceiling === 'small' && smallHeight.current ? smallHeight.current : tall;
     sheet.style.maxHeight = `${Math.min(limit, Math.max(SHEET_MIN_PX, drag.current.height + drag.current.y - y))}px`;
   };
   const release = (y: number) => {

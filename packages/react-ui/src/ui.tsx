@@ -58,6 +58,19 @@ export const Icon = {
     </svg>
   ),
   close: <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" {...stroke} strokeWidth="2.4" /></svg>,
+  /** A magnifying glass with a plus (to enlarge) or a minus (back to the real size). */
+  magnify: (
+    <svg className="ico" viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" strokeWidth="2" fill="none" />
+      <path d="M15.5 15.5L21 21M7.5 10.5h6M10.5 7.5v6" {...stroke} strokeWidth="2" />
+    </svg>
+  ),
+  reduce: (
+    <svg className="ico" viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" strokeWidth="2" fill="none" />
+      <path d="M15.5 15.5L21 21M7.5 10.5h6" {...stroke} strokeWidth="2" />
+    </svg>
+  ),
   legend: <svg className="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h9" {...stroke} strokeWidth="2" fill="none" /></svg>,
   list: (
     <svg className="ico" viewBox="0 0 24 24" aria-hidden="true">

@@ -1,31 +1,32 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { CameraControls, PerformanceMonitor } from '@react-three/drei';
+import { CameraControls, Html, PerformanceMonitor } from '@react-three/drei';
 import { EffectComposer } from '@react-three/postprocessing';
 import {
   AdditiveBlending, BackSide, BufferAttribute, BufferGeometry, Color, DoubleSide, Group, InstancedMesh, Matrix4,
-  MeshBasicMaterial, Object3D, Points, PointsMaterial, Quaternion, ShaderMaterial, SphereGeometry, Vector2, Vector3,
+  MeshBasicMaterial, Object3D, PerspectiveCamera, Points, PointsMaterial, Quaternion, ShaderMaterial, SphereGeometry, Vector2, Vector3,
 } from 'three';
 import {
   MARINE_LINKS, isUnderwater, linksOf, shouldTick, type MarineOrganism, type MarineState, type MarineView,
 } from '@antartida/core';
 import { InkEffect } from '../map3d/InkEffect.ts';
+import { MagnifyButton } from './MagnifyButton.tsx';
 import { ViewShift, type ViewShiftPx } from '../sceneFrame.tsx';
 import { stationSkyFragmentShader, stationSkyVertexShader } from '../orcadas/stationSky.glsl.ts';
 import { vehicleMaterial } from '../voyage/vehicles.ts';
-import { boxShade, buildPolyGeometry, chamferRect, emperor, prism, type Tri } from '../voyage/lowPoly.ts';
+import { boxShade, buildPolyGeometry, chamferRect, emperorWithFlippers, prism, type Tri } from '../voyage/lowPoly.ts';
 import { POLY_ICEBERGS } from '../voyage/icebergs.ts';
 import { SEA_POLY_MODELS, assembleWeddellSeal } from '../voyage/seaPolyModels.ts';
+import { MINKE_PARTS } from '../voyage/whalePolyModels.ts';
 import {
-  BALEEN_DETAIL_TRIS, DIATOM_CHAIN_TRIS, DIATOM_DISC_TRIS, EMPEROR_BILL_TIP, EMPEROR_FLIPPER_TRIS, EMPEROR_SHOULDER,
-  EMPEROR_SWIM_TRIS, HUMPBACK_BODY_TRIS, HUMPBACK_HINGE, HUMPBACK_TRIS, LEOPARD_TRIS, HUMPBACK_JAW_TRIS, HUMPBACK_THROAT_TRIS, KRILL_TRIS,
-  LEOPARD_BODY_TRIS, LEOPARD_HINGE, LEOPARD_JAW_TRIS, MINKE_FEED_BODY_TRIS, MINKE_HINGE, MINKE_JAW_TRIS,
-  MINKE_THROAT_TRIS, SILVERFISH_TRIS, SQUID_TRIS, TEETH_DETAIL_TRIS,
+  DIATOM_CHAIN_TRIS, DIATOM_DISC_TRIS, EMPEROR_BILL_TIP, EMPEROR_FLIPPER_TRIS, EMPEROR_SHOULDER,
+  EMPEROR_SWIM_TRIS, HUMPBACK_BODY_TRIS, HUMPBACK_HINGE, HUMPBACK_TRIS, LEOPARD_TRIS, HUMPBACK_JAW_TRIS, HUMPBACK_THROAT_TRIS, humpbackThroat, KRILL_TRIS,
+  LEOPARD_BODY_TRIS, LEOPARD_HINGE, LEOPARD_JAW_TRIS, SILVERFISH_TRIS, SQUID_TRIS,
 } from './lowPolyMarine.ts';
 import {
   DIVE_BOTTOM, EDGE_Z, FILTER_STILL, HOLE, ICE_TOP, LEAD, LEOPARD_LOOP, LEOPARD_PREY, MINKE_KRILL_PATCHES, MINKE_LOOP,
-  MINKE_SCALE, ORCA_LOOP, ORCA_POD, STILL_TIME, SUCTION_PERIOD, WATER_Y, WAVE_FLOE, WAVE_PERIOD, WAVE_SEAL_START, buildIceTris, emperorDive, EMPEROR_HUNT_STILL, EMPEROR_SWIM_SCALE, emperorHunt,
-  humpbackFilter, krillAt, leopardPose, minkePose, onLoop, orcaPose, orcaWave, suction, type Loop, type Pose,
+  MINKE_SCALE, ORCA_LOOP, ORCA_POD, STILL_TIME, SUCTION_PERIOD, WATER_Y, WAVE_FLOE, WAVE_PERIOD, WAVE_SEAL_START, buildIceTris, emperorDive, diveCatch, DIVE_STILL, EMPEROR_HUNT_STILL, EMPEROR_SWIM_SCALE, emperorHunt,
+  humpbackFilter, humpbackSwim, HUMPBACK_LAP, HUMPBACK_SCALE, HUMPBACK_SWARM, krillAt, krillLeft, leopardPose, minkePose, onLoop, orcaPose, orcaWave, suction, type Loop, type Pose, type PreyState,
 } from './marinePoses.ts';
 
 type Vec3 = readonly [number, number, number];
@@ -170,7 +171,11 @@ function Particles({ kind, reduced }: { kind: 'snow' | 'specks'; reduced: boolea
 // --- Small life -----------------------------------------------------------------------------
 
 /** A swarm of krill drawn with one instanced mesh. */
-function KrillSwarm({ center, count, spread, scale, reduced }: { center: Vec3; count: number; spread: number; scale: number; reduced: boolean }) {
+function KrillSwarm({ center, count, spread, scale, reduced, left }: {
+  center: Vec3; count: number; spread: number; scale: number; reduced: boolean;
+  /** How much of each krill is left at a time (1 whole, 0 eaten). */
+  left?: (k: { x: number; z: number }, t: number) => number;
+}) {
   const mesh = useRef<InstancedMesh>(null);
   const geometry = polyGeometry('krill', () => KRILL_TRIS);
   const dummy = useMemo(() => new Object3D(), []);
@@ -181,7 +186,7 @@ function KrillSwarm({ center, count, spread, scale, reduced }: { center: Vec3; c
       const k = krillAt(i, t, center, spread);
       dummy.position.set(k.x, k.y, k.z);
       dummy.rotation.set(0, k.yaw, 0);
-      dummy.scale.setScalar(scale);
+      dummy.scale.setScalar(scale * (left ? Math.max(left(k, t), 1e-3) : 1));
       dummy.updateMatrix();
       m.setMatrixAt(i, dummy.matrix);
     }
@@ -225,13 +230,14 @@ function Squids({ reduced }: { reduced: boolean }) {
   ))}</>;
 }
 
-/** Diatoms, tiny specks or magnified many times over. */
-function Diatoms({ magnified, reduced }: { magnified: boolean; reduced: boolean }) {
+/** Diatoms, tiny specks or magnified many times over. The button that magnifies them hangs from the one nearest the middle of the view. */
+function Diatoms({ magnified, reduced, onMagnify }: { magnified: boolean; reduced: boolean; onMagnify: () => void }) {
   const group = useRef<Group>(null);
   const cells = useMemo(() => Array.from({ length: 16 }, (_, i) => {
     const h = (n: number) => { const s = Math.sin(i * 91.7 + n * 13.1) * 43758.5453; return s - Math.floor(s); };
     return { x: (h(1) - 0.5) * 6, y: -2.2 + (h(2) - 0.5) * 2.6, z: (h(3) - 0.5) * 3, disc: i % 2 === 0, spin: h(4) * 6 };
   }), []);
+  const anchor = useMemo(() => cells.reduce((best, c) => (Math.hypot(c.x, c.y + 2.2) < Math.hypot(best.x, best.y + 2.2) ? c : best)), [cells]);
   const size = useRef(magnified ? 1 : 0.06);
   useFrame((_, delta) => {
     const goal = magnified ? 1 : 0.06;
@@ -241,32 +247,46 @@ function Diatoms({ magnified, reduced }: { magnified: boolean; reduced: boolean 
       if (!reduced) c.rotation.y += delta * 0.15;
     });
   });
-  return <group ref={group}>{cells.map((c, i) => (
-    <mesh key={i} geometry={polyGeometry(c.disc ? 'diatom-disc' : 'diatom-chain', () => (c.disc ? DIATOM_DISC_TRIS : DIATOM_CHAIN_TRIS))} material={vehicleMaterial}
-      position={[c.x, c.y, c.z]} rotation={[c.disc ? 0.9 : 0.2, c.spin, c.disc ? 0.3 : 0.5]} scale={magnified ? 0.7 : 0.04} />
-  ))}</group>;
+  return <>
+    <group ref={group}>{cells.map((c, i) => (
+      <mesh key={i} geometry={polyGeometry(c.disc ? 'diatom-disc' : 'diatom-chain', () => (c.disc ? DIATOM_DISC_TRIS : DIATOM_CHAIN_TRIS))} material={vehicleMaterial}
+        position={[c.x, c.y, c.z]} rotation={[c.disc ? 0.9 : 0.2, c.spin, c.disc ? 0.3 : 0.5]} scale={magnified ? 0.7 : 0.04} />
+    ))}</group>
+    <Html position={[anchor.x, anchor.y, anchor.z]} zIndexRange={[4, 4]}>
+      <div className="marine-callout"><MagnifyButton magnified={magnified} onToggle={onMagnify} /></div>
+    </Html>
+  </>;
 }
 
 // --- Animals ----------------------------------------------------------------------------------
 
-const HUMPBACK_AT: Pose = { x: -2.6, y: -2.4, z: EDGE_Z + 3, yaw: 0, pitch: 0.08 };
-const HUMPBACK_SCALE = 3.6;
-/** Krill in front of the humpback's mouth. */
-const HUMPBACK_SWARM: Vec3 = [HUMPBACK_AT.x + 3.3, HUMPBACK_AT.y - 0.2, HUMPBACK_AT.z];
 
 function Humpback({ filtering, reduced }: { filtering: boolean; reduced: boolean }) {
   const root = useRef<Group>(null);
   const jaw = useRef<Group>(null);
-  const throat = useRef<Group>(null);
   const water = useRef<Group>(null);
+  // The throat is reshaped from the pose (humpbackThroat), so it stays one skin from the jaw to the belly (#205).
+  const throat = useMemo(() => buildPolyGeometry(HUMPBACK_THROAT_TRIS, boxShade), []);
+  useEffect(() => () => throat.dispose(), [throat]);
+  const shown = useRef('0:1');
   usePose((t) => {
     const f = filtering ? humpbackFilter(t) : { phase: 'approach' as const, jaw: 0, throat: 1 };
-    place(root.current, { ...HUMPBACK_AT, y: HUMPBACK_AT.y + Math.sin(t * 0.5) * 0.08, pitch: HUMPBACK_AT.pitch + (filtering ? f.jaw * 0.15 : 0) });
+    const p = humpbackSwim(t);
+    place(root.current, { ...p, pitch: p.pitch + (filtering ? f.jaw * 0.15 : 0) });
     if (jaw.current) jaw.current.rotation.z = -f.jaw;
-    if (throat.current) throat.current.scale.y = f.throat;
+    if (shown.current !== `${f.jaw}:${f.throat}`) {
+      shown.current = `${f.jaw}:${f.throat}`;
+      const next = buildPolyGeometry(humpbackThroat(f.jaw, f.throat), boxShade);
+      for (const name of ['position', 'color']) {
+        const a = throat.getAttribute(name) as BufferAttribute;
+        a.copyArray(next.getAttribute(name).array);
+        a.needsUpdate = true;
+      }
+      next.dispose();
+    }
     if (water.current) {
       water.current.visible = f.phase === 'expel';
-      water.current.children.forEach((c, i) => { c.position.z = (i % 2 ? 1 : -1) * (0.14 + ((t * 0.6 + i * 0.13) % 0.3)); });
+      water.current.children.forEach((c, i) => { c.position.z = (i % 2 ? 1 : -1) * (0.08 + ((t * 0.6 + i * 0.13) % 0.3)); });
     }
   }, reduced, filtering ? FILTER_STILL : STILL_TIME);
   return (
@@ -274,11 +294,11 @@ function Humpback({ filtering, reduced }: { filtering: boolean; reduced: boolean
       <mesh geometry={polyGeometry('humpback-body', () => HUMPBACK_BODY_TRIS)} material={vehicleMaterial} />
       <group ref={jaw} position={[...HUMPBACK_HINGE]}>
         <mesh geometry={polyGeometry('humpback-jaw', () => HUMPBACK_JAW_TRIS)} material={vehicleMaterial} />
-        <group ref={throat} position={[0, -0.03, 0]}><mesh geometry={polyGeometry('humpback-throat', () => HUMPBACK_THROAT_TRIS)} material={vehicleMaterial} /></group>
       </group>
-      {/* Water pushed out through the baleen while the krill stays inside: an effect, not a model. */}
+      <mesh geometry={throat} material={vehicleMaterial} position={[...HUMPBACK_HINGE]} frustumCulled={false} />
+      {/* Water pushed out through the baleen, along the closed lips, while the krill stays inside: an effect, not a model. */}
       <group ref={water} visible={false}>
-        {Array.from({ length: 8 }, (_, i) => <mesh key={i} position={[0.36 + (i >> 1) * 0.05, -0.08, 0]}><boxGeometry args={[0.02, 0.02, 0.02]} /><meshBasicMaterial color="#E9F6F6" transparent opacity={0.8} /></mesh>)}
+        {Array.from({ length: 8 }, (_, i) => <mesh key={i} position={[0.27 + (i >> 1) * 0.055, -0.045 - (i % 3) * 0.008, 0]}><boxGeometry args={[0.011, 0.011, 0.011]} /><meshBasicMaterial color="#E9F6F6" transparent opacity={0.6} /></mesh>)}
       </group>
     </group>
   );
@@ -288,26 +308,30 @@ function Humpback({ filtering, reduced }: { filtering: boolean; reduced: boolean
 function Minke({ reduced, showBlow }: { reduced: boolean; showBlow: boolean }) {
   const root = useRef<Group>(null);
   const blow = useRef<Group>(null);
-  const jaw = useRef<Group>(null);
-  const throat = useRef<Group>(null);
+  const tail = useRef<Group>(null);
+  const flipR = useRef<Group>(null);
+  const flipL = useRef<Group>(null);
   usePose((t) => {
     const p = minkePose(t);
     place(root.current, p);
-    if (jaw.current) jaw.current.rotation.z = -p.jaw;
-    if (throat.current) throat.current.scale.y = p.throat;
+    // The tail beats up and down, harder in a lunge; the flippers steer a little (as the map whales, SeaLife).
+    if (tail.current) tail.current.rotation.z = Math.sin(t * 3) * (0.18 + p.lunge * 0.12);
+    if (flipR.current) flipR.current.rotation.x = -0.15 - p.lunge * 0.2;
+    if (flipL.current) flipL.current.rotation.x = 0.15 + p.lunge * 0.2;
     if (blow.current) {
       blow.current.visible = showBlow && p.breathing;
       blow.current.position.set(p.x + Math.cos(p.yaw) * 0.6, ICE_TOP, p.z - Math.sin(p.yaw) * 0.6);
     }
-  // Still frame: the middle of a lunge, mouth open in the krill.
+  // Still frame: the middle of a lunge, in the krill.
   }, reduced, MINKE_LOOP.period / 2);
+  const { tailPivot, flipperPivot: [fx, fy, fz] } = MINKE_PARTS;
   return <>
+    {/* The low-poly minke of the open map (whalePolyModels.ts). */}
     <group ref={root} scale={MINKE_SCALE}>
-      <mesh geometry={polyGeometry('minke-feed', () => MINKE_FEED_BODY_TRIS)} material={vehicleMaterial} />
-      <group ref={jaw} position={[...MINKE_HINGE]}>
-        <mesh geometry={polyGeometry('minke-jaw', () => MINKE_JAW_TRIS)} material={vehicleMaterial} />
-        <group ref={throat} position={[0, -0.02, 0]}><mesh geometry={polyGeometry('minke-throat', () => MINKE_THROAT_TRIS)} material={vehicleMaterial} /></group>
-      </group>
+      <mesh geometry={polyGeometry('minke-body', () => MINKE_PARTS.body)} material={vehicleMaterial} />
+      <group ref={tail} position={[...tailPivot]}><mesh geometry={polyGeometry('minke-tail', () => MINKE_PARTS.tail)} material={vehicleMaterial} /></group>
+      <group ref={flipR} position={[fx, fy, fz]}><mesh geometry={polyGeometry('minke-flipper-r', () => MINKE_PARTS.flipperR)} material={vehicleMaterial} /></group>
+      <group ref={flipL} position={[fx, fy, -fz]}><mesh geometry={polyGeometry('minke-flipper-l', () => MINKE_PARTS.flipperL)} material={vehicleMaterial} /></group>
     </group>
     <group ref={blow} visible={false}>
       {[[0, 0.15, 0, 0.18], [0.05, 0.35, 0.06, 0.24], [-0.05, 0.55, -0.05, 0.22]].map(([x, y, z, s], i) => (
@@ -329,15 +353,15 @@ function Follow({ pose, active, reduced }: { pose: (t: number) => Pose; active: 
 }
 
 /** The fish the emperor is about to catch, off the school, until it is in the bill. */
-function EmperorPrey({ reduced }: { reduced: boolean }) {
+function EmperorPrey({ prey, still, reduced }: { prey: (t: number) => Pose & { state: PreyState; size: number }; still: number; reduced: boolean }) {
   const ref = useRef<Group>(null);
   usePose((t) => {
-    const { prey } = emperorHunt(t);
-    place(ref.current, prey);
+    const p = prey(t);
+    place(ref.current, p);
     if (!ref.current) return;
-    ref.current.visible = prey.state === 'free';
-    ref.current.scale.setScalar(0.5 * Math.max(0.01, prey.size));
-  }, reduced, EMPEROR_HUNT_STILL);
+    ref.current.visible = p.state === 'free';
+    ref.current.scale.setScalar(0.5 * Math.max(0.01, p.size));
+  }, reduced, still);
   return <group ref={ref}><mesh geometry={polyGeometry('silverfish', () => SILVERFISH_TRIS)} material={vehicleMaterial} /></group>;
 }
 
@@ -362,8 +386,8 @@ function SwimmingEmperor({ pose, reduced, still, holding }: {
   return (
     <group ref={root} scale={EMPEROR_SWIM_SCALE}>
       <mesh geometry={polyGeometry('emperor-swim', () => EMPEROR_SWIM_TRIS)} material={vehicleMaterial} />
-      <group ref={right} position={[sx, sy, sz - 0.1]}><mesh geometry={flipper} material={vehicleMaterial} /></group>
-      <group ref={left} position={[sx, sy, -sz + 0.1]} scale={[1, 1, -1]}><mesh geometry={flipper} material={vehicleMaterial} /></group>
+      <group ref={right} position={[sx, sy, sz]}><mesh geometry={flipper} material={vehicleMaterial} /></group>
+      <group ref={left} position={[sx, sy, -sz]} scale={[1, 1, -1]}><mesh geometry={flipper} material={vehicleMaterial} /></group>
       {holding && (
         <group ref={fish} position={[EMPEROR_BILL_TIP, 0, 0]} rotation={[0, Math.PI / 2, 0]} scale={0.5 / EMPEROR_SWIM_SCALE} visible={false}>
           <mesh geometry={polyGeometry('silverfish', () => SILVERFISH_TRIS)} material={vehicleMaterial} />
@@ -373,9 +397,10 @@ function SwimmingEmperor({ pose, reduced, still, holding }: {
   );
 }
 
-/** Emperors standing on the floe by the hole, the low-poly emperor of the map. */
+/** Emperors standing on the floe by the hole: the emperor of the map with its flippers, as in Cerro Nevado. */
 const STANDING: readonly Tri[] = [
-  ...emperor(0, 0, 1), ...emperor(0.5, -0.45, 0.95, 0.4), ...emperor(-0.4, 0.5, 1.05, -0.3), ...emperor(0.7, 0.55, 0.9, 0.8),
+  ...emperorWithFlippers(0, 0, 1), ...emperorWithFlippers(0.5, -0.45, 0.95, 0.4), ...emperorWithFlippers(-0.4, 0.5, 1.05, -0.3),
+  ...emperorWithFlippers(0.7, 0.55, 0.9, 0.8),
 ];
 
 const LEOPARD_STILL: Pose = { x: 0.6, y: -2.2, z: 0.2, yaw: 0, pitch: 0 };
@@ -578,7 +603,7 @@ function FoodWeb3D({ selected, reduced }: { selected: MarineOrganism | null; red
 
 const KRILL_SWARM: Vec3 = [1.6, -1.9, -1];
 
-function Underwater({ view, state, reduced }: { view: MarineView; state: MarineState; reduced: boolean }) {
+function Underwater({ view, state, reduced, onMagnify }: { view: MarineView; state: MarineState; reduced: boolean; onMagnify: () => void }) {
   const near = view === 'micro' || view === 'teeth';
   return <>
     <WaterDome />
@@ -589,25 +614,26 @@ function Underwater({ view, state, reduced }: { view: MarineView; state: MarineS
       <LightShafts reduced={reduced} />
     </>}
     <Particles kind="specks" reduced={reduced} />
-    {view === 'micro' && <Diatoms magnified={state.magnified} reduced={reduced} />}
+    {view === 'micro' && <Diatoms magnified={state.magnified} reduced={reduced} onMagnify={onMagnify} />}
     {(view === 'ceiling' || view === 'krill') && (
       <KrillSwarm center={KRILL_SWARM} count={view === 'krill' ? 150 : 110} spread={view === 'krill' ? 2 : 2.6} scale={view === 'krill' ? 0.3 : 0.2} reduced={reduced} />
     )}
     {view === 'minke' && MINKE_KRILL_PATCHES.map((c, i) => <KrillSwarm key={i} center={c} count={45} spread={1} scale={0.2} reduced={reduced} />)}
     {view === 'humpback' && <>
       <Humpback filtering={state.filtered} reduced={reduced} />
-      <KrillSwarm center={HUMPBACK_SWARM} count={140} spread={1.6} scale={0.16} reduced={reduced} />
+      <KrillSwarm center={[...HUMPBACK_SWARM]} count={140} spread={1.6} scale={0.16} reduced={reduced} left={state.filtered ? krillLeft : undefined} />
     </>}
     {(view === 'ceiling' || view === 'minke') && <Minke reduced={reduced} showBlow={false} />}
     {view === 'minke' && <Follow pose={minkePose} active={state.followed} reduced={reduced} />}
     {view === 'emperor' && <>
       <SwimmingEmperor pose={(t) => emperorHunt(t).emperor} holding={(t) => emperorHunt(t).prey.state === 'held'} reduced={reduced} still={EMPEROR_HUNT_STILL} />
-      <EmperorPrey reduced={reduced} />
+      <EmperorPrey prey={(t) => emperorHunt(t).prey} still={EMPEROR_HUNT_STILL} reduced={reduced} />
       <FishSchool loop={{ cx: HOLE.x + 3, cy: -2.6, cz: HOLE.z - 1.2, rx: 1.6, rz: 1.1, period: 11 }} count={14} scale={0.5} reduced={reduced} />
       <KrillSwarm center={[HOLE.x + 1, -1.8, HOLE.z - 1.6]} count={60} spread={1.2} scale={0.14} reduced={reduced} />
     </>}
     {view === 'emperor-dive' && <>
-      <SwimmingEmperor pose={state.dived ? emperorDive : (t) => ({ ...emperorDive(0), stroke: Math.sin(t) * 0.1 })} reduced={reduced} still={state.dived ? 0.5 * 16 : 0} />
+      <SwimmingEmperor pose={emperorDive} holding={(t) => diveCatch(t).state === 'held'} reduced={reduced} still={DIVE_STILL} />
+      <EmperorPrey prey={diveCatch} still={DIVE_STILL} reduced={reduced} />
       <Follow pose={emperorDive} active={state.dived} reduced={reduced} />
       <FishSchool loop={{ cx: DIVE_BOTTOM.x, cy: DIVE_BOTTOM.y, cz: DIVE_BOTTOM.z, rx: 1.4, rz: 1, period: 10 }} count={16} scale={0.5} reduced={reduced} />
       <Squids reduced={reduced} />
@@ -621,10 +647,6 @@ function Underwater({ view, state, reduced }: { view: MarineView; state: MarineS
       <LeopardSeal swimming={false} reduced={reduced} />
       <SuctionFlow reduced={reduced} />
       <KrillSwarm center={[LEOPARD_MOUTH[0] + 1.6, LEOPARD_MOUTH[1], LEOPARD_MOUTH[2]]} count={40} spread={0.8} scale={0.12} reduced={reduced} />
-      {state.compared && <>
-        <PolyProp id="baleen" tris={BALEEN_DETAIL_TRIS} position={[-0.2, -1.15, 1.4]} scale={0.75} rotation={[0, 0.25, 0]} />
-        <PolyProp id="teeth" tris={TEETH_DETAIL_TRIS} position={[1.9, -1.15, 1.4]} scale={0.75} rotation={[0, -0.25, 0]} />
-      </>}
     </>}
     {view === 'orcas' && <OrcaPod reduced={reduced} />}
     {view === 'web' && <FoodWeb3D selected={state.selected} reduced={reduced} />}
@@ -667,18 +689,16 @@ function framingFor(view: MarineView, state: MarineState, narrow: boolean): Fram
       : { target: [-0.5, 0, -1.5], distance: 17 * k, direction: [0.55, 0.5, 1] };
     case 'micro': return { target: [0, -2.2, 0], distance: (state.magnified ? 5.6 : 4.2) * k, direction: [0.2, -0.1, 1] };
     case 'krill': return { target: KRILL_SWARM, distance: 5.2 * k, direction: [0.45, -0.18, 1] };
-    case 'humpback': return { target: [HUMPBACK_AT.x + 1.2, HUMPBACK_AT.y - 0.2, HUMPBACK_AT.z], distance: (state.filtered ? 7.5 : 9) * k, direction: [0.35, -0.12, 1] };
+    case 'humpback': return { target: [HUMPBACK_LAP.cx + 0.8, HUMPBACK_LAP.cy - 0.2, HUMPBACK_LAP.cz + HUMPBACK_LAP.rz * 0.5], distance: 10.5 * k, direction: [0.35, -0.12, 1] };
     // Framed on the middle krill patch, where the minke lunges, with the lead in view behind.
     case 'minke': return { target: MINKE_KRILL_PATCHES[1], distance: (state.followed ? 8 : 10) * k, direction: [0.3, -0.2, -1] };
     case 'emperor': return under
       ? { target: [HOLE.x + 2, -1.8, HOLE.z - 0.6], distance: 8 * k, direction: [0.45, -0.25, 1] }
       : { target: [HOLE.x + 1, 0.5, HOLE.z - 0.2], distance: 7 * k, direction: [0.8, 0.4, 1] };
-    // From below the hole, looking up: the emperor is seen breathing in the opening and then diving.
-    case 'emperor-dive': return state.dived
-      ? { target: [HOLE.x + 1.4, -2.4, HOLE.z - 0.5], distance: 9 * k, direction: [0.35, -0.75, 0.6] }
-      : { target: [HOLE.x, -0.3, HOLE.z], distance: 6.5 * k, direction: [0.35, -0.75, 0.6] };
+    // From below the hole, looking up: the camera follows the emperor down to the fish and back to breathe.
+    case 'emperor-dive': return { target: [HOLE.x + 1.4, -2.4, HOLE.z - 0.5], distance: 9 * k, direction: [0.35, -0.75, 0.6] };
     case 'leopard': return { target: [LEOPARD_LOOP.cx, LEOPARD_LOOP.cy, LEOPARD_LOOP.cz], distance: 9 * k, direction: [0.35, -0.2, 1] };
-    case 'teeth': return { target: [LEOPARD_STILL.x + 0.9, -1.75, LEOPARD_STILL.z + 0.6], distance: (state.compared ? 5.6 : 4.6) * k, direction: [0.2, -0.12, 1] };
+    case 'teeth': return { target: [LEOPARD_STILL.x + 0.9, -1.75, LEOPARD_STILL.z + 0.6], distance: 4.6 * k, direction: [0.2, -0.12, 1] };
     case 'orcas': return state.example
       ? { target: [WAVE_FLOE.x - 2, 0, WAVE_FLOE.z], distance: 13 * k, direction: [0.25, 0.5, 1] }
       : { target: [ORCA_LOOP.cx, -0.9, ORCA_LOOP.cz], distance: 19 * k, direction: [0.45, -0.2, 1] };
@@ -687,15 +707,33 @@ function framingFor(view: MarineView, state: MarineState, narrow: boolean): Fram
   }
 }
 
-function SceneCamera({ view, state, reduced, reset }: { view: MarineView; state: MarineState; reduced: boolean; reset: number }) {
+/** Vertical field of view of the camera when the whole canvas is in view, in degrees. */
+const FOV = 38;
+
+/**
+ * Opens the field of view when only the top part of the canvas is in view (a phone, above its sheet), so that part
+ * frames the scene as a canvas of its own size would. The canvas keeps its size: folding the sheet does not move it.
+ */
+function FitFov({ visible }: { visible: number }) {
+  const camera = useThree((s) => s.camera) as PerspectiveCamera;
+  const invalidate = useThree((s) => s.invalidate);
+  useLayoutEffect(() => {
+    camera.fov = (2 * Math.atan(Math.tan((FOV * Math.PI) / 360) / visible) * 180) / Math.PI;
+    camera.updateProjectionMatrix();
+    invalidate();
+  }, [camera, visible, invalidate]);
+  return null;
+}
+
+function SceneCamera({ view, state, reduced, visible }: { view: MarineView; state: MarineState; reduced: boolean; visible: number }) {
   const controls = useRef<CameraControls>(null);
   const initialized = useRef(false);
   const size = useThree((s) => s.size);
-  const { under, magnified, filtered, followed, dived, compared, example } = state;
+  const { under, magnified, filtered, followed, dived, example } = state;
   useEffect(() => {
     const cc = controls.current;
     if (!cc) return;
-    const { target, distance, direction } = framingFor(view, state, size.width / size.height < 1.05);
+    const { target, distance, direction } = framingFor(view, state, size.width / (size.height * visible) < 1.05);
     const len = Math.hypot(...direction);
     const below = isUnderwater(view, state);
     cc.minDistance = distance * 0.6;
@@ -709,7 +747,7 @@ function SceneCamera({ view, state, reduced, reset }: { view: MarineView; state:
       ...target, initialized.current && !reduced,
     );
     initialized.current = true;
-  }, [view, under, magnified, filtered, followed, dived, compared, example, reduced, size.width, size.height, reset]);
+  }, [view, under, magnified, filtered, followed, dived, example, reduced, size.width, size.height, visible]);
   return <CameraControls ref={controls} makeDefault dollySpeed={0.6} truckSpeed={0} />;
 }
 
@@ -758,26 +796,31 @@ function Settle({ state }: { state: MarineState }) {
   return null;
 }
 
-export function MarineScene({ view, state, reduced, reset, shift }: {
-  view: MarineView; state: MarineState; reduced: boolean; reset: number;
+export function MarineScene({ view, state, reduced, shift, visible = 1, onMagnify }: {
+  view: MarineView; state: MarineState; reduced: boolean;
   /** Moves the view into the part of the screen the side panel leaves free. */
   shift: ViewShiftPx;
+  /** Part of the canvas height in view (from the top): the rest is under the sheet of a phone. */
+  visible?: number;
+  /** Pressed on the button that hangs from the phytoplankton. */
+  onMagnify: () => void;
 }) {
   const [lowQuality, setLowQuality] = useState(false);
   const [ink, setInk] = useState(false);
   const under = isUnderwater(view, state);
   return (
     <Canvas role="img" aria-label={under ? 'Escena ilustrativa bajo el hielo marino' : 'Escena ilustrativa sobre el hielo marino'}
-      frameloop="demand" dpr={lowQuality ? 0.7 : [1, 1.5]} camera={{ position: [10, 12, 18], fov: 38, near: 0.1, far: 300 }}
+      frameloop="demand" dpr={lowQuality ? 0.7 : [1, 1.5]} camera={{ position: [10, 12, 18], fov: FOV, near: 0.1, far: 300 }}
       gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}>
       <SceneClock reduced={reduced} lowQuality={lowQuality} />
       {!reduced && (
         <PerformanceMonitor bounds={() => (lowQuality ? [24, 27] : [36, 42])} flipflops={4}
           onIncline={() => { setLowQuality(false); setInk(true); }} onDecline={() => { setLowQuality(true); setInk(false); }} />
       )}
-      <SceneCamera view={view} state={state} reduced={reduced} reset={reset} />
+      <FitFov visible={visible} />
+      <SceneCamera view={view} state={state} reduced={reduced} visible={visible} />
       <ViewShift shift={shift} />
-      {under ? <Underwater view={view} state={state} reduced={reduced} /> : <AboveIce view={view} reduced={reduced} />}
+      {under ? <Underwater view={view} state={state} reduced={reduced} onMagnify={onMagnify} /> : <AboveIce view={view} reduced={reduced} />}
       {ink && !lowQuality && <EffectComposer multisampling={0}><InkEffect /></EffectComposer>}
       <Settle state={state} />
       <SceneReady />

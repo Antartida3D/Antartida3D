@@ -29,10 +29,9 @@ describe('Océano tour (#8)', () => {
     expect(s.stop).toBe(MARINE_STOPS.findIndex((st) => st.chapter === 'whales'));
   });
 
-  it('keeps what was observed when moving on', () => {
-    const s = run([{ type: 'surface' }, ...next(3), { type: 'filter' }, ...next(4), { type: 'compare' }, ...next(3)]);
+  it('keeps what was observed when moving on; the humpback filters as soon as its stop opens', () => {
+    const s = run([{ type: 'surface' }, ...next(3), ...next(4), ...next(3)]);
     expect(s.filtered).toBe(true);
-    expect(s.compared).toBe(true);
   });
 
   it('opens the tour and the emperor chapter above the ice', () => {

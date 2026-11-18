@@ -45,11 +45,6 @@ test.describe('with WebGL', () => {
     await openMarambio(page);
     const section = page.getByRole('region', { name: 'Expedición Base Marambio' });
     await expect(section.locator('canvas')).toBeVisible();
-    // The scene is labelled as a reconstruction, and the label explains itself.
-    await expect(section.locator('.orc-scene-badge')).toContainText('Reconstrucción ilustrada');
-    await section.getByRole('button', { name: 'Ayuda sobre la reconstrucción ilustrada' }).click();
-    await expect(section.getByRole('note')).toContainText(marambioFacts('scene')[0].text);
-    await section.getByRole('button', { name: 'Ayuda sobre la reconstrucción ilustrada' }).click();
 
     for (const [i, spot] of MARAMBIO_SPOTS.entries()) {
       await expect(heading(page, spot.label)).toBeVisible();
@@ -120,7 +115,7 @@ test.describe('with WebGL', () => {
     await expect(heading(page, 'Los edificios')).toBeVisible();
 
     // The family archive is listed with the sources.
-    await section.getByRole('button', { name: 'Fuentes', exact: true }).click();
+    await section.locator('.orc-panel .vref').first().click();
     await expect(page.getByRole('dialog', { name: 'Fuentes' })).toContainText('Archivo fotográfico de E. B. Olivero');
     // The tower has no photograph.
     await page.getByRole('dialog', { name: 'Fuentes' }).getByRole('button', { name: 'Volver' }).click();

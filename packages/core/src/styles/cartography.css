@@ -1,7 +1,7 @@
 /* Shared material from DESIGN.md. Layout stays with each screen. */
 .brand, .reg, .reg-menu, .legend, .sheet, .listview, .vbar, .vpop, .vhint,
 .orc-panel, .orc-sources, .orc-month-strip, .orc-month-chip,
-.orc-month-popover, .orc-scene-help-popover, .orc-panel-show {
+.orc-month-popover, .orc-panel-show {
   background: var(--chart-surface);
   background-size: auto;
   background-blend-mode: normal;

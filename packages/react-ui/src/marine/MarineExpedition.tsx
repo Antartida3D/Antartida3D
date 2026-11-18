@@ -17,7 +17,6 @@ import { SourcesContext } from '../sheet/SourcesContext.ts';
 import { SourcesView } from '../sheet/SourcesView.tsx';
 import { FoodWebPanel, WebDiagram } from './FoodWeb.tsx';
 import { MagnifyButton } from './MagnifyButton.tsx';
-import { SceneBadge } from '../SceneBadge.tsx';
 import { SceneLocation } from '../SceneLocation.tsx';
 
 const Scene = lazy(() => import('./MarineScene.tsx').then((m) => ({ default: m.MarineScene })));
@@ -195,7 +194,6 @@ export function MarineExpedition({ reduced, webgl, resume, onProgress, onLeave }
           <figcaption>Recorrido en texto · todas las paradas e interacciones siguen disponibles.</figcaption>
         </figure>}
     </div>
-    <SceneBadge help={<p>{SCENE_NOTICE}</p>} onSources={() => setSourcesOpen(true)} />
     <SceneLocation place="Mar de Weddell · escena ilustrativa" detail={under ? 'Bajo el hielo marino' : 'Sobre el hielo marino'} />
     {/* The magnifying glass hangs from an alga of the 3D scene (MarineScene); without 3D it floats over the stage. */}
     {stop.id === 'tiny' && !use3D && <MagnifyButton floating magnified={state.magnified} onToggle={magnify} />}

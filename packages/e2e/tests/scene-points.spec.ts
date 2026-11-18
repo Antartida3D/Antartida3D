@@ -39,7 +39,6 @@ for (const SCENE of [THWAITES_SCENE, VOSTOK_SCENE, POLO_SCENE, BELGRANO_SCENE, T
     await page.getByRole('button', { name: SCENE_START_LABEL }).click();
     const scene = page.getByRole('region', { name: SCENE.title });
     await expect(scene).toBeVisible({ timeout: 30_000 });
-    await expect(scene.locator('.orc-scene-badge')).toContainText('Reconstrucción ilustrada');
     // The current temperature of the card, as a model estimate (#22, #285).
     const temp = scene.locator('.orc-panel .sheet-temp');
     await expect(temp).toContainText(/°C/);
@@ -51,7 +50,7 @@ for (const SCENE of [THWAITES_SCENE, VOSTOK_SCENE, POLO_SCENE, BELGRANO_SCENE, T
       if (i < SCENE.spots.length - 1) await scene.getByRole('button', { name: 'Siguiente' }).click();
     }
 
-    await scene.getByRole('button', { name: 'Fuentes', exact: true }).click();
+    await scene.locator('.orc-panel .vref').first().click();
     const sources = page.getByRole('dialog', { name: 'Fuentes' });
     for (const s of SCENE.cited) await expect(sources).toContainText(s.title);
     await page.keyboard.press('Escape');

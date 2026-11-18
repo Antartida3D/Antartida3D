@@ -173,14 +173,6 @@ export const ORCADAS_FACTS: readonly OrcadasFact[] = [
     sourceIds: ['cancilleria', 'armada'],
   },
   {
-    id: 'arrival-coordenadas',
-    chapter: 'arrival',
-    kind: 'real',
-    title: 'Dónde queda en el mapa',
-    text: 'Está en 60° 45′ de latitud sur y 44° 43′ de longitud oeste, en las islas Orcadas del Sur.',
-    sourceIds: ['armada'],
-  },
-  {
     id: 'arrival-fauna',
     chapter: 'arrival',
     kind: 'real',
@@ -203,14 +195,6 @@ export const ORCADAS_FACTS: readonly OrcadasFact[] = [
     title: 'Cuando el hielo frena al buque',
     text: 'En diciembre de 2025 el hielo no dejó pasar al rompehielos Irízar, que se tuvo que quedar en la bahía Scotia. Entonces un helicóptero Sea King hizo 23 vuelos en poco más de dos horas para bajar combustible, científicos y a las 21 personas de la nueva dotación al helipuerto.',
     sourceIds: ['armada-relevo-2025', 'comnap'],
-  },
-  {
-    id: 'arrival-elevacion',
-    chapter: 'arrival',
-    kind: 'real',
-    title: 'A pocos metros del mar',
-    text: 'La base está a apenas 8 metros sobre el nivel del mar, y el barómetro de la estación meteorológica un poco más arriba, a 12 metros.',
-    sourceIds: ['comnap', 'oscar'],
   },
   {
     id: 'arrival-diorama',
@@ -535,7 +519,7 @@ export const ORCADAS_TOUR: readonly OrcadasTourStop[] = [
     spot: 'overview',
     factId: 'arrival-istmo',
     line: 'Está en el istmo Ibarguren, una franja angosta entre las bahías Scotia y Uruguay, en la isla Laurie.',
-    more: ['arrival-coordenadas', 'arrival-elevacion'],
+    more: [],
   },
   {
     id: 'arrival-antiguedad',
@@ -559,7 +543,7 @@ export const ORCADAS_TOUR: readonly OrcadasTourStop[] = [
     spot: 'colony',
     factId: 'arrival-fauna',
     line: 'En la isla anidan pingüinos y aves marinas, y en las playas descansan focas y elefantes marinos.',
-    more: ['arrival-fauna'],
+    more: [],
   },
 
   // observation

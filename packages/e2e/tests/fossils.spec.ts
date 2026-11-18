@@ -46,6 +46,10 @@ test('explores the four fossils and three habitats, opens sources and records co
   const dialog = page.getByRole('dialog');
   await expect(dialog.getByRole('img')).toHaveAttribute('alt', /amonite cortado/i);
   await expect(dialog).toContainText('Archivo E. B. Olivero');
+  // The citation of the caption opens the sources and closes the photograph (#327).
+  await dialog.locator('.vref').first().click();
+  await expect(page.getByRole('dialog', { name: 'Fuentes' })).toBeVisible();
+  await expect(page.locator('.photo-modal')).toHaveCount(0);
   await page.keyboard.press('Escape');
   await expect(dialog).not.toBeVisible();
 
@@ -99,12 +103,13 @@ test('explores the four fossils and three habitats, opens sources and records co
   await expect(dialog).toContainText('no la Antártida del pasado');
   await page.keyboard.press('Escape');
 
-  await page.getByRole('button', { name: 'Fuentes', exact: true }).click();
+  const cite = page.locator('.orc-panel .vref').first();
+  await cite.click();
   await expect(dialog).toContainText('Consultado el 14 de noviembre de 2026');
   await expect(dialog).toContainText('López Cabrera');
   await expect(dialog).toContainText('Raffi');
   await page.keyboard.press('Escape');
-  await expect(page.getByRole('button', { name: 'Fuentes', exact: true })).toBeFocused();
+  await expect(cite).toBeFocused();
   await page.getByRole('button', { name: 'Siguiente', exact: true }).click();
   const log = page.getByRole('list', { name: 'Tu registro de la expedición' });
   await expect(log).toContainText('Seguiste la columna');
@@ -168,4 +173,10 @@ test('Fósiles and Base Marambio each have their own marker, apart on screen, an
   if (isMobile && !(await start.isVisible())) await page.keyboard.press('Enter');
   await start.click();
   await expect(page.getByRole('region', { name: 'Expedición Fósiles' })).toBeVisible();
+
+  // Back on the map, the loading screen covers the 3D map while it loads again, and then goes away (#327).
+  await page.getByRole('button', { name: 'Volver al mapa' }).click();
+  await expect(page.locator('.ld')).toBeVisible();
+  await expect(page.locator('.ld')).toHaveCount(0, { timeout: 20_000 });
+  await expect(fosiles).toBeVisible();
 });

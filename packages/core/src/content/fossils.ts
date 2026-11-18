@@ -112,7 +112,8 @@ export interface FossilStop {
   eyebrow: string;
   title: string;
   line: string;
-  more: string;
+  /** What the line leaves out, under «Saber más». «Llegar» and «Dinosaurio» have none: their text is short (#327). */
+  more?: string;
   sources: readonly FossilSourceId[];
   photos?: readonly FossilPhotoId[];
 }
@@ -122,14 +123,12 @@ export const FOSSIL_STOPS: readonly FossilStop[] = [
     id: 'arrival', chapter: 'camp', view: 'camp', place: 'Isla James Ross', eyebrow: 'Isla James Ross · verano de 1986',
     title: 'Las rocas recuerdan',
     line: 'Eduardo Olivero y sus compañeros salieron a estudiar las rocas. Entre ellas apareció una historia que nadie había encontrado antes en la Antártida.',
-    more: 'La campaña estudiaba la estratigrafía: las relaciones entre las capas de roca y los acontecimientos que registran. La expedición de Fósiles recorre el archipiélago James Ross; la visita a la Base Marambio tiene su propio recorrido.',
     sources: ['interview', 'paper'], photos: ['olivero'],
   },
   {
     id: 'looking', chapter: 'camp', view: 'camp', place: 'Isla James Ross', eyebrow: 'Un cuaderno, muchas campañas',
     title: 'Aprender a mirar',
     line: 'Olivero hizo su primera campaña antártica en 1974. Años de observar rocas lo acompañaban en cada caminata.',
-    more: 'Las investigaciones continuaron en el Laboratorio de Geología Andina del CADIC, en Ushuaia. El descubrimiento fue un trabajo de equipo, con apoyo del Instituto Antártico Argentino.',
     sources: ['conicet'],
   },
   {
@@ -164,28 +163,24 @@ export const FOSSIL_STOPS: readonly FossilStop[] = [
     id: 'detour', chapter: 'dinosaur', view: 'jaw', place: 'Isla James Ross', eyebrow: '1986 · un desvío en el camino',
     title: 'Algo asomaba de la roca',
     line: 'En una caminata, Eduardo se apartó del grupo. Encontró un fragmento de mandíbula con un diente y volvió a buscar a sus compañeros.',
-    more: 'En su entrevista recuerda la luz de aquel día y cómo le evocó el paisaje de Ischigualasto. El episodio aparece aquí resumido: no se presenta como una cita literal ni como una grabación de su voz.',
     sources: ['interview'],
   },
   {
     id: 'tooth', chapter: 'dinosaur', view: 'jaw', place: 'Isla James Ross', eyebrow: 'Segunda pista · el diente',
     title: 'Una pista muy pequeña',
     line: 'No era un diente cónico de reptil marino. La forma le llamó la atención y abría una pregunta enorme: ¿habían encontrado un dinosaurio?',
-    more: 'La publicación de 1991 describe un fragmento de mandíbula izquierda con un diente de corona baja, con forma de hoja. La pieza es una de las evidencias conservadas; el dibujo de bloques permite observar esa pista sin reproducir cada detalle anatómico.',
     sources: ['paper', 'interview'], photos: ['dino-remains'],
   },
   {
     id: 'seasons', chapter: 'dinosaur', view: 'dig', place: 'Isla James Ross', eyebrow: 'La investigación continúa',
     title: 'El hallazgo llevó años',
     line: 'El suelo congelado dificultaba la extracción. El equipo recuperó los restos durante varias campañas.',
-    more: 'Encontrar una pieza fue el comienzo. En su testimonio, Olivero relata que rescataron lo que estaba descongelado y regresaron después por los demás restos.',
     sources: ['interview'], photos: ['dino-site'],
   },
   {
     id: 'animal', chapter: 'dinosaur', view: 'dinosaur', place: 'Isla James Ross', eyebrow: 'Antarctopelta oliveroi',
     title: 'De los restos al animal',
     line: 'Los huesos y las placas de armadura permitieron reconocer un dinosaurio herbívoro acorazado.',
-    more: 'El artículo de 1991 documenta un esqueleto parcial, con mandíbula, vértebras, costillas, fragmentos de extremidades y placas óseas. CONICET identifica al animal como Antarctopelta oliveroi. La forma completa, los colores y los movimientos de esta escena son una reconstrucción ilustrativa.',
     sources: ['paper', 'conicet'],
   },
   {

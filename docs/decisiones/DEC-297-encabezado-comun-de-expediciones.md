@@ -15,7 +15,7 @@
 
 1. Océano, Orcadas, Fósiles y Marambio dibujan su encabezado con un solo componente, `ExpeditionTop` (`packages/react-ui/src/ExpeditionTop.tsx`). Ningún otro archivo repite el marcado `<header className="orc-top">`.
 2. El encabezado es el de Océano tras [DEC-283](DEC-283-oceano-sin-botones-opcionales.md): sin barra, sin borde ni fondo y sin título. «Mapa» y sus acciones van a la izquierda y, en escritorio, los capítulos a la derecha. La pregunta guía ya aparece en la primera parada del panel, en la introducción o en «Responder»; la región de la expedición conserva su nombre accesible.
-3. «Fuentes» es una acción opcional del componente. Orcadas, Fósiles y Marambio la conservan; Océano sigue sin ella.
+3. «Fuentes» es una acción opcional del componente. Orcadas, Fósiles y Marambio la conservan; Océano sigue sin ella. *Reemplazado por [DEC-327](DEC-327-menos-ayudas-en-expediciones.md): ninguna expedición la usa.*
 4. En celular vertical no se ven los capítulos en ninguna expedición: «Siguiente» y «Atrás» del panel recorren las paradas. Saltar directo a un capítulo queda en escritorio y en celular horizontal.
 5. El selector de mes de Orcadas y Marambio es siempre un chip en la fila de «Mapa», también en escritorio. Al tocarlo se despliega la tira de 12 meses, la leyenda y «Saber más». En escritorio la tarjeta de 380 px no entra en la fila, así que cambiar el mes cuesta un clic más.
 6. «Continuar» en celular pasa a dos líneas si el título no entra.
@@ -27,7 +27,7 @@
 11. Al salir de un viaje desde Ushuaia, la cámara 3D vuelve a la vista general del mapa en vez de quedarse sobre el barco.
 12. Se borró `CerroNevadoExpedition.tsx`: Cerro Nevado ya es una ficha y nada lo montaba. Quedan sin uso `CerroNevadoScene.tsx`, `colonyScene.ts` y las reglas `.cn` de `marambio.css`.
 13. Los e2e de Océano que fallaban en `main` estaban desactualizados desde #283: tres paradas muestran una segunda vista antes de avanzar, y los tests contaban una pulsación por parada.
-14. La etiqueta de la escena («Reconstrucción ilustrada» con su «?» que explica el porqué) es un solo componente, `SceneBadge` (`packages/react-ui/src/SceneBadge.tsx`), abajo a la izquierda en Océano, Fósiles, Orcadas, Marambio, Poncho y el viaje desde Ushuaia. Se quitaron el cartel «Arrastrá para mirar alrededor» de Fósiles y el de «Dibujo para ver la escena…» de Poncho: su texto pasó al «?». En el viaje desde Ushuaia la etiqueta queda sobre la barra en celular y en la esquina inferior izquierda en escritorio. Fósiles sin 3D muestra «Fotografía de archivo» con el mismo componente.
+14. La etiqueta de la escena («Reconstrucción ilustrada» con su «?» que explica el porqué) es un solo componente, `SceneBadge` (`packages/react-ui/src/SceneBadge.tsx`), abajo a la izquierda en Océano, Fósiles, Orcadas, Marambio, Poncho y el viaje desde Ushuaia. Se quitaron el cartel «Arrastrá para mirar alrededor» de Fósiles y el de «Dibujo para ver la escena…» de Poncho: su texto pasó al «?». En el viaje desde Ushuaia la etiqueta queda sobre la barra en celular y en la esquina inferior izquierda en escritorio. Fósiles sin 3D muestra «Fotografía de archivo» con el mismo componente. *Reemplazado por [DEC-327](DEC-327-menos-ayudas-en-expediciones.md): se quitó la etiqueta y el componente.*
 15. La leyenda del mapa arranca cerrada también en un celular horizontal (alto de 500 px o menos): abierta tapaba el marcador sugerido. Esto arregla el test `expedition-order:271`, que fallaba en `main` en 844×390.
 
 ## Motivo

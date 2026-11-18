@@ -190,31 +190,28 @@ for (const width of [360, 390]) {
   });
 }
 
-// The label of the scene is one component in every expedition (#297): bottom left, with its «?» that explains it.
-async function expectSceneBadge(page: Page) {
-  const badge = page.locator('.orc-scene-badge').first();
-  await expect(badge).toBeVisible();
-  await expect(badge).toContainText('Reconstrucción ilustrada');
+// No scene label with its «?» and no «Fuentes» in the header (#327): the sources open from the [N] citations.
+async function expectNoBadgeNorSources(page: Page) {
+  await expect(page.locator('.orc-top')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Ayuda sobre la reconstrucción ilustrada' })).toHaveCount(0);
+  await expect(page.locator('.orc-top').getByRole('button', { name: 'Fuentes' })).toHaveCount(0);
+  // Wide, the location sits down in the corner: nothing under it to leave room for (#327).
   const vp = page.viewportSize()!;
-  const box = (await badge.boundingBox())!;
-  // Bottom left; on a phone it sits over the bottom sheet, which takes a good part of the height.
-  expect(box.x, 'at the left edge').toBeLessThan(40);
-  expect(box.y + box.height / 2, 'in the lower part').toBeGreaterThan(vp.height * 0.4);
-  const help = badge.getByRole('button', { name: 'Ayuda sobre la reconstrucción ilustrada' });
-  await help.click();
-  await expect(badge.getByRole('note')).toBeVisible();
-  await help.click();
-  await expect(badge.getByRole('note')).toHaveCount(0);
+  const location = page.locator('.scene-location');
+  if (vp.width >= 900 && vp.height > 500 && (await location.count()) > 0) {
+    const box = (await location.boundingBox())!;
+    expect(vp.height - (box.y + box.height), 'gap under the location').toBeLessThanOrEqual(32);
+  }
 }
 
 for (const name of ['Océano', 'Fósiles', 'Orcadas', 'Marambio'] as const) {
-  test(`${name}: the scene label sits bottom left with its «?»`, async ({ page }) => {
+  test(`${name}: no scene label and no «Fuentes» in the header`, async ({ page }) => {
     await OPENERS[name](page);
-    await expectSceneBadge(page);
+    await expectNoBadgeNorSources(page);
   });
 }
 
-test('Poncho and the trip from Ushuaia show the same scene label', async ({ page }) => {
+test('the trip from Ushuaia shows no scene label', async ({ page }) => {
   test.setTimeout(90_000);
   await page.goto('/');
   await clearStorage(page);
@@ -225,5 +222,5 @@ test('Poncho and the trip from Ushuaia show the same scene label', async ({ page
   await page.getByRole('group', { name: 'Medio de transporte' }).getByRole('button', { name: /Irízar/ }).click();
   await page.getByRole('button', { name: 'Zarpar' }).click();
   await expect(page.getByRole('group', { name: 'Controles del viaje' })).toBeVisible();
-  await expectSceneBadge(page);
+  await expect(page.getByRole('button', { name: 'Ayuda sobre la reconstrucción ilustrada' })).toHaveCount(0);
 });

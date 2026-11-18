@@ -315,6 +315,14 @@ export function AntarcticaApp() {
   };
 
   const leave = (done: boolean) => {
+    // Back on the 3D map its canvas mounts again and loads the relief anew: the loading screen covers it (#327). The code
+    // chunk stays loaded, so its step stays done.
+    if (mode === '3d' && can3D) {
+      const chunk = map3dLoadingStore.getSnapshot().done.chunk;
+      map3dLoadingStore.reset();
+      if (chunk) map3dLoadingStore.markStepDone('chunk');
+      setMap3dLoaderDismissed(false);
+    }
     setScreen('map');
     setPhase('ret');
     setReturned(true);

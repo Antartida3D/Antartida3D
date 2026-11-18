@@ -24,7 +24,6 @@ import { useIsDesktop } from '../hooks.ts';
 import { CanvasGuard } from '../CanvasGuard.tsx';
 import { useSceneFrame } from '../sceneFrame.tsx';
 import { ExpeditionTop } from '../ExpeditionTop.tsx';
-import { SceneBadge } from '../SceneBadge.tsx';
 import { SceneLocation } from '../SceneLocation.tsx';
 import { Icon, Quoted } from '../ui.tsx';
 import { Cites } from '../sheet/Cite.tsx';
@@ -49,7 +48,7 @@ const CHAPTER_PHOTO = {
 
 const SOURCES = FOSSIL_CITED;
 
-type Modal = { kind: 'sources'; id: string | null } | { kind: 'story' } | { kind: 'photo'; id: FossilPhotoId } | null;
+type Modal = { kind: 'sources'; id: string | null } | { kind: 'story' } | null;
 
 export function FossilExpedition({ reduced, webgl, resume, onProgress, onLeave }: {
   reduced: boolean; webgl: boolean; resume?: { step: number; sub?: number }; onProgress?: (step: number, sub?: number) => void; onLeave: (done: boolean) => void;
@@ -68,6 +67,8 @@ export function FossilExpedition({ reduced, webgl, resume, onProgress, onLeave }
   const [sheetSize, setSheetSize] = useState<OpenSheetSize>('small');
   const [reset, setReset] = useState(0);
   const [modal, setModal] = useState<Modal>(null);
+  // Apart from `modal`, as in Marambio: a citation of its caption opens the sources and closes it, and the two must not cancel out (#327).
+  const [photoId, setPhotoId] = useState<FossilPhotoId | null>(null);
   const [graphicsLost, setGraphicsLost] = useState(false);
   const root = useRef<HTMLElement>(null);
   const panel = useRef<HTMLElement>(null);
@@ -80,7 +81,7 @@ export function FossilExpedition({ reduced, webgl, resume, onProgress, onLeave }
   const fallbackId = stop.photos?.[0] ?? CHAPTER_PHOTO[stop.chapter];
   const fallback = FOSSIL_PHOTOS[fallbackId];
   const use3D = webgl && !graphicsLost;
-  const shown = modal?.kind === 'photo' ? modal.id : fallbackId;
+  const shown = photoId ?? fallbackId;
   const place = stop.id === 'animal' && state.reconstructed ? 'Bosque del Cretácico · reconstrucción'
     : stop.id === 'environments' ? `${FOSSIL_HABITATS.find((h) => h.id === state.habitat)?.age} · reconstrucción` : stop.place;
 
@@ -101,7 +102,6 @@ export function FossilExpedition({ reduced, webgl, resume, onProgress, onLeave }
   }, []);
 
   const dialog = useRef<HTMLElement>(null);
-  const sourcesBtn = useRef<HTMLButtonElement>(null);
   const openSource = (id: string | null) => setModal({ kind: 'sources', id });
 
   const content = <>
@@ -163,14 +163,14 @@ export function FossilExpedition({ reduced, webgl, resume, onProgress, onLeave }
         <li><span>✓</span>Recorriste {state.visited.length} de {FOSSIL_STOPS.length} paradas</li>
       </ul>}
 
-      <MoreFold key={stop.id}><p>{stop.more}</p></MoreFold>
+      {stop.more && <MoreFold key={stop.id}><p>{stop.more}</p></MoreFold>}
       {stop.id === FOSSIL_STORY.stop && <button className="fossil-note" onClick={() => setModal({ kind: 'story' })} aria-label={`Abrir nota: ${FOSSIL_STORY.title}`}>
         <small>Nota de campo · relato de Eduardo</small><b>{FOSSIL_STORY.title}</b><span>Leer la anécdota ↗</span>
       </button>}
       {stop.photos && <div className="fossil-archive-list" role="group" aria-label="Archivo fotográfico">
         {stop.photos.map((id, i) => {
           const photo = FOSSIL_PHOTOS[id];
-          return <button key={id} className="fossil-archive" style={{ '--tilt': `${i % 2 ? 2.5 : -3}deg` } as CSSProperties} onClick={() => setModal({ kind: 'photo', id })} aria-label={`Abrir fotografía: ${photo.caption}`}>
+          return <button key={id} className="fossil-archive" style={{ '--tilt': `${i % 2 ? 2.5 : -3}deg` } as CSSProperties} onClick={() => setPhotoId(id)} aria-label={`Abrir fotografía: ${photo.caption}`}>
             <img src={PHOTO_URL[id]} alt="" loading="lazy" /><span><small>{photo.note ? 'Comparación actual' : 'Archivo fotográfico'}</small><b>{photo.caption}</b><span>Ver fotografía ↗</span></span>
           </button>;
         })}
@@ -189,12 +189,6 @@ export function FossilExpedition({ reduced, webgl, resume, onProgress, onLeave }
     </div>
     <SceneLocation place={place} detail={stop.chapter === 'past' ? 'Ambientes reconstruidos' : 'Antártida · cuaderno de expedición'} />
     {use3D && <button type="button" className="fossil-reset" aria-label="Restablecer vista de la escena" onClick={() => setReset((v) => v + 1)}>{Icon.reset}</button>}
-    <SceneBadge
-      kind={use3D ? 'recon' : 'real'}
-      label={use3D ? undefined : 'Fotografía de archivo'}
-      help={<p>{use3D ? 'Las escenas son ilustrativas: los animales y los ambientes son una primera interpretación visual y los tamaños están exagerados.' : 'Archivo fotográfico con créditos al abrir la foto.'}</p>}
-      onSources={() => openSource(null)}
-    />
     {stop.id === 'spiral' && state.cleaned === FOSSIL_CLEAN_STEPS && <div className="scene-found" role="status">01 · La espiral apareció</div>}
     {stop.id === 'giants' && <div className="scene-found">01 · Amonite gigante<small>Forma y movimiento ilustrativos</small></div>}
     {stop.id === 'vega' && state.column && <div className="scene-found">02 · Una columna, de la cabeza a la cola</div>}
@@ -202,12 +196,11 @@ export function FossilExpedition({ reduced, webgl, resume, onProgress, onLeave }
     {stop.id === 'tooth' && state.tooth && <div className="scene-found">03 · Una mandíbula. Un diente.</div>}
     {stop.id === 'slab' && state.measured && <div className="scene-found">04 · 17 mm, del centro a la punta</div>}
     <ExpeditionTop topRef={top} onMap={() => onLeave(false)} chaptersLabel="Capítulos de Fósiles" onChapter={(id) => dispatch({ type: 'chapter', chapter: id })}
-      actions={<button type="button" className="pill orc-top-btn" aria-haspopup="dialog" ref={sourcesBtn} onClick={() => openSource(null)}>Fuentes</button>}
       chapters={FOSSIL_CHAPTERS.map((c) => ({ id: c.id, label: c.label, current: c.id === stop.chapter, visited: visitedChapters.has(c.id) }))} />
     {desktop ? <section className="orc-panel fossil-panel" ref={panel} aria-labelledby="fossil-title">{content}</section> : <BottomSheet className="orc-panel fossil-panel" labelledBy="fossil-title" sheetRef={panel} floor="peek" size={sheetSize} onSize={setSheetSize}>{content}</BottomSheet>}
     {modal?.kind === 'sources' && <SourcesView list={SOURCES} highlight={modal.id} place={FOSSIL_QUESTION}
       notice={['Las escenas son ilustrativas. Cada parada identifica la fuente de su relato y de sus evidencias.', 'Para seguir completando con Eduardo: especie y medidas de los amonites elegidos, relato de su hallazgo, fecha y lugar de cada fotografía del archivo y nuevos testimonios. Los modelos de los animales son una primera interpretación visual.']}
-      onClose={() => setModal(null)} fallbackFocus={() => sourcesBtn.current} />}
+      onClose={() => setModal(null)} />}
     {modal?.kind === 'story' && <BottomSheet className="voyage fossil-sheet" labelledBy="fossil-story-title" sheetRef={dialog} onClose={() => setModal(null)}>
       <SheetHeader label="Nota de campo · relato de Eduardo" title={FOSSIL_STORY.title} titleId="fossil-story-title" />
       <article className="fossil-story">
@@ -217,7 +210,7 @@ export function FossilExpedition({ reduced, webgl, resume, onProgress, onLeave }
       <SheetActions><button type="button" className="btn primary" onClick={() => setModal(null)}>Volver</button></SheetActions>
     </BottomSheet>}
     {/* The photograph, in the middle of the screen: the modal of every expedition (#309). */}
-    {modal?.kind === 'photo' && <PhotoModal src={PHOTO_URL[shown]} alt={photo.alt} title="Archivo de campo" onClose={() => setModal(null)}>
+    {photoId && <PhotoModal src={PHOTO_URL[shown]} alt={photo.alt} title="Archivo de campo" onClose={() => setPhotoId(null)}>
       <b>{photo.caption}</b>{photo.note && <span className="fossil-photo-note">{photo.note}</span>}<span>{photo.credit}<Cites ids={[photo.source]} /></span>
     </PhotoModal>}
   </section></SourcesContext.Provider>;

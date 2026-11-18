@@ -33,7 +33,6 @@ test('the emperors of Cerro Nevado open a scene of their own on the common scree
   await page.getByRole('button', { name: SCENE_START_LABEL }).click();
   const scene = page.getByRole('region', { name: CERRO_NEVADO_TITLE });
   await expect(scene).toBeVisible({ timeout: 30_000 });
-  await expect(scene.locator('.orc-scene-badge')).toContainText('Reconstrucción ilustrada');
   // The current temperature, as in every scene of a point of interest (#285).
   await expect(scene.locator('.orc-panel .sheet-temp')).toContainText(/°C/);
 
@@ -43,8 +42,8 @@ test('the emperors of Cerro Nevado open a scene of their own on the common scree
     if (i < CERRO_NEVADO_SPOTS.length - 1) await scene.getByRole('button', { name: 'Siguiente' }).click();
   }
 
-  // The sources list every one.
-  await scene.getByRole('button', { name: 'Fuentes', exact: true }).click();
+  // A citation opens the sources, which list every one.
+  await scene.locator('.orc-panel .vref').first().click();
   const sources = page.getByRole('dialog', { name: 'Fuentes' });
   for (const s of Object.values(CERRO_NEVADO_SOURCES)) await expect(sources).toContainText(s.label);
   await page.keyboard.press('Escape');

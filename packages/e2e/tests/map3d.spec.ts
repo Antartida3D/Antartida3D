@@ -832,9 +832,9 @@ test.describe('3D relief view', () => {
       };
     });
 
-    // Testigos de hielo opens a scene of its own since #288: Cerro Nevado is a point with a close-up sheet (#289).
-    await page.locator('[data-key="cerronevado"] button').evaluate((b: HTMLElement) => b.click());
-    const sheet = page.getByRole('dialog', { name: 'Pingüinos de Cerro Nevado' });
+    // The points with a model open their own scene (#288, #310): Erebus is the point with a close-up sheet.
+    await page.locator('[data-key="erebus"] button').evaluate((b: HTMLElement) => b.click());
+    const sheet = page.getByRole('dialog', { name: 'Volcán en el hielo' });
     await expect(sheet).toBeVisible();
     await cameraSettled(page);
 
@@ -875,7 +875,7 @@ test.describe('3D relief view', () => {
       };
     });
 
-    await page.locator('[data-key="cerronevado"] button').evaluate((b: HTMLElement) => b.click());
+    await page.locator('[data-key="erebus"] button').evaluate((b: HTMLElement) => b.click());
     await expect(sheet).toBeVisible();
     await cameraSettled(page);
     expect(await page.evaluate(() => (window as any).__cameraControls.distance as number)).toBeLessThan(10);

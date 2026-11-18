@@ -127,11 +127,10 @@
 .poncho-panel button:focus-visible, .poncho-panel summary:focus-visible, .poncho-panel a:focus-visible {outline:3px solid var(--deep);outline-offset:4px}
 .poncho-line{margin:0 0 16px;font-size:16px;line-height:1.55}
 .poncho-line .vfact{list-style:none;margin:0 0 10px}
-/* The arrows of the bar: «‹» goes back, «›» goes forward (the same arrow, turned). */
-.poncho-next .ico,.poncho-prev .ico{width:18px;height:18px}
-.poncho-next,.poncho-prev{display:inline-flex;align-items:center;justify-content:center;gap:6px}
+/* The arrow of «Siguiente»: the arrow of going back, turned. */
+.poncho-next .ico{width:18px;height:18px}
+.poncho-next{display:inline-flex;align-items:center;justify-content:center;gap:6px}
 .poncho-arrow{display:inline-flex;transform:rotate(180deg)}
-.poncho-prev-arrow{display:inline-flex}
 .poncho-archive{margin:20px 0 0;display:flex;gap:15px;align-items:center;width:100%;text-align:left;padding:0;border:0;background:transparent;color:var(--ink);font:inherit}
 .poncho-archive img{width:78px;height:88px;object-fit:cover;filter:saturate(.65);border:4px solid color-mix(in srgb,var(--ice) 60%,var(--paper));box-shadow:0 1px 4px color-mix(in srgb,var(--ink) 22%,transparent);transform:rotate(-3deg);flex-shrink:0}
 .poncho-archive>span{display:flex;flex-direction:column;gap:5px}

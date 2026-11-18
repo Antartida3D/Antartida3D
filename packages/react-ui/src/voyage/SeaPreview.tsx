@@ -3,11 +3,9 @@ import { useFrame } from '@react-three/fiber';
 import type { Group } from 'three';
 import type { SeaPoint } from '@antartida/core';
 import { cetaceanAnimation, sealAnimation } from '../map3d/seaLifeAnimations.ts';
-import { buildPenguinPolyParts, mirrorZTris } from '../orcadas/lowPolyAnimals.ts';
-import { PENGUIN_NECK, PENGUIN_SHOULDER } from '../orcadas/penguins.ts';
 import { ICEBERG_TABULAR_POLY } from './icebergs.ts';
 import { IRIZAR_POLY } from './irizarModel.ts';
-import { boxShade, buildPolyGeometry } from './lowPoly.ts';
+import { boxShade, buildPolyGeometry, emperor, emperorFlipper, EMPEROR_SHOULDER } from './lowPoly.ts';
 import { ModelPreview } from './ModelPreview.tsx';
 import { WAVE_RAISED } from './pointModels.ts';
 import { PENGUIN_FLOE_TRIS, PENGUIN_FLOE_Y, SEAL_FLOE_TRIS } from './seaPolyModels.ts';
@@ -17,41 +15,31 @@ import { HUMPBACK_PARTS, LEOPARD_PARTS } from '../marine/lowPolyMarine.ts';
 
 type Species = NonNullable<SeaPoint['targetSpecies']>;
 
-/** Front-facing staggered formation of 4 Emperor penguins (original scales & proportions) waving in unison. */
+/** Front-facing staggered formation of 4 emperor penguins (the emperor() of the map, one unit tall) waving in unison. */
 const PREVIEW_PENGUINS: readonly {
   x: number;
   z: number;
   scale: readonly [number, number, number];
   yaw: number;
 }[] = [
-  { x: -0.02, z: 0.16, scale: [0.43, 0.44, 0.43], yaw: -Math.PI / 2 },
-  { x: -0.14, z: -0.1, scale: [0.35, 0.54, 0.35], yaw: -Math.PI / 2 + 0.14 },
-  { x: -0.25, z: 0.08, scale: [0.47, 0.36, 0.47], yaw: -Math.PI / 2 + 0.22 },
-  { x: 0.24, z: 0.06, scale: [0.32, 0.32, 0.32], yaw: -Math.PI / 2 - 0.2 },
+  { x: -0.02, z: 0.16, scale: [0.3, 0.31, 0.3], yaw: -Math.PI / 2 },
+  { x: -0.14, z: -0.1, scale: [0.245, 0.38, 0.245], yaw: -Math.PI / 2 + 0.14 },
+  { x: -0.25, z: 0.08, scale: [0.33, 0.25, 0.33], yaw: -Math.PI / 2 + 0.22 },
+  { x: 0.24, z: 0.06, scale: [0.225, 0.225, 0.225], yaw: -Math.PI / 2 - 0.2 },
 ];
 
 function PenguinsPreviewScene({ reduced }: { reduced: boolean }) {
-  const geos = useMemo(() => {
-    const p = buildPenguinPolyParts('emperor');
-    return {
-      floe: buildPolyGeometry(PENGUIN_FLOE_TRIS, boxShade),
-      body: buildPolyGeometry(p.body, boxShade),
-      head: buildPolyGeometry(p.head, boxShade),
-      flipR: buildPolyGeometry(p.flipper, boxShade),
-      flipL: buildPolyGeometry(mirrorZTris(p.flipper), boxShade),
-    };
-  }, []);
+  const geos = useMemo(() => ({
+    floe: buildPolyGeometry(PENGUIN_FLOE_TRIS, boxShade),
+    body: buildPolyGeometry(emperor(0, 0, 1), boxShade),
+    flipR: buildPolyGeometry(emperorFlipper(1), boxShade),
+    flipL: buildPolyGeometry(emperorFlipper(-1), boxShade),
+  }), []);
 
-  useEffect(() => () => {
-    geos.floe.dispose();
-    geos.body.dispose();
-    geos.head.dispose();
-    geos.flipR.dispose();
-    geos.flipL.dispose();
-  }, [geos]);
+  useEffect(() => () => Object.values(geos).forEach((g) => g.dispose()), [geos]);
 
-  const rigs = useRef<{ root: Group | null; head: Group | null; flipL: Group | null; flipR: Group | null }[]>(
-    PREVIEW_PENGUINS.map(() => ({ root: null, head: null, flipL: null, flipR: null })),
+  const rigs = useRef<{ root: Group | null; flipL: Group | null; flipR: Group | null }[]>(
+    PREVIEW_PENGUINS.map(() => ({ root: null, flipL: null, flipR: null })),
   );
 
   useFrame(({ clock }) => {
@@ -63,13 +51,12 @@ function PenguinsPreviewScene({ reduced }: { reduced: boolean }) {
         rig.root.position.set(p.x, PENGUIN_FLOE_Y, p.z);
         rig.root.rotation.set(0, p.yaw, 0);
       }
-      if (rig.head) rig.head.rotation.set(0, 0, 0);
       if (rig.flipL) rig.flipL.rotation.x = 0.08;
       if (rig.flipR) rig.flipR.rotation.x = -(0.08 + wave);
     });
   });
 
-  const [sx, sy, sz] = PENGUIN_SHOULDER;
+  const [sx, sy, sz] = EMPEROR_SHOULDER;
   return (
     <group position={[0, -0.06, 0]}>
       <mesh geometry={geos.floe} material={vehicleMaterial} />
@@ -82,9 +69,6 @@ function PenguinsPreviewScene({ reduced }: { reduced: boolean }) {
           scale={p.scale as [number, number, number]}
         >
           <mesh geometry={geos.body} material={vehicleMaterial} />
-          <group ref={(n) => void (rigs.current[idx].head = n)} position={PENGUIN_NECK}>
-            <mesh geometry={geos.head} material={vehicleMaterial} />
-          </group>
           <group ref={(n) => void (rigs.current[idx].flipR = n)} position={[sx, sy, sz]}>
             <mesh geometry={geos.flipR} material={vehicleMaterial} />
           </group>

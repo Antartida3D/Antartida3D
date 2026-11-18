@@ -90,24 +90,6 @@ export interface IcebergInstance {
   variant: 'tabular' | 'pinnacle';
 }
 
-export function offsetBoxes(
-  boxes: readonly Box[],
-  dx: number,
-  dy: number,
-  dz: number,
-  scale = 1
-): Box[] {
-  return boxes.map(([cx, cy, cz, sx, sy, sz, col]) => [
-    dx + cx * scale,
-    dy + cy * scale,
-    dz + cz * scale,
-    sx * scale,
-    sy * scale,
-    sz * scale,
-    col,
-  ]);
-}
-
 /** Where a bird wing joins the body: turns around this pivot. */
 export const BIRD_WING_ROOT = [0.02, 0.05, 0.06] as const;
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildPenguinPolyParts } from '../src/orcadas/lowPolyAnimals.ts';
+import type { Tri, Vec3 } from '../src/voyage/lowPoly.ts';
 import {
   ARRIVAL_SECONDS,
   STATION_LAYOUT,
@@ -128,8 +129,25 @@ describe('penguin colony (reconstruction)', () => {
   });
 
   it('keeps body and feet resting on the terrain when landing, diving and walking', () => {
+    // Every corner of the drawn body and head, once: a corner shared by several faces has one
+    // clearance, so the minimum is the same and the terrain is sampled a few times less (#316).
+    const corners = new Map<PenguinSpecies, { body: Vec3[]; head: Vec3[] }>();
+    const unique = (tris: readonly Tri[]): Vec3[] => {
+      const seen = new Map<string, Vec3>();
+      for (const t of tris) for (const v of [t[0], t[1], t[2]]) seen.set(v.join(','), v);
+      return [...seen.values()];
+    };
+    const cornersOf = (species: PenguinSpecies) => {
+      let c = corners.get(species);
+      if (!c) {
+        const parts = buildPenguinPolyParts(species);
+        c = { body: unique(parts.body), head: unique(parts.head) };
+        corners.set(species, c);
+      }
+      return c;
+    };
     const minGroundClearance = (p: PenguinPose, species: PenguinSpecies) => {
-      const parts = buildPenguinPolyParts(species);
+      const parts = cornersOf(species);
       const zRot = -p.lie * (Math.PI / 2) + p.slope;
       const cz = Math.cos(zRot);
       const sz = Math.sin(zRot);
@@ -143,29 +161,27 @@ describe('penguin colony (reconstruction)', () => {
       const shy = Math.sin(p.headYaw);
       let minClear = Infinity;
       // The drawn low-poly model: every corner of its body and head faces.
-      const scan = (tris: typeof parts.body, isHead: boolean) => {
-        for (const t of tris) {
-          for (const [vx, vy, vz] of [t[0], t[1], t[2]]) {
-            let lx = vx;
-            let ly = vy;
-            let lz = vz;
-            if (isHead) {
-              const rx = lx * chp - ly * shp;
-              const ry = lx * shp + ly * chp;
-              lx = rx * chy + lz * shy + PENGUIN_NECK[0];
-              ly = ry + PENGUIN_NECK[1];
-              lz = -rx * shy + lz * chy + PENGUIN_NECK[2];
-            }
-            ly *= p.stretch;
-            const x1 = lx * cz - ly * sz;
-            const y1 = lx * sz + ly * cz;
-            const y2 = y1 * cx - lz * sx;
-            const z2 = y1 * sx + lz * cx;
-            const wx = p.x + (x1 * cy + z2 * sy) * PENGUIN_SCALE;
-            const wz = p.z + (-x1 * sy + z2 * cy) * PENGUIN_SCALE;
-            const wy = p.y + y2 * PENGUIN_SCALE;
-            minClear = Math.min(minClear, wy - heightAt(wx, wz));
+      const scan = (vertices: readonly Vec3[], isHead: boolean) => {
+        for (const [vx, vy, vz] of vertices) {
+          let lx = vx;
+          let ly = vy;
+          let lz = vz;
+          if (isHead) {
+            const rx = lx * chp - ly * shp;
+            const ry = lx * shp + ly * chp;
+            lx = rx * chy + lz * shy + PENGUIN_NECK[0];
+            ly = ry + PENGUIN_NECK[1];
+            lz = -rx * shy + lz * chy + PENGUIN_NECK[2];
           }
+          ly *= p.stretch;
+          const x1 = lx * cz - ly * sz;
+          const y1 = lx * sz + ly * cz;
+          const y2 = y1 * cx - lz * sx;
+          const z2 = y1 * sx + lz * cx;
+          const wx = p.x + (x1 * cy + z2 * sy) * PENGUIN_SCALE;
+          const wz = p.z + (-x1 * sy + z2 * cy) * PENGUIN_SCALE;
+          const wy = p.y + y2 * PENGUIN_SCALE;
+          minClear = Math.min(minClear, wy - heightAt(wx, wz));
         }
       };
       scan(parts.body, false);
@@ -221,16 +237,17 @@ describe('penguin colony (reconstruction)', () => {
       for (const { poses } of FRAMES) {
         for (const p of poses.slice(colony.residents.length)) {
           if (worldCoastDistance(p.x, p.z) > 0.1) continue;
-          for (const pl of activePlates) {
-            expect(Math.hypot(p.x - pl.x, p.z - pl.z)).toBeGreaterThanOrEqual(
-              seaIcePlateRadius(pl) + PENGUIN_SWIM_CLEARANCE - 0.14 - 1e-6
-            );
-          }
-          for (const b of icebergs) {
-            expect(Math.hypot(p.x - b.x, p.z - b.z)).toBeGreaterThanOrEqual(
-              icebergRadius(b) + PENGUIN_SWIM_CLEARANCE - 0.14 - 1e-6
-            );
-          }
+          // The same distance for every floe and iceberg, checked with a plain comparison: one
+          // expect per penguin and frame, with the first one too close (#316). Hundreds of thousands
+          // of expect calls made the test time out when the whole suite ran.
+          const plate = activePlates.find(
+            (pl) => !(Math.hypot(p.x - pl.x, p.z - pl.z) >= seaIcePlateRadius(pl) + PENGUIN_SWIM_CLEARANCE - 0.14 - 1e-6)
+          );
+          expect(plate, `month ${month}: floe too close to (${p.x}, ${p.z})`).toBeUndefined();
+          const iceberg = icebergs.find(
+            (b) => !(Math.hypot(p.x - b.x, p.z - b.z) >= icebergRadius(b) + PENGUIN_SWIM_CLEARANCE - 0.14 - 1e-6)
+          );
+          expect(iceberg, `month ${month}: iceberg too close to (${p.x}, ${p.z})`).toBeUndefined();
         }
       }
     }

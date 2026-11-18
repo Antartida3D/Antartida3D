@@ -31,6 +31,7 @@ import { Cites } from '../sheet/Cite.tsx';
 import { MoreFold } from '../sheet/MoreFold.tsx';
 import { PhotoModal } from '../sheet/PhotoModal.tsx';
 import { SheetActions } from '../sheet/SheetActions.tsx';
+import { BackButton } from '../sheet/BackButton.tsx';
 import { SheetHeader } from '../sheet/SheetHeader.tsx';
 import { SourcesContext } from '../sheet/SourcesContext.ts';
 import { SourcesView } from '../sheet/SourcesView.tsx';
@@ -176,7 +177,7 @@ export function FossilExpedition({ reduced, webgl, resume, onProgress, onLeave }
       </div>}
     </div>
     <SheetActions>
-      {state.stop > 0 && <button type="button" className="btn fossil-prev" onClick={() => dispatch({ type: 'prev' })}>Atrás</button>}
+      {state.stop > 0 && <BackButton onClick={() => dispatch({ type: 'prev' })} />}
       <button type="button" className="btn primary fossil-next" onClick={() => last ? onLeave(true) : dispatch({ type: 'next' })}>{last ? 'Terminar expedición' : 'Siguiente'}</button>
     </SheetActions>
   </>;

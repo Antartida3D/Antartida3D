@@ -16,7 +16,7 @@
 1. La foto de una expedición, cuando se toca su miniatura, se abre en un solo componente, `PhotoModal` (`packages/react-ui/src/sheet/PhotoModal.tsx`). Lo usan Poncho, Marambio y Fósiles.
 2. Es el modal que hizo Rocío para el archivo de Fósiles (#7) y de Marambio (#207): un recuadro en el medio de la pantalla, sobre un fondo oscuro, con el título, la cruz «Cerrar», la foto grande y debajo su texto, fecha, crédito y cita. Se cierra con «Cerrar», con Escape o tocando afuera, y el foco vuelve a la miniatura que lo abrió. Una cita `[N]` del texto de la foto abre la vista de fuentes y cierra la foto, para que las fuentes no se vean encima de ella. No es un `<dialog>` modal nativo, que dejaría la vista de fuentes tapada e inerte detrás.
 3. Cada expedición conserva su título («Archivo fotográfico»; «Archivo de campo» en Fósiles) y su texto: solo cambia el modal de la foto.
-4. Es una excepción al punto 1 de [DEC-264](DEC-264-modales-normalizados.md), solo para las fotos. El resto de los modales sigue en `BottomSheet`. La regla `40-componentes-ui.md` lo dice en su punto 10. El aspecto vive en `components.css` (`.photo-modal`) con los tokens `--modal-*`, y la prueba de guarda (`styles.test.ts`) impide que una pantalla lo cambie.
+4. Es una excepción al punto 1 de [DEC-264](DEC-264-modales-normalizados.md), solo para las fotos. El resto de los modales sigue en `BottomSheet`. La regla `40-componentes-ui.md` lo dice en su punto 14. El aspecto vive en `components.css` (`.photo-modal`) con los tokens `--modal-*`, y la prueba de guarda (`styles.test.ts`) impide que una pantalla lo cambie.
 
 ## Motivo
 

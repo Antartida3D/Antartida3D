@@ -9,6 +9,7 @@ import { ExpeditionTop } from '../ExpeditionTop.tsx';
 import { SceneBadge } from '../SceneBadge.tsx';
 import { SceneLocation } from '../SceneLocation.tsx';
 import { Cites } from '../sheet/Cite.tsx';
+import { BackButton } from '../sheet/BackButton.tsx';
 import { SheetActions } from '../sheet/SheetActions.tsx';
 import { SheetHeader } from '../sheet/SheetHeader.tsx';
 import { SourcesContext } from '../sheet/SourcesContext.ts';
@@ -117,11 +118,7 @@ export function ScenePointScreen<S extends string>({
         </div>
       </div>
       <SheetActions>
-        {index > 0 && (
-          <button type="button" className="btn" onClick={() => go(index - 1)}>
-            Atrás
-          </button>
-        )}
+        {index > 0 && <BackButton onClick={() => go(index - 1)} />}
         <button type="button" className="btn primary" onClick={() => (last ? onLeave() : go(index + 1))}>
           {last ? 'Volver al mapa' : 'Siguiente'}
         </button>

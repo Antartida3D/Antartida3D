@@ -30,6 +30,10 @@
 @media (max-width:819.98px){
   .sheet-actions:has(> :nth-child(3)){grid-auto-flow:row;grid-auto-columns:auto;gap:8px}
 }
+/* Going back is a square arrow on the left (`BackButton`); the main button takes the rest of the row, as in the journey from Ushuaia (#301). */
+.sheet-actions:has(> .sheet-back){grid-auto-flow:row;grid-template-columns:48px 1fr}
+.sheet-actions .sheet-back{padding:0}
+.sheet-back svg{width:22px;height:22px}
 /* In the panel of an expedition the row is a foot under the text that scrolls, on the paper of the panel. */
 .orc-panel .sheet-actions{position:static;margin:0;padding:7px 14px 9px;gap:8px}
 .orc-panel .sheet-actions .btn{font-size:15px}

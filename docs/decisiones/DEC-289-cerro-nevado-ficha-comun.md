@@ -4,12 +4,14 @@
 {
   "id": "DEC-289",
   "date": "2026-11-18",
-  "status": "accepted",
+  "status": "superseded",
   "issue": 289,
   "supersedes": ["DEC-206"],
-  "supersededBy": null
+  "supersededBy": "DEC-310"
 }
 ```
+
+> Reemplazada por [DEC-310](DEC-310-cerro-nevado-escena-comun.md): Cerro Nevado vuelve a abrir su escena, con la pantalla común de los puntos de interés.
 
 ## Decisión
 

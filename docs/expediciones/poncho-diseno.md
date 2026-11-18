@@ -25,7 +25,7 @@ De arriba abajo:
 3. **Escena (`essential`)**: dos o tres frases cortas, concretas, con detalles del libro y su cita (`Libro · p. N`).
 4. **«Saber más»** (al final de la parada, a pedido): los datos con su fuente y página, desplegados en el mismo panel.
 5. **Gancho (`hook`)**: una frase en cursiva, discreta, antes de «Continuar». Abre la curiosidad por lo que viene y no afirma nada nuevo.
-6. **Botones:** «Atrás» y «Siguiente»; en la última frase de la parada, «Seguir con Poncho» (o «Terminar el viaje» en la última).
+6. **Botones:** la flecha de atrás (`BackButton`, DEC-301) y «Siguiente», que ocupa el resto de la fila; en la última frase de la parada, «Seguir con Poncho» (o «Terminar el viaje» en la última).
 
 La escena de la parada siguiente empieza con un eco natural del gancho anterior.
 

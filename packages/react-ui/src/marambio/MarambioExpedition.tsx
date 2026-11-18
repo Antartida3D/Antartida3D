@@ -27,6 +27,7 @@ import { SceneBadge } from '../SceneBadge.tsx';
 import { Quoted } from '../ui.tsx';
 import { Cite, Cites } from '../sheet/Cite.tsx';
 import { SheetActions } from '../sheet/SheetActions.tsx';
+import { BackButton } from '../sheet/BackButton.tsx';
 import { PhotoModal } from '../sheet/PhotoModal.tsx';
 import { SheetHeader } from '../sheet/SheetHeader.tsx';
 import { SheetText } from '../sheet/SheetText.tsx';
@@ -268,9 +269,7 @@ export function MarambioExpedition({
         ) : (
           <>
             {index > 0 && (
-              <button type="button" className="btn" onClick={() => go(index - 1)}>
-                Atrás
-              </button>
+              <BackButton onClick={() => go(index - 1)} />
             )}
             <button type="button" className="btn primary" onClick={() => (last ? onLeave(true) : go(index + 1))}>
               {last ? 'Terminar expedición' : 'Siguiente'}

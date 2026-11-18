@@ -1,5 +1,5 @@
 import {
-  block, fromOutline, loftAlongX, loftBody, mirrorZ, orient, prism, sectionAt, shift, sideAt, skin, topAt, type LoftStation, type Station, type Tri, type Vec3,
+  block, facingOut, fromOutline, loftAlongX, loftBody, mirrorZ, orient, prism, sectionAt, shift, sideAt, skin, topAt, type LoftStation, type Station, type Tri, type Vec3,
 } from './lowPoly.ts';
 
 /**
@@ -41,15 +41,112 @@ const ringZY = (cz: number, cy: number, rz: number, ry: number, n: number): [num
 const ORCA_TAIL_PIVOT: readonly [number, number, number] = [-0.18, 0.01, 0];
 const ORCA_FLIPPER_PIVOT: readonly [number, number, number] = [0.19, -0.065, 0.095];
 
-const orcaBodyStations: readonly LoftStation[] = [
-  { x: -0.18, ring: ringZY(0, 0.01, 0.075, 0.082, 10) },
-  { x: -0.02, ring: ringZY(0, 0.0, 0.102, 0.112, 10) },
-  { x: 0.15, ring: ringZY(0, -0.005, 0.108, 0.115, 10) },
-  { x: 0.3, ring: ringZY(0, -0.012, 0.092, 0.096, 10) },
-  { x: 0.42, ring: ringZY(0, -0.022, 0.066, 0.064, 10) },
-  { x: 0.5, ring: ringZY(0, -0.034, 0.034, 0.032, 10) },
-  { x: 0.53, ring: ringZY(0, -0.04, 0.014, 0.014, 10) },
-];
+/**
+ * Points of each body ring. A point on top and one below (unlike ringZY), so no face straddles
+ * z = 0 and the right half can be mirrored into the left one: both flanks match.
+ */
+const ORCA_RING = 16;
+const orcaRing = (cy: number, rz: number, ry: number): [number, number][] =>
+  Array.from({ length: ORCA_RING }, (_, i) => {
+    const a = -Math.PI / 2 + (i / ORCA_RING) * Math.PI * 2;
+    return [Math.cos(a) * rz, cy + Math.sin(a) * ry];
+  });
+/** Body rings as (x, center y, half width, half height). */
+const orcaBodyStations: readonly LoftStation[] = ([
+  [-0.18, 0.01, 0.075, 0.082],
+  [-0.02, 0.0, 0.102, 0.112],
+  [0.15, -0.005, 0.108, 0.115],
+  [0.3, -0.012, 0.092, 0.096],
+  [0.42, -0.022, 0.066, 0.064],
+  [0.5, -0.034, 0.034, 0.032],
+  [0.53, -0.04, 0.014, 0.014],
+] as const).map(([x, cy, rz, ry]) => ({ x, ring: orcaRing(cy, rz, ry) }));
+
+/**
+ * Black back, white belly, the white flank patch that rises behind the dorsal fin and the grey
+ * saddle over it. `s` is the height of the row of faces on the side: 1 on top, -1 below.
+ */
+function orcaSkin(band: number, seg: number): number {
+  const x = (orcaBodyStations[band].x + orcaBodyStations[band + 1].x) / 2;
+  const s = Math.sin(-Math.PI / 2 + ((seg + 0.5) / ORCA_RING) * Math.PI * 2);
+  if (s < -0.8) return WHITE;
+  if (x < -0.02 && s > 0.85) return SADDLE_GREY;
+  if (x < -0.02 && s < -0.3) return WHITE;
+  return ORCA_BLACK;
+}
+
+/** The right half of the body (z > 0). */
+const ORCA_BODY_RIGHT: readonly Tri[] = loftAlongX(orcaBodyStations, orcaSkin, undefined, ORCA_BLACK)
+  .filter(([a, b, c]) => a[2] + b[2] + c[2] > 0);
+
+/** z of the right flank of the body at (x, y): where a ray from +z meets its faces. */
+function orcaFlankZ(x: number, y: number): number {
+  let z = 0;
+  for (const [a, b, c] of ORCA_BODY_RIGHT) {
+    const d = (b[1] - c[1]) * (a[0] - c[0]) + (c[0] - b[0]) * (a[1] - c[1]);
+    if (Math.abs(d) < 1e-12) continue;
+    const u = ((b[1] - c[1]) * (x - c[0]) + (c[0] - b[0]) * (y - c[1])) / d;
+    const v = ((c[1] - a[1]) * (x - c[0]) + (a[0] - c[0]) * (y - c[1])) / d;
+    if (u < -1e-9 || v < -1e-9 || u + v > 1 + 1e-9) continue;
+    z = Math.max(z, u * a[2] + v * b[2] + (1 - u - v) * c[2]);
+  }
+  return z;
+}
+
+/**
+ * The white eye patch of the right flank, a decal laid on the head: an elongated teardrop just
+ * above and behind the eye, almost level and tilted a little up towards the back, small and round in
+ * front and wider behind. Rings of points from its middle out to its outline, each one set on the
+ * body and lifted by ORCA_PATCH_LIFT, so it shows no relief. Illustrative shape.
+ */
+const ORCA_PATCH = { x: 0.37, y: -0.012, halfLength: 0.052, halfHeight: 0.0145, tilt: 0.18 } as const;
+const ORCA_PATCH_LIFT = 0.0015;
+const ORCA_PATCH_POINTS = 16;
+const ORCA_PATCH_RINGS = 3;
+const ORCA_EYE_PATCH: readonly Tri[] = (() => {
+  const { x, y, halfLength, halfHeight, tilt } = ORCA_PATCH;
+  // u runs along the patch, from the front (-1) to the back (1); v across it.
+  const at = (u: number, v: number): Vec3 => {
+    const px = x - u * halfLength * Math.cos(tilt) + v * Math.sin(tilt);
+    const py = y + u * halfLength * Math.sin(tilt) + v * Math.cos(tilt);
+    return [px, py, orcaFlankZ(px, py) + ORCA_PATCH_LIFT];
+  };
+  const ring = (k: number): Vec3[] => Array.from({ length: ORCA_PATCH_POINTS }, (_, i) => {
+    const a = (i / ORCA_PATCH_POINTS) * Math.PI * 2;
+    const u = Math.cos(a) * (k / ORCA_PATCH_RINGS);
+    // Wider towards the back: a teardrop, not an ellipse.
+    return at(u, Math.sin(a) * (k / ORCA_PATCH_RINGS) * halfHeight * (1 + 0.25 * u));
+  });
+  const center = at(0, 0);
+  const inside: Vec3 = [center[0], center[1], 0];
+  const rings = Array.from({ length: ORCA_PATCH_RINGS }, (_, k) => ring(k + 1));
+  const tris: Tri[] = [];
+  for (let i = 0; i < ORCA_PATCH_POINTS; i++) {
+    const j = (i + 1) % ORCA_PATCH_POINTS;
+    tris.push(facingOut(center, rings[0][i], rings[0][j], WHITE, inside));
+    for (let k = 0; k < ORCA_PATCH_RINGS - 1; k++) {
+      const [r0, r1] = [rings[k], rings[k + 1]];
+      tris.push(facingOut(r0[i], r1[i], r1[j], WHITE, inside), facingOut(r0[i], r1[j], r0[j], WHITE, inside));
+    }
+  }
+  return tris;
+})();
+
+/**
+ * Tall, straight dorsal fin of an adult male: rings up the fin (u from base to tip) as a thin
+ * diamond, its leading edge bowed forward, its trailing edge hollow, narrower and thinner towards
+ * the tip. The first ring is sunk in the back, so the fin grows out of it without a step.
+ */
+const ORCA_FIN_BASE = 0.098;
+const ORCA_FIN_TOP = 0.36;
+const ORCA_DORSAL: readonly Tri[] = skin([0, 0.08, 0.25, 0.45, 0.65, 0.82, 1].map((u): Vec3[] => {
+  const y = ORCA_FIN_BASE + u * (ORCA_FIN_TOP - ORCA_FIN_BASE);
+  const lead = 0.08 - 0.077 * u ** 1.35;
+  const trail = -0.04 + 0.031 * u ** 0.65;
+  const w = 0.013 * (1 - u) + 0.0015 * u;
+  const mid = lead + (trail - lead) * 0.35;
+  return [[lead, y, 0], [mid, y, w], [trail, y, 0], [mid, y, -w]];
+}), () => ORCA_BLACK, ORCA_BLACK);
 
 const orcaTailStations: readonly LoftStation[] = [
   { x: -0.32, ring: ringZY(0, 0.018, 0.022, 0.026, 8) },
@@ -77,23 +174,11 @@ export const ORCA_PARTS: CetaceanPolyParts = {
   tailPivot: ORCA_TAIL_PIVOT,
   flipperPivot: ORCA_FLIPPER_PIVOT,
   body: [
-    ...loftAlongX(
-      orcaBodyStations,
-      (band, seg) => {
-        if (seg === 0 || seg === 9) return WHITE;
-        if (band === 0 && (seg === 4 || seg === 5)) return SADDLE_GREY;
-        if (band === 0 && (seg === 1 || seg === 8)) return WHITE;
-        return ORCA_BLACK;
-      },
-      undefined,
-      ORCA_BLACK,
-    ),
-    // Tall dorsal fin
-    ...prism([[-0.03, -0.016], [0.08, 0.0], [0.01, 0.016], [-0.04, 0.0]], 0.105, 0.25, ORCA_BLACK, ORCA_BLACK),
-    ...prism([[-0.03, -0.01], [0.04, 0.0], [0.0, 0.01], [-0.03, 0.0]], 0.25, 0.36, ORCA_BLACK, ORCA_BLACK),
-    // White eye patches
-    ...block(0.39, 0.014, 0.078, 0.075, 0.032, 0.01, WHITE),
-    ...block(0.39, 0.014, -0.078, 0.075, 0.032, 0.01, WHITE),
+    ...ORCA_BODY_RIGHT,
+    ...mirrorZ(ORCA_BODY_RIGHT),
+    ...ORCA_EYE_PATCH,
+    ...mirrorZ(ORCA_EYE_PATCH),
+    ...ORCA_DORSAL,
   ],
   tail: [
     ...loftAlongX(orcaTailStations, (_b, seg) => (seg === 0 || seg === 7 ? WHITE : ORCA_BLACK), ORCA_BLACK),

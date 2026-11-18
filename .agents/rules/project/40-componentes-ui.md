@@ -12,12 +12,12 @@
 6. **Sin líneas dobles** (`border: … double`) ni marcos interiores: botones, paneles y separadores llevan una sola línea.
 7. Un botón nuevo usa `.btn` y sus variantes. No se crea una clase propia que repita el aspecto de un botón.
 8. Un color nuevo se agrega como token en `tokens.css`, no suelto en una regla.
-9. Los modales de contenido usan los componentes de `packages/react-ui/src/sheet/` y `BottomSheet`, no una solución propia: `SheetHeader` (encabezado), `SheetText` (texto), `MoreFold` («Saber más»), `SheetActions` (fila de botones, un solo `.btn.primary`), `Cite` (cita `[N]`) y `SourcesView` (vista de fuentes única). No se agrega un `<dialog>`, un fondo ni una fila de botones propios, ni estilos en línea en un modal.
-10. La **foto de una expedición** se abre en `PhotoModal` (`packages/react-ui/src/sheet/PhotoModal.tsx`): un modal centrado con la foto grande, su texto y la cruz «Cerrar», el que hizo Rocío para Fósiles y Marambio. Es la única excepción a la regla 9 y vale para todas las expediciones ([DEC-309-2](../../../docs/decisiones/DEC-309-2-modal-de-fotos-centrado.md)). Su aspecto vive en `components.css` (`.photo-modal`), con los tokens `--modal-*`.
+9. Los modales de contenido usan los componentes de `packages/react-ui/src/sheet/` y `BottomSheet`, no una solución propia: `SheetHeader` (encabezado), `SheetText` (texto), `MoreFold` («Saber más»), `SheetActions` (fila de botones, un solo `.btn.primary`), `BackButton` (volver al paso anterior: flecha cuadrada a la izquierda, el principal ocupa el resto de la fila, DEC-301), `Cite` (cita `[N]`) y `SourcesView` (vista de fuentes única). No se agrega un `<dialog>`, un fondo ni una fila de botones propios, ni estilos en línea en un modal.
 10. El encabezado de una expedición es `ExpeditionTop` (`packages/react-ui/src/ExpeditionTop.tsx`), no un `<header className="orc-top">` propio. Sin barra ni título; el selector de mes va en `tools`.
 11. Un botón que queda solo en una barra, un panel o un modal ocupa todo el ancho de su contenedor, en celular y en escritorio.
 12. El cartel de ubicación de una escena es `SceneLocation` y la nota manuscrita de una parada es `.scene-found`. Ninguna expedición define el suyo.
 13. La etiqueta de la escena («Reconstrucción ilustrada» con su «?») es `SceneBadge`, abajo a la izquierda en todas las expediciones. Ninguna dibuja la suya.
+14. La **foto de una expedición** se abre en `PhotoModal` (`packages/react-ui/src/sheet/PhotoModal.tsx`): un modal centrado con la foto grande, su texto y la cruz «Cerrar», el que hizo Rocío para Fósiles y Marambio. Es la única excepción a la regla 9 y vale para todas las expediciones ([DEC-309-2](../../../docs/decisiones/DEC-309-2-modal-de-fotos-centrado.md)). Su aspecto vive en `components.css` (`.photo-modal`), con los tokens `--modal-*`.
 
 ## Guardián
 Prueba de las reglas 1, 2, 3, 5 y 6.

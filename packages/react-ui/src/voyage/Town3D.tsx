@@ -12,7 +12,8 @@ import {
   screenPx,
   type TerrainMesh,
 } from '@antartida/core';
-import { TOWN_CHIMNEYS, buildTownGeometry } from './sightingModels.ts';
+import { boxShade, buildPolyGeometry } from './lowPoly.ts';
+import { USHUAIA_TOWN_CHIMNEYS, USHUAIA_TOWN_POLY } from './poly/ushuaiaTownPoly.ts';
 import { vehicleMaterial } from './vehicles.ts';
 
 /** The bay the trip leaves from, where the real town is. */
@@ -72,7 +73,7 @@ export function Town3D({ reduced, wide, overlay }: {
   const group = useRef<Group>(null);
   const puffs = useRef<(Mesh | null)[]>([]);
   const label = useRef<HTMLSpanElement>(null);
-  const geometry = useMemo(buildTownGeometry, []);
+  const geometry = useMemo(() => buildPolyGeometry(USHUAIA_TOWN_POLY, boxShade), []);
   useEffect(() => () => geometry.dispose(), [geometry]);
 
   // The town stands on the relief of Tierra del Fuego, a separate mesh that loads after the map.
@@ -102,7 +103,7 @@ export function Town3D({ reduced, wide, overlay }: {
     const time = reduced ? 0 : performance.now() / 1000;
     puffs.current.forEach((puff, i) => {
       if (!puff) return;
-      const [x, y, z] = TOWN_CHIMNEYS[Math.floor(i / PUFFS_PER_CHIMNEY)];
+      const [x, y, z] = USHUAIA_TOWN_CHIMNEYS[Math.floor(i / PUFFS_PER_CHIMNEY)];
       const age = (time / PUFF_SECONDS + (i % PUFFS_PER_CHIMNEY) / PUFFS_PER_CHIMNEY + i * 0.11) % 1;
       puff.position.set(x + age * 0.1, y + 0.03 + age * 0.34, z);
       // Grows as it rises, then thins out.
@@ -117,7 +118,7 @@ export function Town3D({ reduced, wide, overlay }: {
     // The houses look south, at the water.
     <group ref={group} rotation-y={Math.atan2(500 - SITE.x, 500 - SITE.y)}>
       <mesh geometry={geometry} material={vehicleMaterial} />
-      {TOWN_CHIMNEYS.flatMap((_, c) => Array.from({ length: PUFFS_PER_CHIMNEY }, (_, i) => (
+      {USHUAIA_TOWN_CHIMNEYS.flatMap((_, c) => Array.from({ length: PUFFS_PER_CHIMNEY }, (_, i) => (
         <mesh
           key={`${c}-${i}`}
           ref={(m) => void (puffs.current[c * PUFFS_PER_CHIMNEY + i] = m)}

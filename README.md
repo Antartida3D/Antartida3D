@@ -6,11 +6,62 @@ Equipo **DOT ENV**, hackatón SoberaníaTech (Ushuaia, 2026), Eje 2: Antártida,
 
 ## Integrantes
 
-- `[completar]`
+Las cinco personas del equipo cursan el 5.º año de la Licenciatura en Sistemas de la Universidad Nacional de Tierra del Fuego (UNTDF) y trabajan en programación.
+
+| Integrante | Rol | GitHub |
+|---|---|---|
+| Rocío Jofre Olivero | Referente del equipo | [Roolivero](https://github.com/Roolivero) |
+| Lucas Ezequías Araya | Programación | [LucasA21](https://github.com/LucasA21) |
+| María José Farías Flores | Programación | [majo-fflores](https://github.com/majo-fflores) |
+| Giuliano Ignacio Poeta | Programación | [GiulianoPoeta99](https://github.com/GiulianoPoeta99) |
+| Ignacio Agustín Sánchez Sotelo | Programación | [NeichS](https://github.com/NeichS) |
+
+## Eje
+
+**Eje 2: Antártida, Ciencia y Conocimiento Abierto.** El proyecto sigue las dos reglas del eje:
+
+- Cada dato lleva su fuente: referencia o URL, organismo o autor y fecha de consulta (ver «Fuentes y licencias»). Un dato sin fuente no se publica.
+- Una simulación o una reconstrucción nunca se presenta como dato real. La interfaz marca qué es cada cosa.
+
+## Problema
+
+La información verificada sobre la Antártida es difícil de encontrar para el público general. Está repartida en publicaciones científicas, series de datos y archivos oficiales. Además, casi siempre pide conocimiento previo para entenderla.
+
+Lo vivimos en primera persona. Somos fueguinos: nacimos, crecimos o vivimos gran parte de nuestra vida en Tierra del Fuego. Nuestra provincia se llama Tierra del Fuego, Antártida e Islas del Atlántico Sur. Aun así, nunca tuvimos la oportunidad de aprender sobre la Antártida. Nos llamó la atención no saber casi nada de una parte de nuestra propia provincia.
+
+Por eso queremos difundir la ciencia que se hace en el territorio antártico argentino y darle visibilidad. La aplicación reúne información de calidad en un solo lugar y la presenta de forma didáctica, para que cualquier persona pueda aprender. Cada dato se apoya en fuentes verificadas, varias de primera mano. Un ejemplo es el archivo del geólogo Eduardo Olivero, abuelo de Rocío, integrante del equipo.
+
+La aplicación también cuenta historias reales y anécdotas que poca gente conoce. Por ejemplo, la vida de Poncho, un perro polar del Ejército Argentino, o el hallazgo del primer dinosaurio de la Antártida. Darles protagonismo a esas historias es otro de nuestros objetivos.
+
+## Destinatarios y sostenibilidad
+
+- **Educación:** en una primera etapa, la aplicación está pensada para las instituciones educativas.
+- **Turismo:** también puede ser una carta de presentación de Ushuaia y de la provincia, para informar a quienes la visitan.
+
+**Modelo de negocio (propuesta, todavía no está en la aplicación):**
+
+- Las empresas de turismo locales pueden pagar para aparecer en los puntos turísticos del mapa. Desde ahí, la persona puede contactarlas para pedir más información o una excursión.
+
+La publicidad va siempre separada y marcada como tal. Nunca se mezcla con el contenido científico ni con sus fuentes.
+
+## Solución
+
+Un mapa 3D de la Antártida con relieve real, del que salen expediciones guiadas. Cada expedición plantea una pregunta, propone una actividad y lleva a un descubrimiento respaldado por fuentes. Al terminar, la persona vuelve al mapa con un registro de lo que exploró.
+
+La información está en tres niveles: **explorar** (el mapa y los lugares), **descubrir** (el recorrido de cada expedición) y **profundizar** («Saber más», los datos y las fuentes). Los niveles extensos se abren sin cortar el recorrido principal. Está pensada para personas sin conocimientos científicos previos.
+
+Las seis expediciones:
+
+- **Desde Ushuaia:** el viaje desde Ushuaia hasta la Antártida en los medios científicos argentinos. Muestra la logística que hace posible la ciencia.
+- **Base Marambio:** un recorrido por la base, con su pista, el Hércules C-130 y el clima de la isla.
+- **Estación Orcadas:** «¿Cuánto cambió el clima de la isla Laurie en 120 años?», con la serie de temperatura real de la estación.
+- **Fósiles:** cuatro hallazgos de Eduardo Olivero y sus equipos, del Cretácico tardío al Eoceno.
+- **Océano:** la red alimentaria del mar antártico, del fitoplancton y el krill a los animales que se reconocen.
+- **Poncho:** la vida de un perro de trineo del Ejército Argentino en la Antártida, entre 1961 y 1978.
 
 ## Aplicación
 
-**`apps/dibujado`** (puerto 5103): mapa dibujado estilo acuarela con relieve 3D (el mapa 2D está deshabilitado y solo aparece sin WebGL o si falla el 3D, [DEC-227](docs/decisiones/DEC-227-mapa-2d-deshabilitado.md)), viaje Desde Ushuaia y expedición Estación Orcadas («¿Cuánto cambió el clima de la isla Laurie en 120 años?»). Las demás expediciones se presentan como ampliaciones previstas o próximas. La interfaz ofrece navegación por teclado y alternativas al mapa 3D.
+**`apps/dibujado`** (puerto 5103): mapa dibujado estilo acuarela con relieve 3D (el mapa 2D está deshabilitado y solo aparece sin WebGL o si falla el 3D, [DEC-227](docs/decisiones/DEC-227-mapa-2d-deshabilitado.md)), con las seis expediciones de «Solución» y la capa de reclamos territoriales. Los demás puntos del mapa son puntos de interés, con una ficha corta y, en varios, una escena propia. La interfaz ofrece navegación por teclado y alternativas al mapa 3D.
 
 El sistema visual de la UI está en [DESIGN.md](DESIGN.md), siguiendo el formato abierto de Google Labs (alpha), con tokens YAML y reglas de uso: pergamino claro, tinta marrón neutra y lenguaje cartográfico. La ficha «Océano» aprobó esta dirección; la revisión posterior acepta paneles flotantes con radio de 13 px y botones rectangulares con radio de 9 px, conservando círculos, chips, gráficos, separadores y esquinas pegadas al borde según su semántica. La aplicación global queda en migración y verificación. El [plan de migración](docs/diseno/plan-migracion-ui.md) conserva el inventario, la referencia aprobada, las capturas y los límites de verificación.
 
@@ -44,7 +95,33 @@ La primera versión de este boceto se realizó con asistencia de Codex. La segun
 ├─ AGENTS.md  ROADMAP.md  README.md  .gitignore
 ```
 
+## Tecnologías
+
+Es una página web: todo corre en el navegador. No hay servidor propio ni base de datos. La guía completa, escrita para cualquier lector, está en [`docs/tecnologias.md`](docs/tecnologias.md).
+
+| Tema | Qué usamos |
+|---|---|
+| Lenguaje | TypeScript. Los efectos visuales del 3D están en GLSL. |
+| Interfaz | React 19. |
+| Mapa 3D | Three.js sobre WebGL, con React Three Fiber y @react-three/drei. |
+| Relieve | Bedmap3 (Antártida) e IBCSO v2 (mar y Tierra del Fuego), procesados a mallas propias. |
+| Construcción | Vite y pnpm (monorepo). |
+| Pruebas | Vitest (lógica) y Playwright (navegador, a 390 y 1440 px). |
+
 ## Requisitos y uso
+
+### Para el público
+
+Solo hace falta un navegador actualizado, en computadora o celular. El link público está pendiente ([#5](https://github.com/Antartida3D/Antartida3D/issues/5)); mientras tanto, la aplicación se levanta en local con los comandos de abajo.
+
+1. En la primera visita, una guía corta de tres pasos explica cómo moverse por el mapa 3D. Se puede saltar y se vuelve a abrir con el botón **?**.
+2. Tocar o hacer clic en un punto del mapa, o elegirlo en la lista, abre su ficha.
+3. En los puntos con expedición, la ficha la empieza. Cada parada tiene «Saber más» y sus fuentes.
+4. Al terminar, la expedición queda en el registro de exploración.
+
+Todo se puede usar con teclado. Si el navegador no tiene WebGL o el 3D falla, la aplicación muestra un mapa 2D accesible.
+
+### Para desarrollar
 
 Requiere **Node.js >= 22** y **pnpm 11**. Para los tests E2E y el benchmark se requiere Chromium (`/usr/bin/chromium` o configurado mediante la variable `CHROMIUM_PATH`).
 
@@ -83,6 +160,21 @@ Tiempos medidos en [`docs/rendimiento/e2e.md`](docs/rendimiento/e2e.md).
 ## Documentación de los cambios
 
 Cada PR declara su impacto documental y registra las decisiones nuevas o reemplazadas. Ver [control de documentación](docs/control-documentacion.md) para el formato, la comprobación local y la activación del requisito en GitHub.
+
+## Licencia
+
+Copyright (C) 2026 Equipo DOT ENV, formado por las personas que figuran en «Integrantes».
+
+El código y el material propio de este repositorio se publican con la [Licencia Pública General de GNU, versión 3](LICENSE) (`GPL-3.0-only`). Cualquier persona puede usar, estudiar, modificar y redistribuir el proyecto. Quien distribuya una versión modificada debe publicarla con la misma licencia y conservar el aviso de autoría. El proyecto se entrega sin garantía. La decisión y sus motivos están en [DEC-321](docs/decisiones/DEC-321-licencia-gpl-3.md).
+
+El material propio es el código fuente, los textos de la aplicación, los modelos de bloques y low-poly, las ilustraciones y la documentación.
+
+La licencia **no** cubre lo siguiente:
+
+- **Datos y recursos de terceros:** conservan su propia licencia y su atribución, detalladas en «Fuentes y licencias». Esto incluye los archivos de `packages/core/src/assets/` generados a partir de esos datos (relieve, batimetría, costas).
+- **Fotografías de `packages/core/src/assets/fossils/` y `packages/core/src/assets/marambio/`:** el origen y el permiso de cada una están en [`docs/expediciones/fosiles-fuentes.md`](docs/expediciones/fosiles-fuentes.md) y [`docs/expediciones/base-marambio.md`](docs/expediciones/base-marambio.md). Las del archivo de E. B. Olivero se publican con autorización de la familia solo para este proyecto. No se pueden reutilizar sin un permiso nuevo.
+- **Fotografías de `packages/core/src/assets/poncho/`:** su autorización está pendiente, como registra [`docs/expediciones/poncho-fuentes.md`](docs/expediciones/poncho-fuentes.md). No se pueden reutilizar.
+- **Librerías y tipografías:** cada una mantiene su licencia (MIT y SIL Open Font License 1.1).
 
 ## Fuentes y licencias
 
@@ -162,11 +254,21 @@ Cada PR declara su impacto documental y registra las decisiones nuevas o reempla
 
 - **Expedición Océano (#8):** textos propios y breves, con la fuente de cada parada y de cada flecha de la red alimentaria. Catálogo completo, alcance de cada estudio y qué se leyó completo o solo en su resumen en [`docs/expediciones/oceano-fuentes.md`](docs/expediciones/oceano-fuentes.md). No se copian figuras ni imágenes de las publicaciones; todos los animales son modelos voxel propios.
   - Fecha de consulta: 14 de noviembre de 2026.
+- **Expedición Desde Ushuaia (#4):** cada afirmación lleva su código de fuente. Prioridad pedida por el equipo: UNTDF, otras universidades argentinas, organismos oficiales e internacionales. Catálogo completo en [`docs/expediciones/desde-ushuaia-fuentes.md`](docs/expediciones/desde-ushuaia-fuentes.md).
+  - Fecha de consulta: 11 de noviembre de 2026, salvo las fuentes que indican otra fecha.
+- **Expedición Fósiles (#7):** testimonio, publicaciones científicas y archivo fotográfico de E. B. Olivero. Catálogo, créditos y permisos en [`docs/expediciones/fosiles-fuentes.md`](docs/expediciones/fosiles-fuentes.md).
+  - Fecha de consulta: 13 de noviembre de 2026.
+- **Expedición Poncho (#9):** el libro sobre Poncho, una nota de la Fundación Marambio y fuentes oficiales para fechas y lugares. Cada dato del libro lleva la página del PDF. La licencia de las fotos sigue pendiente. Catálogo en [`docs/expediciones/poncho-fuentes.md`](docs/expediciones/poncho-fuentes.md).
+  - Fechas de consulta: 11 y 12 de noviembre de 2026.
 
 ## Declaración de uso de IA
 
 En cumplimiento con las bases de la hackatón, se declara el uso de herramientas de inteligencia artificial en el desarrollo de los prototipos:
 
+- **Secciones obligatorias del README (#6):**
+  > Revisión del README contra las bases y redacción de las secciones «Eje», «Problema», «Destinatarios y sostenibilidad», «Solución», «Tecnologías» y «Para el público» con asistencia de IA. El problema, los destinatarios y el modelo de negocio los dictó el equipo, y la IA solo los redactó; la solución, las tecnologías y las fuentes resumen lo que ya está en el código y en `docs/`. Los integrantes y sus roles los aportó el equipo. No se agregaron datos ni fuentes nuevas.
+- **Licencia del proyecto (#321):**
+  > Comparación de licencias, lectura de las bases y redacción de la sección «Licencia», del registro de la decisión y del issue con asistencia de IA. El texto de la licencia es el oficial, sin cambios. La elección de la licencia fue del equipo.
 - **Botones de zoom en sus límites (#237):**
   > Implementación y pruebas con asistencia de Codex, a partir del pedido del usuario de ocultar «+» al máximo acercamiento y «−» al máximo alejamiento. Los botones conservan su espacio, reaparecen al salir del límite y trasladan el foco si corresponde. El comportamiento cubre el relieve 3D y el respaldo 2D; se documenta en [DEC-237](docs/decisiones/DEC-237-botones-zoom.md). No se agregaron datos ni fuentes.
 - **Sistema visual cartográfico y migración local de la UI:**
@@ -244,12 +346,20 @@ En cumplimiento con las bases de la hackatón, se declara el uso de herramientas
   > Relevamiento, implementación, pruebas y capturas en celular y escritorio con Claude Code (modelo Claude Opus 5.5), con revisión del equipo. No se agregaron datos ni fuentes.
 - **Expedición Fósiles: pulido, línea de tiempo, nota del hallazgo y migración a low-poly (#7):**
   > Planificación, implementación, pruebas y verificación con capturas con Claude Code (modelo Claude Opus 5.5), a partir de los pedidos de quien lleva el issue. La línea de tiempo usa las edades de la Tabla Cronoestratigráfica Internacional v2026/06 (ICS) y ubica cada hallazgo solo en el período que dan sus fuentes. La nota «El desvío de 1986» resume la entrevista de Infobae y cita textualmente a Eduardo Olivero; cada cita se cotejó con la nota. Los modelos low-poly son ilustraciones: formas y colores interpretados.
+- **Prueba de los pingüinos de Orcadas que se pasaba de tiempo (#316):**
+  > Diagnóstico con mediciones, arreglo y verificación con Claude Code (modelo Claude Opus 5.5), a pedido de quien lleva el issue. Las comprobaciones son las mismas: cada esquina del modelo se mira una vez y la distancia a témpanos e icebergs se compara con un `if` y un solo `expect` por pingüino y cuadro.
+- **Cerro Nevado: la pingüinera de vuelta, con la pantalla común (#310):**
+  > Restauración de la escena, pruebas y revisión con capturas con Claude Code (modelo Claude Opus 5.5), a pedido de quien lleva el issue. Reutiliza la escena y los textos ya verificados de #206; no se agregaron datos ni fuentes ([DEC-310](docs/decisiones/DEC-310-cerro-nevado-escena-comun.md)).
 - **Fósiles: acceso al paper de Ameghiniana (#300):**
   > Lectura de la página del artículo y de la nota de derechos de la revista, y aclaración en la fuente, con Claude Code (modelo Claude Opus 5.5), a pedido de quien lleva el issue. No se agregaron datos; la copia aportada por la familia no se publica.
 - **Marambio: botón «Ver una ventisca» (#263):**
   > Búsqueda y verificación de las definiciones (Atlas Internacional de Nubes de la OMM en español y programa antártico australiano), redacción, implementación, pruebas y capturas con Claude Code (modelo Claude Opus 5.5), a pedido de quien lleva el issue. Los números salen de las normales del SMN ya cotejadas en #160; la ventisca de la escena es una simulación y lo dice.
 - **Escena de Testigos de hielo (#288):**
   > Escena, pruebas y revisión con capturas con Claude Code (modelo Claude Opus 5.5), a pedido de quien lleva el issue. El campamento de perforación del modelo del mapa junto a un corte del hielo con sus capas, burbujas de aire y el pozo hasta la roca; sus tres puntos usan las oraciones ya verificadas de la ficha, sin datos ni fuentes nuevos. Es una reconstrucción ilustrada que no está a escala y muestra en un solo corte dos perforaciones de lugares distintos; la interfaz lo dice.
+- **Flecha de atrás común en las expediciones (#301):**
+  > Relevamiento, implementación, pruebas (unitarias y e2e) y registro de la decisión con Claude Code (modelo Claude Opus 5.5), a pedido de quien lleva el issue, que eligió el diseño con capturas. No se agregaron datos ni fuentes.
+- **Orca low-poly: mancha del ojo y aleta dorsal (#312):**
+  > Relevamiento de dónde se dibuja la orca, cambios en el modelo, pruebas y revisión con capturas con Claude Code (modelo Claude Opus 5.5), a pedido de quien lleva el issue. Es una ilustración: la forma de la aleta y de la mancha están interpretadas, sin medidas reales. No se agregaron datos ni fuentes.
 - **Escena de Belgrano II (#287):**
   > Escena, pruebas y revisión con capturas con Claude Code (modelo Claude Opus 5.5), a pedido de quien lleva el issue. El nunatak y la base del modelo del mapa, con la roca más alta para que se lea sobre el hielo y su bandera; sus cuatro puntos usan las oraciones ya verificadas de la ficha, sin datos ni fuentes nuevos. Es una reconstrucción ilustrada, de día (la noche polar y las auroras no se dibujan), y la interfaz lo dice.
 - **Escena del Polo Sur (#286):**
@@ -282,3 +392,5 @@ En cumplimiento con las bases de la hackatón, se declara el uso de herramientas
   > Previsualizaciones, plan, restauración de la ilustración SVG en paleta azul, integración con «Dato real» y «Mapa listo», limpieza del póster 3D, pruebas y documentación con asistencia de IA, con aprobación visual de quien lleva el issue. No se agregaron datos ni fuentes nuevas.
 - **Océano: pasos, botones y modelos del mar (#283):**
   > Revisión paso a paso con quien lleva el issue; implementación, modelos low-poly de la jorobada, la minke y la foca leopardo, pruebas, capturas y documentación con asistencia de IA. La aleta de la minke antártica se verificó en la ficha de NOAA Fisheries. Los modelos y las escenas son ilustraciones; no se agregaron datos nuevos.
+- **Fechas de congelamiento y de entrega (#324):**
+  > Actualización de las fechas en `AGENTS.md` y `ROADMAP.md` y registro de la decisión con asistencia de IA, a partir del pedido del equipo y del formulario de entrega.

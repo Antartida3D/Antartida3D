@@ -1,6 +1,6 @@
 # Roadmap — Hackatón SoberaníaTech
 
-Fuente: https://soberaniatech.com.ar/bases (extraído 2026-11-10). Horarios en Argentina (UTC−3).
+Fuente: https://soberaniatech.com.ar/bases (extraído 2026-11-10). Horarios en Argentina (UTC−3). La fecha de H4 se actualizó el 2026-11-18 según el formulario de entrega y la cláusula 6.1 de las bases ([DEC-324](docs/decisiones/DEC-324-congelamiento-19-nov.md)).
 
 Eje: **2 — Antártida, Ciencia y Conocimiento Abierto**.
 Reglas del eje: citar fuentes; no presentar simulaciones como datos reales.
@@ -13,7 +13,7 @@ Reglas del eje: citar fuentes; no presentar simulaciones como datos reales.
 | H1 | 10–14 nov | Talleres preparatorios (≥1 integrante en el taller del eje) | Sí | Pendiente |
 | H2 | 10–16 nov | Ideación y desarrollo con mentores (≥2 sesiones con tutor) | Sí | Pendiente |
 | H3 | **lun 16 nov 23:00** | Primer avance documentado | Sí | Pendiente |
-| H4 | **mié 18 nov 21:00** | Entrega final, cierre de repositorios, ensayo de pitch | Sí | Pendiente |
+| H4 | **jue 19 nov 15:00** | Entrega final, cierre de repositorios, ensayo de pitch | Sí | Pendiente |
 | H5 | 19 nov | Jurado revisa repo, documentación y video | Interno | — |
 | H6 | **vie 20 nov 15:00–19:00** | Demo, premiación y cierre — Fábrica de Talento, Av. Maipú 1255, Ushuaia (≥2 integrantes presenciales) | Sí | Pendiente |
 | H7 | 19 dic | Sesión de seguimiento a 30 días | — | — |
@@ -35,7 +35,7 @@ Objetivo: base técnica cerrada y una expedición recorrible de punta a punta.
 - [ ] Redactar el documento de avance: qué está hecho, decisiones, próximos pasos
 - [ ] Hacer ≥2 sesiones con el tutor y asistir al taller del eje (H1, H2)
 
-### Hasta H4 — mié 18 nov 21:00 (entrega final)
+### Hasta H4 — jue 19 nov 15:00 (entrega final)
 
 Objetivo: entregable completo y revisado. No sumar funcionalidades después del 17.
 
@@ -46,14 +46,14 @@ Objetivo: entregable completo y revisado. No sumar funcionalidades después del 
 - [ ] Grabar el video (≤3 min)
 - [ ] Armar las slides (≤5 min), ordenadas según los criterios de evaluación
 - [ ] Ensayar el pitch
-- [ ] Hacer la entrega antes de las 21:00, con margen de 2 h
+- [ ] Hacer la entrega antes de las 15:00. `main` se congela a las 14:00, con margen de 1 h
 
 ### Hasta H6 — vie 20 nov (demo)
 
 - [ ] Confirmar qué ≥2 integrantes van en persona
 - [ ] Preparar un plan B sin internet: `dist/` local en una notebook, más un video de respaldo
 
-## Entregables (H4, 18 nov 21:00)
+## Entregables (H4, 19 nov 15:00)
 
 Entrega tardía no se evalúa.
 

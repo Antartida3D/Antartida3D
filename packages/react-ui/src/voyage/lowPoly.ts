@@ -342,58 +342,113 @@ const EMPEROR_BACK = 0x3b4956;
 const PENGUIN_WHITE = 0xf7fafb;
 const EMPEROR_YELLOW = 0xf4b634;
 const EMPEROR_CHEST = 0xf6e7a8;
-const EMPEROR_BILL = 0xd97d8a;
+// Approximate colors: the orange stripe of the lower mandible and the dark brown eye, a little
+// lighter than the black head so it shows.
+const EMPEROR_BILL = 0xe8843c;
+const EMPEROR_EYE = 0x5a3b26;
 
 /**
- * Emperor penguin, low-poly: slate-grey back, jet-black head and throat, golden ear patches on the
- * sides of the lower head, pale yellow upper chest fading into white belly, black feet and a
- * rose-tinted lower bill. `k` is its height.
+ * Outline of the body of emperor(), feet to neck: [height, front, back, half width] in its units
+ * (height 1, front +x). Egg-shaped, widest at the belly, narrowing to a neck under the head.
+ */
+const EMPEROR_BODY: readonly (readonly [number, number, number, number])[] = [
+  [0, 0.09, 0.1, 0.1],
+  [0.05, 0.17, 0.15, 0.16],
+  [0.17, 0.225, 0.18, 0.21],
+  [0.33, 0.24, 0.18, 0.22],
+  [0.49, 0.215, 0.165, 0.205],
+  [0.63, 0.17, 0.14, 0.175],
+  [0.75, 0.115, 0.1, 0.115],
+  [0.86, 0.08, 0.05, 0.065],
+];
+const EMPEROR_BODY_SEGS = 10;
+/** Tip of the bill of emperor(), the last section of EMPEROR_HEAD. */
+const EMPEROR_BILL_END: Vec3 = [0.265, 0.838, 0];
+/** Head and bill of emperor() along x (loftBody stations): round crown, then a long bill curving down a little. */
+const EMPEROR_HEAD: readonly Station[] = [
+  [-0.07, 0.905, 0.04, 0.04],
+  [-0.04, 0.91, 0.075, 0.072],
+  [0.01, 0.915, 0.085, 0.08],
+  [0.06, 0.905, 0.065, 0.062],
+  [0.1, 0.885, 0.032, 0.03],
+  [0.185, 0.862, 0.016, 0.015],
+  [EMPEROR_BILL_END[0], EMPEROR_BILL_END[1], 0.005, 0.005],
+];
+/** Middle of the head of emperor(): the swimming emperor pitches its head about it. */
+const EMPEROR_HEAD_MIDDLE: Vec3 = [0.015, 0.915, 0];
+
+/** A point turned round z by `a` radians (from +x towards +y). */
+const rotZ = ([x, y, z]: Vec3, a: number): Vec3 => [x * Math.cos(a) - y * Math.sin(a), x * Math.sin(a) + y * Math.cos(a), z];
+const tiltZ = (tris: readonly Tri[], a: number): Tri[] => tris.map(([p, q, r, col]) => [rotZ(p, a), rotZ(q, a), rotZ(r, a), col]);
+
+/**
+ * Emperor penguin, low-poly: an egg-shaped body with a white belly and slate-grey back, a pale
+ * yellow upper chest, golden-orange patches down the sides of the neck and on the lower head, a
+ * black head with brown eyes, a long bill curving down with an orange stripe, black feet and the
+ * stiff tail it leans on. Every part is closed, so it shows no hole from any side. `k` is its height.
  */
 export function emperor(x: number, z: number, k: number, facing = 0): Tri[] {
-  const { body, head, bill, feet } = emperorParts();
-  return shift(scaled(turn([...body, ...head, ...bill, ...feet], facing), k), x, 0, z);
+  const { body, head, feet, tail } = emperorParts();
+  // The tail leans down to the ground behind the feet.
+  const standingTail = shift(tiltZ(tail, 0.38), -0.09, 0.08, 0);
+  return shift(scaled(turn([...body, ...head, ...feet, ...standingTail], facing), k), x, 0, z);
 }
 
-/** The parts of emperor() in its own units (height 1, front +x), apart so it can also be laid flat to swim. */
-function emperorParts(): { body: Tri[]; head: Tri[]; bill: Tri[]; feet: Tri[] } {
-  const isFront = (i: number) => {
-    const a = (i + 0.5) / 7;
-    return a < 0.22 || a > 0.78;
+/**
+ * The parts of emperor() in its own units (height 1, front +x), apart so it can also be laid flat
+ * to swim: body, head with bill and eyes, and feet as it stands; the tail from its root at (0, 0, 0)
+ * out along -x.
+ */
+function emperorParts(): { body: Tri[]; head: Tri[]; feet: Tri[]; tail: Tri[] } {
+  const bodyColor = (band: number, seg: number) => {
+    // 1 straight ahead (+x), -1 behind; ±0.31 are the two segments at the sides of the white front.
+    const ahead = Math.sin(((seg + 0.5) / EMPEROR_BODY_SEGS) * Math.PI * 2);
+    if (band >= 5) return ahead > 0.25 && ahead < 0.5 ? EMPEROR_YELLOW : ahead > 0.5 && band === 5 ? EMPEROR_CHEST : PENGUIN_BLACK;
+    return ahead > 0.25 ? PENGUIN_WHITE : EMPEROR_BACK;
   };
-  const body = lathe(0, 0, [[0, 0.17], [0.3, 0.22], [0.62, 0.18], [0.78, 0.12]], 7, (i, band) => {
-    if (isFront(i)) return band === 2 ? EMPEROR_CHEST : PENGUIN_WHITE;
-    if (band === 2 && (i === 1 || i === 5)) return EMPEROR_YELLOW;
-    return EMPEROR_BACK;
-  });
-  const head = lathe(0.03, 0, [[0.76, 0.12], [0.9, 0.11], [1, 0]], 7, (i, band) =>
-    band === 0 && (i === 1 || i === 5) ? EMPEROR_YELLOW : PENGUIN_BLACK,
-  );
-  const bill: Tri[] = [
-    [[0.12, 0.86, 0.025], [0.12, 0.86, -0.025], [0.27, 0.82, 0], PENGUIN_BLACK],
-    [[0.12, 0.84, -0.025], [0.12, 0.84, 0.025], [0.27, 0.82, 0], EMPEROR_BILL],
-  ];
-  const feet = block(0.06, 0.012, 0, 0.12, 0.024, 0.16, PENGUIN_BLACK);
-  return { body, head, bill, feet };
+  // Lofted along its height, then stood up: the height becomes y, the front +x.
+  const stand = ([x, y, z]: Vec3): Vec3 => [y, x, -z];
+  const body = loftBody(
+    EMPEROR_BODY.map(([h, front, back, w]): Station => [h, (front - back) / 2, (front + back) / 2, w]),
+    bodyColor,
+    [EMPEROR_BACK, PENGUIN_BLACK],
+    EMPEROR_BODY_SEGS,
+  ).map(([a, b, c, col]): Tri => [stand(a), stand(b), stand(c), col]);
+  // Segments 0, 3, 4 and 7 are the sides, 4 and 7 the lower ones: the ear patch behind (the whole
+  // side at the back of the head, the lower side under the crown), the stripe of the bill in front.
+  const head = loftBody(EMPEROR_HEAD, (band, seg) => {
+    const a = ((seg + 0.5) / 8) * Math.PI * 2;
+    const side = Math.abs(Math.cos(a)) > 0.9;
+    const lowerSide = side && Math.sin(a) < 0;
+    if ((side && band === 0) || (lowerSide && band === 1)) return EMPEROR_YELLOW;
+    if (lowerSide && band >= 4) return EMPEROR_BILL;
+    return PENGUIN_BLACK;
+  }, [PENGUIN_BLACK, PENGUIN_BLACK]);
+  const eye = spike([0.045, 0.925, 0.056], [0.004, 0, 0.013], 0.013, EMPEROR_EYE);
+  const foot = (zc: number) => prism([[0.015, zc - 0.028], [0.15, zc - 0.05], [0.21, zc], [0.15, zc + 0.05], [0.015, zc + 0.028]], 0, 0.026, PENGUIN_BLACK, PENGUIN_BLACK, true);
+  const tail = loftBody([[-0.18, 0, 0.006, 0.018], [-0.08, 0, 0.018, 0.042], [0.02, 0, 0.028, 0.05]], () => EMPEROR_BACK, [EMPEROR_BACK, EMPEROR_BACK], 4);
+  return { body, head: [...head, ...eye, ...mirrorZ(eye)], feet: [...foot(0.065), ...foot(-0.065)], tail };
 }
 
 /** A point of emperor() laid flat to swim: its head (+y) leads along +x, its white front (+x) faces down, centred on its middle. */
 const lieFlat = ([x, y, z]: Vec3): Vec3 => [y - 0.5, -x, z];
 /** Tip of the bill of emperorSwimming(), along +x: where it holds a caught fish. */
 export const EMPEROR_SWIM_BILL_TIP = 0.64;
+/** How much the swimming emperor raises its bill (radians), so the bill points ahead in line with the body. */
+const SWIM_HEAD_PITCH = 0.29;
 
 /**
- * emperor() swimming: the same body, head and colors laid flat, belly down, with the bill out in
- * front of the head along +x. One unit long without the bill, centred on its middle. ILLUSTRATIVE.
+ * emperor() swimming: the same body and colors laid flat, belly down; the head ahead of the neck
+ * with the bill pointing forward, its tip at (EMPEROR_SWIM_BILL_TIP, 0, 0); the feet and the tail
+ * trailing behind. One unit long without the bill and the tail, centred on its middle. ILLUSTRATIVE.
  */
 export function emperorSwimming(): Tri[] {
-  const { body, head, feet } = emperorParts();
-  const flat = [...body, ...head, ...feet].map(([a, b, c, col]): Tri => [lieFlat(a), lieFlat(b), lieFlat(c), col]);
-  // The tip of the head lies at (0.5, -0.03, 0): the bill starts inside it and points ahead.
-  const bill: Tri[] = [
-    [[0.44, -0.015, 0.025], [0.44, -0.015, -0.025], [EMPEROR_SWIM_BILL_TIP, -0.04, 0], PENGUIN_BLACK],
-    [[0.44, -0.045, -0.025], [0.44, -0.045, 0.025], [EMPEROR_SWIM_BILL_TIP, -0.04, 0], EMPEROR_BILL],
-  ];
-  return [...flat, ...bill];
+  const { body, head, feet, tail } = emperorParts();
+  const flat = body.map(([a, b, c, col]): Tri => [lieFlat(a), lieFlat(b), lieFlat(c), col]);
+  const [mx, my] = EMPEROR_HEAD_MIDDLE;
+  const tip = rotZ([EMPEROR_BILL_END[0] - mx, EMPEROR_BILL_END[1] - my, 0], SWIM_HEAD_PITCH);
+  const swimHead = shift(tiltZ(shift(head, -mx, -my, 0), SWIM_HEAD_PITCH), EMPEROR_SWIM_BILL_TIP - tip[0], -tip[1], 0);
+  return [...flat, ...swimHead, ...shift(turn(feet, Math.PI), -0.42, -0.05, 0), ...shift(tiltZ(tail, -0.1), -0.46, 0.02, 0)];
 }
 
 // Emperor chick: grey down with the white face mask and black crown it keeps while it moults
@@ -421,20 +476,39 @@ export function emperorChick(x: number, z: number, k: number, facing = 0): Tri[]
 export const EMPEROR_SHOULDER: Vec3 = [0, 0.64, 0.17];
 /** Turn (radians) of a flipper at rest away from the body, so it lies on the widening side instead of inside it. */
 const FLIPPER_REST = 0.3;
+/** Sections of a flipper down from the shoulder: [y, leading edge x, trailing edge x, half thickness]; widest near the root, the tip swept back. */
+const FLIPPER_SECTIONS: readonly (readonly [number, number, number, number])[] = [
+  [0, 0.04, -0.05, 0.016],
+  [-0.1, 0.05, -0.06, 0.014],
+  [-0.22, 0.035, -0.05, 0.011],
+  [-0.31, 0.012, -0.035, 0.007],
+  [-0.35, -0.004, -0.022, 0.003],
+];
+/** How far the flipper stands out from the shoulder (+z), so it lies on the body and not in it. */
+const FLIPPER_OFF = 0.008;
 
 /**
- * A flipper of emperor(), apart so it can move: it hangs from (0, 0, 0) down -y on the +z side,
- * resting on the body, black outside and pale on the face towards the body. `side` -1 gives the
- * one on -z. Units of emperor(); place it at EMPEROR_SHOULDER, scaled by `k`. Turning it round x
- * towards +z raises it.
+ * A flipper of emperor(), apart so it can move: a tapered blade that hangs from (0, 0, 0) down -y
+ * on the +z side, resting on the body, black outside with a light trailing border and pale on the
+ * face towards the body, closed at the root and the tip. `side` -1 gives the one on -z. Units of
+ * emperor(); place it at EMPEROR_SHOULDER, scaled by `k`. Turning it round x towards +z raises it.
  */
 export function emperorFlipper(side: 1 | -1 = 1): Tri[] {
+  const rings = FLIPPER_SECTIONS.map(([y, lead, trail, t]): Vec3[] => {
+    const [m1, m2] = [lead + (trail - lead) * 0.3, lead + (trail - lead) * 0.7];
+    const z = FLIPPER_OFF;
+    return [[lead, y, z], [m1, y, z + t], [m2, y, z + t], [trail, y, z], [m2, y, z - t], [m1, y, z - t]];
+  });
+  // Segments 0 and 1 are the leading edge and the outer face; 2 the trailing border; 3 to 5 the inner face.
+  const blade = skin(rings, (_band, seg) => (seg <= 1 ? PENGUIN_BLACK : PENGUIN_WHITE), PENGUIN_BLACK);
+  const middle = (r: readonly Vec3[]): Vec3 => [0, 1, 2].map((k) => r.reduce((sum, p) => sum + p[k], 0) / r.length) as unknown as Vec3;
+  const [root, below] = [rings[0], middle(rings[1])];
+  const cap = root.map((p, i) => facingOut(middle(root), p, root[(i + 1) % root.length], PENGUIN_BLACK, below));
   const c = Math.cos(FLIPPER_REST);
   const sn = Math.sin(FLIPPER_REST);
   // Round x, so that what hangs (-y) swings out towards +z.
   const out = ([x, y, z]: Vec3): Vec3 => [x, y * c + z * sn, -y * sn + z * c];
-  const tris = [...block(0, -0.17, 0.035, 0.09, 0.34, 0.035, PENGUIN_BLACK), ...block(0, -0.16, 0.014, 0.06, 0.28, 0.008, PENGUIN_WHITE)]
-    .map(([a, b, d, col]): Tri => [out(a), out(b), out(d), col]);
+  const tris = [...blade, ...cap].map(([a, b, d, col]): Tri => [out(a), out(b), out(d), col]);
   return side === 1 ? tris : mirrorZ(tris);
 }
 

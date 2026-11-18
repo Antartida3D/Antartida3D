@@ -78,13 +78,14 @@
 .vsighting svg{width:34px;height:34px;flex:none;color:var(--deep)}
 .vlatin{margin:0;font-style:italic;color:var(--chart-muted)}
 /* How the expedition works: the question and the notes that answer it. */
-.vexp{margin:10px 0;padding:10px 12px;border:0;border-radius:0;}
+/* No frame since the cartographic refresh (3a27b73): no side padding either, or it reads as an indent. */
+.vexp{margin:0;padding:0;border:0;border-radius:0;}
 .vquiz{margin:0;padding:0;border:0;display:flex;flex-direction:column;gap:6px}
 .vquiz legend{padding:0;margin-bottom:6px;font-weight:700}
 .vquiz .btn{width:100%;min-height:48px;height:auto;padding:8px 14px;justify-content:flex-start;text-align:left;white-space:normal}
 .vquiz .btn:disabled{opacity:1;cursor:default}
 .vquiz .vsmall{margin:2px 0 0;min-height:1.2em}
-.vnotebook{margin:10px 0;padding:10px 12px;border:0;border-radius:0;}
+.vnotebook{margin:10px 0;padding:10px 0;border:0;border-radius:0;}
 .vnotebook p{margin:0 0 8px}
 .vnotebook ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
 @media (prefers-reduced-motion:reduce){.vspot{animation:none}}

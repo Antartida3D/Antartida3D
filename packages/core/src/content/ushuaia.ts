@@ -368,7 +368,7 @@ export const EXPEDITION: Readonly<Record<string, ExpeditionStop>> = {
   },
   'mar-abierto': {
     notes: [
-      { kind: 'ship', fact: real('A las bases se les lleva por mar combustible, víveres, materiales de construcción, repuestos, maquinaria y material científico.', 'O43') },
+      { kind: 'ship', fact: real('Los suministros de las bases son transportados por vía marítima, como por ejemplo combustible, víveres, materiales de construcción, repuestos, maquinaria y material científico.', 'O43') },
       { only: 'irizar', fact: real('En una sola etapa de la campaña 2022-23 el Irízar movió 565 toneladas de carga y más de 630.000 litros de gasoil antártico.', 'O41') },
     ],
   },
@@ -469,7 +469,7 @@ export const SIGHTINGS: readonly Sighting[] = [
     fact: { text: 'Fue bautizado Faro del Fin del Mundo. Lo puso en servicio el 25 de mayo de 1884 la División Expedicionaria al Atlántico Sur, al mando del comodoro Augusto Lasserre. Es Monumento Histórico Nacional.', kind: 'real', sources: ['O40'] } },
   // Drake Passage
   { id: 'albatros', name: 'Albatros errante', latin: 'Diomedea exulans', icon: 'bird', anchor: [-66.45, -57.3], offset: 4,
-    fact: { text: 'Los que crían en Georgias del Sur se mueven desde el sur de Brasil hasta la Península Antártica. Para alimentarse se alejan hasta 4.000 km de su colonia.', kind: 'real', sources: ['I11'] } },
+    fact: { text: 'Los albatros errantes que anidan en las islas Georgias del Sur recorren el mar desde el sur de Brasil hasta la Península Antártica. En la época de cría, un albatros errante puede alejarse hasta 4.000 km de su colonia para buscar alimento.', kind: 'real', sources: ['I11'] } },
   { id: 'petrel-gigante', name: 'Petrel gigante del sur', latin: 'Macronectes giganteus', icon: 'bird', anchor: [-66.33, -58.6], offset: -4.5,
     fact: { text: 'Es carroñero: en lo que regurgitan sus pichones aparecen sobre todo restos de pingüino y también carne de foca.', kind: 'real', sources: ['I12'] } },
   { id: 'delfin-cruzado', name: 'Delfín cruzado', latin: 'Lagenorhynchus cruciger', icon: 'dolphin', anchor: [-63.4, -60.75], offset: 4,

@@ -2,7 +2,7 @@
 
 Fuentes citadas en [poncho.md](./poncho.md), conforme a las reglas del eje 2 de `AGENTS.md`: referencia o URL, organismo o autor que la publica y fecha de consulta (formato DD/MM/YYYY).
 
-- **Estado (issue #145):** el recorrido tiene 9 paradas en cuatro actos (la patrulla «Paralelo 82» se unió al salto en paracaídas el 17/11/2026, DEC-221), con ganchos y diario de ruta. Cada dato del libro lleva su página del PDF (`pages`) y la cita abre esa página. Lo que sigue se actualizó con el contenido real; las páginas de la sección 2 se volvieron a verificar contra el PDF (`pdftotext` por página) el 15/11/2026. Los **ganchos** y el texto de unión no afirman nada y no llevan fuente.
+- **Estado (issue #145):** el recorrido tiene 7 paradas en tres actos (la patrulla «Paralelo 82» se unió al salto en paracaídas el 17/11/2026, DEC-221, y las tres últimas paradas se unieron el 18/11/2026, DEC-223), con ganchos y diario de ruta. Cada dato del libro lleva su página del PDF (`pages`) y la cita abre esa página. Lo que sigue se actualizó con el contenido real; las páginas de la sección 2 se volvieron a verificar contra el PDF (`pdftotext` por página) el 15/11/2026. Los **ganchos** y el texto de unión no afirman nada y no llevan fuente.
 - **Fechas de consulta:**
   - `11/11/2026`: consulta inicial del equipo de `[P1]` y `[P2]`.
   - `12/11/2026`: segunda lectura de `[P1]` y `[P2]` y verificación contra fuentes oficiales `[V1]`–`[V3]` (agente de IA, issue #27).
@@ -40,8 +40,8 @@ Las páginas son las del PDF de `[P1]` (25 págs.). Los códigos de la interfaz 
 | `paracaidas` (la patrulla, en el texto y en «Saber más»): barranco de unos 200 m frente al pico Santa Fe | `[P1]` p. 16 | Solo libro. Relato narrado |
 | `paracaidas`: salto, descenso, aterrizaje y rescate de una patrulla perdida | `[P1]` p. 19; Pato, Bucky, arnés, S-55: p. 18 | Solo libro. Discrepancia de mes (sección 5.2) |
 | `brujula-perdida`: ventisca, doce kilómetros, brújula hundida, dos horas a ciegas, luces de la base | `[P1]` p. 20 (p. 19 para la bahía Duse) | Solo libro. Relato narrado |
-| `adios-a-la-antartida`: «No trabajó», excepción por su prestigio, rompehielos a Ushuaia; traslado de 1973 | `[P1]` p. 21 y 5 | Solo libro |
-| `ushuaia`: años plácidos, casi 18 años, mañana de primavera de 1978; accidente de 1976; taxidermia | `[P1]` p. 22 (p. 21 y 5 para el resto) | Solo libro |
+| `brujula-perdida` (el retiro, en el texto y en «Saber más»): «No trabajó», excepción por su prestigio, rompehielos a Ushuaia; traslado de 1973 | `[P1]` p. 21 y 5 | Solo libro |
+| `brujula-perdida` (Ushuaia, en el texto y en «Saber más»): años plácidos, casi 18 años, mañana de primavera de 1978; accidente de 1976; taxidermia | `[P1]` p. 22 (p. 21 y 5 para el resto) | Solo libro |
 | Diario de ruta: once perros, 30–45 kg, 40–50 km en más de seis horas, canto, perros que anticipan tormentas, 40 km/h | `[P1]` p. 12 | Solo libro |
 | Diario de ruta: perros bajo uno o dos metros de nieve, autonomía de 20 días, pemmican | `[P1]` p. 10 | Solo libro |
 | Diario de ruta: perros elegidos por su servicio en 1962 | `[P1]` p. 14 | Solo libro |
@@ -72,7 +72,7 @@ Las coordenadas salen del gazetteer de SCAR `[V3]` o de la Armada `[V2]`. Format
 | Caleta Jardinero (ya no es una parada) | `[Fuente a definir]` | No se encontró en `[V3]` | Pendiente |
 | Caleta Carretera (`expedicion-invernal-1962`) | `[Fuente a definir]` | No se encontró en `[V3]` | Pendiente |
 | Refugio Cristo Redentor (`brujula-perdida`) | `[Fuente a definir]` | `[V3]` solo lo trae en el gazetteer ruso: `[-57.366667, -63.55]`. No se toma como dato argentino | Pendiente |
-| Ushuaia, hotel «Antártida» (`ushuaia`) | `[Fuente a definir]` | Ushuaia está fuera de lo consultado (gazetteer antártico); el hotel está «desaparecido» según `[P1]` | Pendiente |
+| Ushuaia, hotel «Antártida» (ya no es una parada; se cuenta en `brujula-perdida`) | `[Fuente a definir]` | Ushuaia está fuera de lo consultado (gazetteer antártico); el hotel está «desaparecido» según `[P1]` | Pendiente |
 
 **Licencia del gazetteer `[V3]`:** no se verificó. Antes de copiar coordenadas a archivos del repo, `[Fuente a definir]` (condiciones de uso de SCAR/AADC). Una coordenada es un dato; aun así, se anota para que lo confirme quien revise.
 

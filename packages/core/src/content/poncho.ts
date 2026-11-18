@@ -12,7 +12,7 @@
  * Source codes point to VOYAGE_SOURCES.
  */
 import type { Milestone, Transport, VoyageFact, VoyageSourceCode } from './ushuaia.ts';
-import { BELGRANO_AREA, BELGRANO_RETURN, DUSE_BAY, ESPERANZA, FOCA_NUNATAKS, SAN_MARTIN, USHUAIA } from './poncho-route.ts';
+import { BELGRANO_AREA, BELGRANO_RETURN, DUSE_BAY, ESPERANZA, FOCA_NUNATAKS, SAN_MARTIN } from './poncho-route.ts';
 
 /** The only warning of the trip: shown once, on the start panel and on the sources page. */
 export const PONCHO_NOTICE = 'El recorrido y los modelos son una ilustración, no una ruta real.';
@@ -45,15 +45,9 @@ const book = (page: number, text: string, ...others: VoyageSourceCode[]): Voyage
 const real = (text: string, ...sources: VoyageSourceCode[]): VoyageFact => ({ text, kind: 'real', sources });
 
 /**
- * Only for the place of the stop where the icebreaker takes Poncho away (the trip does not say where along the
- * sea it is): a point of the Drake Passage, between Duse Bay and Ushuaia. The stop opens at the point of its leg nearest to it.
- */
-const DRAKE_PASSAGE = [-62.5, -59.5] as const;
-
-/**
  * In trip order, which is also the order of the story (the `year` never goes down). The first one opens at departure
  * and the last one on arrival. `segment` is the leg of the route where it opens (see poncho-route.ts): 0 sled on the
- * Peninsula, 1 ship to Belgrano, 2 sled at Belgrano and the Pole, 3 ship back, 4 sled at Esperanza, 5 ship to Ushuaia.
+ * Peninsula, 1 ship to Belgrano, 2 sled at Belgrano, 3 ship back, 4 sled at Esperanza (the trip ends there: DEC-223).
  * No two stops share a place within a leg.
  */
 export const PONCHO_MILESTONES: readonly Milestone[] = [
@@ -166,51 +160,31 @@ export const PONCHO_MILESTONES: readonly Milestone[] = [
     ],
   },
   {
+    // The last stop tells three of the book (DEC-223): the lost compass (p. 19-20), the years when Poncho no longer worked (p. 21)
+    // and his leaving for Ushuaia, where he lived until 1978 (p. 21-22). The trip ends at Esperanza; Ushuaia is told, not travelled.
     id: 'brujula-perdida',
     year: 1967,
     segment: 4,
-    title: 'La brújula perdida',
+    title: 'La última proeza y el retiro',
     anchor: DUSE_BAY,
     kinds: ['dogs'],
-    essential: book(20, 'Otra tormenta: una ventisca fuerte sorprende a la patrulla de Poncho, a unos doce kilómetros de Esperanza. El trineo vuelca, la brújula se hunde en la nieve y nadie ve nada. Sin brújula, los hombres solo pueden seguir a Poncho, y después de dos horas a ciegas, ya de noche, aparecen las luces de la base.'),
-    hook: 'Esa noche su legajo sumó una proeza más.',
+    essential: book(21, 'Otra tormenta: una ventisca sorprende a la patrulla a unos doce kilómetros de Esperanza, el trineo vuelca y la brújula se hunde en la nieve, pero los hombres siguen a Poncho y, después de dos horas a ciegas, ven las luces de la base. Pasan los años y en su legajo aparece cada vez más una frase corta, “No trabajó”: Poncho ya no corre a la par de los perros jóvenes. Un verano lo llevan a bordo del rompehielos rumbo a Ushuaia, donde vive tranquilo en el hotel de un viejo compañero de patrulla, hasta que una mañana de primavera de 1978 ya no despierta.'),
+    hook: 'Así termina el camino de Poncho.',
     more: [
+      // The lost compass (1967).
       book(19, 'Ocurrió un día de agosto de 1967, cuando la patrulla volvía a Esperanza cruzando la bahía Duse sobre mar congelado.'),
       book(20, 'Los vehículos a motor se frenaron en una cuesta de nieve blanda llamada Cuesta de los Afligidos. El trineo de Poncho volvió a buscar a los hombres que habían quedado a pie.'),
       book(20, 'El oficial a cargo clavó tres cañas con banderolas donde habían volcado, para volver a buscar la brújula.'),
       book(20, 'Después de dos horas de andar a ciegas, ya de noche, los hombres vieron las luces de la base: Poncho los había llevado hasta Esperanza. Tres días después, cuando pasó el temporal, recuperaron la brújula y los vehículos.'),
-    ],
-  },
-  {
-    id: 'adios-a-la-antartida',
-    year: 1973,
-    segment: 5,
-    title: 'Poncho deja la Antártida',
-    anchor: DRAKE_PASSAGE,
-    kinds: ['dogs'],
-    essential: book(21, 'Pasan los años y, en su legajo, aparece cada vez más una frase corta: “No trabajó”. Poncho ya no corre a la par de los perros jóvenes y en las patrullas largas se cansa. Un verano llega el rompehielos y lo llevan a bordo rumbo a Ushuaia: una excepción, en mérito a su prestigio.'),
-    hook: 'Lejos de la nieve lo esperaba un mundo nuevo.',
-    more: [
-      book(21, 'En el legajo de Poncho se anotaba cada vez más seguido “No trabajó”: ya no corría a la par de los perros jóvenes y se cansaba en las patrullas largas.'),
-      book(21, 'Que dejara la Antártida fue una excepción, en mérito a su prestigio.'),
+      // The retirement and the way to Ushuaia (1973).
+      book(21, 'Ya no corría a la par de los perros jóvenes y se cansaba en las patrullas largas. Que dejara la Antártida fue una excepción, en mérito a su prestigio.'),
       book(5, 'En 1973 lo trasladaron en el rompehielos hasta Ushuaia, donde lo recibió una familia que lo alojó en su hotel Antártida.'),
-    ],
-  },
-  {
-    id: 'ushuaia',
-    year: 1978,
-    segment: 5,
-    title: 'Un final tranquilo en Ushuaia',
-    anchor: USHUAIA,
-    kinds: ['dogs'],
-    essential: book(22, 'En ese mundo nuevo, Poncho vive plácidamente en el hotel de un viejo compañero de patrulla, como un perro retirado. Llega a vivir casi 18 años, mucho más que otros perros grandes. Una mañana de primavera de 1978, en el jardín, ya no despierta.'),
-    hook: 'Así termina el camino de Poncho.',
-    more: [
+      // His last years in Ushuaia (1973-1978).
       book(21, 'En Ushuaia lo recibió un viejo compañero de patrulla, que había dejado el Ejército y tenía un hotel llamado Antártida. Poncho llevaba a los niños a pasear en un trineo improvisado, por las calles.'),
       book(21, 'En Ushuaia descubrió un mundo nuevo: conoció a los niños, los árboles, los caballos y las moscas, y allí hacía calor.'),
       book(22, 'En 1976 sufrió un accidente y un veterinario aconsejó sacrificarlo, pero la familia se negó.'),
       book(5, 'En 1977 y 1978 tiró de un trineo con niños fueguinos en desfiles y exhibiciones.'),
-      book(22, 'Se intentó conservar su cuerpo, pero la taxidermia no prosperó.'),
+      book(22, 'Llegó a vivir casi 18 años, mucho más que otros perros grandes. Se intentó conservar su cuerpo, pero la taxidermia no prosperó.'),
     ],
   },
 ];
@@ -223,12 +197,11 @@ export interface PonchoAct {
   firstStop: string;
 }
 
-/** The story in four acts, with an emotional arc: the puppy who learns, the guide they trust, the one who saves lives, the one who retires. */
+/** The story in three acts, with an emotional arc: the puppy who learns, the guide they trust, the one who saves lives (and, at the last stop, retires: DEC-223). */
 export const PONCHO_ACTS: readonly PonchoAct[] = [
   { id: 'aprende', title: 'Un cachorro que aprende', firstStop: 'nacimiento' },
   { id: 'confianza', title: 'El guía en quien confían', firstStop: 'expedicion-invernal-1962' },
   { id: 'rescates', title: 'Salvar vidas en el hielo', firstStop: 'rumbo-a-belgrano' },
-  { id: 'retiro', title: 'Un retiro merecido', firstStop: 'adios-a-la-antartida' },
 ];
 
 /** The act that opens at this milestone (with its number, from 1), or `undefined` if no act opens there. */

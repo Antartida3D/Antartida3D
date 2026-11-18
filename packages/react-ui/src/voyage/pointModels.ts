@@ -607,7 +607,7 @@ const module = (x: number, z: number, w: number, d: number, h: number, wall: num
  * the flagpole. The colour of the buildings is not in the sources: orange like the modern
  * pavilions of Orcadas. Illustration, not to scale.
  */
-const BELGRANO: Tri[] = [
+export const BELGRANO: Tri[] = [
   // The nunatak: a low rounded outcrop of rock with snow in its hollows, rising from the ice, which
   // runs out to the edge of the model and lies on the relief there, so no edge shows.
   ...groundField(

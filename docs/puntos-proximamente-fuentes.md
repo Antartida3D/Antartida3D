@@ -91,6 +91,8 @@ Desde #280 el punto abre una escena propia (`packages/core/src/content/thwaites-
 
 ## `belgrano` — Base Belgrano II
 
+Desde #287 el punto abre una escena propia (`packages/core/src/content/belgrano-scene.ts`). Sus cuatro puntos reparten estas mismas oraciones, sin agregar ninguna; la de las auroras va con la de la noche polar. Una prueba controla que el texto de los hechos reales de la escena sea exactamente esta ficha.
+
 > La Base Belgrano II se inauguró el 5 de febrero de 1979 sobre roca firme, en el nunatak Bertrab, al sur del Mar de Weddell. Es la base más austral de la Argentina, a 1.300 km del Polo Sur. Tiene cuatro meses de noche polar, vientos fuertes y temperaturas de hasta -54 °C, y se abastece una vez por año, sobre todo con el rompehielos Almirante Irízar. De noche se ven abundantes auroras polares. En el Laboratorio Belgrano (LABEL), científicos del Instituto Antártico Argentino estudian el ozono, el magnetismo, el clima y los sismos.
 
 | Oración | Fuente | Cita |

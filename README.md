@@ -248,6 +248,8 @@ En cumplimiento con las bases de la hackatón, se declara el uso de herramientas
   > Lectura de la página del artículo y de la nota de derechos de la revista, y aclaración en la fuente, con Claude Code (modelo Claude Opus 5.5), a pedido de quien lleva el issue. No se agregaron datos; la copia aportada por la familia no se publica.
 - **Marambio: botón «Ver una ventisca» (#263):**
   > Búsqueda y verificación de las definiciones (Atlas Internacional de Nubes de la OMM en español y programa antártico australiano), redacción, implementación, pruebas y capturas con Claude Code (modelo Claude Opus 5.5), a pedido de quien lleva el issue. Los números salen de las normales del SMN ya cotejadas en #160; la ventisca de la escena es una simulación y lo dice.
+- **Escena de Belgrano II (#287):**
+  > Escena, pruebas y revisión con capturas con Claude Code (modelo Claude Opus 5.5), a pedido de quien lleva el issue. El nunatak y la base del modelo del mapa, con la roca más alta para que se lea sobre el hielo y su bandera; sus cuatro puntos usan las oraciones ya verificadas de la ficha, sin datos ni fuentes nuevos. Es una reconstrucción ilustrada, de día (la noche polar y las auroras no se dibujan), y la interfaz lo dice.
 - **Escena del Polo Sur (#286):**
   > Escena, pruebas y revisión con capturas con Claude Code (modelo Claude Opus 5.5), a pedido de quien lleva el issue. La estación del modelo del mapa sobre la meseta, con sus banderas; sus tres puntos usan las oraciones ya verificadas de la ficha, sin datos ni fuentes nuevos. Es una reconstrucción ilustrada y la interfaz lo dice. El botón de los reclamos territoriales pasó de la ficha al modal de entrada ([DEC-286](docs/decisiones/DEC-286-escena-del-polo-sur.md)).
 - **Escena de Vostok (#281):**

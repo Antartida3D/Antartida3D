@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import {
-  DOUBLE_TAP_ZOOM, DRAG_THRESHOLD, EXPEDITION_POINT, HOME, KEY_PAN, LIST_BUTTON_LABEL, MAP_2D_ENABLED, MAX_K, MIN_K, ONE_FINGER_IDLE, PONCHO_POINT, PONCHO_TRANSPORT, PTS, TRANSPORTS, VOYAGE_POINTS, ZOOM_MS,
+  DOUBLE_TAP_ZOOM, isScenePoint, DRAG_THRESHOLD, EXPEDITION_POINT, HOME, KEY_PAN, LIST_BUTTON_LABEL, MAP_2D_ENABLED, MAX_K, MIN_K, ONE_FINGER_IDLE, PONCHO_POINT, PONCHO_TRANSPORT, PTS, TRANSPORTS, VOYAGE_POINTS, ZOOM_MS,
   afterExpedition, buildMarkers, isGuideOpen, diveView, focusWorld, freeArea, needsFraming, markerPress, geometry, isWheelNotch, keyView, nextExpedition, oneFingerDown, oneFingerMove, oneFingerUp, panBy, resumeDetail, welcomeView, wheelFactor, zoomAround, zoomCenter,
   type ArrivalId, type FirstVisitEvent, type FirstVisitState, type MapPoint, type Marker, type OneFingerZoomState, type ResumePoint, type SeaPoint, type Size, type TransportId, type View, type ClaimsCoverage, type ZoomAvailability,
 } from '@antartida/core';
@@ -606,7 +606,8 @@ export function MapView({
 
   const openPoint = (p: MapPoint | SeaPoint) => {
     if (onStartVoyage && VOYAGE_POINTS.some((v) => v.id === p.id)) onStartVoyage(p as MapPoint);
-    else if ('tier' in p && p.tier === 'A') {
+    // A point of interest with a scene of its own (#280) opens like an expedition.
+    else if ('tier' in p && (p.tier === 'A' || isScenePoint(p.id))) {
       if (phase === 'idle') {
         // One sheet at a time: the intro replaces the trip from Ushuaia, as starting Orcadas did before.
         if (voyaging) onEndVoyage?.(false);

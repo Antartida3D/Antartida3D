@@ -8,12 +8,12 @@ import {
   fastIceEdge,
   FLOE_CHICK,
   PACK_FLOES,
-  poseOf,
   SNOWMOBILE_TRIS,
   SPOT_VIEWS,
   WAVE,
   WAVER,
 } from '../src/cerronevado/colonyScene.ts';
+import { poseOf } from '../src/scenepoint/sceneView.ts';
 
 describe('scene of the emperor colony of Cerro Nevado (#206)', () => {
   it('builds a stage of finite faces, and the snowmobile has the least detail', () => {

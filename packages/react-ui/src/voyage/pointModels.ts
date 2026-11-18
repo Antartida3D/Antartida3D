@@ -198,7 +198,8 @@ const EREBUS_CARD: Tri[] = (() => {
 // Thwaites Glacier
 // ---------------------------------------------------------------------------------------------
 
-const THWAITES_REACH = 3;
+/** Half width (model units) of the square thwaitesFront is built on. */
+export const THWAITES_REACH = 3;
 const THWAITES_STEP = 0.1;
 /** Least height (world units) of the ice cliff over the water, so the front reads at x10. */
 const CLIFF_MIN = 0.1;

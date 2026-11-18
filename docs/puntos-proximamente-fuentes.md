@@ -73,6 +73,8 @@ Para la animación (no aparece en la ficha): USAP registra «two to six Strombol
 
 ## `thwaites` — Glaciares que cambian
 
+Desde #280 el punto abre una escena propia (`packages/core/src/content/thwaites-scene.ts`). Sus cuatro puntos reparten estas mismas oraciones, sin agregar ninguna. Una prueba controla que el texto de los hechos reales de la escena sea exactamente esta ficha.
+
 > El Glaciar Thwaites, en la Antártida Occidental, es el más ancho de la Tierra: unos 120 km. Cada año pierde unos 50.000 millones de toneladas de hielo más de lo que recibe como nieve, y el hielo que fluye al mar se duplicó en tres décadas. Agua de mar unos grados más cálida que el punto de congelación derrite su plataforma flotante desde abajo. Si colapsara por completo, el nivel del mar subiría unos 65 cm.
 
 | Oración | Fuente | Cita |

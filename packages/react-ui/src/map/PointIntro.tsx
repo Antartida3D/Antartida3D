@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { expeditionIntro, type MapPoint } from '@antartida/core';
+import { expeditionIntro, isScenePoint, SCENE_START_LABEL, type MapPoint } from '@antartida/core';
 import { ExpeditionIntro } from '../sheet/ExpeditionIntro.tsx';
 
 // Its own chunk: it needs WebGL, which the 2D map does not.
@@ -25,6 +25,7 @@ export function PointIntro({ point, onStart, onExit, fallbackFocus, preview = fa
       paragraphs={intro.paragraphs}
       sources={intro.sources}
       onStart={onStart}
+      startLabel={isScenePoint(point.id) ? SCENE_START_LABEL : undefined}
       onExit={onExit}
       fallbackFocus={fallbackFocus}
     >

@@ -32,6 +32,7 @@ import { ExpeditionTop } from '../ExpeditionTop.tsx';
 import { SceneBadge } from '../SceneBadge.tsx';
 import { Answer } from './Answer.tsx';
 import { SheetActions } from '../sheet/SheetActions.tsx';
+import { BackButton } from '../sheet/BackButton.tsx';
 import { SheetHeader } from '../sheet/SheetHeader.tsx';
 import { SourcesContext } from '../sheet/SourcesContext.ts';
 import { SourcesView } from '../sheet/SourcesView.tsx';
@@ -394,13 +395,7 @@ export function OrcadasExpedition({
 
           <SheetActions>
             {(idx > 0 || s.tourIndex > 0) && (
-              <button
-                type="button"
-                className="btn orc-btn-back"
-                onClick={() => dispatch({ type: s.tourIndex > 0 ? 'tourPrev' : 'back' })}
-              >
-                Atrás
-              </button>
+              <BackButton onClick={() => dispatch({ type: s.tourIndex > 0 ? 'tourPrev' : 'back' })} />
             )}
             <button
               ref={primaryBtnRef}

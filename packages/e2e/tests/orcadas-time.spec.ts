@@ -128,7 +128,7 @@ test('Viajar: traverses the 4 era stops (1903, 1927, 1951, current year), syncs 
   const yearCounter = page.locator('.orc-year-counter');
   const chartSlider = page.getByRole('slider', { name: 'Cursor de años en el gráfico histórico' });
   const primaryBtn = page.locator('.orc-btn-primary');
-  const backBtn = page.locator('.orc-btn-back');
+  const backBtn = page.locator('.sheet-back');
   await expect(chartSlider).toBeVisible();
 
   // Stop 1 (1903): flag and wind mast hotspots are absent (B2)

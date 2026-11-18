@@ -9,9 +9,9 @@ import { useIsDesktop } from '../hooks.ts';
 import { CanvasGuard } from '../CanvasGuard.tsx';
 import { useSceneFrame } from '../sceneFrame.tsx';
 import { ExpeditionTop } from '../ExpeditionTop.tsx';
-import { Icon } from '../ui.tsx';
 import { Cites } from '../sheet/Cite.tsx';
 import { SheetActions } from '../sheet/SheetActions.tsx';
+import { BackButton } from '../sheet/BackButton.tsx';
 import { SheetHeader } from '../sheet/SheetHeader.tsx';
 import { SourcesContext } from '../sheet/SourcesContext.ts';
 import { SourcesView } from '../sheet/SourcesView.tsx';
@@ -181,7 +181,7 @@ export function MarineExpedition({ reduced, webgl, resume, onProgress, onLeave }
 
     </div>
     <SheetActions>
-      {(state.stop > 0 || below) && <button type="button" className="btn marine-prev" aria-label={below ? (atOrcas ? 'Ocultar el ejemplo' : 'Volver a la superficie') : 'Atrás'} onClick={() => dispatch({ type: below ? lookAction : 'prev' })}>{Icon.back}</button>}
+      {(state.stop > 0 || below) && <BackButton label={below ? (atOrcas ? 'Ocultar el ejemplo' : 'Volver a la superficie') : 'Atrás'} onClick={() => dispatch({ type: below ? lookAction : 'prev' })} />}
       <button type="button" className="btn primary marine-next" onClick={() => last ? onLeave(true) : dispatch({ type: above ? lookAction : 'next' })}>{last ? 'Terminar expedición' : above ? lookLabel : 'Siguiente'}</button>
     </SheetActions>
   </>;

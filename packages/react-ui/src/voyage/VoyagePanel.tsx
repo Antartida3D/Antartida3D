@@ -30,7 +30,7 @@ import {
 } from '@antartida/core';
 import { BottomSheet } from '../BottomSheet.tsx';
 import { useFocusReturn } from '../hooks.ts';
-import { Quoted } from '../ui.tsx';
+import { Icon, Quoted } from '../ui.tsx';
 import { SheetActions } from '../sheet/SheetActions.tsx';
 import { SheetHeader } from '../sheet/SheetHeader.tsx';
 import { SheetText } from '../sheet/SheetText.tsx';
@@ -506,7 +506,8 @@ function TravelBar({ voyage, animated, onExit }: { voyage: VoyageController; ani
             aria-label="Mantené para retroceder"
             title="Mantené para retroceder, por si te perdiste algo"
           >
-            ◀
+            {/* The same outline arrow as `BackButton` in the expeditions (#301). */}
+            {Icon.back}
           </button>
         )}
         {animated && (

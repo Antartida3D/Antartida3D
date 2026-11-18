@@ -301,8 +301,8 @@ test('respects reducedMotion, jumps to tour stop on stop-hotspot click, and open
   await expect(page.getByRole('dialog')).toHaveCount(0);
 
   // Return to stop 1 (overview) so all entry hotspots are visible in the scene
-  await page.locator('.orc-btn-back').click();
-  await page.locator('.orc-btn-back').click();
+  await page.locator('.sheet-back').click();
+  await page.locator('.sheet-back').click();
   await expect(page.locator('.orc-tour-count')).toHaveText('1 de 4');
 
   // Clicking a hotspot that is NOT a tour stop in Llegar ("Bahía Scotia y hielo marino") opens its card dialog + Escape focus return

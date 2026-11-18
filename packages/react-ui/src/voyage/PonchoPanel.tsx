@@ -10,6 +10,7 @@ import { Icon, Quoted } from '../ui.tsx';
 import { MoreFold } from '../sheet/MoreFold.tsx';
 import { Cite } from '../sheet/Cite.tsx';
 import { SheetActions } from '../sheet/SheetActions.tsx';
+import { BackButton } from '../sheet/BackButton.tsx';
 import { SheetHeader } from '../sheet/SheetHeader.tsx';
 import { Fact } from './Fact.tsx';
 import type { DioramaTour } from './PonchoDiorama.tsx';
@@ -139,9 +140,7 @@ export function PonchoPanel({ voyage, tour }: { voyage: VoyageController; tour: 
       </div>
       <SheetActions>
         {tour.onBack && (
-          <button type="button" className="btn poncho-prev" onClick={tour.onBack}>
-            <span className="poncho-prev-arrow" aria-hidden="true">{Icon.back}</span>Atrás
-          </button>
+          <BackButton onClick={tour.onBack} />
         )}
         <button type="button" className="btn primary poncho-next" onClick={tour.onNext}>
           {leaves ? (last ? 'Terminar expedición' : 'Seguir con Poncho') : 'Siguiente'}

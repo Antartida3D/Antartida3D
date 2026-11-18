@@ -2,6 +2,8 @@ import { CERRO_NEVADO_SOURCES, cerroNevadoFacts } from './content/cerro-nevado.t
 import { FOSSIL_SOURCES, FOSSIL_STOPS } from './content/fossils.ts';
 import { MARAMBIO_SPOTS, marambioFacts } from './content/marambio.ts';
 import { MARINE_SOURCES, MARINE_STOPS } from './content/marine.ts';
+import { sceneFacts } from './content/scene-point.ts';
+import { THWAITES_SCENE } from './content/thwaites-scene.ts';
 import { cerroNevadoCited, fossilCited, marambioCited, marineCited, type CitedSource } from './sources.ts';
 
 /** One paragraph of the modal that opens before an expedition, with the sources it cites. */
@@ -37,6 +39,11 @@ export function expeditionIntro(id: string): ExpeditionIntro | null {
       return {
         paragraphs: cerroNevadoFacts('colony').slice(0, 2).map((f) => ({ text: f.text, sourceIds: f.sources })),
         sources: CERRO_NEVADO_CITED,
+      };
+    case THWAITES_SCENE.id:
+      return {
+        paragraphs: sceneFacts(THWAITES_SCENE, THWAITES_SCENE.spots[0].id).map((f) => ({ text: f.text, sourceIds: f.sources })),
+        sources: THWAITES_SCENE.cited,
       };
     case 'oceano':
       return { paragraphs: [{ text: MARINE_STOPS[0].line, sourceIds: MARINE_STOPS[0].sources }], sources: MARINE_CITED };

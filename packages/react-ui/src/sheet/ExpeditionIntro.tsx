@@ -11,9 +11,9 @@ import { SourcesView } from './SourcesView.tsx';
 
 /**
  * The modal that opens before every expedition (#264): its question, a short text with its citations `[N]`, what is only an
- * illustration, and «Volver al mapa» / «Comenzar expedición». The ones with something to pick (Ushuaia, Orcadas) put it in `children`.
+ * illustration, and «Volver al mapa» / «Comenzar expedición» (`startLabel`). The ones with something to pick (Ushuaia, Orcadas) put it in `children`.
  */
-export function ExpeditionIntro({ title, titleId, place, lead, paragraphs, sources, illustrated = true, onStart, onExit, fallbackFocus, children }: {
+export function ExpeditionIntro({ title, titleId, place, lead, paragraphs, sources, illustrated = true, startLabel = 'Comenzar expedición', onStart, onExit, fallbackFocus, children }: {
   title: string;
   titleId: string;
   /** The guiding question. */
@@ -24,6 +24,8 @@ export function ExpeditionIntro({ title, titleId, place, lead, paragraphs, sourc
   sources: readonly CitedSource[];
   /** The scene is a drawing, not a photograph: say so with the same mark everywhere. */
   illustrated?: boolean;
+  /** The main action: a point of interest with a scene of its own is not an expedition (#280). */
+  startLabel?: string;
   onStart: () => void;
   onExit: () => void;
   fallbackFocus?: () => HTMLElement | null | undefined;
@@ -56,7 +58,7 @@ export function ExpeditionIntro({ title, titleId, place, lead, paragraphs, sourc
         )}
         <SheetActions>
           <button type="button" className="btn" onClick={onExit}>Volver al mapa</button>
-          <button type="button" className="btn primary" onClick={onStart}>Comenzar expedición</button>
+          <button type="button" className="btn primary" onClick={onStart}>{startLabel}</button>
         </SheetActions>
       </BottomSheet>
       {openSource && <SourcesView list={sources} highlight={openSource} onClose={() => setOpenSource(null)} />}

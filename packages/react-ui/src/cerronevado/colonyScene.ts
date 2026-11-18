@@ -2,6 +2,7 @@ import type { CerroNevadoSpotId } from '@antartida/core';
 import { TENT_TRIS, SLED_TRIS } from '../fossils/lowPolyScenery.ts';
 import { block, emperor, emperorChick, emperorFlipper, emperorWithFlippers, EMPEROR_SHOULDER, groundField, scaled, shift, strut, turn, type Tri, type Vec3 } from '../voyage/lowPoly.ts';
 import { ICE, ICE_SHADE, ICE_WALL, ROCK, WHITE } from '../voyage/sightingModels.ts';
+import type { SceneFloe, SceneIceberg, SpotView } from '../scenepoint/sceneView.ts';
 
 /**
  * The scene of the emperor colony of Cerro Nevado (#206), in world units (an emperor is about 1.2
@@ -165,7 +166,7 @@ export function buildColonyStageTris(): Tri[] {
 }
 
 /** Icebergs: [x, z, size, turn, tabular, held in the fast ice]. The ones held in the ice have no waterline. */
-export const COLONY_ICEBERGS: readonly (readonly [number, number, number, number, boolean, boolean])[] = [
+export const COLONY_ICEBERGS: readonly SceneIceberg[] = [
   [-20, -7, 15, 0.3, true, true],
   [-50, -16, 9, 1.4, false, true],
   [44, 58, 14, 2.2, true, false],
@@ -174,7 +175,7 @@ export const COLONY_ICEBERGS: readonly (readonly [number, number, number, number
 ];
 
 /** The narrow belt of pack ice in front of the edge: [x, z, size, turn, variant]. */
-export const PACK_FLOES: readonly (readonly [number, number, number, number, number])[] = [
+export const PACK_FLOES: readonly SceneFloe[] = [
   [-74, 17, 3.2, 0.4, 0], [-58, 22, 2.2, 1.9, 1], [-44, 18, 4, 2.6, 2], [-30, 24, 2.6, 0.9, 3],
   [-14, 19, 3.4, 4.1, 0], [2, 23, 2.4, 1.2, 1], [16, 20, 3.8, 5.0, 2], [30, 25, 2.8, 0.2, 3],
   [44, 19, 3, 2.2, 0], [58, 24, 3.6, 3.3, 1], [72, 18, 2.4, 0.7, 2], [-6, 30, 2, 1.5, 3],
@@ -188,30 +189,9 @@ export function buildFloeChickTris(): Tri[] {
   return shift(emperorChick(0, 0, CHICK_K, 0.8), ...FLOE_CHICK);
 }
 
-/** How the camera looks at a point of interest, and where its dot stands. */
-export interface SpotView {
-  worldPos: Vec3;
-  target: Vec3;
-  distance: number;
-  /** Bearing round y in degrees: 0 looks from the sea (+z) towards the island. */
-  bearingDeg: number;
-  elevationDeg: number;
-}
-
 export const SPOT_VIEWS: Readonly<Record<CerroNevadoSpotId, SpotView>> = {
   colony: { worldPos: [10, 4.2, fastIceEdge(10) - 4], target: [12, 1, 6], distance: 24, bearingDeg: 8, elevationDeg: 18 },
   edge: { worldPos: [30, 3.2, fastIceEdge(30) + 1], target: [26, 0.6, 12], distance: 30, bearingDeg: 46, elevationDeg: 15 },
   creche: { worldPos: [-20, 3.6, 3], target: [-19, 1, 1.5], distance: 20, bearingDeg: -12, elevationDeg: 19 },
   camp: { worldPos: [-44, 4.4, -7], target: [-44, 1, -7], distance: 22, bearingDeg: -34, elevationDeg: 21 },
 };
-
-/** Camera position for a view: `distance` from the target, at that bearing and elevation. */
-export function poseOf(view: SpotView): { pos: Vec3; target: Vec3 } {
-  const b = (view.bearingDeg * Math.PI) / 180;
-  const e = (view.elevationDeg * Math.PI) / 180;
-  const [tx, ty, tz] = view.target;
-  return {
-    pos: [tx + Math.sin(b) * Math.cos(e) * view.distance, ty + Math.sin(e) * view.distance, tz + Math.cos(b) * Math.cos(e) * view.distance],
-    target: view.target,
-  };
-}

@@ -80,12 +80,12 @@
   background: #f7fafb;
 }
 
-/* Cerro Nevado (#206) shares the layout of Marambio (.mar): only its own pieces here. */
-.cn .orc-hs {
+/* Points of interest with a scene of their own (#280) share the layout of Marambio (.mar): only their own pieces here. */
+.scene-pt .orc-hs {
   left: 0;
   top: 0;
 }
-.cn-no3d {
+.scene-pt-no3d {
   margin: 0;
   font-size: 13px;
   color: var(--chart-muted);

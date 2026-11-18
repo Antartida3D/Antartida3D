@@ -31,7 +31,7 @@ export type Anim = '' | 'zoom' | 'wheel' | 'dive';
 export type ViewMode = '2d' | '3d';
 
 const WHEEL_MS = 200;
-/** The territorial claims open from this point's sheet: the claimed sectors meet at the pole. */
+/** The territorial claims open from the modal before this point's scene (#128, #286): the claimed sectors meet at the pole. */
 const CLAIMS_POINT_ID = 'polo';
 
 /**
@@ -278,7 +278,7 @@ export function MapView({
   useBackLayer(!!pendingIntro && phase === 'idle', () => setPendingIntro(null));
   useBackLayer(voyaging, () => onEndVoyage?.(false));
   useBackLayer(showCard, dismissCard);
-  useBackLayer(is3D && claimsEnabled && claimsDetails && !sheet, closeClaimsDetails);
+  useBackLayer(is3D && claimsEnabled && claimsDetails && !sheet && !pendingIntro, closeClaimsDetails);
 
   useEffect(() => {
     if (is3D) return;
@@ -622,9 +622,9 @@ export function MapView({
     }
   };
 
-  /** From the South Pole sheet: closes it, turns the claims layer on, shows the whole continent and focuses the control. */
+  /** From the modal before the South Pole scene: closes it, turns the claims layer on, shows the whole continent and focuses the control. */
   const showClaims = () => {
-    setSheet(null);
+    setPendingIntro(null);
     setClaimsDetails(true);
     if (!claimsEnabled) {
       if (legend) onToggleLegend();
@@ -844,14 +844,13 @@ export function MapView({
             <VoyagePanel voyage={voyage} transport={voyageTransport} animated={is3D && !reduced} webgl={is3D} reduced={reduced} onExit={onEndVoyage} />
           </Suspense>
         )}
-        {/* One sheet at a time: a point sheet hides the claims details until it closes. */}
-        {is3D && claimsEnabled && claimsDetails && !sheet && (
+        {/* One sheet at a time: a point sheet or the modal before a scene hides the claims details until it closes. */}
+        {is3D && claimsEnabled && claimsDetails && !sheet && !pendingIntro && (
           <ClaimsDetails selection={claimsSelection} coverage={claimsCoverage} status={claimsStatus}
             onSelect={setClaimsSelection} onCoverage={setClaimsCoverage} onClose={closeClaimsDetails} />
         )}
         {sheet && <PointSheet point={sheet} onClose={closeSheet} fallbackFocus={() => vpRef.current} preview={is3D} reduced={reduced}
-          onMap={is3D && 'closeUp' in sheet && !!sheet.closeUp}
-          action={is3D && sheet.id === CLAIMS_POINT_ID ? { label: claimsEnabled ? 'Ver reclamos en el mapa' : 'Ver reclamos territoriales', onClick: showClaims } : undefined} />}
+          onMap={is3D && 'closeUp' in sheet && !!sheet.closeUp} />}
         {pendingIntro && pendingIntro.id !== EXPEDITION_POINT.id && phase === 'idle' && (
           <PointIntro
             point={pendingIntro}
@@ -864,6 +863,7 @@ export function MapView({
             fallbackFocus={() => vpRef.current}
             preview={is3D}
             reduced={reduced}
+            action={is3D && pendingIntro.id === CLAIMS_POINT_ID ? { label: claimsEnabled ? 'Ver reclamos en el mapa' : 'Ver reclamos territoriales', onClick: showClaims } : undefined}
           />
         )}
         {pendingIntro && pendingIntro.id === EXPEDITION_POINT.id && phase === 'idle' && (

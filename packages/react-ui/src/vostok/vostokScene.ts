@@ -1,8 +1,8 @@
 import type { VostokSpotId } from '@antartida/core';
-import { groundField, scaled, shift, type Tri, type Vec3 } from '../voyage/lowPoly.ts';
+import { scaled, shift, type Tri, type Vec3 } from '../voyage/lowPoly.ts';
 import { BEDROCK, VOSTOK_STATION, VOSTOK_TOP, VOSTOK_X, VOSTOK_Z, vostokFace } from '../voyage/pointModels.ts';
-import { ICE, ICE_SHADE, WHITE } from '../voyage/sightingModels.ts';
 import type { SpotView } from '../scenepoint/sceneView.ts';
+import { plateauTris } from '../scenepoint/sceneGround.ts';
 
 /**
  * The scene of Lake Vostok (#281), in world units: a pit cut into the snow of the plateau, whose four
@@ -47,41 +47,6 @@ function wallsTris(): Tri[] {
   ];
 }
 
-/** Snow of the plateau over a rectangle from (x0, z0) to (x1, z1); its edges stay straight, so they meet the walls. */
-function snowRect(x0: number, z0: number, x1: number, z1: number, cell: number, seed: number): Tri[] {
-  const cols = Math.max(1, Math.round((x1 - x0) / cell));
-  const rows = Math.max(1, Math.round((z1 - z0) / cell));
-  const field = groundField(
-    cols,
-    rows,
-    (x1 - x0) / cols,
-    seed,
-    () => TOP,
-    // Snow with a rare hollow: the plateau reads as one plain.
-    (_u, _v, _h, _steep, noise) => (noise > 0.97 ? ICE_SHADE : noise > 0.9 ? ICE : WHITE),
-    0,
-  );
-  // groundField is square-celled from the width: stretch its depth to the rectangle, then centre it.
-  const kz = (z1 - z0) / (rows * ((x1 - x0) / cols));
-  return shift(
-    field.map(([a, b, c, col]): Tri => [[a[0], a[1], a[2] * kz], [b[0], b[1], b[2] * kz], [c[0], c[1], c[2] * kz], col]),
-    (x0 + x1) / 2,
-    0,
-    (z0 + z1) / 2,
-  );
-}
-
-/** The plateau round the pit, in four rectangles. */
-function plateauTris(): Tri[] {
-  const cell = 8;
-  return [
-    ...snowRect(-PLATEAU, -PLATEAU, 0, PLATEAU, cell, 28101),
-    ...snowRect(PIT, -PLATEAU, PLATEAU, PLATEAU, cell, 28102),
-    ...snowRect(0, -PLATEAU, PIT, 0, cell, 28103),
-    ...snowRect(0, PIT, PIT, PLATEAU, cell, 28104),
-  ];
-}
-
 /** The floor of the pit: the rock under the bottom of the section. */
 function floorTris(): Tri[] {
   return [
@@ -100,7 +65,7 @@ function stationTris(): Tri[] {
 
 /** Everything that stands still: the plateau, the walls and floor of the pit and the station. */
 export function buildVostokStageTris(): Tri[] {
-  return [...plateauTris(), ...wallsTris(), ...floorTris(), ...stationTris()];
+  return [...plateauTris(TOP, PLATEAU, PIT, 8, 28101), ...wallsTris(), ...floorTris(), ...stationTris()];
 }
 
 /** Height of the lake on the walls near the corner, where its lens is deepest. */

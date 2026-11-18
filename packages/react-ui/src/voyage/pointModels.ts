@@ -698,7 +698,7 @@ const wing = (x: number, z: number, length: number): Tri[] => [
  * its ring of flags and the marker of the geographic pole. It stands on the snow of the relief itself.
  * Illustration, not to scale.
  */
-const POLO: Tri[] = [
+export const POLO: Tri[] = [
   ...wing(-0.23, -0.14, 0.4),
   ...wing(0.23, -0.14, 0.4),
   ...block(0, 0.17, -0.14, 0.08, 0.07, 0.09, STATION_DARK),

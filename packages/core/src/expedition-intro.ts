@@ -5,6 +5,7 @@ import { MARINE_SOURCES, MARINE_STOPS } from './content/marine.ts';
 import { sceneFacts } from './content/scene-point.ts';
 import type { ScenePoint } from './content/scene-point.ts';
 import { THWAITES_SCENE } from './content/thwaites-scene.ts';
+import { POLO_SCENE } from './content/polo-scene.ts';
 import { VOSTOK_SCENE } from './content/vostok-scene.ts';
 import { cerroNevadoCited, fossilCited, marambioCited, marineCited, type CitedSource } from './sources.ts';
 
@@ -52,6 +53,8 @@ export function expeditionIntro(id: string): ExpeditionIntro | null {
       return sceneIntro(THWAITES_SCENE);
     case VOSTOK_SCENE.id:
       return sceneIntro(VOSTOK_SCENE);
+    case POLO_SCENE.id:
+      return sceneIntro(POLO_SCENE);
     case 'oceano':
       return { paragraphs: [{ text: MARINE_STOPS[0].line, sourceIds: MARINE_STOPS[0].sources }], sources: MARINE_CITED };
     case 'fosiles':

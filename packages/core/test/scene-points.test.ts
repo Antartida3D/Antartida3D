@@ -3,6 +3,7 @@ import { POINT_DETAILS } from '../src/content/point-details.ts';
 import { PTS } from '../src/content/points.ts';
 import { sceneFacts } from '../src/content/scene-point.ts';
 import { THWAITES_SCENE } from '../src/content/thwaites-scene.ts';
+import { BELGRANO_SCENE } from '../src/content/belgrano-scene.ts';
 import { POLO_SCENE } from '../src/content/polo-scene.ts';
 import { VOSTOK_SCENE } from '../src/content/vostok-scene.ts';
 import { expeditionIntro } from '../src/expedition-intro.ts';
@@ -29,7 +30,7 @@ describe('points of interest with a scene of their own (#206, #280)', () => {
     }
   });
 
-  for (const scene of [THWAITES_SCENE, VOSTOK_SCENE, POLO_SCENE]) {
+  for (const scene of [THWAITES_SCENE, VOSTOK_SCENE, POLO_SCENE, BELGRANO_SCENE]) {
     it(`${scene.id} says nothing its verified card does not: its real facts are the card, sentence by sentence, with the card's sources`, () => {
       const card = POINT_DETAILS[scene.id];
       const real = scene.facts.filter((f) => f.kind === 'real');

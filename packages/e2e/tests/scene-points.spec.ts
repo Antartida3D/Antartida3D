@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import { THWAITES_SCENE } from '../../core/src/content/thwaites-scene.ts';
 import { VOSTOK_SCENE } from '../../core/src/content/vostok-scene.ts';
 import { POLO_SCENE } from '../../core/src/content/polo-scene.ts';
+import { BELGRANO_SCENE } from '../../core/src/content/belgrano-scene.ts';
 import { sceneFacts } from '../../core/src/content/scene-point.ts';
 import { AVAILABLE_COUNT, LIST_BUTTON_LABEL } from '../../core/src/content/points.ts';
 import { SCENE_START_LABEL } from '../../core/src/scene-points.ts';
@@ -27,8 +28,8 @@ test.afterEach(() => {
   expect(consoleErrors, 'console errors').toEqual([]);
 });
 
-for (const SCENE of [THWAITES_SCENE, VOSTOK_SCENE, POLO_SCENE]) {
-  test(`${SCENE.title} opens a scene of its own, with every fact and source, and leaving it does not count as an expedition (#280, #281, #285, #286)`, async ({ page }) => {
+for (const SCENE of [THWAITES_SCENE, VOSTOK_SCENE, POLO_SCENE, BELGRANO_SCENE]) {
+  test(`${SCENE.title} opens a scene of its own, with every fact and source, and leaving it does not count as an expedition (#280, #281, #285, #286, #287)`, async ({ page }) => {
     await show3D(page);
     await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
     await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: new RegExp(SCENE.title) }).click();

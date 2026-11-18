@@ -128,16 +128,16 @@ const loopAngle = (loop: Loop, t: number) => ((((t / loop.period) * Math.PI * 2)
 
 /**
  * Pose of the minke: it breathes along the lead and, under the floes, lunges into krill several
- * times per lap, opening its jaw and stretching its throat (P03: many short lunges per dive).
+ * times per lap (P03: many short lunges per dive). `lunge` grows to 1 at the height of each one.
  */
-export function minkePose(t: number): Pose & { breathing: boolean; lunge: number; jaw: number; throat: number } {
+export function minkePose(t: number): Pose & { breathing: boolean; lunge: number } {
   const a = loopAngle(MINKE_LOOP, t);
   const p = onLoop(MINKE_LOOP, t, Math.PI);
   // At a = 0 its loop runs along the crack, tangent to the lead: there it rises to breathe.
   const near = smooth(Math.cos(0.32), Math.cos(0.12), Math.cos(a));
   const y = MINKE_LOOP.cy + (MINKE_BREATH_Y - MINKE_LOOP.cy) * near;
   const lunge = Math.max(...MINKE_LUNGE_ANGLES.map((c) => bumpAt(a, c, 0.2)));
-  return { ...p, y, pitch: lunge * 0.12, breathing: near > 0.95, lunge, jaw: lunge * 0.55, throat: 1 + lunge * 1.6 };
+  return { ...p, y, pitch: lunge * 0.12, breathing: near > 0.95, lunge };
 }
 /** The krill patches the minke lunges into: just ahead of its mouth at the peak of each lunge. */
 export const MINKE_KRILL_PATCHES = MINKE_LUNGE_ANGLES.map((c) => {
@@ -161,6 +161,24 @@ export const DIVE_BOTTOM = { x: HOLE.x + 4.5, y: -5.2, z: HOLE.z - 1.5 } as cons
 const FLOAT_Y = -0.08;
 
 export type DivePhase = 'breathe' | 'down' | 'hunt' | 'up';
+/** Radius of the half turn the emperor swims at the bottom of the dive, where it catches a fish. */
+const DIVE_TURN = 0.9;
+/** Moments of the dive: the turn at the bottom, the catch in its middle, and the fish swallowed on the way up. */
+const DIVE_HUNT = 0.44, DIVE_UP = 0.62, DIVE_CATCH = 0.53, DIVE_SWALLOW = 0.72;
+const DIVE_HEADING = Math.atan2(-(DIVE_BOTTOM.z - HOLE.z), DIVE_BOTTOM.x - HOLE.x);
+
+/** Point and heading of the half turn at the bottom, `k` from 0 (coming in) to 1 (heading back to the hole). */
+function diveTurn(k: number) {
+  const h = DIVE_HEADING;
+  // Forward (as yaw: cos, -sin) and to the side of it, in x and z.
+  const d = { x: Math.cos(h), z: -Math.sin(h) };
+  const n = { x: Math.sin(h), z: Math.cos(h) };
+  const a = k * Math.PI;
+  const along = Math.sin(a) * DIVE_TURN, across = (1 - Math.cos(a)) * DIVE_TURN;
+  const v = { x: d.x * Math.cos(a) + n.x * Math.sin(a), z: d.z * Math.cos(a) + n.z * Math.sin(a) };
+  return { x: DIVE_BOTTOM.x + d.x * along + n.x * across, z: DIVE_BOTTOM.z + d.z * along + n.z * across, yaw: Math.atan2(-v.z, v.x) };
+}
+
 export function emperorDive(t: number): Pose & { phase: DivePhase; stroke: number } {
   const u = (((t / DIVE_PERIOD) % 1) + 1) % 1;
   type P3 = { x: number; y: number; z: number };
@@ -168,19 +186,44 @@ export function emperorDive(t: number): Pose & { phase: DivePhase; stroke: numbe
   // Below the floes it swims straight down first, so it leaves the hole before heading out.
   const under: P3 = { x: HOLE.x, y: ICE_BOTTOM - 0.8, z: HOLE.z };
   const lerp = (a: P3, b: P3, k: number): P3 => ({ x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k, z: a.z + (b.z - a.z) * k });
-  const heading = Math.atan2(-(DIVE_BOTTOM.z - HOLE.z), DIVE_BOTTOM.x - HOLE.x);
+  const heading = DIVE_HEADING;
   const stroke = Math.sin(t * 9);
   // Floating in the hole, head up out of the water to breathe.
   if (u < 0.18) return { ...top, yaw: heading, pitch: 0.3, phase: 'breathe', stroke: 0 };
   if (u < 0.26) return { ...lerp(top, under, smooth(0.18, 0.26, u)), yaw: heading, pitch: -1.2, phase: 'down', stroke };
-  if (u < 0.44) return { ...lerp(under, DIVE_BOTTOM, smooth(0.26, 0.44, u)), yaw: heading, pitch: -0.7, phase: 'down', stroke };
-  if (u < 0.62) {
-    const k = (u - 0.44) / 0.18;
-    return { x: DIVE_BOTTOM.x + Math.sin(k * 12) * 0.5, y: DIVE_BOTTOM.y + Math.sin(k * 7) * 0.3, z: DIVE_BOTTOM.z + Math.cos(k * 9) * 0.4, yaw: heading + Math.sin(k * 12) * 0.8, pitch: 0, phase: 'hunt', stroke };
+  if (u < DIVE_HUNT) return { ...lerp(under, DIVE_BOTTOM, smooth(0.26, DIVE_HUNT, u)), yaw: heading, pitch: -0.7 * (1 - smooth(0.38, DIVE_HUNT, u)), phase: 'down', stroke };
+  if (u < DIVE_UP) {
+    // One smooth half turn through the fish, with a quick head-down snap at the catch.
+    const turn = diveTurn((u - DIVE_HUNT) / (DIVE_UP - DIVE_HUNT));
+    const snap = Math.max(0, 1 - Math.abs(u - DIVE_CATCH) / 0.03);
+    return { ...turn, y: DIVE_BOTTOM.y, pitch: -0.25 * snap, phase: 'hunt', stroke: Math.sin(t * (9 + 6 * snap)) };
   }
-  if (u < 0.86) return { ...lerp(DIVE_BOTTOM, under, smooth(0.62, 0.86, u)), yaw: heading + Math.PI, pitch: 0.7, phase: 'up', stroke };
-  return { ...lerp(under, top, smooth(0.86, 0.96, u)), yaw: heading + Math.PI, pitch: 1.2 * (1 - smooth(0.94, 1, u)), phase: 'up', stroke };
+  const end = { ...diveTurn(1), y: DIVE_BOTTOM.y };
+  const back = Math.atan2(-(under.z - end.z), under.x - end.x);
+  if (u < 0.86) return { ...lerp(end, under, smooth(DIVE_UP, 0.86, u)), yaw: back, pitch: 0.7 * smooth(DIVE_UP, 0.66, u), phase: 'up', stroke };
+  return { ...lerp(under, top, smooth(0.86, 0.96, u)), yaw: back, pitch: 1.2 * (1 - smooth(0.94, 1, u)), phase: 'up', stroke };
 }
+
+/**
+ * The fish the diving emperor catches: it swims near the school where the half turn passes, is
+ * snapped in the bill, carried a moment on the way up and swallowed.
+ */
+export function diveCatch(t: number): Pose & { state: PreyState; size: number } {
+  const u = (((t / DIVE_PERIOD) % 1) + 1) % 1;
+  const at = diveTurn((DIVE_CATCH - DIVE_HUNT) / (DIVE_UP - DIVE_HUNT));
+  const wiggle = Math.max(0, (DIVE_CATCH - u) / DIVE_CATCH) * 0.25;
+  return {
+    x: at.x + Math.cos(at.yaw) * EMPEROR_BILL_REACH + Math.sin(t * 2.3) * wiggle,
+    y: DIVE_BOTTOM.y + Math.sin(t * 1.7) * wiggle * 0.5,
+    z: at.z - Math.sin(at.yaw) * EMPEROR_BILL_REACH + Math.cos(t * 2.1) * wiggle,
+    yaw: at.yaw + Math.PI / 2 + Math.sin(t * 3) * 0.3,
+    pitch: 0,
+    state: u < 0.3 ? 'gone' : u < DIVE_CATCH ? 'free' : u < DIVE_SWALLOW ? 'held' : 'gone',
+    size: smooth(0.3, 0.36, u),
+  };
+}
+/** A still frame of the dive with the fish in the bill, for reduced motion. */
+export const DIVE_STILL = 0.58 * DIVE_PERIOD;
 
 // --- Emperor hunt --------------------------------------------------------------------------------
 
@@ -225,7 +268,7 @@ export function emperorHunt(t: number): { emperor: Pose & { stroke: number }; pr
 
 // --- Humpback filter ---------------------------------------------------------------------------
 
-export const FILTER_PERIOD = 8;
+export const FILTER_PERIOD = 12;
 export type FilterPhase = 'approach' | 'open' | 'engulf' | 'close' | 'expel';
 /** The humpback gulp, step by step: jaw angle (radians, opening down) and how full the throat is. */
 export function humpbackFilter(t: number): { phase: FilterPhase; jaw: number; throat: number } {
@@ -239,6 +282,41 @@ export function humpbackFilter(t: number): { phase: FilterPhase; jaw: number; th
 }
 /** The still frame with reduced motion: the mouth open and the throat full of water and krill. */
 export const FILTER_STILL = 0.5 * FILTER_PERIOD;
+
+/**
+ * The humpback swims a lap, one per gulp: on the pass nearest the camera it heads into the swarm
+ * with its mouth opening, and while it swims round behind the swarm gathers again.
+ */
+export const HUMPBACK_LAP = { cx: -1.5, cy: -2.4, cz: EDGE_Z + 0.6, rx: 3.2, rz: 2.4 } as const;
+export const HUMPBACK_SCALE = 3.6;
+/** Part of the gulp (humpbackFilter) at the middle of the pass nearest the camera. */
+const HUMPBACK_PASS = 0.45;
+/** From the middle of the whale to the tip of its jaw, in the scene. */
+const HUMPBACK_MOUTH = 0.54 * HUMPBACK_SCALE;
+const gulpPart = (t: number) => (((t / FILTER_PERIOD) % 1) + 1) % 1;
+
+export function humpbackSwim(t: number): Pose {
+  const a = (gulpPart(t) - HUMPBACK_PASS) * Math.PI * 2;
+  const { cx, cy, cz, rx, rz } = HUMPBACK_LAP;
+  return { x: cx + Math.sin(a) * rx, y: cy + Math.sin(t * 0.5) * 0.08, z: cz + Math.cos(a) * rz, yaw: Math.atan2(rz * Math.sin(a), rx * Math.cos(a)), pitch: 0.08 };
+}
+/** Krill on the pass of the humpback, where its mouth goes through. */
+export const HUMPBACK_SWARM = [HUMPBACK_LAP.cx + 1.3, HUMPBACK_LAP.cy - 0.2, HUMPBACK_LAP.cz + HUMPBACK_LAP.rz] as const;
+
+/**
+ * How much of a krill of HUMPBACK_SWARM is left (1 whole, 0 eaten): the open mouth takes each one
+ * it reaches on its pass, and the eaten ones come back while the whale swims round behind.
+ */
+export function krillLeft(k: { x: number; z: number }, t: number): number {
+  if (Math.abs(k.z - HUMPBACK_SWARM[2]) > 1.2) return 1;
+  const u = gulpPart(t);
+  const EAT_FROM = 0.3, EAT_TO = 0.52, BACK = 0.97;
+  if (u >= EAT_FROM && u < BACK) {
+    const p = humpbackSwim(Math.min(u, EAT_TO) * FILTER_PERIOD);
+    return k.x < p.x + Math.cos(p.yaw) * HUMPBACK_MOUTH ? 0 : 1;
+  }
+  return smooth(0, 0.25, (u + 1 - BACK) % 1);
+}
 
 // --- Orcas ---------------------------------------------------------------------------------------
 

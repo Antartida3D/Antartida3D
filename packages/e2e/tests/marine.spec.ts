@@ -1,11 +1,20 @@
 import { expect, test, type Page } from '@playwright/test';
 import { AVAILABLE_COUNT, LIST_BUTTON_LABEL } from '../../core/src/content/points.ts';
-import { MARINE_STOPS } from '../../core/src/content/marine.ts';
+import { MARINE_CHAPTERS, MARINE_STOPS } from '../../core/src/content/marine.ts';
 import { clearStorage } from '../storage.ts';
 
 const log = (page: Page) => page.locator('.reg');
 const expedition = (page: Page) => page.getByRole('region', { name: 'Expedición Océano' });
 const next = (page: Page) => page.locator('.marine-next');
+
+/** From the opening stop, goes to a chapter: by its button on a wide screen; a phone has no chapter bar and walks there with «Siguiente». */
+async function toChapter(page: Page, label: string) {
+  const button = page.getByRole('button', { name: label });
+  if (await button.isVisible()) return button.click();
+  const chapter = MARINE_CHAPTERS.find((c) => c.label === label)!.id;
+  // One more press than stops: the first one looks under the ice.
+  for (let i = 0; i <= MARINE_STOPS.findIndex((s) => s.chapter === chapter); i++) await next(page).click();
+}
 
 let consoleErrors: string[] = [];
 
@@ -36,46 +45,54 @@ test('opens Océano from the map, does every observation and completes it', asyn
   const act = (name: string) => page.getByRole('button', { name, exact: true }).click();
   const status = page.getByRole('status').filter({ hasNotText: /Bajando/ });
 
-  await act('Mirar bajo el hielo');
+  // The first «Siguiente» looks under the ice; the next one goes on.
+  await next(page).click();
   await expect(page.locator('.marine-location')).toContainText('Bajo el hielo marino');
   await next(page).click();
 
-  await act('Ampliar lo diminuto');
+  await act('Aumentar tamaño');
   await expect(page.locator('.marine-found')).toContainText('Aumento esquemático');
   await next(page).click();
 
-  await act('Resaltar sus conexiones');
-  await expect(status).toContainText('jorobada, minke antártica, pingüino emperador y foca leopardo');
+  // The krill stop says who eats it, with no button.
+  await expect(expedition(page)).toContainText('jorobada, minke antártica, pingüino emperador y foca leopardo');
   await next(page).click();
 
-  await act('Ver cómo filtra');
-  await expect(status).toContainText('entre las barbas');
+  // The humpback filters as soon as its stop opens.
+  await expect(page.locator('.marine-steps')).toContainText('entre las barbas');
   await expect(page.locator('.marine-found')).toHaveText('Filtra con barbas');
   await next(page).click();
 
-  await act('Seguir a la minke');
-  await expect(page.getByRole('button', { name: 'Dejar de seguirla' })).toHaveAttribute('aria-pressed', 'true');
+  // The camera follows the minke with no button.
+  await expect(page.getByRole('button', { name: /Seguir a la minke|Dejar de seguirla/ })).toHaveCount(0);
   await next(page).click();
 
-  await act('Mirar bajo el agua');
+  // As in the first stop, the first «Siguiente» of the emperor stop looks under the water.
+  await expect(next(page)).toHaveText('Mirar bajo el agua');
   await next(page).click();
-  await act('Seguir una inmersión');
-  await expect(status).toContainText('vuelve a subir a respirar');
+  await expect(page.locator('.marine-location')).toContainText('Bajo el hielo marino');
+  await next(page).click();
+  // The camera follows the dive with no button.
+  await expect(page.getByRole('button', { name: /Seguir una inmersión/ })).toHaveCount(0);
+  await expect(page.locator('.marine-observation')).toContainText('vuelve a subir a respirar');
   await next(page).click();
 
   await expect(page.getByRole('list', { name: 'Alimentos de la foca leopardo en el esquema' })).toContainText('Krill antártico');
   await expect(page.getByRole('list', { name: 'Alimentos de la foca leopardo en el esquema' })).toContainText('Otros pingüinos y focas');
   await next(page).click();
 
-  await act('Comparar barbas y dientes');
-  await expect(status).toContainText('tres puntas');
+  // The teeth stop has no comparison button any more.
+  await expect(page.getByRole('button', { name: 'Comparar barbas y dientes' })).toHaveCount(0);
   await next(page).click();
 
-  await act('Ver un ejemplo documentado');
+  // The first «Siguiente» of the orca stop shows the documented example.
+  await expect(next(page)).toHaveText('Ver un ejemplo documentado');
+  await next(page).click();
   await expect(status).toContainText('focas de Weddell');
   await next(page).click();
 
-  // The krill highlighted at «Encontrar el krill» is still selected when the web opens.
+  // Nothing is chosen when the web opens: the krill stop has no button to highlight it any more.
+  await act('Krill antártico');
   await expect(page.getByRole('button', { name: 'Krill antártico', exact: true })).toHaveAttribute('aria-pressed', 'true');
   const links = page.getByRole('list', { name: 'Conexiones de Krill antártico' });
   await expect(links).toContainText('Krill antártico sirve de alimento a jorobada.');
@@ -85,7 +102,6 @@ test('opens Océano from the map, does every observation and completes it', asyn
   await next(page).click();
 
   const checklist = page.getByRole('list', { name: 'Tu registro de la expedición' });
-  await expect(checklist).toContainText('Viste filtrar a la jorobada con sus barbas');
   await expect(checklist).toContainText('Seguiste las conexiones de 2 organismos');
   await expect(checklist).toContainText(`Recorriste ${MARINE_STOPS.length} de ${MARINE_STOPS.length} paradas`);
   await page.getByRole('button', { name: /Terminar expedición/ }).click();
@@ -95,9 +111,13 @@ test('opens Océano from the map, does every observation and completes it', asyn
   await expect(page.locator('.next-card .next-done')).toHaveText(`Océano quedó explorado. Registro de exploración: 1/${AVAILABLE_COUNT}`);
 });
 
-test('the keyboard alone walks every stop, and the sources open and close with Escape', async ({ page }) => {
+test('the keyboard alone walks every stop, and the sources open from a [N] and close with Escape', async ({ page }) => {
   await openFromList(page);
   await expect(page.getByRole('heading', { name: MARINE_STOPS[0].title })).toBeFocused();
+  // The opening stop goes under the ice first.
+  await next(page).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.marine-location')).toContainText('Bajo el hielo marino');
   for (let i = 1; i < MARINE_STOPS.length; i++) {
     await next(page).focus();
     await page.keyboard.press('Enter');
@@ -105,7 +125,8 @@ test('the keyboard alone walks every stop, and the sources open and close with E
   }
   await expect(next(page)).toHaveText(/Terminar expedición/);
 
-  const sources = page.getByRole('button', { name: 'Fuentes', exact: true });
+  // The sources open from a [N] of the text: the top bar has no button for them.
+  const sources = page.locator('.marine-line').getByRole('button', { name: /^Fuente / }).first();
   await sources.focus();
   await page.keyboard.press('Enter');
   const dialog = page.getByRole('dialog', { name: 'Fuentes' });
@@ -127,8 +148,7 @@ test('leaving with Mapa does not complete the expedition', async ({ page }) => {
 test('with reduced motion the scene draws and each observation has a still result', async ({ page }) => {
   await page.goto('/?expedicion=oceano');
   await expect(page.locator('.marine-stage canvas[data-ready="true"]')).toBeVisible({ timeout: 30_000 });
-  await page.getByRole('button', { name: 'Ballenas' }).click();
-  await page.getByRole('button', { name: 'Ver cómo filtra', exact: true }).click();
+  await toChapter(page, 'Ballenas');
   await expect(page.locator('.marine-steps')).toBeVisible();
   await expect(page.locator('.marine-stage canvas')).toBeVisible();
 });
@@ -138,7 +158,7 @@ test.describe('with motion allowed', () => {
   test('the scene keeps animating without errors', async ({ page }) => {
     await page.goto('/?expedicion=oceano');
     await expect(page.locator('.marine-stage canvas[data-ready="true"]')).toBeVisible({ timeout: 30_000 });
-    await page.getByRole('button', { name: 'Orcas' }).click();
+    await toChapter(page, 'Orcas');
     await expect(page.getByRole('heading', { level: 2, name: 'Una familia, distintas dietas' })).toBeVisible();
     await page.waitForTimeout(1500);
   });
@@ -154,7 +174,7 @@ test('without WebGL the tour and its interactions work in words and a drawn web'
   await openFromList(page);
   await expect(page.locator('.marine-stage canvas')).toHaveCount(0);
   await expect(page.locator('.marine-fallback')).toContainText('Témpanos de hielo marino');
-  await page.getByRole('button', { name: 'Conectar' }).click();
+  await toChapter(page, 'Conectar');
   await expect(page.getByRole('img', { name: /Esquema de la red alimentaria/ })).toBeVisible();
   await page.getByRole('button', { name: 'Foca leopardo', exact: true }).click();
   await expect(page.getByRole('list', { name: 'Conexiones de Foca leopardo' })).toContainText('Peces sirven de alimento a foca leopardo.');

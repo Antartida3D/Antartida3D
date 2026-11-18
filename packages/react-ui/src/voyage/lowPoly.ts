@@ -350,6 +350,12 @@ const EMPEROR_BILL = 0xd97d8a;
  * rose-tinted lower bill. `k` is its height.
  */
 export function emperor(x: number, z: number, k: number, facing = 0): Tri[] {
+  const { body, head, bill, feet } = emperorParts();
+  return shift(scaled(turn([...body, ...head, ...bill, ...feet], facing), k), x, 0, z);
+}
+
+/** The parts of emperor() in its own units (height 1, front +x), apart so it can also be laid flat to swim. */
+function emperorParts(): { body: Tri[]; head: Tri[]; bill: Tri[]; feet: Tri[] } {
   const isFront = (i: number) => {
     const a = (i + 0.5) / 7;
     return a < 0.22 || a > 0.78;
@@ -367,7 +373,27 @@ export function emperor(x: number, z: number, k: number, facing = 0): Tri[] {
     [[0.12, 0.84, -0.025], [0.12, 0.84, 0.025], [0.27, 0.82, 0], EMPEROR_BILL],
   ];
   const feet = block(0.06, 0.012, 0, 0.12, 0.024, 0.16, PENGUIN_BLACK);
-  return shift(scaled(turn([...body, ...head, ...bill, ...feet], facing), k), x, 0, z);
+  return { body, head, bill, feet };
+}
+
+/** A point of emperor() laid flat to swim: its head (+y) leads along +x, its white front (+x) faces down, centred on its middle. */
+const lieFlat = ([x, y, z]: Vec3): Vec3 => [y - 0.5, -x, z];
+/** Tip of the bill of emperorSwimming(), along +x: where it holds a caught fish. */
+export const EMPEROR_SWIM_BILL_TIP = 0.64;
+
+/**
+ * emperor() swimming: the same body, head and colors laid flat, belly down, with the bill out in
+ * front of the head along +x. One unit long without the bill, centred on its middle. ILLUSTRATIVE.
+ */
+export function emperorSwimming(): Tri[] {
+  const { body, head, feet } = emperorParts();
+  const flat = [...body, ...head, ...feet].map(([a, b, c, col]): Tri => [lieFlat(a), lieFlat(b), lieFlat(c), col]);
+  // The tip of the head lies at (0.5, -0.03, 0): the bill starts inside it and points ahead.
+  const bill: Tri[] = [
+    [[0.44, -0.015, 0.025], [0.44, -0.015, -0.025], [EMPEROR_SWIM_BILL_TIP, -0.04, 0], PENGUIN_BLACK],
+    [[0.44, -0.045, -0.025], [0.44, -0.045, 0.025], [EMPEROR_SWIM_BILL_TIP, -0.04, 0], EMPEROR_BILL],
+  ];
+  return [...flat, ...bill];
 }
 
 // Emperor chick: grey down with the white face mask and black crown it keeps while it moults
@@ -410,6 +436,16 @@ export function emperorFlipper(side: 1 | -1 = 1): Tri[] {
   const tris = [...block(0, -0.17, 0.035, 0.09, 0.34, 0.035, PENGUIN_BLACK), ...block(0, -0.16, 0.014, 0.06, 0.28, 0.008, PENGUIN_WHITE)]
     .map(([a, b, d, col]): Tri => [out(a), out(b), out(d), col]);
   return side === 1 ? tris : mirrorZ(tris);
+}
+
+/** A point of emperorFlipper() turned to swim: what hung down (-y) reaches out (+z), and its flat face becomes a level paddle. */
+const reachOut = ([x, y, z]: Vec3): Vec3 => [x, z, -y];
+/** Where a swimming flipper meets emperorSwimming(): the shoulder of emperor() laid flat, on the +z side of the body. */
+export const EMPEROR_SWIM_SHOULDER: Vec3 = [EMPEROR_SHOULDER[1] - 0.5, 0, 0.12];
+
+/** The +z flipper of emperorSwimming(), from (0, 0, 0) out towards +z, black above and pale below; mirror it for -z. */
+export function emperorSwimFlipper(): Tri[] {
+  return emperorFlipper(1).map(([a, b, c, col]): Tri => [reachOut(a), reachOut(b), reachOut(c), col]);
 }
 
 /** An emperor() with both flippers hanging at its sides. */
@@ -581,3 +617,64 @@ export function column(cx: number, cz: number, rings: readonly (readonly [number
   const mid = (rings[0][0] + rings[last][0]) / 2;
   return outward(tris, ([, y]) => [cx, Math.min(rings[last][0] - 1e-3, Math.max(rings[0][0] + 1e-3, y === rings[0][0] || y === rings[last][0] ? mid : y)), cz]);
 }
+
+/**
+ * A skin over convex rings of the same number of points set in any direction (a flipper along z, a
+ * fin along x). Each face is wound away from the middle of its band; the last ring is closed only
+ * when `endCap` gives its color. As `skin` in herculesModel.ts, which is not exported.
+ */
+export function skin(rings: readonly (readonly Vec3[])[], colorAt: (band: number, seg: number) => number, endCap?: number): Tri[] {
+  const center = (r: readonly Vec3[]): Vec3 => [0, 1, 2].map((k) => r.reduce((sum, p) => sum + p[k], 0) / r.length) as unknown as Vec3;
+  const centers = rings.map(center);
+  const n = rings[0].length;
+  const out: Tri[] = [];
+  for (let k = 0; k < rings.length - 1; k++) {
+    const inside: Vec3 = [0, 1, 2].map((c) => (centers[k][c] + centers[k + 1][c]) / 2) as unknown as Vec3;
+    for (let i = 0; i < n; i++) {
+      const j = (i + 1) % n;
+      const color = colorAt(k, i);
+      out.push(facingOut(rings[k][i], rings[k][j], rings[k + 1][j], color, inside), facingOut(rings[k][i], rings[k + 1][j], rings[k + 1][i], color, inside));
+    }
+  }
+  const last = rings.length - 1;
+  if (endCap !== undefined) for (let i = 0; i < n; i++) out.push(facingOut(centers[last], rings[last][i], rings[last][(i + 1) % n], endCap, centers[last - 1]));
+  return out;
+}
+
+/** The faces of a fin built along +z (span), +x (chord) and +y (thickness), turned so its span runs along `span` and its +y face looks towards `face`. */
+export function orient(tris: readonly Tri[], span: Vec3, face: Vec3): Tri[] {
+  const unit = (v: Vec3): Vec3 => {
+    const l = Math.hypot(...v);
+    return [v[0] / l, v[1] / l, v[2] / l];
+  };
+  const s = unit(span);
+  const along = face[0] * s[0] + face[1] * s[1] + face[2] * s[2];
+  const n = unit([face[0] - along * s[0], face[1] - along * s[1], face[2] - along * s[2]]);
+  const k: Vec3 = [n[1] * s[2] - n[2] * s[1], n[2] * s[0] - n[0] * s[2], n[0] * s[1] - n[1] * s[0]];
+  const r = ([x, y, z]: Vec3): Vec3 => [k[0] * x + n[0] * y + s[0] * z, k[1] * x + n[1] * y + s[1] * z, k[2] * x + n[2] * y + s[2] * z];
+  return tris.map(([a, b, c, col]) => [r(a), r(b), r(c), col]);
+}
+
+/** A loftBody station: x, center y, half height, half width. */
+export type Station = readonly [number, number, number, number];
+/** loftBody stations (x, center y, half height, half width) from an outline of (x, top, bottom, half width). */
+export const fromOutline = (outline: readonly Station[]): Station[] => outline.map(([x, top, bottom, hz]) => [x, (top + bottom) / 2, (top - bottom) / 2, hz]);
+/** Center y, half height and half width of a lofted body at x. */
+export function sectionAt(stations: readonly Station[], x: number): [number, number, number] {
+  let k = 0;
+  while (k < stations.length - 2 && x > stations[k + 1][0]) k++;
+  const [x0, y0, h0, w0] = stations[k];
+  const [x1, y1, h1, w1] = stations[k + 1];
+  const u = Math.min(1, Math.max(0, (x - x0) / (x1 - x0)));
+  return [y0 + (y1 - y0) * u, h0 + (h1 - h0) * u, w0 + (w1 - w0) * u];
+}
+/** Height of the top of a lofted body at (x, z). */
+export const topAt = (stations: readonly Station[], x: number, z: number) => {
+  const [cy, hy, hz] = sectionAt(stations, x);
+  return cy + hy * Math.sqrt(Math.max(0, 1 - (z / hz) ** 2));
+};
+/** Half width of a lofted body at (x, y). */
+export const sideAt = (stations: readonly Station[], x: number, y: number) => {
+  const [cy, hy, hz] = sectionAt(stations, x);
+  return hz * Math.sqrt(Math.max(0, 1 - ((y - cy) / hy) ** 2));
+};

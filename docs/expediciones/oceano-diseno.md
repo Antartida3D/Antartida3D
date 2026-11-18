@@ -4,20 +4,20 @@ Expedición Océano (#8). La pregunta conductora es **«¿Cómo se alimenta la v
 
 ## Recorrido
 
-Tiene 7 capítulos y 12 paradas. El botón principal siempre avanza; todas las acciones son opcionales.
+Tiene 7 capítulos y 12 paradas. Se recorre con un solo botón, siempre en el mismo lugar ([DEC-283](../decisiones/DEC-283-oceano-sin-botones-opcionales.md)). En tres paradas, ese botón primero muestra una segunda vista y después avanza; en la segunda vista, la flecha de atrás vuelve a la primera.
 
-| Nº | Capítulo | Parada | Acción opcional |
+| Nº | Capítulo | Parada | Qué pasa |
 |---|---|---|---|
-| 1 | Entrar | El hielo es un techo | Mirar bajo el hielo / volver a la superficie |
-| 2 | Alimento pequeño | Ver lo diminuto | Ampliar lo diminuto (aumento esquemático) |
-| 3 | Alimento pequeño | Encontrar el krill | Resaltar sus conexiones |
-| 4 | Ballenas | La jorobada | Ver cómo filtra (secuencia de tres pasos) |
-| 5 | Ballenas | La minke, entre el hielo | Seguir a la minke (embiste parches de krill y respira en la grieta) |
-| 6 | Emperador | Del hielo al agua | Mirar bajo el agua |
-| 7 | Emperador | Volver a respirar | Seguir una inmersión |
+| 1 | Entrar | El hielo es un techo | «Mirar bajo el hielo»: la cámara baja y el texto sigue debajo del hielo |
+| 2 | Alimento pequeño | Ver lo diminuto | Lupa opcional colgada de una diatomea: «Aumentar tamaño» / «Volver diminuto» (aumento esquemático) |
+| 3 | Alimento pequeño | Encontrar el krill | El enjambre bajo el hielo |
+| 4 | Ballenas | La jorobada | Da una vuelta y entra al enjambre con la boca abierta; los tres pasos del trago están en el texto |
+| 5 | Ballenas | La minke, entre el hielo | La cámara la sigue: embiste parches de krill y respira en la grieta |
+| 6 | Emperador | Del hielo al agua | «Mirar bajo el agua» |
+| 7 | Emperador | Volver a respirar | La cámara sigue una inmersión: baja, atrapa un pez y vuelve a respirar |
 | 8 | Foca leopardo | Más de una estrategia | Lista de alimentos; en la escena muerde a los peces y chupa el krill |
-| 9 | Foca leopardo | Filtrar con dientes | Comparar barbas y dientes |
-| 10 | Orcas | Una familia, distintas dietas | Ver un ejemplo documentado (P06): la ola de las orcas tipo B, vista desde arriba |
+| 9 | Foca leopardo | Filtrar con dientes | De cerca, el krill entra y el agua sale entre los dientes |
+| 10 | Orcas | Una familia, distintas dietas | «Ver un ejemplo documentado» (P06): la ola de las orcas tipo B, vista desde arriba |
 | 11 | Conectar | Seguir el alimento | Elegir organismos en la red |
 | 12 | Conectar | Lo que vimos bajo el hielo | Cuaderno y «Terminar expedición» |
 
@@ -40,26 +40,24 @@ Solo «Terminar expedición» completa el recorrido. Salir con «Mapa» no lo co
 ## Estilo
 
 - Sigue la segunda iteración de Fósiles y el recorrido de Orcadas:
-  - escena de bloques, cámara que acompaña cada parada, una frase y «Saber más»;
-  - la interfaz de Orcadas y Marambio (#209): cabecera flotante, capítulos numerados, panel flotante en escritorio y BottomSheet con peek en el celular, pie con «Atrás» y «Siguiente»; la vista se corre a la parte libre de la escena (`sceneFrame.tsx`);
+  - escena low-poly y cámara que acompaña cada parada; cada parada muestra todo su texto de una vez, sin «Saber más» (#283);
+  - la interfaz de Orcadas y Marambio (#209): panel flotante en escritorio y BottomSheet en el celular, pie con la flecha de atrás (botón cuadrado) y «Siguiente»; la vista se corre a la parte libre de la escena (`sceneFrame.tsx`). Desde #283 no hay barra de capítulos arriba, el panel de escritorio tiene siempre el mismo alto, la hoja del celular no sube más que su contenido y plegada muestra el título, y la cámara no cambia al plegarla. El cartel de ubicación lleva el pin del mapa;
   - cielo de Orcadas sobre el hielo y efecto de tinta cuando el equipo lo soporta.
 - Bajo el hielo hay una cúpula de color de agua, niebla y franjas de luz que bajan por las aberturas reales del hielo: la grieta, el agujero de los emperadores y el borde del hielo. La cara de abajo de los témpanos tiene manchas de algas (D03).
-- Modelos nuevos, registrados en `SCENE_MODELS`:
-  - jorobada con mandíbula y garganta que se mueven, barbas y aletas blancas largas;
-  - foca leopardo con cabeza grande, garganta moteada y dientes de tres puntas;
+- Modelos low-poly propios, en `marine/lowPolyMarine.ts` (`MARINE_POLY_MODELS`):
+  - jorobada con mandíbula y garganta que se mueven, sin separarse del cuerpo, barbas y aletas blancas largas;
+  - foca leopardo con cabeza grande, manchas oscuras en garganta, vientre y flancos, y dientes de tres puntas;
   - emperador nadando;
-  - krill, dos diatomeas, pez plateado y calamar;
-  - detalle de barbas y detalle de dientes.
-- Minke articulada (`MINKE_FEED_BODY`): misma forma y colores que la del mapa, con mandíbula y garganta que se abren en cada embestida.
-- Reutiliza la orca, la minke, la foca del mapa, la foca de Weddell de Orcadas, los témpanos y `emperorAt`.
-- **Cambio compartido:** la minke del mapa (`SEA_MODELS.minke`) perdió la banda blanca de la aleta y ahora tiene solo el borde claro de adelante (D04). También se ve así en el mapa.
+  - krill, dos diatomeas, pez plateado y calamar.
+- Un solo modelo por animal ([DEC-283-2](../decisiones/DEC-283-2-un-modelo-por-animal-del-mar.md)): la jorobada (`HUMPBACK_PARTS`) y la foca leopardo (`LEOPARD_PARTS`) de Océano son también las del mapa y su ficha, y la minke de Océano es la del mapa (`MINKE_PARTS`), con aletas grises y el borde de adelante pálido, sin la banda blanca (D04).
+- Reutiliza la orca, la foca de Weddell de Orcadas, los témpanos y el emperador de pie con aletas (`emperorWithFlippers`).
 
 ## Animación y accesibilidad
 
 - Cómo come cada animal:
-  - la jorobada traga y filtra;
-  - la minke embiste con la boca abierta en tres parches de krill bajo los témpanos (P03: muchas embestidas cortas);
-  - el emperador baja a los peces;
+  - la jorobada da una vuelta y entra al enjambre con la boca abierta; el krill que toca su boca desaparece y el enjambre se vuelve a juntar mientras ella da la vuelta;
+  - la minke embiste tres parches de krill bajo los témpanos (P03: muchas embestidas cortas);
+  - el emperador baja a los peces, da media vuelta, atrapa uno con el pico y sube con él;
   - la foca leopardo muerde a los peces con la boca bien abierta y chupa el krill con la boca a medias; de cerca, el krill entra a la boca y el agua sale por los costados, entre los dientes (P04);
   - en el ejemplo de P06, tres orcas tipo B nadan juntas hacia un témpano con una foca de Weddell, se sumergen y la ola barre el hielo. La foca resbala pero no se muestra la captura.
 - Las poses son funciones puras del tiempo y tienen pruebas:
@@ -70,16 +68,16 @@ Solo «Terminar expedición» completa el recorrido. Salir con «Mapa» no lo co
   - las orcas nadan en agua abierta y no se superponen;
   - el trago de la jorobada sigue su orden.
 - Un solo reloj dibuja la escena bajo demanda, como en Orcadas y Fósiles.
-- Con movimiento reducido no hay movimiento continuo ni vuelos de cámara: cada acción muestra un cuadro fijo que se entiende (la jorobada con la boca abierta y la garganta llena, el emperador abajo entre los peces).
+- Con movimiento reducido no hay movimiento continuo ni vuelos de cámara: cada parada muestra un cuadro fijo que se entiende (la jorobada con la boca abierta dentro del enjambre, el emperador con el pez en el pico).
 - Sin WebGL, o si se pierde el contexto, cada escena se describe en palabras y la red se dibuja en SVG. Todas las paradas e interacciones siguen funcionando.
 - La cámara bajo el agua no puede subir por encima de su objetivo, así que no sale del agua.
 
 ## Verificación
 
 - Unitarias de `core`: recorrido, límites, visitas sin repetir, red sin flechas inventadas, fuentes y textos.
-- Unitarias de `react-ui`: poses, hielo, registro de modelos y minke sin banda.
+- Unitarias de `react-ui`: poses, hielo, registro de modelos, el pez del emperador y minke sin banda.
 - e2e (`marine.spec.ts`, a 390 y 1440 px):
-  - recorrido con todas las acciones;
+  - recorrido completo con el botón principal;
   - solo teclado;
   - salir sin completar;
   - movimiento reducido y movimiento permitido;

@@ -3,9 +3,8 @@ import { useFrame } from '@react-three/fiber';
 import type { Group } from 'three';
 import type { SeaPoint } from '@antartida/core';
 import { cetaceanAnimation, sealAnimation } from '../map3d/seaLifeAnimations.ts';
-import { buildPenguinPolyParts, buildWeddellSealPolyParts, mirrorZTris } from '../orcadas/lowPolyAnimals.ts';
+import { buildPenguinPolyParts, mirrorZTris } from '../orcadas/lowPolyAnimals.ts';
 import { PENGUIN_NECK, PENGUIN_SHOULDER } from '../orcadas/penguins.ts';
-import { WEDDELL_FLIPPER_L, WEDDELL_FLIPPER_R, WEDDELL_NECK, WEDDELL_TAIL } from '../orcadas/seals.ts';
 import { ICEBERG_TABULAR_POLY } from './icebergs.ts';
 import { IRIZAR_POLY } from './irizarModel.ts';
 import { boxShade, buildPolyGeometry } from './lowPoly.ts';
@@ -13,7 +12,8 @@ import { ModelPreview } from './ModelPreview.tsx';
 import { WAVE_RAISED } from './pointModels.ts';
 import { PENGUIN_FLOE_TRIS, PENGUIN_FLOE_Y, SEAL_FLOE_TRIS } from './seaPolyModels.ts';
 import { vehicleMaterial } from './vehicles.ts';
-import { HUMPBACK_PARTS, MINKE_PARTS, ORCA_PARTS } from './whalePolyModels.ts';
+import { MINKE_PARTS, ORCA_PARTS } from './whalePolyModels.ts';
+import { HUMPBACK_PARTS, LEOPARD_PARTS } from '../marine/lowPolyMarine.ts';
 
 type Species = NonNullable<SeaPoint['targetSpecies']>;
 
@@ -97,9 +97,10 @@ function PenguinsPreviewScene({ reduced }: { reduced: boolean }) {
   );
 }
 
+/** The leopard seal of Océano on its floe (LEOPARD_PARTS), as on the map. */
 function SealPreviewScene({ reduced }: { reduced: boolean }) {
   const geos = useMemo(() => {
-    const p = buildWeddellSealPolyParts();
+    const p = LEOPARD_PARTS;
     return {
       floe: buildPolyGeometry(SEAL_FLOE_TRIS, boxShade),
       body: buildPolyGeometry(p.body, boxShade),
@@ -123,27 +124,29 @@ function SealPreviewScene({ reduced }: { reduced: boolean }) {
     const t = clock.elapsedTime;
     const anim = sealAnimation(t, 0, (t * 0.32) % 1);
     if (bodyRef.current) bodyRef.current.rotation.z = anim.bodyPitch;
-    if (headRef.current) headRef.current.rotation.set(0, anim.headYaw, anim.headPitch);
+    // The leopard seal lies with its head on the ice: it raises it instead of dipping it.
+    if (headRef.current) headRef.current.rotation.set(0, anim.headYaw, -anim.headPitch);
     if (flipLRef.current) flipLRef.current.rotation.x = anim.flipperL;
     if (flipRRef.current) flipRRef.current.rotation.x = anim.flipperR;
     if (tailRef.current) tailRef.current.rotation.y = anim.tailYaw;
   });
 
+  const [fx, fy, fz] = LEOPARD_PARTS.flipperPivot;
   return (
     <group rotation={[0, -0.55, 0]} position={[0, -0.08, 0]}>
       <mesh geometry={geos.floe} material={vehicleMaterial} />
-      <group ref={bodyRef} position={[0.02, 0.092, 0.02]} scale={0.76}>
+      <group ref={bodyRef} position={[0.02, 0.092, 0.02]} scale={0.86}>
         <mesh geometry={geos.body} material={vehicleMaterial} />
-        <group ref={headRef} position={WEDDELL_NECK}>
+        <group ref={headRef} position={LEOPARD_PARTS.neck}>
           <mesh geometry={geos.head} material={vehicleMaterial} />
         </group>
-        <group ref={flipLRef} position={WEDDELL_FLIPPER_L}>
+        <group ref={flipLRef} position={[fx, fy, -fz]}>
           <mesh geometry={geos.flipL} material={vehicleMaterial} />
         </group>
-        <group ref={flipRRef} position={WEDDELL_FLIPPER_R}>
+        <group ref={flipRRef} position={[fx, fy, fz]}>
           <mesh geometry={geos.flipR} material={vehicleMaterial} />
         </group>
-        <group ref={tailRef} position={WEDDELL_TAIL}>
+        <group ref={tailRef} position={LEOPARD_PARTS.tailPivot}>
           <mesh geometry={geos.tail} material={vehicleMaterial} />
         </group>
       </group>

@@ -7,14 +7,12 @@ export interface MarineState {
   under: boolean;
   /** Microscopic producers drawn magnified. */
   magnified: boolean;
-  /** The humpback filter sequence was watched. */
+  /** The humpback stop was reached: its filter sequence plays on arrival. */
   filtered: boolean;
-  /** The camera followed the minke among the floes. */
+  /** The minke stop was reached: the camera follows it among the floes on arrival. */
   followed: boolean;
-  /** An emperor dive was followed down and back up to breathe. */
+  /** The emperor dive stop was reached: the camera follows a dive on arrival. */
   dived: boolean;
-  /** Baleen and teeth were compared side by side. */
-  compared: boolean;
   /** The documented orca example was opened. */
   example: boolean;
   /** Organism selected in the food web, if any. */
@@ -25,12 +23,12 @@ export interface MarineState {
 }
 
 export type MarineAction =
-  | { type: 'next' | 'prev' | 'surface' | 'magnify' | 'filter' | 'follow' | 'dive' | 'compare' | 'example' }
+  | { type: 'next' | 'prev' | 'surface' | 'magnify' | 'example' }
   | { type: 'chapter'; chapter: MarineChapter }
   | { type: 'select'; organism: MarineOrganism | null };
 
 export const INITIAL_MARINE: MarineState = {
-  stop: 0, under: false, magnified: false, filtered: false, followed: false, dived: false, compared: false,
+  stop: 0, under: false, magnified: false, filtered: false, followed: false, dived: false,
   example: false, selected: null, traced: [], visited: [MARINE_STOPS[0].id],
 };
 
@@ -44,6 +42,12 @@ export function marineReducer(state: MarineState, action: MarineAction): MarineS
     const id = MARINE_STOPS[index].id;
     return {
       ...state, stop: index, under: STARTS_ABOVE.has(id) ? false : state.under,
+      // The orca stop opens on the family; its first «Siguiente» shows the documented example.
+      example: id === 'orcas' ? false : state.example,
+      // The humpback filters, and the camera follows the minke and the emperor dive, as soon as their stops open: there is no button for them.
+      filtered: state.filtered || id === 'humpback',
+      followed: state.followed || id === 'minke',
+      dived: state.dived || id === 'emperor-dive',
       visited: state.visited.includes(id) ? state.visited : [...state.visited, id],
     };
   };
@@ -56,10 +60,6 @@ export function marineReducer(state: MarineState, action: MarineAction): MarineS
     }
     case 'surface': return { ...state, under: !state.under };
     case 'magnify': return { ...state, magnified: !state.magnified };
-    case 'filter': return { ...state, filtered: true };
-    case 'follow': return { ...state, followed: !state.followed };
-    case 'dive': return { ...state, dived: true };
-    case 'compare': return { ...state, compared: !state.compared };
     case 'example': return { ...state, example: !state.example };
     case 'select': {
       const o = action.organism;

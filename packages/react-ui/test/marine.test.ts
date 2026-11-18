@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { SCENE_MODELS, SEA_MODELS } from '../src/voyage/sightingModels.ts';
 import { MARINE_PALETTE as C } from '../src/marine/models.ts';
-import { MARINE_POLY_MODELS, MINKE_FEED_BODY_TRIS } from '../src/marine/lowPolyMarine.ts';
+import { MARINE_POLY_MODELS } from '../src/marine/lowPolyMarine.ts';
+import { MINKE_PARTS } from '../src/voyage/whalePolyModels.ts';
 import { POLY_MIN_COLORS, POLY_MIN_TRIS, normalOf, type Tri } from '../src/voyage/lowPoly.ts';
 import {
   DIVE_PERIOD, EDGE_Z, FILTER_PERIOD, HOLE, ICE_BOTTOM, LEAD, LEOPARD_LOOP, MINKE_FOOTPRINT, MINKE_KRILL_PATCHES, MINKE_LOOP,
-  MINKE_SCALE, ORCA_POD, SUCTION_PERIOD, WATER_Y, WAVE_FLOE, WAVE_PERIOD, WAVE_SEAL_START, EMPEROR_HUNT_LOOP, EMPEROR_HUNT_STILL, emperorDive, emperorHunt, humpbackFilter, iceAt, inOpenWater,
+  MINKE_SCALE, ORCA_POD, SUCTION_PERIOD, WATER_Y, WAVE_FLOE, WAVE_PERIOD, WAVE_SEAL_START, EMPEROR_HUNT_LOOP, EMPEROR_HUNT_STILL, emperorDive, emperorHunt, diveCatch, DIVE_STILL, humpbackFilter, iceAt, inOpenWater,
   krillAt, leopardPose, minkePose, orcaPose, orcaWave, suction, buildIceTris, ICE_TOP,
 } from '../src/marine/marinePoses.ts';
 
@@ -89,8 +90,8 @@ describe('Océano: how each animal feeds', () => {
         expect(near).toBeLessThan(2);
       }
       was = lunging;
-      if (p.breathing) expect(p.jaw).toBe(0);
-      expect(p.throat).toBeGreaterThanOrEqual(1);
+      // It does not lunge while it breathes at the lead.
+      if (p.breathing) expect(p.lunge).toBeLessThan(0.1);
     }
     expect(lunges).toBe(MINKE_KRILL_PATCHES.length);
   });
@@ -157,6 +158,17 @@ describe('Océano: how each animal feeds', () => {
     expect(emperorHunt(EMPEROR_HUNT_STILL).prey.state).toBe('held');
   });
 
+  it('the diving emperor catches one fish at the bottom, carries it up and swallows it', () => {
+    const states: string[] = [];
+    for (const t of samples(DIVE_PERIOD)) {
+      const s = diveCatch(t).state;
+      if (states[states.length - 1] !== s) states.push(s);
+    }
+    expect(states).toEqual(['gone', 'free', 'held', 'gone']);
+    // With reduced motion the still frame shows the fish in the bill.
+    expect(diveCatch(DIVE_STILL).state).toBe('held');
+  });
+
   it('the emperor holds its head up out of the water while it breathes', () => {
     for (const t of samples(DIVE_PERIOD)) {
       const p = emperorDive(t);
@@ -217,11 +229,21 @@ describe('Océano: models', () => {
     expect(has(MARINE_POLY_MODELS['marine:leopard'], C.tooth)).toBe(true);
     expect(has(MARINE_POLY_MODELS['marine:emperor-swim'], C.emperorYellow)).toBe(true);
     for (const c of [C.krillRed, C.krillGut, C.black]) expect(has(MARINE_POLY_MODELS['marine:krill'], c)).toBe(true);
-    // The Antarctic minke's flipper is grey with only a thin white leading edge.
-    // Faces wholly out of the body (it is 0.088 wide each side): the flippers, not the white belly.
-    const edge = MINKE_FEED_BODY_TRIS.filter((t) => t[3] === C.white && [t[0], t[1], t[2]].every((v) => Math.abs(v[2]) > 0.095)).flatMap((t) => [t[0], t[1], t[2]]);
-    expect(edge.length).toBeGreaterThan(0);
-    expect(Math.max(...edge.map((v) => v[0])) - Math.min(...edge.map((v) => v[0]))).toBeLessThan(0.1);
+    // The Antarctic minke's flipper is solid grey with only a thin pale leading edge (NOAA Fisheries),
+    // without the white band of the other minkes: one grey covers most of it.
+    const area = new Map<number, number>();
+    for (const t of MINKE_PARTS.flipperR) {
+      const [a, b, c] = t;
+      const u = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], v = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
+      const s = Math.hypot(u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]) / 2;
+      area.set(t[3], (area.get(t[3]) ?? 0) + s);
+    }
+    expect(area.size).toBeLessThanOrEqual(2);
+    const [main, edge = 0] = [...area.values()].sort((p, q) => q - p);
+    expect(edge / (main + edge)).toBeLessThan(0.25);
+    const mainColor = [...area].find(([, s]) => s === main)![0];
+    // The main color is a mid grey, not white: each channel below 0xc0.
+    for (const shift of [16, 8, 0]) expect((mainColor >> shift) & 0xff).toBeLessThan(0xc0);
   });
 
   it('draws the Antarctic minke without the white flipper band of the other minkes', () => {

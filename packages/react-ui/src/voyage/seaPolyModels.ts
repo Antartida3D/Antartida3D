@@ -3,7 +3,8 @@ import { SEA_ICE_FLOE_POLY_VARIANTS } from '../orcadas/lowPolyProps.ts';
 import { PENGUIN_NECK, PENGUIN_SHOULDER, type PenguinSpecies } from '../orcadas/penguins.ts';
 import { WEDDELL_FLIPPER_L, WEDDELL_FLIPPER_R, WEDDELL_NECK, WEDDELL_TAIL } from '../orcadas/seals.ts';
 import { scaled, shift, turn, type Tri } from './lowPoly.ts';
-import { assembleCetacean, HUMPBACK_PARTS, MINKE_PARTS, ORCA_PARTS } from './whalePolyModels.ts';
+import { assembleCetacean, MINKE_PARTS, ORCA_PARTS } from './whalePolyModels.ts';
+import { HUMPBACK_PARTS } from '../marine/lowPolyMarine.ts';
 
 /** Assemble an Orcadas low-poly penguin in its standing rest pose (feet at y = 0, beak to +x). */
 function assemblePenguin(species: PenguinSpecies): Tri[] {

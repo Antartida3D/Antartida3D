@@ -96,14 +96,13 @@ test('Océano uses the same sources view', async ({ page }) => {
   await openFromList(page, /Océano/);
   await page.getByRole('button', { name: 'Comenzar expedición' }).click();
   await expect(page.getByRole('region', { name: 'Expedición Océano' })).toBeVisible();
-  await page.getByRole('button', { name: 'Fuentes', exact: true }).click();
+  // Océano has no «Fuentes» button: its sources open from the [N] of the text.
+  await page.getByRole('button', { name: /^Fuente / }).first().click();
   const sources = page.getByRole('dialog', { name: 'Fuentes' });
   await expect(sources).toBeVisible();
-  await expect(sources.locator('.sources-card').first()).toBeVisible();
+  await expect(sources.locator('.sources-card[aria-current]')).toHaveCount(1);
   await page.keyboard.press('Escape');
   await expect(sources).toHaveCount(0);
-  await page.getByRole('button', { name: /^Fuente / }).first().click();
-  await expect(page.getByRole('dialog', { name: 'Fuentes' }).locator('.sources-card[aria-current]')).toHaveCount(1);
 });
 
 for (const [name, re, title] of [

@@ -12,9 +12,8 @@ import {
   voyageHeading,
   type SeaLifeInstance,
 } from '@antartida/core';
-import { buildPenguinPolyParts, buildWeddellSealPolyParts, mirrorZTris } from '../orcadas/lowPolyAnimals.ts';
+import { buildPenguinPolyParts, mirrorZTris } from '../orcadas/lowPolyAnimals.ts';
 import { PENGUIN_NECK, PENGUIN_SHOULDER, type PenguinSpecies } from '../orcadas/penguins.ts';
-import { WEDDELL_FLIPPER_L, WEDDELL_FLIPPER_R, WEDDELL_NECK, WEDDELL_TAIL } from '../orcadas/seals.ts';
 import {
   ICEBERG_DRAFT,
   ICEBERG_RIPPLE_SECONDS as RIPPLE_SECONDS,
@@ -45,8 +44,8 @@ import { SEA_MODELS, type SeaModelId } from '../voyage/sightingModels.ts';
 import { heightOf } from '../voyage/Voyage3D.tsx';
 import type { VoyageBus } from '../voyage/useVoyage.ts';
 import { buildVehicleGeometry, vehicleMaterial } from '../voyage/vehicles.ts';
+import { HUMPBACK_PARTS, LEOPARD_PARTS } from '../marine/lowPolyMarine.ts';
 import {
-  HUMPBACK_PARTS,
   MINKE_PARTS,
   ORCA_PARTS,
   SPLASH_POLY,
@@ -167,8 +166,9 @@ function buildPenguinGeos(species: PenguinSpecies) {
   };
 }
 
+/** The leopard seal of Océano, on its floe (LEOPARD_PARTS). */
 function buildSealGeos() {
-  const parts = buildWeddellSealPolyParts();
+  const parts = LEOPARD_PARTS;
   return {
     body: buildPolyGeometry(parts.body, boxShade),
     head: buildPolyGeometry(parts.head, boxShade),
@@ -213,7 +213,7 @@ export function SeaLife({ visible = true, timeUniform, instances, voyage }: {
     };
     const seal = {
       floe: buildPolyGeometry(SEAL_FLOE_TRIS, boxShade),
-      weddell: buildSealGeos(),
+      leopard: buildSealGeos(),
     };
     const bird = {
       body: buildPolyGeometry(ALBATROSS_PARTS.body, boxShade),
@@ -257,7 +257,7 @@ export function SeaLife({ visible = true, timeUniform, instances, voyage }: {
       p.flipperR.dispose();
     }
     geometry.seal.floe.dispose();
-    Object.values(geometry.seal.weddell).forEach((g) => g.dispose());
+    Object.values(geometry.seal.leopard).forEach((g) => g.dispose());
     geometry.bird.body.dispose();
     geometry.bird.wingL.dispose();
     geometry.bird.wingR.dispose();
@@ -442,7 +442,8 @@ export function SeaLife({ visible = true, timeUniform, instances, voyage }: {
         if (rig) {
           const anim = sealAnimation(time, inst.phase, reaction);
           if (rig.body) rig.body.rotation.z = anim.bodyPitch;
-          if (rig.head) rig.head.rotation.set(0, anim.headYaw, anim.headPitch);
+          // The leopard seal lies with its head on the ice: it raises it instead of dipping it.
+          if (rig.head) rig.head.rotation.set(0, anim.headYaw, -anim.headPitch);
           if (rig.flipL) rig.flipL.rotation.x = anim.flipperL;
           if (rig.flipR) rig.flipR.rotation.x = anim.flipperR;
           if (rig.tail) rig.tail.rotation.y = anim.tailYaw;
@@ -669,7 +670,8 @@ export function SeaLife({ visible = true, timeUniform, instances, voyage }: {
 
         if (inst.species === 'seal') {
           const rig = (sealRigs.current[i] ??= { body: null, head: null, flipL: null, flipR: null, tail: null });
-          const sGeo = geometry.seal.weddell;
+          const sGeo = geometry.seal.leopard;
+          const [fx, fy, fz] = LEOPARD_PARTS.flipperPivot;
           return (
             <group
               key={inst.id}
@@ -687,16 +689,16 @@ export function SeaLife({ visible = true, timeUniform, instances, voyage }: {
                   scale={SEAL_FLOE_PLACEMENT.scale}
                 >
                   <mesh geometry={sGeo.body} material={vehicleMaterial} />
-                  <group ref={(g) => void (rig.head = g)} position={WEDDELL_NECK}>
+                  <group ref={(g) => void (rig.head = g)} position={LEOPARD_PARTS.neck}>
                     <mesh geometry={sGeo.head} material={vehicleMaterial} />
                   </group>
-                  <group ref={(g) => void (rig.flipL = g)} position={WEDDELL_FLIPPER_L}>
+                  <group ref={(g) => void (rig.flipL = g)} position={[fx, fy, -fz]}>
                     <mesh geometry={sGeo.flipperL} material={vehicleMaterial} />
                   </group>
-                  <group ref={(g) => void (rig.flipR = g)} position={WEDDELL_FLIPPER_R}>
+                  <group ref={(g) => void (rig.flipR = g)} position={[fx, fy, fz]}>
                     <mesh geometry={sGeo.flipperR} material={vehicleMaterial} />
                   </group>
-                  <group ref={(g) => void (rig.tail = g)} position={WEDDELL_TAIL}>
+                  <group ref={(g) => void (rig.tail = g)} position={LEOPARD_PARTS.tailPivot}>
                     <mesh geometry={sGeo.tail} material={vehicleMaterial} />
                   </group>
                 </group>

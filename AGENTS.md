@@ -86,6 +86,10 @@ Un issue asignado sin actividad por más de 24 h se puede reclamar, previo aviso
 - No modificar archivos fuera del alcance del issue sin avisar a la persona.
 - Todo uso de IA se declara en el README (lo exigen las bases).
 
+## Estilo visual
+
+- Prohibido el borde izquierdo pintado como acento (`border-left` de color en una caja, cita o lista, con el resto de los lados sin borde). No marca nada que se entienda y ensucia la lectura. Para separar o destacar, usar los componentes de `packages/core/src/styles/components.css` o espacio.
+
 ## Contenido y datos (eje 2)
 
 - Toda información lleva su fuente verificada: se sabe de dónde se extrae. Cada fuente registra:

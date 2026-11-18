@@ -124,3 +124,18 @@ for (const [name, re, title] of [
     await expect(page.getByRole('region', { name: /^Expedición / })).toHaveCount(0);
   });
 }
+
+test('on desktop, sources modal does not cover the modal underneath (#292)', async ({ page }) => {
+  test.skip(page.viewportSize()!.width < 820, 'Desktop only');
+  await openFromList(page, /Desde Ushuaia/);
+  const intro = page.getByRole('dialog', { name: 'Desde Ushuaia' });
+  await expect(intro).toBeVisible();
+  await intro.getByRole('button', { name: /^Fuente / }).first().click();
+  const sources = page.getByRole('dialog', { name: 'Fuentes' });
+  await expect(sources).toBeVisible();
+  const introBox = (await intro.boundingBox())!;
+  const sourcesBox = (await sources.boundingBox())!;
+  const overlapsX = sourcesBox.x < introBox.x + introBox.width && sourcesBox.x + sourcesBox.width > introBox.x;
+  const overlapsY = sourcesBox.y < introBox.y + introBox.height && sourcesBox.y + sourcesBox.height > introBox.y;
+  expect(overlapsX && overlapsY).toBe(false);
+});

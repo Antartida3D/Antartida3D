@@ -70,3 +70,7 @@ details.sheet-more.orc-month-details > .sheet-more-body{margin-top:10px;gap:10px
   .next-sheet .sheet-actions{margin:6px -20px 0;padding:6px 20px 8px;gap:8px}
   .next-sheet .sheet-actions .btn{min-height:40px;padding-inline:6px;font-size:14px}
 }
+@media (min-width:820px){
+  /* Open sources on the left so they never cover the right-hand modal or expedition panel being read (#292). */
+  .sheet.sources-sheet{left:24px;right:auto;width:min(420px,calc(100vw - 600px));max-height:calc(100dvh - 48px)}
+}

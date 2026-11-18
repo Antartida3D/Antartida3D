@@ -27,7 +27,7 @@ test.afterEach(() => {
 });
 
 for (const SCENE of [THWAITES_SCENE, VOSTOK_SCENE]) {
-  test(`${SCENE.title} opens a scene of its own, with every fact and source, and leaving it does not count as an expedition (#280, #281)`, async ({ page }) => {
+  test(`${SCENE.title} opens a scene of its own, with every fact and source, and leaving it does not count as an expedition (#280, #281, #285)`, async ({ page }) => {
     await show3D(page);
     await page.getByRole('button', { name: LIST_BUTTON_LABEL }).click();
     await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: new RegExp(SCENE.title) }).click();
@@ -37,6 +37,10 @@ for (const SCENE of [THWAITES_SCENE, VOSTOK_SCENE]) {
     const scene = page.getByRole('region', { name: SCENE.title });
     await expect(scene).toBeVisible({ timeout: 30_000 });
     await expect(scene.locator('.orc-scene-badge')).toContainText('Reconstrucción ilustrada');
+    // The current temperature of the card, as a model estimate (#22, #285).
+    const temp = scene.locator('.orc-panel .sheet-temp');
+    await expect(temp).toContainText(/°C/);
+    await expect(temp).toContainText('Estimación de modelo (Open-Meteo)');
 
     for (const [i, spot] of SCENE.spots.entries()) {
       await expect(scene.getByRole('heading', { level: 2, name: spot.label })).toBeVisible();

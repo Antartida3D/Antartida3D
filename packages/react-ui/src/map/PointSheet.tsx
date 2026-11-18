@@ -1,8 +1,6 @@
 import { lazy, Suspense, useRef, useState } from 'react';
 import {
   TIER,
-  formatTemperature,
-  formatTemperatureAge,
   type MapPoint,
   type SeaPoint,
   pointCited,
@@ -16,31 +14,11 @@ import { SheetText } from '../sheet/SheetText.tsx';
 import { SourcesContext } from '../sheet/SourcesContext.ts';
 import { SourcesView } from '../sheet/SourcesView.tsx';
 import { POINT_MODEL_IDS } from '../voyage/pointModelIds.ts';
-import { useCurrentTemperatures } from './useCurrentTemperatures.ts';
+import { TemperatureLine } from './TemperatureLine.tsx';
 
 // Its own chunk: it needs WebGL, which the 2D map does not.
 const SeaPreview = lazy(() => import('../voyage/SeaPreview.tsx').then((m) => ({ default: m.SeaPreview })));
 const PointPreview = lazy(() => import('../voyage/PointPreview.tsx').then((m) => ({ default: m.PointPreview })));
-
-function TemperatureLine({ pointId }: { pointId: string }) {
-  const { status, temperature } = useCurrentTemperatures(pointId);
-  if (status === 'idle') return null;
-
-  let text = 'Consultando temperatura…';
-  if (status === 'ready' && temperature) {
-    const formatted = formatTemperature(temperature.celsius, 'es');
-    const age = formatTemperatureAge(temperature.time);
-    text = `Temperatura actual estimada en esta zona: ${formatted} · Estimación de modelo (Open-Meteo) · ${age}`;
-  } else if (status === 'error') {
-    text = 'Temperatura no disponible ahora';
-  }
-
-  return (
-    <>
-      <p className="sheet-temp" aria-live="polite">{text}</p>
-    </>
-  );
-}
 
 export function PointSheet({ point, onClose, fallbackFocus, preview = false, onMap = false, reduced = false, action }: {
   point: MapPoint | SeaPoint;

@@ -45,12 +45,11 @@ const POINTS: readonly MapPoint[] = [
   { id: 'erebus', tier: 'C', title: 'Volcán en el hielo', place: 'Monte Erebus, Isla de Ross', x: 539, y: 670, q: '¿Cómo conviven un volcán activo y el hielo?' },
   { id: 'thwaites', tier: 'C', title: 'Glaciares que cambian', place: 'Glaciar Thwaites, Mar de Amundsen', x: 301, y: 557, q: '¿Por qué la ciencia sigue tan de cerca a este glaciar?' },
   { id: 'belgrano', tier: 'C', title: 'Base Belgrano II', place: 'Sur del Mar de Weddell', x: 404, y: 361, q: '¿Cómo se trabaja tan cerca del Polo?' },
-  { id: 'emperador', tier: 'C', title: 'Colonias de pingüino emperador', place: 'Costa de Tierra de la Reina Maud', x: 593, y: 245, q: '¿Cómo pasan el invierno polar los pingüinos emperador?' },
   { id: 'cerronevado', tier: 'C', title: 'Pingüinos de Cerro Nevado', place: 'Isla Cerro Nevado (Snow Hill), Mar de Weddell', x: SNOW_HILL.x, y: SNOW_HILL.y, q: '¿Por qué importa la colonia de emperador más al norte?' },
 ];
 
 /** Close-up camera distance of the points with a model (closeUp). Erebus is a whole summit, seen from farther. */
-const CLOSE_UP: Readonly<Record<string, number>> = { polo: 2.6, testigos: 2.6, vostok: 3.2, belgrano: 2.8, thwaites: 4.5, emperador: 2.2, cerronevado: 2.2, erebus: 7 };
+const CLOSE_UP: Readonly<Record<string, number>> = { polo: 2.6, testigos: 2.6, vostok: 3.2, belgrano: 2.8, thwaites: 4.5, cerronevado: 2.2, erebus: 7 };
 
 export const PTS: readonly MapPoint[] = POINTS.map((p) => ({ ...p, ...POINT_DETAILS[p.id], ...(CLOSE_UP[p.id] ? { closeUp: CLOSE_UP[p.id] } : {}) }));
 

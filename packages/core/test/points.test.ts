@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { PTS } from '../src/content/points.ts';
 
-const VERIFIED = ['polo', 'testigos', 'vostok', 'erebus', 'thwaites', 'belgrano', 'emperador', 'cerronevado'];
+const VERIFIED = ['polo', 'testigos', 'vostok', 'erebus', 'thwaites', 'belgrano', 'cerronevado'];
 
 describe('points without expedition (docs/puntos-proximamente-fuentes.md)', () => {
   for (const id of VERIFIED) {

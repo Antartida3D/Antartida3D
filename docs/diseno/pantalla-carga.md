@@ -12,7 +12,7 @@ La pantalla de carga cubre el primer render del mapa con una composición cartog
 
 ## Dato real y primera visita
 
-- **Mientras carga:** debajo de los hitos se muestra «Mientras tanto · dato real». `loaderFact(random)` (`core/src/loading.ts`) elige entre `thwaites`, `vostok`, `erebus` y `emperador`, cita la primera oración de la ficha tal cual (`firstSentence`) y nombra todos los organismos de sus fuentes sin repetir más el título de la ficha.
+- **Mientras carga:** debajo de los hitos se muestra «Mientras tanto · dato real». `loaderFact(random)` (`core/src/loading.ts`) elige entre `thwaites`, `vostok`, `erebus` y `cerronevado` (antes `emperador`, quitado en #277), cita la primera oración de la ficha tal cual (`firstSentence`) y nombra todos los organismos de sus fuentes sin repetir más el título de la ficha.
 - **Al terminar en primera visita:** la cabecera, la barra al 100 % y los cinco tildes quedan visibles, y el bloque inferior pasa al título y texto de bienvenida (`READY_CARD`, sin mostrar el rótulo «Mapa listo») con los botones `Sin guía` (`.btn`) y `Exploración guiada` (`.btn.primary`) para iniciar la guía de [DEC-256](../decisiones/DEC-256-carta-de-presentacion.md).
 
 ## Tiempos

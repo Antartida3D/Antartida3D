@@ -3,7 +3,7 @@ import { PTS } from '@antartida/core';
 import { normalOf, POLY_MIN_COLORS, POLY_MIN_TRIS } from '../src/voyage/lowPoly.ts';
 import { POINT_MODEL_IDS } from '../src/voyage/pointModelIds.ts';
 import { emperor, emperorChick, emperorFlipper, emperorWithFlippers } from '../src/voyage/lowPoly.ts';
-import { BOMBS, calvingPose, erebusSummit, flipperWave, huddleTurn, lavaBomb, PLUME_PUFFS, plumePuff, POINT_MODELS, thwaitesFront, WAVE_RAISED } from '../src/voyage/pointModels.ts';
+import { BOMBS, calvingPose, erebusSummit, flipperWave, lavaBomb, PLUME_PUFFS, plumePuff, POINT_MODELS, thwaitesFront, WAVE_RAISED } from '../src/voyage/pointModels.ts';
 
 describe('point models (#58, docs/diseno/estilo-voxel.md)', () => {
   it('gives models only to points of the map, and the card knows which', () => {
@@ -112,7 +112,6 @@ describe('moving parts of the point models', () => {
   });
 
   it('keeps everything still at time 0 (reduced motion)', () => {
-    expect(huddleTurn(0)).toBe(0);
     expect(calvingPose(0).tilt).toBe(0);
     expect(flipperWave(0)).toBe(0);
   });

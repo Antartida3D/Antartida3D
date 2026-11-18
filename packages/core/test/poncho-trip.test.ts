@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  PONCHO_MILESTONES, PONCHO_SEGMENTS, advanceVoyage, buildCurve, buildTrip, closeVoyageCard, expeditionAt, findTransport, project,
-  quizScore, startVoyage, vehicleAt, voyageArrived, voyageAt, voyageLength, voyageProgress, voyageStops,
+  PIN_SAME_PLACE, PONCHO_MILESTONES, PONCHO_SEGMENTS, advanceVoyage, buildCurve, buildTrip, closeVoyageCard, expeditionAt, findTransport, project,
+  quizScore, startVoyage, vehicleAt, voyageArrived, voyageAt, voyageLength, voyagePinRead, voyageProgress, voyageStops,
 } from '../src/index.ts';
 
 const dist = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(a.x - b.x, a.y - b.y);
@@ -126,5 +126,36 @@ describe('legs of a trip', () => {
     const ends = PONCHO_SEGMENTS.map((leg) => ({ first: leg.waypoints[0], last: leg.waypoints[leg.waypoints.length - 1], vehicle: leg.vehicle }));
     for (let i = 1; i < ends.length; i++) expect(ends[i].first).toEqual(ends[i - 1].last);
     for (const leg of ends) expect(['sled', 'ship']).toContain(leg.vehicle);
+  });
+});
+
+describe('pins of the trip of Poncho that share a place (#309)', () => {
+  const stops = voyageStops('dogs');
+  const id = (i: number) => stops[i].milestone.id;
+  const last = stops.length - 1;
+
+  it('has the ship to Belgrano and the last stop on the same place as the departure, at Esperanza', () => {
+    for (const i of [3, last]) expect(Math.hypot(stops[i].pin.x - stops[0].pin.x, stops[i].pin.y - stops[0].pin.y)).toBeLessThan(PIN_SAME_PLACE);
+  });
+
+  it('draws them grey once the first stop is read, until each is the next stop', () => {
+    const opened = [id(0)];
+    // Reading the first stop: the next one is the second; the ones at Esperanza are not next yet.
+    expect(voyagePinRead('dogs', 3, opened, 1)).toBe(true);
+    expect(voyagePinRead('dogs', last, opened, 1)).toBe(true);
+    // A pin elsewhere, ahead and unread, stays unread.
+    expect(voyagePinRead('dogs', 4, opened, 1)).toBe(false);
+    // Each one turns unread (yellow) when it is the next stop, and read once its card was opened.
+    expect(voyagePinRead('dogs', 3, opened, 3)).toBe(false);
+    const all = stops.slice(0, last).map((s) => s.milestone.id);
+    expect(voyagePinRead('dogs', last, all, last)).toBe(false);
+    expect(voyagePinRead('dogs', last, [...all, id(last)], last)).toBe(true);
+  });
+
+  it('keeps the rule of the trips from Ushuaia: grey only once read', () => {
+    const ushuaia = voyageStops('ship');
+    const i = 1;
+    expect(voyagePinRead('ship', i, [ushuaia[0].milestone.id], 0)).toBe(false);
+    expect(voyagePinRead('ship', i, [ushuaia[i].milestone.id], 0)).toBe(true);
   });
 });

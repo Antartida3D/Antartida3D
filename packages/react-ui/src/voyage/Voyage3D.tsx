@@ -28,6 +28,7 @@ import {
   shipWaterY,
   sightingsInView,
   storyInOrder,
+  voyagePinRead,
   stormAt,
   vehicleAt,
   transferAt,
@@ -416,8 +417,9 @@ export function Voyage3D({ bus, picker, reduced, overlay }: {
       pin.position.set(at.x - 500, Math.max(0, worldHeight(heightAt(at.x, at.y))), at.y - 500);
       pin.scale.setScalar(Math.max(MIN_PIN, camera.position.distanceTo(pin.position) * PIN_PER_DISTANCE));
       pin.quaternion.copy(camera.quaternion); // always facing the camera
-      // Grey once its milestone was read, not just passed: the ones left unread stand out (#157).
-      (pin.children[0] as Mesh).material = bus.opened.includes(stops[i + 1].milestone.id) ? pinMaterial.read : pinMaterial.unread;
+      // Grey once its milestone was read, not just passed: the ones left unread stand out (#157). In a story, one on the
+      // place of a stop already read stays grey until it is the next one (#309: Esperanza, where Poncho's trip starts and ends).
+      (pin.children[0] as Mesh).material = voyagePinRead(s.kind, i + 1, bus.opened, s.reached) ? pinMaterial.read : pinMaterial.unread;
       // A pin is drawn over everything: the one of the base would cover the helicopter that lands on it.
       pin.visible = bus.transfer === null || i < pins.length - 1;
     });

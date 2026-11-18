@@ -828,6 +828,26 @@ export function voyageStopsNear(kind: TransportKind, t: number): number[] {
   return near;
 }
 
+/**
+ * Two pins closer than this (map units, about 20 km) stand on the same place of the map: on the trip of Poncho the ship to
+ * Belgrano and the last stop are at Esperanza, where the trip starts.
+ */
+export const PIN_SAME_PLACE = 3;
+
+/**
+ * Whether the pin of the stop `index` is drawn as read (grey): its card was opened, or (in a story told in order, #309) it
+ * stands on the same place as a stop already read and is not the next one yet. So the last stop of Poncho, which ends at
+ * Esperanza where the first one was, does not look unread there until the stop before it is passed.
+ */
+export function voyagePinRead(kind: TransportKind, index: number, opened: readonly string[], reached: number): boolean {
+  const stops = voyageStops(kind);
+  const stop = stops[index];
+  if (!stop) return false;
+  if (opened.includes(stop.milestone.id)) return true;
+  if (!storyInOrder(kind) || index <= reached) return false;
+  return stops.some((other, i) => i !== index && opened.includes(other.milestone.id) && Math.hypot(other.pin.x - stop.pin.x, other.pin.y - stop.pin.y) < PIN_SAME_PLACE);
+}
+
 /** Closes the open card. Once arrived, closing another card goes back to the one of the arrival. */
 export function closeVoyageCard(s: VoyageState): VoyageState {
   if (s.card < 0) return s;

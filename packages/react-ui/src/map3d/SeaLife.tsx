@@ -273,7 +273,7 @@ export function SeaLife({ visible = true, timeUniform, instances, voyage }: {
     geometry.hercules.dispose();
   }, [geometry]);
 
-  const drawn = useMemo(() => instances.filter((inst) => inst.species === 'irizar' || modelOf(inst)), [instances]);
+  const drawn = useMemo(() => instances.filter((inst) => inst.species === 'irizar' || isCetacean(inst.species) || modelOf(inst)), [instances]);
   const waterMaterials = useMemo(() => Array.from({ length: drawn.length * (RIPPLES + 1) }, waterMaterial), [drawn.length]);
   useEffect(() => () => waterMaterials.forEach((m) => m.dispose()), [waterMaterials]);
 

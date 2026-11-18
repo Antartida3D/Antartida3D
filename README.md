@@ -252,6 +252,8 @@ En cumplimiento con las bases de la hackatón, se declara el uso de herramientas
   > Escena, pruebas y revisión con capturas con Claude Code (modelo Claude Opus 5.5), a pedido de quien lleva el issue. El campamento de perforación del modelo del mapa junto a un corte del hielo con sus capas, burbujas de aire y el pozo hasta la roca; sus tres puntos usan las oraciones ya verificadas de la ficha, sin datos ni fuentes nuevos. Es una reconstrucción ilustrada que no está a escala y muestra en un solo corte dos perforaciones de lugares distintos; la interfaz lo dice.
 - **Flecha de atrás común en las expediciones (#301):**
   > Relevamiento, implementación, pruebas (unitarias y e2e) y registro de la decisión con Claude Code (modelo Claude Opus 5.5), a pedido de quien lleva el issue, que eligió el diseño con capturas. No se agregaron datos ni fuentes.
+- **Orca low-poly: mancha del ojo y aleta dorsal (#312):**
+  > Relevamiento de dónde se dibuja la orca, cambios en el modelo, pruebas y revisión con capturas con Claude Code (modelo Claude Opus 5.5), a pedido de quien lleva el issue. Es una ilustración: la forma de la aleta y de la mancha están interpretadas, sin medidas reales. No se agregaron datos ni fuentes.
 - **Escena de Belgrano II (#287):**
   > Escena, pruebas y revisión con capturas con Claude Code (modelo Claude Opus 5.5), a pedido de quien lleva el issue. El nunatak y la base del modelo del mapa, con la roca más alta para que se lea sobre el hielo y su bandera; sus cuatro puntos usan las oraciones ya verificadas de la ficha, sin datos ni fuentes nuevos. Es una reconstrucción ilustrada, de día (la noche polar y las auroras no se dibujan), y la interfaz lo dice.
 - **Escena del Polo Sur (#286):**

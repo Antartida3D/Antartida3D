@@ -19,7 +19,10 @@ import {
   SHIP_WAKE_POLY,
 } from '../src/voyage/seaImmersiveModels.ts';
 import { PENGUINS_ON_FLOE, SEA_POLY_MODELS, type SeaPolyModelId } from '../src/voyage/seaPolyModels.ts';
-import { SPLASH_POLY, SPOUT_POLY } from '../src/voyage/whalePolyModels.ts';
+import { ORCA_PARTS, SPLASH_POLY, SPOUT_POLY } from '../src/voyage/whalePolyModels.ts';
+
+/** WHITE of whalePolyModels.ts: the orca's belly and eye patch. */
+const WHITE = 0xf4f7f8;
 
 describe('general map low-poly sea fauna (penguins, seal & cetaceans)', () => {
   for (const id of ['penguins', 'seal', 'humpback', 'orca', 'minke'] as readonly SeaPolyModelId[]) {
@@ -69,6 +72,28 @@ describe('general map low-poly sea fauna (penguins, seal & cetaceans)', () => {
       expect(geometry.getAttribute('position').count).toBe(tris.length * 3);
       geometry.dispose();
     }
+  });
+
+  it('paints the orca eye patch on the skin of the head, with no faces of its own (#312)', () => {
+    const key = (p: readonly number[]) => p.map((v) => v.toFixed(6)).join(',');
+    const skin = new Set(ORCA_PARTS.body.filter((t) => t[3] !== WHITE).flatMap(([a, b, c]) => [a, b, c].map(key)));
+    const patch = ORCA_PARTS.body.filter(([a, b, c, col]) => col === WHITE && Math.min(a[0], b[0], c[0]) > 0.3 && Math.min(a[1], b[1], c[1]) > -0.05);
+    expect(patch.length).toBeGreaterThanOrEqual(4);
+    // Every corner of a white face is a corner of the black skin round it: no box glued on.
+    for (const [a, b, c] of patch) for (const p of [a, b, c]) expect(skin.has(key(p)), key(p)).toBe(true);
+  });
+
+  it('gives the orca a dorsal fin that narrows and thins towards its tip (#312)', () => {
+    const fin = ORCA_PARTS.body.flatMap(([a, b, c]) => [a, b, c]).filter(([, y]) => y > 0.115);
+    const span = (lo: number, hi: number) => {
+      const ring = fin.filter(([, y]) => y >= lo && y <= hi);
+      return { chord: Math.max(...ring.map(([x]) => x)) - Math.min(...ring.map(([x]) => x)), thick: Math.max(...ring.map(([, , z]) => Math.abs(z))) };
+    };
+    expect(Math.max(...fin.map(([, y]) => y))).toBeCloseTo(0.36, 2);
+    const base = span(0.115, 0.125);
+    const tip = span(0.33, 0.37);
+    expect(tip.chord).toBeLessThan(base.chord / 3);
+    expect(tip.thick).toBeLessThan(base.thick / 2);
   });
 
   it('places 4 distinct-proportion penguins on the single floe', () => {

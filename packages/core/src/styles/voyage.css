@@ -64,6 +64,8 @@
 .vspot.seen svg{border-color:var(--chart-muted);background:color-mix(in srgb,var(--chart-muted) 30%,var(--chart-paper))}
 /* The model inside must stay in view: only the line changes. */
 .vspot:hover,.vspot:focus-visible{border:3px solid var(--ocre)}
+/* An open card goes over every other ring, even before the camera moves (drei writes z-index inline). */
+.vspot-wrap.open{z-index:6!important}
 @keyframes vspot{from{box-shadow:0 0 0 0 color-mix(in srgb,var(--ocre) 80%,transparent)}to{box-shadow:0 0 0 16px transparent}}
 /* Card of an animal, opened from its circle on wide screens: the trip controls stay where they are. */
 .vpop{position:absolute;left:48px;bottom:48px;width:300px;padding:12px 14px;border:2px solid var(--chart-ink);border-radius:var(--chart-radius);pointer-events:auto;text-align:left;animation:fadein .2s ease both}

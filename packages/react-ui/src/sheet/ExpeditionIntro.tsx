@@ -13,7 +13,7 @@ import { SourcesView } from './SourcesView.tsx';
  * The modal that opens before every expedition (#264): its question, a short text with its citations `[N]`, what is only an
  * illustration, and «Volver al mapa» / «Comenzar expedición» (`startLabel`). The ones with something to pick (Ushuaia, Orcadas) put it in `children`.
  */
-export function ExpeditionIntro({ title, titleId, place, lead, paragraphs, sources, illustrated = true, startLabel = 'Comenzar expedición', onStart, onExit, fallbackFocus, children }: {
+export function ExpeditionIntro({ title, titleId, place, lead, paragraphs, sources, illustrated = true, startLabel = 'Comenzar expedición', onStart, onExit, fallbackFocus, action, children }: {
   title: string;
   titleId: string;
   /** The guiding question. */
@@ -29,6 +29,8 @@ export function ExpeditionIntro({ title, titleId, place, lead, paragraphs, sourc
   onStart: () => void;
   onExit: () => void;
   fallbackFocus?: () => HTMLElement | null | undefined;
+  /** Extra map layer this point opens, such as the territorial claims from the South Pole (#128, #286). */
+  action?: { label: string; onClick: () => void };
   /** A picker between the text and the actions. */
   children?: ReactNode;
 }) {
@@ -58,6 +60,7 @@ export function ExpeditionIntro({ title, titleId, place, lead, paragraphs, sourc
         )}
         <SheetActions>
           <button type="button" className="btn" onClick={onExit}>Volver al mapa</button>
+          {action && <button type="button" className="btn" onClick={action.onClick}>{action.label}</button>}
           <button type="button" className="btn primary" onClick={onStart}>{startLabel}</button>
         </SheetActions>
       </BottomSheet>

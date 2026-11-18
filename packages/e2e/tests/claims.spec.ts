@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { mockOpenMeteo } from './weather-helpers.ts';
 import { MAP_2D_ENABLED, show3D } from './map-helpers.ts';
 import { LIST_BUTTON_LABEL } from '../../core/src/content/points.ts';
+import { SCENE_START_LABEL } from '../../core/src/scene-points.ts';
 
 /**
  * Hides the claims details (#148). On a phone they are a sheet over the bottom half, over their own
@@ -23,11 +24,11 @@ test.beforeEach(async ({ page }) => {
   await mockOpenMeteo(page);
 });
 
-/** The claims layer has no control in the map menu while off: it opens from the South Pole sheet (#128). */
-async function openFromPole(page: Page, key = false, beforeAction?: () => Promise<void>) {
+/** The claims layer has no control in the map menu while off: it opens from the modal before the South Pole scene (#128, #286). */
+async function openFromPole(page: Page, key = false) {
   await page.getByRole('button', { name: LIST_BUTTON_LABEL, exact: true }).click();
   await page.getByRole('dialog').getByRole('button', { name: /^El Polo Sur/ }).click();
-  await beforeAction?.();
+  await expect(page.getByRole('dialog', { name: 'El Polo Sur' }).getByRole('button', { name: SCENE_START_LABEL })).toBeVisible();
   const action = page.getByRole('dialog').getByRole('button', { name: 'Ver reclamos territoriales', exact: true });
   if (key) {
     await action.focus();
@@ -49,8 +50,8 @@ test('claims start off, toggle areas and flags together, and keep the map camera
   const distance = () => page.evaluate(() => (window as any).__cameraControls.distance as number);
   const homeDistance = await distance();
 
-  // The pole sheet zooms in; showing the claims pulls back to the whole continent.
-  await openFromPole(page, true, () => expect.poll(distance, { timeout: 10_000 }).toBeLessThan(homeDistance * .5));
+  // Showing the claims from the modal before the pole scene keeps (or brings back) the whole continent.
+  await openFromPole(page, true);
   await expect.poll(distance, { timeout: 10_000 }).toBeGreaterThan(homeDistance * .95);
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(toggle).toHaveAttribute('aria-checked', 'true');

@@ -26,6 +26,8 @@ Las páginas de BAS (`bas.ac.uk`) responden con un desafío anti-robots (HTTP 20
 
 ## `polo` — El Polo Sur
 
+Desde #286 el punto abre una escena propia (`packages/core/src/content/polo-scene.ts`). Sus tres puntos tienen una oración cada uno, sin agregar ninguna. Una prueba controla que el texto de los hechos reales de la escena sea exactamente esta ficha.
+
 > En el Polo Sur geográfico (90° S), sobre el hielo a unos 2.835 m de altura, funciona desde 1956 la Estación Amundsen-Scott, con estudios de astronomía, meteorología y glaciología, entre otros. Su edificio elevado se puede levantar para no quedar enterrado por la nieve, y allí funciona IceCube, un enorme detector de neutrinos dentro del hielo. El 10 de diciembre de 1965 llegó al Polo la Operación 90, la primera expedición terrestre argentina, comandada por Jorge Edgar Leal.
 
 | Oración | Fuente | Cita |

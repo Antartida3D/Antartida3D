@@ -20,7 +20,7 @@ import { TemperatureLine } from './TemperatureLine.tsx';
 const SeaPreview = lazy(() => import('../voyage/SeaPreview.tsx').then((m) => ({ default: m.SeaPreview })));
 const PointPreview = lazy(() => import('../voyage/PointPreview.tsx').then((m) => ({ default: m.PointPreview })));
 
-export function PointSheet({ point, onClose, fallbackFocus, preview = false, onMap = false, reduced = false, action }: {
+export function PointSheet({ point, onClose, fallbackFocus, preview = false, onMap = false, reduced = false }: {
   point: MapPoint | SeaPoint;
   onClose: () => void;
   fallbackFocus: () => HTMLElement | null;
@@ -32,8 +32,6 @@ export function PointSheet({ point, onClose, fallbackFocus, preview = false, onM
    */
   onMap?: boolean;
   reduced?: boolean;
-  /** Extra map layer this point opens, such as the territorial claims from the South Pole. */
-  action?: { label: string; onClick: () => void };
 }) {
   const ref = useRef<HTMLElement>(null);
   const [openSource, setOpenSource] = useState<string | null>(null);
@@ -103,7 +101,6 @@ export function PointSheet({ point, onClose, fallbackFocus, preview = false, onM
           </>
         )}
         <SheetActions>
-          {action && <button type="button" className="btn" onClick={action.onClick}>{action.label}</button>}
           <button type="button" className="btn primary" onClick={onClose}>Volver al mapa</button>
         </SheetActions>
       </BottomSheet>

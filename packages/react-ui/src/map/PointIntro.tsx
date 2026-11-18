@@ -6,7 +6,7 @@ import { ExpeditionIntro } from '../sheet/ExpeditionIntro.tsx';
 const IntroPreview = lazy(() => import('../voyage/IntroPreview.tsx').then((m) => ({ default: m.IntroPreview })));
 
 /** The modal before an expedition that has nothing to pick (Marambio, Océano, Fósiles, Cerro Nevado). */
-export function PointIntro({ point, onStart, onExit, fallbackFocus, preview = false, reduced = false }: {
+export function PointIntro({ point, onStart, onExit, fallbackFocus, preview = false, reduced = false, action }: {
   point: MapPoint;
   onStart: () => void;
   onExit: () => void;
@@ -14,6 +14,8 @@ export function PointIntro({ point, onStart, onExit, fallbackFocus, preview = fa
   /** Show the turning 3D model that stands for the expedition (needs WebGL). */
   preview?: boolean;
   reduced?: boolean;
+  /** Extra map layer this point opens (ExpeditionIntro). */
+  action?: { label: string; onClick: () => void };
 }) {
   const intro = expeditionIntro(point.id);
   if (!intro) return null;
@@ -28,6 +30,7 @@ export function PointIntro({ point, onStart, onExit, fallbackFocus, preview = fa
       startLabel={isScenePoint(point.id) ? SCENE_START_LABEL : undefined}
       onExit={onExit}
       fallbackFocus={fallbackFocus}
+      action={action}
     >
       {preview && (
         <Suspense fallback={<div className="vpreview" />}>

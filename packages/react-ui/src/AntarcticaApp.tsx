@@ -57,9 +57,11 @@ const loadThwaites = () => import('./thwaites/ThwaitesExpedition.tsx');
 const ThwaitesExpedition = lazy(() => loadThwaites().then((m) => ({ default: m.ThwaitesExpedition })));
 const loadVostok = () => import('./vostok/VostokExpedition.tsx');
 const VostokExpedition = lazy(() => loadVostok().then((m) => ({ default: m.VostokExpedition })));
+const loadPolo = () => import('./polo/PoloExpedition.tsx');
+const PoloExpedition = lazy(() => loadPolo().then((m) => ({ default: m.PoloExpedition })));
 
-/** The screens a map point opens. Thwaites and Vostok are points of interest with a scene of their own (#280, #281), not expeditions (isScenePoint). */
-const EXPEDITIONS = { orcadas: loadOrcadas, marambio: loadMarambio, fosiles: loadFossils, oceano: loadMarine, thwaites: loadThwaites, vostok: loadVostok } as const;
+/** The screens a map point opens. Thwaites, Vostok and the South Pole are points of interest with a scene of their own (#280, #281, #286), not expeditions (isScenePoint). */
+const EXPEDITIONS = { orcadas: loadOrcadas, marambio: loadMarambio, fosiles: loadFossils, oceano: loadMarine, thwaites: loadThwaites, vostok: loadVostok, polo: loadPolo } as const;
 type ExpeditionId = keyof typeof EXPEDITIONS;
 const isExpedition = (id: string): id is ExpeditionId => id in EXPEDITIONS;
 /** `?expedicion=fosiles` or `?expedicion=oceano` opens that expedition directly, to share it or review it. */
@@ -406,6 +408,8 @@ export function AntarcticaApp() {
             <ThwaitesExpedition reduced={reduced} onLeave={() => leave(false)} />
           ) : screen === 'vostok' ? (
             <VostokExpedition reduced={reduced} onLeave={() => leave(false)} />
+          ) : screen === 'polo' ? (
+            <PoloExpedition reduced={reduced} onLeave={() => leave(false)} />
           ) : screen === 'oceano' ? (
             <MarineExpedition
               reduced={reduced}

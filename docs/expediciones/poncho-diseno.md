@@ -31,7 +31,7 @@ La escena de la parada siguiente empieza con un eco natural del gancho anterior.
 
 ## 4. Diario de ruta
 
-Una línea de una frase sobre los controles, con un dato del libro y su cita. Cambia al avanzar el equipo. Es una región `aria-live="polite"`. En los tramos de barco no aparece (el libro dice poco de los perros a bordo; solo hay una línea en el primero). Con movimiento reducido o en el mapa 2D, aparece una línea distinta en cada paso entre paradas. La elige la función pura `logLineAt(kind, t, leg?)` de `packages/core/src/poncho-log.ts`.
+Una línea de una frase sobre los controles, con un dato del libro y su cita. Cambia al avanzar el equipo. Es una región `aria-live="polite"`. Aparece en todos los tramos: el libro dice poco de los perros a bordo, así que en los de barco hay pocas líneas (una hacia Belgrano y dos en el regreso a Esperanza, #309), pero nunca queda vacío. Con movimiento reducido o en el mapa 2D, aparece una línea distinta en cada paso entre paradas. La elige la función pura `logLineAt(kind, t, leg?)` de `packages/core/src/poncho-log.ts`.
 
 ## 5. Voz del relato
 

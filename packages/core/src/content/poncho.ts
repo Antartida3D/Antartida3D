@@ -212,8 +212,8 @@ export function ponchoActOpeningAt(milestoneId: string): { act: PonchoAct; numbe
 
 /**
  * The route log: one-sentence facts shown while the team travels between stops. `leg` is the leg of the route
- * (see PONCHO_MILESTONES) and `at` the fraction of that leg, from 0 to 1. In order of the trip. The ship legs
- * have none but the first: the book says little about the dogs aboard.
+ * (see PONCHO_MILESTONES) and `at` the fraction of that leg, from 0 to 1. In order of the trip. Every leg has some: the
+ * book says little about the dogs aboard, so the ship legs tell how they went from base to base (#309).
  */
 export const PONCHO_LOG: readonly { leg: number; at: number; fact: VoyageFact }[] = [
   { leg: 0, at: 0.1, fact: book(12, 'Un equipo se armaba con cinco yuntas y un líder: once perros.') },
@@ -225,6 +225,9 @@ export const PONCHO_LOG: readonly { leg: number; at: number; fact: VoyageFact }[
   { leg: 2, at: 0.3, fact: book(10, 'Tras una noche de tormenta, los perros esperaban acurrucados bajo uno o dos metros de nieve.') },
   { leg: 2, at: 0.5, fact: book(25, 'Con carne fresca de foca, el pelaje de los perros quedaba brillante y untuoso, y la nieve no se les pegaba.') },
   { leg: 2, at: 0.78, fact: book(10, 'Los trineos de perros tenían una autonomía de 20 días, no más.') },
+  // The ship back to Esperanza (#309): it was empty; the book says how the dogs went from base to base, and what came after.
+  { leg: 3, at: 0.25, fact: book(14, 'Los traslados de perros entre las bases solían hacerse con ayuda del rompehielos General San Martín.') },
+  { leg: 3, at: 0.75, fact: book(5, 'En 1967, ya de vuelta en Esperanza, Poncho salió en una campaña invernal y en varias patrullas, siempre con regreso a la base.') },
   { leg: 4, at: 0.3, fact: book(10, 'Cada perro comía por día medio kilo de pemmican, una mezcla con carne en polvo, grasa y avena.') },
   { leg: 4, at: 0.65, fact: book(12, 'Un trineo de patrulla rara vez superaba los 40 kilómetros por hora.') },
 ];

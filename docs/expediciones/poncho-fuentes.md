@@ -46,6 +46,8 @@ Las páginas son las del PDF de `[P1]` (25 págs.). Los códigos de la interfaz 
 | Diario de ruta: perros bajo uno o dos metros de nieve, autonomía de 20 días, pemmican | `[P1]` p. 10 | Solo libro |
 | Diario de ruta: perros elegidos por su servicio en 1962 | `[P1]` p. 14 | Solo libro |
 | Diario de ruta: carne de foca y pelaje | `[P1]` p. 25 (pie de la foto de tapa) | Solo libro |
+| Diario de ruta (regreso a Esperanza, #309): los traslados entre bases con el rompehielos General San Martín | `[P1]` p. 14 | Solo libro |
+| Diario de ruta (regreso a Esperanza, #309): campaña invernal y patrullas de 1967 desde Esperanza | `[P1]` p. 5 (cronología) | Solo libro |
 | Coordenadas (Esperanza, San Martín, nunataks Foca, bahía Duse, pico Santa Fe) | `[V2]` y `[V3]` (ver sección 3) | Verificado. Belgrano I y varios otros: `[Fuente a definir]` |
 
 El recorrido dibujado sobre el mapa es una ilustración (aviso único del recorrido): las posiciones de las paradas son aproximadas y no un derrotero real.

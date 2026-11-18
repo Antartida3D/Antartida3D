@@ -89,7 +89,7 @@ Junta los hitos 7, 8 y 9 anteriores ([DEC-223](../decisiones/DEC-223-ultima-para
 
 ## Diario de ruta
 
-Once líneas, todas del libro `[P1]` con su página, repartidas por los tramos de trineo (la función `logLineAt` de `packages/core/src/poncho-log.ts` elige la que corresponde al avance). En el tramo de barco hacia Belgrano hay una; en los otros dos tramos de barco ninguna, porque el libro dice poco de los perros a bordo.
+Trece líneas, todas del libro `[P1]` con su página, repartidas por todos los tramos (la función `logLineAt` de `packages/core/src/poncho-log.ts` elige la que corresponde al avance). El libro dice poco de los perros a bordo: el tramo de barco hacia Belgrano tiene una, y el regreso a Esperanza dos, sobre cómo se trasladaban los perros entre las bases y lo que vino después (#309), para que el diario no quede vacío.
 
 | Tramo | Línea | Página |
 | :--- | :--- | :--- |
@@ -102,6 +102,8 @@ Once líneas, todas del libro `[P1]` con su página, repartidas por los tramos d
 | 2 | Tras una noche de tormenta, los perros esperaban acurrucados bajo uno o dos metros de nieve. | 10 |
 | 2 | Con carne fresca de foca, el pelaje de los perros quedaba brillante y untuoso, y la nieve no se les pegaba. | 25 (pie de foto) |
 | 2 | Los trineos de perros tenían una autonomía de 20 días, no más. | 10 |
+| 3 | Los traslados de perros entre las bases solían hacerse con ayuda del rompehielos General San Martín. | 14 |
+| 3 | En 1967, ya de vuelta en Esperanza, Poncho salió en una campaña invernal y en varias patrullas, siempre con regreso a la base. | 5 |
 | 4 | Cada perro comía por día medio kilo de pemmican, una mezcla con carne en polvo, grasa y avena. | 10 |
 | 4 | Un trineo de patrulla rara vez superaba los 40 kilómetros por hora. | 12 |
 

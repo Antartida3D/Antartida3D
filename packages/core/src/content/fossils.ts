@@ -50,7 +50,7 @@ export const FOSSIL_SOURCES = {
   asteroids: {
     title: 'Nuevas estrellas de mar del Eoceno antártico', org: 'M. I. López Cabrera y E. B. Olivero · Ameghiniana', date: '2026-11-14',
     url: 'https://doi.org/10.5710/AMGH.16.09.2024.3616',
-    detail: 'New late middle Eocene Antarctic goniasterids (Asteroidea, Echinodermata) from La Meseta Formation. Ameghiniana 61(5): 213–229, 2024. Describe Billaster blakei (género y especie nuevos) y Buterminaster elegans de la localidad Bill Hill, isla Marambio (Seymour).',
+    detail: 'New late middle Eocene Antarctic goniasterids (Asteroidea, Echinodermata) from La Meseta Formation. Ameghiniana 61(5): 213–229, 2024. Describe Billaster blakei (género y especie nuevos) y Buterminaster elegans de la localidad Bill Hill, isla Marambio (Seymour). El enlace lleva al resumen en la página de la revista: el texto completo requiere suscripción.',
   },
   chiton: {
     title: 'Leptochiton sp. · primer quitón fósil articulado', org: 'M. I. López Cabrera y E. Olivero · La Lupa n.º 1 / CADIC', date: '2026-11-14',

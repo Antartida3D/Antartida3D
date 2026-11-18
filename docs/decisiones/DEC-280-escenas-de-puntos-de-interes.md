@@ -35,4 +35,4 @@ Quien lleva el issue notó que la toma cercana de los puntos sobre el mapa se ve
 ## Referencias
 
 - [Issue #280](https://github.com/Antartida3D/Antartida3D/issues/280). El siguiente es Vostok ([#281](https://github.com/Antartida3D/Antartida3D/issues/281)).
-- Pruebas: `packages/core/test/scene-points.test.ts`, `packages/react-ui/test/thwaitesScene.test.ts` y `packages/e2e/tests/thwaites.spec.ts`.
+- Pruebas: `packages/core/test/scene-points.test.ts`, `packages/react-ui/test/thwaitesScene.test.ts` y `packages/e2e/tests/scene-points.spec.ts` (Thwaites y, desde #281, Vostok).

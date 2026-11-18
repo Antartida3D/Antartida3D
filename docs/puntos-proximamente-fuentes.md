@@ -49,6 +49,8 @@ Las páginas de BAS (`bas.ac.uk`) responden con un desafío anti-robots (HTTP 20
 
 ## `vostok` — Un lago bajo el hielo
 
+Desde #281 el punto abre una escena propia (`packages/core/src/content/vostok-scene.ts`). Sus tres puntos tienen una oración cada uno, sin agregar ninguna. Una prueba controla que el texto de los hechos reales de la escena sea exactamente esta ficha.
+
 > El Lago Vostok es el mayor lago bajo el hielo de la Antártida: cubre 15.690 km², tiene hasta 510 m de profundidad y está debajo de 3.700 a 4.200 m de hielo. Sigue líquido porque el hielo aísla del frío el calor que llega desde la roca, y la presión baja el punto de fusión del agua. Podría guardar ecosistemas aislados durante millones de años, y su estudio ayuda a pensar si hay vida bajo el hielo de Europa, una luna de Júpiter.
 
 | Oración | Fuente | Cita |

@@ -33,6 +33,7 @@ export function IntroPreview({ id, reduced }: { id: string; reduced: boolean }) 
     case 'oceano': return <SeaPreview species="humpback" reduced={reduced} />;
     case 'cerronevado':
     case 'thwaites':
+    case 'vostok':
       return <PointPreview id={id} reduced={reduced} />;
     case 'poncho': return <ModelPreview tris={PONCHO_PREVIEW} shade={boxShade} motion="turn" reduced={reduced} lift={0.1} />;
     case 'fosiles': return <ModelPreview tris={AMMONITE_PREVIEW} shade={boxShade} motion="turn" reduced={reduced} />;

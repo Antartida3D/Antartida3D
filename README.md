@@ -248,6 +248,8 @@ En cumplimiento con las bases de la hackatón, se declara el uso de herramientas
   > Lectura de la página del artículo y de la nota de derechos de la revista, y aclaración en la fuente, con Claude Code (modelo Claude Opus 5.5), a pedido de quien lleva el issue. No se agregaron datos; la copia aportada por la familia no se publica.
 - **Marambio: botón «Ver una ventisca» (#263):**
   > Búsqueda y verificación de las definiciones (Atlas Internacional de Nubes de la OMM en español y programa antártico australiano), redacción, implementación, pruebas y capturas con Claude Code (modelo Claude Opus 5.5), a pedido de quien lleva el issue. Los números salen de las normales del SMN ya cotejadas en #160; la ventisca de la escena es una simulación y lo dice.
+- **Escena de Vostok (#281):**
+  > Escena, pruebas y revisión con capturas con Claude Code (modelo Claude Opus 5.5), a pedido de quien lleva el issue. Un corte de la capa de hielo con las capas del modelo del mapa y la estación en el borde; sus tres puntos usan las oraciones ya verificadas de la ficha, sin datos ni fuentes nuevos. Es una reconstrucción ilustrada que no está a escala, y la interfaz lo dice.
 - **Escena común de los puntos de interés y escena de Thwaites (#280):**
   > Plan, generalización de la escena de Cerro Nevado, escena de Thwaites, pruebas y revisión con capturas con Claude Code (modelo Claude Opus 5.5), a pedido de quien lleva el issue. La escena reutiliza el frente del glaciar del mapa y reparte en cuatro puntos las oraciones ya verificadas de la ficha: no se agregaron datos ni fuentes. Es una reconstrucción ilustrada (alturas exageradas, ancho acortado y desprendimientos acelerados) y la interfaz lo dice.
 - **Pingüinos de Cerro Nevado (#206):**

@@ -39,6 +39,8 @@ export interface PointScene3DProps<S extends string> {
   shift: ViewShiftPx;
   /** Everything that stands still; called once. */
   stage: () => Tri[];
+  /** No sea: the scene stands on land (Vostok), whose stage is the ground to the horizon. */
+  noSea?: boolean;
   icebergs?: readonly SceneIceberg[];
   floes?: readonly SceneFloe[];
   limits: SceneLimits;
@@ -82,7 +84,7 @@ function Sky() {
 }
 
 /** The sea, the icebergs (free ones with their waterline, the ones held in the ice without) and the pack ice. */
-function SeaAndIce({ icebergs, floes }: { icebergs: readonly SceneIceberg[]; floes: readonly SceneFloe[] }) {
+function SeaAndIce({ icebergs, floes, noSea }: { icebergs: readonly SceneIceberg[]; floes: readonly SceneFloe[]; noSea: boolean }) {
   const sea = useMemo(() => new CircleGeometry(SKY_RADIUS, 48), []);
   const seaMat = useMemo(() => new MeshBasicMaterial({ color: SEA }), []);
   const ice = useMemo(
@@ -114,7 +116,7 @@ function SeaAndIce({ icebergs, floes }: { icebergs: readonly SceneIceberg[]; flo
   );
   return (
     <>
-      <mesh geometry={sea} material={seaMat} rotation={[-Math.PI / 2, 0, 0]} />
+      {!noSea && <mesh geometry={sea} material={seaMat} rotation={[-Math.PI / 2, 0, 0]} />}
       {icebergs.map(([x, z, size, angle, tabular, held], i) => {
         const kind = tabular ? 'tabular' : 'peaks';
         return (
@@ -263,7 +265,7 @@ export function PointScene3D<S extends string>(props: PointScene3DProps<S>) {
           }}
         >
           <Sky />
-          <SeaAndIce icebergs={props.icebergs ?? []} floes={props.floes ?? []} />
+          <SeaAndIce icebergs={props.icebergs ?? []} floes={props.floes ?? []} noSea={props.noSea ?? false} />
           <Stage build={props.stage} />
           {props.children}
           <ViewShift shift={props.shift} />

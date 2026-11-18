@@ -307,3 +307,5 @@ En cumplimiento con las bases de la hackatón, se declara el uso de herramientas
   > Previsualizaciones, plan, restauración de la ilustración SVG en paleta azul, integración con «Dato real» y «Mapa listo», limpieza del póster 3D, pruebas y documentación con asistencia de IA, con aprobación visual de quien lleva el issue. No se agregaron datos ni fuentes nuevas.
 - **Océano: pasos, botones y modelos del mar (#283):**
   > Revisión paso a paso con quien lleva el issue; implementación, modelos low-poly de la jorobada, la minke y la foca leopardo, pruebas, capturas y documentación con asistencia de IA. La aleta de la minke antártica se verificó en la ficha de NOAA Fisheries. Los modelos y las escenas son ilustraciones; no se agregaron datos nuevos.
+- **Fechas de congelamiento y de entrega (#324):**
+  > Actualización de las fechas en `AGENTS.md` y `ROADMAP.md` y registro de la decisión con asistencia de IA, a partir del pedido del equipo y del formulario de entrega.

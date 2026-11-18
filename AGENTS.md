@@ -107,8 +107,8 @@ Un issue asignado sin actividad por más de 24 h se puede reclamar, previo aviso
 
 - **Lun 16 nov 23:00:** primer avance. Lo que esté en `main` a esa hora es el avance.
 - **Mar 17 nov:** último día para sumar funcionalidades.
-- **Mié 18 nov 19:00:** `main` congelado. Solo arreglos críticos.
-- **Mié 18 nov 21:00:** entrega final.
+- **Jue 19 nov 14:00:** `main` congelado. Solo arreglos críticos.
+- **Jue 19 nov 15:00:** entrega final. Es la hora de cierre del formulario de entrega; el congelamiento deja una hora de margen ([DEC-324](docs/decisiones/DEC-324-congelamiento-19-nov.md)).
 
 ## Reglas para agentes
 

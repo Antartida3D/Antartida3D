@@ -295,7 +295,7 @@ function ControlsBridge({
       );
     } else if (!initialized.current) {
       initialized.current = true;
-      const home = homePose3D(size.vw / size.vh);
+      const home = homePose3D(size.vw / size.vh, undefined, size.vh);
       cc.setLookAt(home.pos.x, home.pos.y, home.pos.z, home.target.x, home.target.y, home.target.z, false);
     }
   }, [phase, reduced, diveTarget]);
@@ -359,13 +359,13 @@ function ControlsBridge({
       cc.dollyTo(endDistance, smooth);
     } else if (cmd.type === 'home') {
       preVisitPoseRef.current = null;
-      const home = homePose3D(aspect);
-      endDistance = homeDistance3D(aspect);
+      const home = homePose3D(aspect, undefined, size.vh);
+      endDistance = homeDistance3D(aspect, size.vh);
       cc.setLookAt(home.pos.x, home.pos.y, home.pos.z, home.target.x, home.target.y, home.target.z, smooth);
     } else if (cmd.type === 'focus') {
       preVisitPoseRef.current = null;
       const t = poseFromView(size, geo, cmd.view).target;
-      endDistance = clampDistance(distanceFromK3D(aspect, cmd.view.k));
+      endDistance = clampDistance(distanceFromK3D(aspect, cmd.view.k, size.vh));
       cc.moveTo(t.x, 0, t.z, smooth);
       cc.dollyTo(endDistance, smooth);
     } else if (cmd.type === 'visit') {
@@ -468,7 +468,7 @@ function ControlsBridge({
       enabled={phase !== 'approach' && phase !== 'dive' && phase !== 'travel'}
       minDistance={ICE_MIN_DISTANCE}
       // Travelling, the camera stays near the vehicle: farther it gets lost among the lands (#167).
-      maxDistance={voyaging ? voyageMaxDistance3D(size.vw / size.vh) : homeDistance3D(size.vw / size.vh)}
+      maxDistance={voyaging ? voyageMaxDistance3D(size.vw / size.vh, size.vh) : homeDistance3D(size.vw / size.vh, size.vh)}
     />
   );
 }
@@ -505,7 +505,7 @@ function ProjectMarkers({
     // places, each with a line back to its own (#238): the spread is worked out here, from where the
     // camera really puts them, since the tilt and the turn change how close they look. Sea markers
     // stay out of it, and go behind: a moving ship must not push the points around.
-    const gap = markerGap(size.width);
+    const gap = markerGap(size.width, size.height);
     // A marker just out of the screen is hidden but still takes its room, up to a gap past the edge:
     // if it stopped counting the moment it left, its neighbours would jump back (#253).
     const roomX = 1.1 + (2 * gap) / size.width;
@@ -653,7 +653,7 @@ export function Map3DLayer({
   const [enablePost, setEnablePost] = useState(true);
   const [lowQuality, setLowQuality] = useState(false);
 
-  const homeStart = homePose3D(size.vw / size.vh);
+  const homeStart = homePose3D(size.vw / size.vh, undefined, size.vh);
 
   const seaMarkers = useMemo<SeaMarker[]>(
     () =>

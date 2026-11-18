@@ -42,24 +42,36 @@ test.describe('3D header at 844x390', () => {
     // Wait for zoom transition to settle before measuring boundingBox.
     await page.waitForTimeout(600);
 
-    const box = await orcadasBtn.boundingBox();
-    expect(box).not.toBeNull();
-    const cx = box!.x + box!.width / 2;
-    const cy = box!.y + box!.height / 2;
+    const assertOrcadasReachable = async () => {
+      const box = await orcadasBtn.boundingBox();
+      expect(box).not.toBeNull();
+      expect(box!.y).toBeGreaterThanOrEqual(0);
+      expect(box!.y + box!.height).toBeLessThanOrEqual(390);
+      const cx = box!.x + box!.width / 2;
+      const cy = box!.y + box!.height / 2;
 
-    const hit = await page.evaluate(
-      ({ x, y }) => {
-        const el = document.elementFromPoint(x, y);
-        return {
-          inBrand: Boolean(el?.closest('header.top .brand')),
-          inMarker: Boolean(el?.closest('[data-key*="orcadas"] button')),
-        };
-      },
-      { x: cx, y: cy }
-    );
+      const hit = await page.evaluate(
+        ({ x, y }) => {
+          const el = document.elementFromPoint(x, y);
+          return {
+            inBrand: Boolean(el?.closest('header.top .brand')),
+            inMarker: Boolean(el?.closest('[data-key*="orcadas"] button')),
+          };
+        },
+        { x: cx, y: cy }
+      );
 
-    expect(hit.inBrand).toBe(false);
-    expect(hit.inMarker).toBe(true);
+      expect(hit.inBrand).toBe(false);
+      expect(hit.inMarker).toBe(true);
+    };
+
+    await assertOrcadasReachable();
+
+    await page.getByRole('button', { name: 'Acercar' }).click();
+    await page.waitForTimeout(400);
+    await page.getByRole('button', { name: 'Ver todo el continente' }).click();
+    await page.waitForTimeout(600);
+    await assertOrcadasReachable();
   });
 });
 

@@ -157,26 +157,57 @@ export const HOME_TILT_DEG = 38;
 /**
  * Overview pose: north up, looking at the continent from the south at HOME_TILT_DEG,
  * as close as the viewport allows while the whole continent stays in frame.
+ * When `vh` is provided on short screens, reserves top headroom for the header and
+ * fanned marker sticks while keeping the south edge inside the viewport.
  */
-export function homePose3D(aspect: number, margin = 1.08): CameraPose {
-  const target = toWorld((TERRAIN_BOX.minX + TERRAIN_BOX.maxX) / 2, (TERRAIN_BOX.minY + TERRAIN_BOX.maxY) / 2);
+export function homePose3D(aspect: number, margin = 1.08, vh?: number): CameraPose {
+  const midX = (TERRAIN_BOX.minX + TERRAIN_BOX.maxX) / 2;
+  const midY = (TERRAIN_BOX.minY + TERRAIN_BOX.maxY) / 2;
   const width = TERRAIN_BOX.maxX - TERRAIN_BOX.minX;
   const depth = TERRAIN_BOX.maxY - TERRAIN_BOX.minY;
   const tilt = (HOME_TILT_DEG * Math.PI) / 180;
+  const sinT = Math.sin(tilt);
+  const cosT = Math.cos(tilt);
   const tanV = Math.tan((FOV * Math.PI) / 360);
   // Ground width must fit the horizontal field of view; the tilted depth must fit the vertical one.
   const fitWidth = width / 2 / (tanV * aspect);
-  const fitDepth = (depth * Math.sin(tilt)) / 2 / tanV + (depth / 2) * Math.cos(tilt);
-  const distance = Math.max(fitWidth, fitDepth) * margin;
+  const fitDepth = (depth * sinT) / 2 / tanV + (depth / 2) * cosT;
+  let distance = Math.max(fitWidth, fitDepth) * margin;
+  let targetY = midY;
+
+  if (vh !== undefined && vh > 0) {
+    // Fixed px above TERRAIN_BOX.minY for header.top + marker stick + fan lift.
+    const topClearPx = 155;
+    const bottomClearPx = 20;
+    const defaultNdcTop = ((depth / 2) * sinT) / ((distance + (depth / 2) * cosT) * tanV);
+    const defaultTopPx = ((1 - defaultNdcTop) * vh) / 2;
+    if (defaultTopPx < topClearPx) {
+      const ndcTop = 1 - (2 * topClearPx) / vh;
+      const ndcBot = -(1 - (2 * bottomClearPx) / vh);
+      if (ndcTop > 0.05 && ndcBot < -0.05) {
+        const kTop = sinT / (ndcTop * tanV) - cosT;
+        const kBot = sinT / (-ndcBot * tanV) + cosT;
+        const dTop = (depth * kTop * kBot) / (kTop + kBot);
+        if (dTop > distance) {
+          distance = dTop;
+          targetY = TERRAIN_BOX.minY + (depth * kBot) / (kTop + kBot);
+        } else {
+          targetY = TERRAIN_BOX.minY + Math.min(depth / 2, distance / kTop);
+        }
+      }
+    }
+  }
+
+  const target = toWorld(midX, targetY);
   return {
-    pos: { x: target.x, y: distance * Math.sin(tilt), z: target.z + distance * Math.cos(tilt) },
+    pos: { x: target.x, y: distance * sinT, z: target.z + distance * cosT },
     target,
   };
 }
 
 /** Camera-to-target distance of the 3D overview. */
-export function homeDistance3D(aspect: number): number {
-  const { pos, target } = homePose3D(aspect);
+export function homeDistance3D(aspect: number, vh?: number): number {
+  const { pos, target } = homePose3D(aspect, 1.08, vh);
   return Math.hypot(pos.x - target.x, pos.y - target.y, pos.z - target.z);
 }
 
@@ -191,22 +222,22 @@ export const VOYAGE_VIEW_SPAN = 80;
  * Farthest camera distance while travelling: the same ground across the shorter side of the
  * screen on a wide window and on a phone, and never farther than the overview.
  */
-export function voyageMaxDistance3D(aspect: number): number {
+export function voyageMaxDistance3D(aspect: number, vh?: number): number {
   const across = 2 * Math.tan((FOV * Math.PI) / 360) * Math.min(1, aspect);
-  return Math.min(homeDistance3D(aspect), VOYAGE_VIEW_SPAN / across);
+  return Math.min(homeDistance3D(aspect, vh), VOYAGE_VIEW_SPAN / across);
 }
 
 /**
  * 3D zoom level as a 2D-style `k`: 1 at the overview, doubling each time the distance halves.
  * Lets clustering and the 2D/3D switch share one zoom scale with the orbit camera.
  */
-export function kFromDistance3D(aspect: number, distance: number): number {
-  return homeDistance3D(aspect) / Math.max(distance, 1e-6);
+export function kFromDistance3D(aspect: number, distance: number, vh?: number): number {
+  return homeDistance3D(aspect, vh) / Math.max(distance, 1e-6);
 }
 
 /** Inverse of kFromDistance3D. */
-export function distanceFromK3D(aspect: number, k: number): number {
-  return homeDistance3D(aspect) / k;
+export function distanceFromK3D(aspect: number, k: number, vh?: number): number {
+  return homeDistance3D(aspect, vh) / k;
 }
 
 /**
@@ -215,7 +246,7 @@ export function distanceFromK3D(aspect: number, k: number): number {
  * instead of overlapping. Switching back to 2D brings such a view back to HOME.
  */
 export function viewFrom3D(size: Size, geo: Geometry, target: Vector3Like, distance: number): View {
-  const k = Math.min(MAX_K, kFromDistance3D(size.vw / size.vh, distance));
+  const k = Math.min(MAX_K, kFromDistance3D(size.vw / size.vh, distance, size.vh));
   const pxPerUnit = (geo.S * k) / 1000;
   const map = fromWorld(target);
   return clampView(size, k, size.vw / 2 - geo.ox - map.x * pxPerUnit, size.vh / 2 - geo.oy - map.y * pxPerUnit);

@@ -71,7 +71,7 @@ export function buildMarkers(
     const pos = projector(p.x, p.y);
     return pos.visible === false ? [] : [{ p, pos }];
   });
-  const offsets = fanOffsets(shown.map((s) => s.pos), markerGap(size.vw));
+  const offsets = fanOffsets(shown.map((s) => s.pos), markerGap(size.vw, size.vh));
   shown.forEach(({ p, pos }, i) => {
     const { dx, dy } = offsets[i];
     const isA = p.tier === 'A';

@@ -41,7 +41,6 @@ La aplicación también cuenta historias reales y anécdotas que poca gente cono
 **Modelo de negocio (propuesta, todavía no está en la aplicación):**
 
 - Las empresas de turismo locales pueden pagar para aparecer en los puntos turísticos del mapa. Desde ahí, la persona puede contactarlas para pedir más información o una excursión.
-- Los guías de turismo pueden postularse para llevar a las personas a esos lugares.
 
 La publicidad va siempre separada y marcada como tal. Nunca se mezcla con el contenido científico ni con sus fuentes.
 

@@ -20,7 +20,7 @@
    - `ScenePointScreen` (`packages/react-ui/src/scenepoint/`): panel, puntos tocables y fuentes, con los componentes de modal de [DEC-264](DEC-264-modales-normalizados.md) y el encabezado, la etiqueta de escena y el cartel de ubicación comunes de [DEC-297](DEC-297-encabezado-comun-de-expediciones.md).
    - `PointScene3D`: lienzo dentro de `CanvasGuard`, cielo, mar, témpanos con su línea de agua, efecto de tinta y cámara con gestos.
    - Cada punto aporta solo su escenario, sus vistas, sus límites de cámara y sus partes que se mueven.
-   - Cerro Nevado no está en la lista: desde [DEC-289](DEC-289-cerro-nevado-ficha-comun.md) abre su ficha común. Su escena (`cerronevado/CerroNevadoScene.tsx`) queda armada sobre `PointScene3D`, sin montarse, como la dejó DEC-297.
+   - Cerro Nevado no estuvo en la lista mientras rigió [DEC-289](DEC-289-cerro-nevado-ficha-comun.md); desde [DEC-310](DEC-310-cerro-nevado-escena-comun.md) vuelve a estar, con su escena (`cerronevado/CerroNevadoScene.tsx`) sobre `PointScene3D`.
 5. El contenido sigue un solo tipo, `ScenePoint` (`packages/core/src/content/scene-point.ts`).
 6. «Glaciares que cambian» (Thwaites) es el primer punto con escena común (`packages/react-ui/src/thwaites/`):
    - Reutiliza el frente del mapa y de la ficha (`thwaitesFront`), a escala de mundo, sobre la misma costa inventada de la ficha.

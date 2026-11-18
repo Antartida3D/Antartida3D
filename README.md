@@ -244,6 +244,8 @@ En cumplimiento con las bases de la hackatón, se declara el uso de herramientas
   > Relevamiento, implementación, pruebas y capturas en celular y escritorio con Claude Code (modelo Claude Opus 5.5), con revisión del equipo. No se agregaron datos ni fuentes.
 - **Expedición Fósiles: pulido, línea de tiempo, nota del hallazgo y migración a low-poly (#7):**
   > Planificación, implementación, pruebas y verificación con capturas con Claude Code (modelo Claude Opus 5.5), a partir de los pedidos de quien lleva el issue. La línea de tiempo usa las edades de la Tabla Cronoestratigráfica Internacional v2026/06 (ICS) y ubica cada hallazgo solo en el período que dan sus fuentes. La nota «El desvío de 1986» resume la entrevista de Infobae y cita textualmente a Eduardo Olivero; cada cita se cotejó con la nota. Los modelos low-poly son ilustraciones: formas y colores interpretados.
+- **Cerro Nevado: la pingüinera de vuelta, con la pantalla común (#310):**
+  > Restauración de la escena, pruebas y revisión con capturas con Claude Code (modelo Claude Opus 5.5), a pedido de quien lleva el issue. Reutiliza la escena y los textos ya verificados de #206; no se agregaron datos ni fuentes ([DEC-310](docs/decisiones/DEC-310-cerro-nevado-escena-comun.md)).
 - **Fósiles: acceso al paper de Ameghiniana (#300):**
   > Lectura de la página del artículo y de la nota de derechos de la revista, y aclaración en la fuente, con Claude Code (modelo Claude Opus 5.5), a pedido de quien lleva el issue. No se agregaron datos; la copia aportada por la familia no se publica.
 - **Marambio: botón «Ver una ventisca» (#263):**

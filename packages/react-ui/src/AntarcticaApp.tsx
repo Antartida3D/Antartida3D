@@ -63,9 +63,11 @@ const loadBelgrano = () => import('./belgrano/BelgranoExpedition.tsx');
 const BelgranoExpedition = lazy(() => loadBelgrano().then((m) => ({ default: m.BelgranoExpedition })));
 const loadTestigos = () => import('./testigos/TestigosExpedition.tsx');
 const TestigosExpedition = lazy(() => loadTestigos().then((m) => ({ default: m.TestigosExpedition })));
+const loadCerroNevado = () => import('./cerronevado/CerroNevadoExpedition.tsx');
+const CerroNevadoExpedition = lazy(() => loadCerroNevado().then((m) => ({ default: m.CerroNevadoExpedition })));
 
-/** The screens a map point opens. Thwaites, Vostok, the South Pole, Belgrano II and the ice cores are points of interest with a scene of their own (#280, #281, #286, #287, #288), not expeditions (isScenePoint). */
-const EXPEDITIONS = { orcadas: loadOrcadas, marambio: loadMarambio, fosiles: loadFossils, oceano: loadMarine, thwaites: loadThwaites, vostok: loadVostok, polo: loadPolo, belgrano: loadBelgrano, testigos: loadTestigos } as const;
+/** The screens a map point opens. Thwaites, Vostok, the South Pole, Belgrano II, the ice cores and Cerro Nevado are points of interest with a scene of their own (#280, #281, #286, #287, #288, #310), not expeditions (isScenePoint). */
+const EXPEDITIONS = { orcadas: loadOrcadas, marambio: loadMarambio, fosiles: loadFossils, oceano: loadMarine, thwaites: loadThwaites, vostok: loadVostok, polo: loadPolo, belgrano: loadBelgrano, testigos: loadTestigos, cerronevado: loadCerroNevado } as const;
 type ExpeditionId = keyof typeof EXPEDITIONS;
 const isExpedition = (id: string): id is ExpeditionId => id in EXPEDITIONS;
 /** `?expedicion=fosiles` or `?expedicion=oceano` opens that expedition directly, to share it or review it. */
@@ -418,6 +420,8 @@ export function AntarcticaApp() {
             <BelgranoExpedition reduced={reduced} onLeave={() => leave(false)} />
           ) : screen === 'testigos' ? (
             <TestigosExpedition reduced={reduced} onLeave={() => leave(false)} />
+          ) : screen === 'cerronevado' ? (
+            <CerroNevadoExpedition reduced={reduced} onLeave={() => leave(false)} />
           ) : screen === 'oceano' ? (
             <MarineExpedition
               reduced={reduced}

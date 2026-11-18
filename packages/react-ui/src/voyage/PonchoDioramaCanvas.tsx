@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { BackSide, BufferAttribute, Color, MeshBasicMaterial, SphereGeometry, Vector2 } from 'three';
 import { Canvas, useThree } from '@react-three/fiber';
 import { CameraControls, CameraControlsImpl, PerformanceMonitor } from '@react-three/drei';
-import { SHOT_DISTANCE, SNOW_GALE_KMH, SNOW_LOW_QUALITY_PARTICLES, SNOW_MAX_PARTICLES, sceneBlizzard, sceneStage, shotPose, type SceneDef } from '@antartida/core';
+import { SHOT_DISTANCE, SNOW_GALE_KMH, SNOW_LOW_QUALITY_PARTICLES, SNOW_MAX_PARTICLES, sceneSnow, sceneStage, shotPose, type SceneDef } from '@antartida/core';
 import { CanvasGuard } from '../CanvasGuard.tsx';
 import { Snowfall } from '../orcadas/WeatherDetails.tsx';
 import { ViewShift, type ViewShiftPx } from '../sceneFrame.tsx';
@@ -45,6 +45,11 @@ const BLIZZARD_FOG_NEAR = 4;
 const BLIZZARD_FOG_FAR = 22;
 /** The flakes of a blizzard fill the stage and a little round it (scene units), and are bigger than the station's: wind-blown snow. */
 const BLIZZARD_SPAN = 10;
+/** When the weather gets better (#309): fewer flakes, falling with no wind, and the haze opens again, but not all the way. */
+const LIGHT_SNOW_SHARE = 0.35;
+const LIGHT_FOG_NEAR = 14;
+const LIGHT_FOG_FAR = 70;
+const NO_WIND = new Vector2(0, 0);
 const BLIZZARD_TOP = 5;
 const BLIZZARD_FLAKE = 1.6;
 /** The wind of a blizzard: a gale, so the flakes blow across the stage instead of falling, in the face of the team (towards -x). */
@@ -124,19 +129,23 @@ function ShotCamera({ scene, step, reduced }: { scene: SceneDef; step: number; r
 /** The scene: sky, ground and sea out to the horizon, and the actors, with the camera on its shot. Mounted inside the Canvas. */
 function Stage({ scene, step, reduced, lowQuality }: { scene: SceneDef; step: number; reduced: boolean; lowQuality: boolean }) {
   const world = useMemo(() => buildDioramaWorld(scene), [scene]);
-  const blizzard = sceneBlizzard(scene, step);
+  const snow = sceneSnow(scene, step);
+  const blizzard = snow === 'blizzard';
+  const fog: [number, number] = blizzard ? [BLIZZARD_FOG_NEAR, BLIZZARD_FOG_FAR] : snow === 'light' ? [LIGHT_FOG_NEAR, LIGHT_FOG_FAR] : [FOG_NEAR, DIORAMA_FOG_FAR];
+  const flakes = lowQuality ? SNOW_LOW_QUALITY_PARTICLES : SNOW_MAX_PARTICLES;
   const land = useMemo(() => buildPolyGeometry(world.land), [world]);
   const sea = useMemo(() => (world.sea.length ? buildPolyGeometry(world.sea) : null), [world]);
   return (
     <>
       {/* The key remounts the fog when the weather changes, so the materials take the new distances. */}
-      <fog key={blizzard ? 'blizzard' : 'clear'} attach="fog" args={blizzard ? [SKY_HAZE, BLIZZARD_FOG_NEAR, BLIZZARD_FOG_FAR] : [SKY_HAZE, FOG_NEAR, DIORAMA_FOG_FAR]} />
+      <fog key={snow ?? 'clear'} attach="fog" args={[SKY_HAZE, ...fog]} />
       <Sky />
       <Faces geometry={land} />
       {sea && <Faces geometry={sea} />}
       <DioramaActors scene={scene} step={step} ground={world.ground} reduced={reduced} />
-      {blizzard && (
-        <Snowfall count={lowQuality ? SNOW_LOW_QUALITY_PARTICLES : SNOW_MAX_PARTICLES} windKmh={BLIZZARD_WIND_KMH} windVec={BLIZZARD_WIND} reduced={reduced} span={BLIZZARD_SPAN} top={BLIZZARD_TOP} size={BLIZZARD_FLAKE} />
+      {/* The same flakes go on when the weather calms, fewer and with no wind: the snow does not stop at once (#309). */}
+      {snow && (
+        <Snowfall count={blizzard ? flakes : flakes * LIGHT_SNOW_SHARE} windKmh={blizzard ? BLIZZARD_WIND_KMH : 0} windVec={blizzard ? BLIZZARD_WIND : NO_WIND} reduced={reduced} span={BLIZZARD_SPAN} top={BLIZZARD_TOP} size={BLIZZARD_FLAKE} />
       )}
       <ShotCamera scene={scene} step={step} reduced={reduced} />
     </>

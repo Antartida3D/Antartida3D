@@ -168,9 +168,10 @@ export interface SceneDef {
   readonly backdrop?: 'mountain' | 'glacier';
   /**
    * A blizzard over the stage (issue #220): snow blown by the wind and the far ground lost in it, from the first
-   * step until step `until` (default: all of them). An illustration of the weather the stop tells, not a record.
+   * step until step `until` (default: all of them). From step `calmFrom` on (#309) the weather gets better but does not
+   * clear at once: it keeps snowing, lightly and with no wind. An illustration of the weather the stop tells, not a record.
    */
-  readonly blizzard?: { readonly until?: number };
+  readonly blizzard?: { readonly until?: number; readonly calmFrom?: number };
   /**
    * From step `atStep` on, the stop is told in another scene (issue #223: the last stop goes from the Base Esperanza to the
    * ship): the stage, the actors and the camera are the ones of `scene` at its step `step` (and the next ones, in order).
@@ -465,14 +466,15 @@ export const PONCHO_SCENES: Readonly<Record<string, SceneDef>> = {
       dog('pack', -4.2, -1.5, 0, { appearAt: 1, path: 'patrol', lag: 2.25, side: 0.26 }),
       dog('pack', -4.2, -1.5, 0, { appearAt: 1, path: 'patrol', lag: 2.25, side: -0.26 }),
       sled(-4.2, -1.5, 0, { appearAt: 1, path: 'patrol', lag: 3.7, radius: 0.8 }),
+      // The two men of the patrol, both in orange, so they are not taken for the survivors (in blue): #309.
       person(ORANGE, -4.2, -1.5, 0, 'walk', 0, { appearAt: 1, until: 2, path: 'patrol', lag: 5.7 }),
-      person(RED, -4.2, -1.5, 0, 'walk', 1.5, { appearAt: 1, until: 2, path: 'patrol', lag: 7.0 }),
+      person(ORANGE, -4.2, -1.5, 0, 'walk', 1.5, { appearAt: 1, until: 2, path: 'patrol', lag: 7.0 }),
       person(ORANGE, -2.8, -0.2, 0, 'walk', 0, { appearAt: 2, path: 'toDoor' }),
-      person(RED, -1.0, -3.3, 0, 'walk', 1.5, { appearAt: 2, path: 'toTail' }),
+      person(ORANGE, -1.0, -3.3, 0, 'walk', 1.5, { appearAt: 2, path: 'toTail' }),
       // The four survivors wait by the wreck from the first sentence on (book p. 17-18: they survived and waited for help).
       person(NAVY, -0.2, 1.6, yawToward(-0.2, 1.6, 2.6, 1.4), 'stand', 0),
-      person(RED, 0.6, 3.4, yawToward(0.6, 3.4, 2.6, 1.4), 'tend', 1.1),
-      person(ORANGE, 1.2, 3.8, yawToward(1.2, 3.8, 2.6, 1.4), 'stand', 2.3),
+      person(NAVY, 0.6, 3.4, yawToward(0.6, 3.4, 2.6, 1.4), 'tend', 1.1),
+      person(NAVY, 1.2, 3.8, yawToward(1.2, 3.8, 2.6, 1.4), 'stand', 2.3),
       person(NAVY, 4.3, -1.0, yawToward(4.3, -1.0, 2.6, 1.4), 'stand', 0.7),
     ],
     paths: [
@@ -488,9 +490,9 @@ export const PONCHO_SCENES: Readonly<Record<string, SceneDef>> = {
       shot(1, [0.0, 0.4, -0.6], 10, 30, -95),
       shot(2, [1.4, 0.5, 0.4], 10, 26, -100),
     ],
-    // Bad weather keeps the planes on the ground and the patrol marches through blizzards; on the fourth day it has
-    // cleared (book p. 18), so the last stage is calm.
-    blizzard: { until: 2 },
+    // Bad weather keeps the planes on the ground and the patrol marches through blizzards; on the fourth day the weather
+    // has got better (book p. 18), so the last stage is calmer: it keeps snowing, lightly and with no wind (#309).
+    blizzard: { calmFrom: 2 },
   },
   // From the air (book p. 18-19): 0 the helicopter flying in over the ice, with its door open, and the two officers waiting below; 1 the three dogs come down on parachutes, small under it, paddling
   // their legs; 2 they land and Poncho is already at the front of the sled, walking, with a man behind it.
@@ -699,9 +701,16 @@ export function sceneStage(scene: SceneDef, step: number): { scene: SceneDef; st
   return next && step >= next.atStep ? { scene: next.scene, step: next.step + step - next.atStep } : { scene, step };
 }
 
-/** Whether the blizzard of the scene (if it has one) blows at `step`. */
-export const sceneBlizzard = (scene: SceneDef, step: number): boolean =>
-  scene.blizzard !== undefined && step < (scene.blizzard.until ?? Number.POSITIVE_INFINITY);
+/** The snow over a scene at a step: a blizzard, a light snowfall with no wind (the weather got better, #309), or none. */
+export type SceneSnow = 'blizzard' | 'light' | null;
+export function sceneSnow(scene: SceneDef, step: number): SceneSnow {
+  const b = scene.blizzard;
+  if (!b || step >= (b.until ?? Number.POSITIVE_INFINITY)) return null;
+  return b.calmFrom !== undefined && step >= b.calmFrom ? 'light' : 'blizzard';
+}
+
+/** Whether the blizzard of the scene (if it has one) blows at `step`: not while it only snows lightly. */
+export const sceneBlizzard = (scene: SceneDef, step: number): boolean => sceneSnow(scene, step) === 'blizzard';
 
 /** Seconds a dog takes to lie down, and to get up again (see `sceneRest`). */
 export const REST_DOWN_S = 0.9;

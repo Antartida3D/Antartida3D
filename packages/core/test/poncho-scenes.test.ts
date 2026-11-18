@@ -6,6 +6,7 @@ import {
   MAX_SCENE_TOTAL,
   SCENE_SETTINGS,
   sceneBlizzard,
+  sceneSnow,
   sceneFallLift,
   SCENE_TURN_LENGTH,
   STAGE_ENTER_S,
@@ -576,10 +577,22 @@ describe('«Al rescate de un avión» (#220)', () => {
     expect(helpers(2).length).toBe(2);
   });
 
-  it('blows a blizzard while the plane waits and the patrol marches, and clears on the fourth day (book p. 18)', () => {
+  it('dresses the men of the patrol in orange and the survivors in blue, so they are not mixed up (#309)', () => {
+    const all = scene.elements.filter((e) => e.kind === 'person');
+    const survivors = all.filter((e) => !e.path);
+    const patrol = all.filter((e) => e.path);
+    expect(survivors).toHaveLength(4);
+    for (const e of survivors) expect(e.id).toBe('orangeNavy');
+    for (const e of patrol) expect(e.id).toBe('orange');
+  });
+
+  it('blows a blizzard while the plane waits and the patrol marches, and calms on the fourth day (book p. 18)', () => {
     expect(sceneBlizzard(scene, 0)).toBe(true);
     expect(sceneBlizzard(scene, 1)).toBe(true);
     expect(sceneBlizzard(scene, 2)).toBe(false);
+    // On the fourth day the weather got better (p. 18): it does not stop snowing at once, it snows lightly (#309).
+    expect([0, 1, 2].map((step) => sceneSnow(scene, step))).toEqual(['blizzard', 'blizzard', 'light']);
+    expect(sceneSnow(PONCHO_SCENES['nacimiento'], 0)).toBeNull();
     expect(sceneBlizzard(PONCHO_SCENES['nacimiento'], 0)).toBe(false);
   });
 });

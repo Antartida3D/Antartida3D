@@ -34,6 +34,6 @@ describe('photographs of Poncho stops', () => {
   it('are found by stop, in order, and most stops have none', () => {
     expect(ponchoPhotosAt('poncho-perro-guia').map((p) => p.file)).toEqual(['poncho-pagina.jpg', 'san-martin.jpg']);
     expect(ponchoPhotosAt('nacimiento').map((p) => p.file)).toEqual(['esperanza.jpg']);
-    expect(ponchoPhotosAt('adios-a-la-antartida')).toEqual([]);
+    expect(ponchoPhotosAt('brujula-perdida')).toEqual([]);
   });
 });

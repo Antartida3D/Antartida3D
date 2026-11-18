@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 // Break the pre-existing stationModels <-> sightingModels -> penguins import cycle in test isolation.
 import '../src/voyage/sightingModels.ts';
-import { PONCHO_SCENES, sceneBodyRadius, sceneCoastZ, shipWalkwayAt, type SceneDef } from '@antartida/core';
+import { PONCHO_SCENES, sceneBodyRadius, sceneTrack, sceneCoastZ, shipWalkwayAt, type SceneDef } from '@antartida/core';
 import {
   DIORAMA_CLEAR_MARGIN,
   DIORAMA_FOG_FAR,
@@ -17,6 +17,7 @@ import {
   stationMountain,
 } from '../src/voyage/ponchoDioramaGround.ts';
 import { PRESHADED } from '../src/voyage/lowPoly.ts';
+import { sceneClearings } from '../src/voyage/ponchoSceneBuild.ts';
 import { SKY_HAZE, SKY_ZENITH, skyColorAt } from '../src/voyage/ponchoSky.ts';
 
 /** The most faces the land and the sea of a diorama may have: two draw calls, light on a phone. */
@@ -206,5 +207,18 @@ describe('the ground of a station (#216)', () => {
     expect(colors.size).toBeGreaterThan(4);
     // Every face has a real color already (the relief paints only the faces that ask for it).
     expect(land.filter((t) => t[3] < 0).length).toBeLessThan(land.length);
+  });
+});
+
+describe('the last stop of Poncho at the Base Esperanza (#223)', () => {
+  it('keeps every walk off the huts of the base: the team goes off and Poncho walks away without going into a house', () => {
+    const scene = PONCHO_SCENES['brujula-perdida'];
+    const huts = sceneClearings(scene);
+    expect(huts.length).toBeGreaterThan(0);
+    for (const e of scene.elements.filter((el) => el.path)) {
+      for (const [x, z] of sceneTrack(scene, e)) {
+        for (const [hx, hz, r] of huts) expect(Math.hypot(x - hx, z - hz), `${e.kind} ${e.id} on ${e.path}`).toBeGreaterThan(r);
+      }
+    }
   });
 });

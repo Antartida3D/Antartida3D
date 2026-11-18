@@ -2,7 +2,6 @@
  * Places and legs of the trip of the dogs (issue #78): where the team goes and by what vehicle. The stories
  * and the facts are in poncho.ts; this file only says where things are.
  */
-import { ROUTE_WAYPOINTS } from '../route.ts';
 import type { TripSegment } from './ushuaia.ts';
 
 /**
@@ -25,8 +24,6 @@ export const BELGRANO_AREA = [-40, -79] as const;
  */
 export const BELGRANO_RETURN = [-41, -79.6] as const;
 export const DUSE_BAY = [-57.33, -63.5] as const;
-/** Ushuaia as the trip «Desde Ushuaia» marks it (`[Fuente a definir]` there too). */
-export const USHUAIA = [-68.3, -54.81] as const;
 export const SOUTH_POLE = [0, -90] as const;
 
 type LonLat = readonly [number, number];
@@ -38,7 +35,7 @@ type LonLat = readonly [number, number];
  * starts half on the shore, an illustration.
  */
 export const ESPERANZA_PORT = [-56.9, -63.4] as const;
-/** Antarctic Sound point of the sea route of route.ts (Ushuaia–Marambio): the way to Ushuaia is derived from it. */
+/** Antarctic Sound point of the sea route of route.ts (Ushuaia–Marambio), where the ship to Belgrano goes out to the Weddell Sea. */
 const ANTARCTIC_SOUND = [-56.72, -63.3] as const;
 /**
  * APPROXIMATE and ILLUSTRATIVE: the port at the front of the Filchner ice shelf, on the ice at the edge of the
@@ -127,20 +124,14 @@ const ESPERANZA_PATROL: LonLat[] = [
 // ILLUSTRATIVE. The patrol of the Paralelo 82 is no longer a stop (DEC-221), so the leg no longer goes down to the Santa Fe peak.
 const FILCHNER_LOOP: LonLat[] = [FILCHNER_PORT, BELGRANO_AREA, BELGRANO_RETURN, FILCHNER_PORT];
 
-/** From the port of Esperanza to Ushuaia: the sea route of route.ts, from the Antarctic Sound back, derived and not copied. */
-const TO_USHUAIA: LonLat[] = (() => {
-  const at = ROUTE_WAYPOINTS.findIndex(([lon, lat]) => lon === ANTARCTIC_SOUND[0] && lat === ANTARCTIC_SOUND[1]);
-  return [ESPERANZA_PORT, ...reversed(ROUTE_WAYPOINTS.slice(0, at + 1))];
-})();
-
 /**
  * Contract of the legs (index, vehicle, where). Poncho's milestones point at them with `segment` (poncho.ts).
  *  0 sled: Peninsula 1961-62. Esperanza -> Foca nunataks -> San Martín and back, ends at the port of Esperanza.
  *  1 ship: move to Belgrano (1964). Port of Esperanza -> Weddell Sea -> front of the Filchner ice shelf.
  *  2 sled: Belgrano (1964-66). Front of the shelf -> Belgrano area -> place of the jump -> back to the front.
  *  3 ship: back to the peninsula (1967). Front of the Filchner ice shelf -> Weddell Sea -> port of Esperanza.
- *  4 sled: Esperanza (1967). Short patrol inland to Duse Bay and back to the port of Esperanza.
- *  5 ship: towards Ushuaia (1973). Port of Esperanza -> Ushuaia, over the sea route of route.ts reversed.
+ *  4 sled: Esperanza (1967). Short patrol inland to Duse Bay and back to the port of Esperanza, where the trip ends: the
+ *    way to Ushuaia (1973) is told in the last stop, not travelled (DEC-223).
  * The end of each leg is the start of the next one (the vehicle changes at the port).
  * Points between verified places are ILLUSTRATIVE, not a real track. Belgrano I, Jardinero cove and the site
  * of the AE-205 have no verified coordinate, so they are only drawn as approximate points on the ice shelf.
@@ -153,5 +144,4 @@ export const PONCHO_SEGMENTS: readonly TripSegment[] = [
   { vehicle: 'sled', seconds: 14, waypoints: FILCHNER_LOOP },
   { vehicle: 'ship', seconds: 12, waypoints: reversed(WEDDELL_SEA) },
   { vehicle: 'sled', seconds: 12, waypoints: ESPERANZA_PATROL },
-  { vehicle: 'ship', seconds: 24, waypoints: TO_USHUAIA },
 ];

@@ -54,11 +54,11 @@ describe('content of the expedition of Poncho', () => {
     }
   });
 
-  // The story was rewritten as a short tale of 9 or 10 stops, each in its own place of the route (it had 17 stops
-  // that opened in a row in the same place); the data with their sources went to «Saber más».
-  it('tells the story in 9 or 10 stops', () => {
-    expect(PONCHO_MILESTONES.length).toBeGreaterThanOrEqual(9);
-    expect(PONCHO_MILESTONES.length).toBeLessThanOrEqual(10);
+  // The story was rewritten as a short tale of 10 stops, each in its own place of the route (it had 17 stops
+  // that opened in a row in the same place); the data with their sources went to «Saber más». Then the patrol of the
+  // Paralelo 82 joined the jump (DEC-221) and the last three stops became one (DEC-223): 7 stops.
+  it('tells the story in 7 stops', () => {
+    expect(PONCHO_MILESTONES).toHaveLength(7);
   });
 
   it('opens each stop on a leg of the route, and no two stops in the same place of one leg', () => {
@@ -155,8 +155,8 @@ describe('hooks of the story', () => {
 });
 
 describe('acts of the story', () => {
-  it('are four, each opening at an existing stop, in the order of the story, and each with at least one stop', () => {
-    expect(PONCHO_ACTS).toHaveLength(4);
+  it('are three, each opening at an existing stop, in the order of the story, and each with at least one stop', () => {
+    expect(PONCHO_ACTS).toHaveLength(3);
     const ids = PONCHO_MILESTONES.map((m) => m.id);
     const firsts = PONCHO_ACTS.map((a) => ids.indexOf(a.firstStop));
     for (const index of firsts) expect(index).toBeGreaterThanOrEqual(0);
@@ -167,8 +167,10 @@ describe('acts of the story', () => {
 
   it('finds the act that opens at a stop, and none elsewhere', () => {
     expect(ponchoActOpeningAt('nacimiento')?.number).toBe(1);
-    expect(ponchoActOpeningAt('adios-a-la-antartida')?.act.id).toBe('retiro');
+    expect(ponchoActOpeningAt('rumbo-a-belgrano')?.act.id).toBe('rescates');
     expect(ponchoActOpeningAt('paracaidas')).toBeUndefined();
+    // The last stop tells the retirement too, inside the third act: no act opens there (DEC-223).
+    expect(ponchoActOpeningAt('brujula-perdida')).toBeUndefined();
   });
 });
 
@@ -213,7 +215,8 @@ describe('route log of the trip of Poncho', () => {
     const [shipFrom, shipTo] = tripLegRange('dogs', 3);
     expect(logLineAt('dogs', (shipFrom + shipTo) / 2)).toBeNull();
     expect(logLineAt('ship', 0.5)).toBeNull();
-    expect(logLineAt('dogs', 1)).toBeNull(); // the last leg is a ship one
+    // The last leg is the sled patrol at Esperanza (DEC-223): at the very end of the trip its last line still shows.
+    expect(logLineAt('dogs', 1)).not.toBeNull();
   });
 
   it('forces a leg for the steps of a trip that does not animate the path', () => {

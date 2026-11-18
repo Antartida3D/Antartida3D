@@ -338,3 +338,4 @@ Pedido del usuario: en algunos lugares el zoom parecía no tener fin; sobre la A
 - Las capturas se toman con `prefers-reduced-motion: reduce` para que no dependan del momento exacto de una animación.
 - **Modales normalizados (#264, 17-11-2026):** un solo contenedor (`BottomSheet`), un solo «Saber más» (`MoreFold`), citas `[N]` con una vista de fuentes única (`SourcesView`), encabezado y acciones comunes ([DEC-264](decisiones/DEC-264-modales-normalizados.md)).
 - **Poncho en 9 paradas (#221, 17-11-2026):** la patrulla «Paralelo 82» se une al salto en paracaídas en una sola parada, sin escena propia ([DEC-221](decisiones/DEC-221-patrulla-y-paracaidas-en-una-parada.md)).
+- **Poncho en 7 paradas (#223, 18-11-2026):** la brújula, el retiro y Ushuaia son la última parada, «La última proeza y el retiro»; el viaje termina en Esperanza y quedan tres actos ([DEC-223](decisiones/DEC-223-ultima-parada-de-poncho.md)).

@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { BackSide, BufferAttribute, Color, MeshBasicMaterial, SphereGeometry, Vector2 } from 'three';
 import { Canvas, useThree } from '@react-three/fiber';
 import { CameraControls, CameraControlsImpl, PerformanceMonitor } from '@react-three/drei';
-import { SHOT_DISTANCE, SNOW_GALE_KMH, SNOW_LOW_QUALITY_PARTICLES, SNOW_MAX_PARTICLES, sceneBlizzard, shotPose, type SceneDef } from '@antartida/core';
+import { SHOT_DISTANCE, SNOW_GALE_KMH, SNOW_LOW_QUALITY_PARTICLES, SNOW_MAX_PARTICLES, sceneBlizzard, sceneStage, shotPose, type SceneDef } from '@antartida/core';
 import { CanvasGuard } from '../CanvasGuard.tsx';
 import { Snowfall } from '../orcadas/WeatherDetails.tsx';
 import { ViewShift, type ViewShiftPx } from '../sceneFrame.tsx';
@@ -159,6 +159,7 @@ export function PonchoDioramaCanvas({ scene, step, reduced, shift, onLost }: {
   // Closing the screen cancels the wait: a context that went with it is not a failure.
   useEffect(() => () => window.clearTimeout(fallbackTimer.current), []);
   const first = shotPose(scene.shots[0]);
+  const stage = sceneStage(scene, step);
   return (
     <CanvasGuard onFail={() => lost.current()}>
       <Canvas
@@ -183,7 +184,9 @@ export function PonchoDioramaCanvas({ scene, step, reduced, shift, onLost }: {
         {/* Reduced motion draws on demand: sparse frames would read as a slow GPU. */}
         {!reduced && <PerformanceMonitor bounds={() => (lowQuality ? [24, 27] : [36, 42])} flipflops={4} onIncline={() => setLowQuality(false)} onDecline={() => setLowQuality(true)} />}
         <ViewShift shift={shift} />
-        <Stage scene={scene} step={step} reduced={reduced} lowQuality={lowQuality} />
+        {/* A stop may go on in another scene at one of its sentences (`then`, #223): the stage is built again for it, and its
+            camera comes in to its shot as at the start of a stop. */}
+        <Stage key={stage.scene === scene ? 'stop' : 'then'} scene={stage.scene} step={stage.step} reduced={reduced} lowQuality={lowQuality} />
       </Canvas>
     </CanvasGuard>
   );

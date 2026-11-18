@@ -1,13 +1,14 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { ESPERANZA, ESPERANZA_PORT, FILCHNER_PORT, PONCHO_SEGMENTS, USHUAIA, buildCurve, heightAt, parseTerrainMesh, project } from '../src/index.ts';
+import { ESPERANZA, ESPERANZA_PORT, FILCHNER_PORT, PONCHO_SEGMENTS, buildCurve, heightAt, parseTerrainMesh, project } from '../src/index.ts';
 
 const buf = readFileSync(join(import.meta.dirname, '../src/assets/terrain-mesh-hi.bin'));
 const terrain = parseTerrainMesh(buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength));
 
 /** Contract of the legs: index -> vehicle (see the comment above PONCHO_SEGMENTS in content/poncho-route.ts). */
-const CONTRACT = ['sled', 'ship', 'sled', 'ship', 'sled', 'ship'] as const;
+// The trip ends with the last sled patrol at Esperanza: the ship to Ushuaia is told in the last stop, not travelled (DEC-223).
+const CONTRACT = ['sled', 'ship', 'sled', 'ship', 'sled'] as const;
 
 const SAMPLES = 1000;
 /** Height of the sled above the sea that the relief must keep (with the ×10 exaggeration, lower ground looks like water). */
@@ -45,10 +46,11 @@ describe('the legs of the trip of Poncho', () => {
     for (const leg of PONCHO_SEGMENTS) if (leg.vehicle === 'ship') expect(leg.seconds).toBeGreaterThanOrEqual(10);
   });
 
-  it('start at Esperanza and end at Ushuaia', () => {
+  it('start at Esperanza and end back at its port, after the last patrol (the way to Ushuaia is told, not travelled: DEC-223)', () => {
     expect(PONCHO_SEGMENTS[0].waypoints[0]).toEqual(ESPERANZA);
-    const last = PONCHO_SEGMENTS[PONCHO_SEGMENTS.length - 1].waypoints;
-    expect(last[last.length - 1]).toEqual(USHUAIA);
+    const last = PONCHO_SEGMENTS[PONCHO_SEGMENTS.length - 1];
+    expect(last.vehicle).toBe('sled');
+    expect(last.waypoints[last.waypoints.length - 1]).toEqual(ESPERANZA_PORT);
   });
 
   it('end each leg exactly where the next one starts', () => {
@@ -81,7 +83,7 @@ describe('the legs of the trip of Poncho', () => {
       expect(height, `port ${port.join(', ')}`).toBeGreaterThan(0);
       expect(height).toBeLessThan(20);
     }
-    for (const [sled, ship] of [[0, 1], [2, 3], [4, 5]] as const) {
+    for (const [sled, ship] of [[0, 1], [2, 3]] as const) {
       const before = PONCHO_SEGMENTS[sled].waypoints;
       expect(PONCHO_SEGMENTS[ship].waypoints[0]).toEqual(before[before.length - 1]);
     }

@@ -12,7 +12,7 @@ Contenido del recorrido de **«Poncho»** (issues #9, #27 y #145). Cuenta la vid
 
 ## Cómo está contado
 
-El recorrido tiene **9 paradas** en **cuatro actos**. Cada parada es una ficha con:
+El recorrido tiene **7 paradas** en **tres actos**. Cada parada es una ficha con:
 
 1. **Rótulo de acto** (solo en la primera parada de cada acto), arriba del título.
 2. **`essential`:** una mini-escena de dos o tres frases cortas, con algo que se ve y se hace (los abrigos naranjas, la cincha atada a la cintura, los hombres que sondean con bastones y piquetas, la brújula que se hunde en la nieve). Empieza con un eco del gancho de la parada anterior.
@@ -28,7 +28,6 @@ Entre paradas, mientras el equipo viaja, aparece el **diario de ruta**: una lín
 | 1 | Un cachorro que aprende | `nacimiento` | `nacimiento` |
 | 2 | El guía en quien confían | `expedicion-invernal-1962` | `expedicion-invernal-1962`, `poncho-perro-guia` |
 | 3 | Salvar vidas en el hielo | `rumbo-a-belgrano` | `rumbo-a-belgrano`, `rescate-ae-205`, `paracaidas`, `brujula-perdida` |
-| 4 | Un retiro merecido | `adios-a-la-antartida` | `adios-a-la-antartida`, `ushuaia` |
 
 ## Paradas (en orden de recorrido)
 
@@ -79,23 +78,14 @@ Junta los hitos 6 y 7 anteriores ([DEC-221](../decisiones/DEC-221-patrulla-y-par
 - **Gancho:** «Pero otra tormenta ya lo esperaba.»
 - **Saber más:** de la patrulla, la salida del 26 de octubre (`O12`), que iba por delante de los tractores, la separación del 18 de noviembre, los portezuelos de las montañas Santa Fe y los 83° de latitud sur (p. 15), el barranco frente al pico Santa Fe (p. 16), la posición del pico (`P3`), y que Poncho no llegó al Polo: lo alcanzaron los tractores el 10 de diciembre, tras 66 días (p. 17, `O12`); del salto, Pato y Bucky, el arnés, el afecto del suboficial a cargo, el trineo desarmable y los oficiales que saltaron antes, el helicóptero S-55 y los 30 km al sur de Belgrano (p. 18 y 19).
 
-### 7. `brujula-perdida` — La brújula perdida (1967, tramo 4, trineo)
+### 7. `brujula-perdida` — La última proeza y el retiro (1967 a 1978, tramo 4, trineo)
 
-- **Escena** (p. 20): una ventisca sorprende a la patrulla a unos doce kilómetros de Esperanza; el trineo vuelca, la brújula se hunde en la nieve; los hombres solo pueden seguir a Poncho y, tras dos horas a ciegas, ven las luces de la base.
-- **Gancho:** «Esa noche su legajo sumó una proeza más.»
-- **Saber más:** la bahía Duse sobre mar congelado (p. 19), la «Cuesta de los Afligidos», las tres cañas con banderolas y la brújula recuperada tres días después (p. 20).
+Junta los hitos 7, 8 y 9 anteriores ([DEC-223](../decisiones/DEC-223-ultima-parada-de-poncho.md)): la brújula perdida, el retiro y el final en Ushuaia. Es la última parada: el viaje termina en Esperanza y el traslado a Ushuaia se cuenta, no se recorre en el mapa.
 
-### 8. `adios-a-la-antartida` — Poncho deja la Antártida (1973, tramo 5, barco)
-
-- **Escena** (p. 21): en su legajo aparece cada vez más «No trabajó»; ya no corre a la par de los jóvenes; llega el rompehielos y lo llevan a bordo rumbo a Ushuaia, una excepción por su prestigio.
-- **Gancho:** «Lejos de la nieve lo esperaba un mundo nuevo.»
-- **Saber más:** el traslado de 1973 con una familia de Ushuaia y su hotel (p. 5); legajo y excepción (p. 21).
-
-### 9. `ushuaia` — Un final tranquilo en Ushuaia (1978, tramo 5)
-
-- **Escena** (p. 22): en ese mundo nuevo, Poncho vive plácidamente en el hotel de un viejo compañero de patrulla; llega a casi 18 años; una mañana de primavera de 1978, en el jardín, ya no despierta.
+- **Texto** (cita principal: p. 21): una ventisca sorprende a la patrulla a unos doce kilómetros de Esperanza, la brújula se hunde en la nieve y los hombres siguen a Poncho hasta ver las luces de la base (p. 20); con los años su legajo dice cada vez más «No trabajó» y ya no corre a la par de los jóvenes (p. 21); un verano lo llevan en el rompehielos a Ushuaia, una excepción, en mérito a su prestigio; allí vive tranquilo en el hotel de un viejo compañero de patrulla, llega a casi 18 años y una mañana de primavera de 1978, en el jardín, ya no despierta (p. 21 y 22).
+- **Escena** (una etapa por frase; ilustración del relato, no un registro): 0 en la Base Esperanza (el escenario y la base de «Nace Poncho»), la patrulla vuelve entre la ventisca, Poncho al frente; 1 el equipo de perros jóvenes sale con el trineo, lejos de las casas, y Poncho, que ya no trabaja, se aleja despacio del otro lado, solo; 2 la escena cambia al rompehielos de «En rompehielos hacia Belgrano» y un hombre y Poncho suben por la pasarela, bien separados, y entran al barco. Desde la segunda frase Poncho está viejo: la cara y el pelo más canosos, la cabeza baja y el paso lento. El libro no dice en qué base subió: el lugar es una ilustración. La cantidad de perros y de personas también.
 - **Gancho:** «Así termina el camino de Poncho.»
-- **Saber más:** el mundo nuevo (niños, árboles, caballos, calor) y el trineo improvisado (p. 21); el accidente de 1976 (p. 22); los desfiles de 1977 y 1978 (p. 5); la taxidermia que no prosperó (p. 22).
+- **Saber más:** la bahía Duse sobre mar congelado (p. 19), la «Cuesta de los Afligidos», las tres cañas con banderolas y la brújula recuperada tres días después (p. 20); que se cansaba en las patrullas largas (p. 21) y el traslado de 1973 con una familia de Ushuaia y su hotel (p. 5); el mundo nuevo (niños, árboles, caballos, calor) y el trineo improvisado (p. 21); el accidente de 1976 (p. 22); los desfiles de 1977 y 1978 (p. 5); la taxidermia que no prosperó (p. 22).
 
 ## Diario de ruta
 

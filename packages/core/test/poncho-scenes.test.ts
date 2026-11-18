@@ -14,6 +14,7 @@ import {
   SHOT_ELEVATION_DEG,
   SHOT_TARGET_HEIGHT,
   essentialSentences,
+  sceneStage,
   shotPose,
   PONCHO_MILESTONES,
   PONCHO_SCENES,
@@ -54,6 +55,52 @@ import {
 } from '../src/index.ts';
 
 const scenes = Object.entries(PONCHO_SCENES);
+
+describe('the last stop of Poncho (#223)', () => {
+  const scene = PONCHO_SCENES['brujula-perdida'];
+
+  it('is told at the Base Esperanza and goes on in the scene of the ship at its last sentence', () => {
+    expect(scene.setting).toBe('station');
+    expect(sceneStage(scene, 0)).toEqual({ scene, step: 0 });
+    expect(sceneStage(scene, 1)).toEqual({ scene, step: 1 });
+    const ship = sceneStage(scene, 2);
+    expect(ship.scene).toBe(scene.then!.scene);
+    expect(ship.step).toBe(0);
+    expect(ship.scene.elements.some((e) => e.id === 'icebreakerShip')).toBe(true);
+    // The shot of that sentence is the one of the ship scene.
+    expect(scene.shots[2]).toEqual({ ...ship.scene.shots[0], sentence: 2 });
+  });
+
+  it('takes only a man and Poncho aboard, on the trail of the ship, inside its stage', () => {
+    const ship = scene.then!.scene;
+    expect(ship.elements.filter((e) => e.kind === 'dog').map((e) => e.id)).toEqual(['poncho']);
+    expect(ship.elements.filter((e) => e.kind === 'person')).toHaveLength(1);
+    expect(ship.paths.find((p) => p.id === 'board')?.board).toBe(true);
+    for (const e of ship.elements) expect(Math.hypot(e.x, e.z)).toBeLessThanOrEqual(ship.radius);
+    for (const p of ship.paths) for (const q of [p.from, ...(p.via ?? []), p.to]) expect(Math.hypot(q[0], q[1])).toBeLessThanOrEqual(ship.radius);
+  });
+
+  it('shows Poncho old when he no longer works, and keeps him well behind the man on the gangway', () => {
+    const second = scene.elements.find((e) => (e.appearAt ?? 0) === 1 && e.id === 'poncho')!;
+    expect(second.old).toBe(true);
+    const ship = scene.then!.scene;
+    const poncho = ship.elements.find((e) => e.id === 'poncho')!;
+    const man = ship.elements.find((e) => e.kind === 'person')!;
+    expect(poncho.old).toBe(true);
+    // Seconds behind the man, at the pace of the walk: more than two of a dog's length apart (0.32 each of body).
+    const board = ship.paths.find((p) => p.id === 'board')!;
+    const apart = (((poncho.lag ?? 0) - (man.lag ?? 0)) / board.duration) * scenePathLength(board);
+    expect(apart).toBeGreaterThan(4 * 0.32);
+  });
+
+  it('shows the young team going off and Poncho walking away from it, alone, at its second sentence', () => {
+    const second = scene.elements.filter((e) => (e.appearAt ?? 0) === 1);
+    expect(second.filter((e) => e.id === 'poncho')).toHaveLength(1);
+    const team = new Set(second.filter((e) => e.id !== 'poncho').map((e) => e.path));
+    const alone = second.find((e) => e.id === 'poncho')!.path;
+    expect(team.has(alone)).toBe(false);
+  });
+});
 
 describe('scenes of Poncho: data', () => {
   it('belong to real stops of the trip of the dogs', () => {
@@ -159,7 +206,8 @@ describe('scenes of Poncho: data', () => {
         expect(scene.shots.length).toBe(sentences.length);
         scene.shots.forEach((shot, i) => {
           expect(shot.sentence).toBe(i);
-          expect(Math.hypot(shot.target[0], shot.target[2]), `shot ${i} target`).toBeLessThanOrEqual(scene.radius);
+          // (From `then` on, the shot looks inside the scene shown there: #223.)
+          expect(Math.hypot(shot.target[0], shot.target[2]), `shot ${i} target`).toBeLessThanOrEqual(sceneStage(scene, i).scene.radius);
           expect(shot.target[1]).toBeGreaterThanOrEqual(SHOT_TARGET_HEIGHT[0]);
           expect(shot.target[1]).toBeLessThanOrEqual(SHOT_TARGET_HEIGHT[1]);
           expect(shot.distance).toBeGreaterThanOrEqual(SHOT_DISTANCE[0]);
@@ -185,7 +233,10 @@ describe('scenes of Poncho: data', () => {
       const scene = PONCHO_SCENES[milestone.id];
       expect(scene, milestone.id).toBeDefined();
       for (let step = 1; step < sceneStepCount(scene); step++) {
-        expect(scene.elements.some((e) => (e.appearAt ?? 0) === step), `${milestone.id}, step ${step}`).toBe(true);
+        // A stop that goes on in another scene (`then`, #223) shows a whole new stage there; otherwise something appears.
+        const now = sceneStage(scene, step);
+        const changed = now.scene !== sceneStage(scene, step - 1).scene;
+        expect(changed || now.scene.elements.some((e) => (e.appearAt ?? 0) === now.step), `${milestone.id}, step ${step}`).toBe(true);
       }
     }
   });

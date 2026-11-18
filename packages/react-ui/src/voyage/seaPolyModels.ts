@@ -7,7 +7,7 @@ import { assembleCetacean, MINKE_PARTS, ORCA_PARTS } from './whalePolyModels.ts'
 import { HUMPBACK_PARTS } from '../marine/lowPolyMarine.ts';
 
 /** Assemble an Orcadas low-poly penguin in its standing rest pose (feet at y = 0, beak to +x). */
-function assemblePenguin(species: PenguinSpecies): Tri[] {
+export function assemblePenguin(species: PenguinSpecies): Tri[] {
   const parts = buildPenguinPolyParts(species);
   const [sx, sy, sz] = PENGUIN_SHOULDER;
   return [

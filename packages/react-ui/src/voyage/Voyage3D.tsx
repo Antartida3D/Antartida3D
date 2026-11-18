@@ -45,10 +45,11 @@ import {
   type TransportKind,
   type VehicleKind,
 } from '@antartida/core';
-import { HELICOPTER_BOXES, HELICOPTER_ROTOR_BOXES, HELICOPTER_ROTOR_ORIGIN } from '../orcadas/stationModels.ts';
+import { SEA_KING_BODY_POLY, SEA_KING_ROTOR_ORIGIN, SEA_KING_ROTOR_POLY } from './poly/seaKingPoly.ts';
 import { PIN_HEAD_Y, buildPinGeometry, pinMaterial } from './pins.ts';
 import { heldOnScreen } from './screenEdge.ts';
-import { buildBoxGeometry, buildVehicleGeometry, vehicleMaterial, vehicleModel } from './vehicles.ts';
+import { buildVehicleGeometry, vehicleMaterial, vehicleModel } from './vehicles.ts';
+import { boxShade, buildPolyGeometry } from './lowPoly.ts';
 import { Sighting3D } from './Sighting3D.tsx';
 import { sceneLookAt } from './ponchoSceneFocus.ts';
 import { buildTrailGeometry, trailMaterial, updateTrail } from './trail.ts';
@@ -177,8 +178,8 @@ export const ROTOR_SPEED = 22;
 
 /** Builds body and main rotor geometries for the Sea King helicopter model. */
 const buildSeaKingGeometry = () => ({
-  body: buildBoxGeometry(HELICOPTER_BOXES),
-  rotor: buildBoxGeometry(HELICOPTER_ROTOR_BOXES),
+  body: buildPolyGeometry(SEA_KING_BODY_POLY, boxShade),
+  rotor: buildPolyGeometry(SEA_KING_ROTOR_POLY, boxShade),
 });
 
 /** Gentle roll, pitch and vertical heave for a ship on water, amplified by `rough` storm factor. */
@@ -609,7 +610,7 @@ export function Voyage3D({ bus, picker, reduced, overlay }: {
       {seaKing && (
         <group ref={helicopter} visible={false}>
           <mesh geometry={seaKing.body} material={vehicleMaterial} />
-          <group ref={rotor} position={HELICOPTER_ROTOR_ORIGIN}>
+          <group ref={rotor} position={SEA_KING_ROTOR_ORIGIN}>
             <mesh geometry={seaKing.rotor} material={vehicleMaterial} />
           </group>
         </group>

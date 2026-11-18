@@ -3,6 +3,7 @@ import { POINT_DETAILS } from '../src/content/point-details.ts';
 import { PTS } from '../src/content/points.ts';
 import { sceneFacts } from '../src/content/scene-point.ts';
 import { THWAITES_SCENE } from '../src/content/thwaites-scene.ts';
+import { VOSTOK_SCENE } from '../src/content/vostok-scene.ts';
 import { expeditionIntro } from '../src/expedition-intro.ts';
 import { isScenePoint, SCENE_POINTS } from '../src/scene-points.ts';
 
@@ -27,17 +28,18 @@ describe('points of interest with a scene of their own (#206, #280)', () => {
     }
   });
 
-  it('Thwaites says nothing its verified card does not: every real fact is a sentence of the card, and all of the card is told', () => {
-    const card = POINT_DETAILS.thwaites;
-    const real = THWAITES_SCENE.facts.filter((f) => f.kind === 'real');
-    for (const fact of real) expect(card.desc).toContain(fact.text);
-    expect(real.map((f) => f.text).join(' ')).toBe(card.desc);
-    expect(THWAITES_SCENE.cited.map((s) => s.url)).toEqual(card.sources.map((s) => s.url));
-  });
+  for (const scene of [THWAITES_SCENE, VOSTOK_SCENE]) {
+    it(`${scene.id} says nothing its verified card does not: its real facts are the card, sentence by sentence, with the card's sources`, () => {
+      const card = POINT_DETAILS[scene.id];
+      const real = scene.facts.filter((f) => f.kind === 'real');
+      expect(real.map((f) => f.text).join(' ')).toBe(card.desc);
+      expect(scene.cited.map((s) => s.url)).toEqual(card.sources.map((s) => s.url));
+    });
 
-  it('opens with the facts of its first spot', () => {
-    const intro = expeditionIntro('thwaites')!;
-    expect(intro.paragraphs.map((p) => p.text)).toEqual(sceneFacts(THWAITES_SCENE, 'front').map((f) => f.text));
-    expect(intro.sources).toBe(THWAITES_SCENE.cited);
-  });
+    it(`${scene.id} opens with the facts of its first spot`, () => {
+      const intro = expeditionIntro(scene.id)!;
+      expect(intro.paragraphs.map((p) => p.text)).toEqual(sceneFacts(scene, scene.spots[0].id).map((f) => f.text));
+      expect(intro.sources).toBe(scene.cited);
+    });
+  }
 });

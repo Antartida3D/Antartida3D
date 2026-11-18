@@ -55,9 +55,11 @@ const loadMarine = () => import('./marine/MarineExpedition.tsx');
 const MarineExpedition = lazy(() => loadMarine().then((m) => ({ default: m.MarineExpedition })));
 const loadThwaites = () => import('./thwaites/ThwaitesExpedition.tsx');
 const ThwaitesExpedition = lazy(() => loadThwaites().then((m) => ({ default: m.ThwaitesExpedition })));
+const loadVostok = () => import('./vostok/VostokExpedition.tsx');
+const VostokExpedition = lazy(() => loadVostok().then((m) => ({ default: m.VostokExpedition })));
 
-/** The screens a map point opens. Thwaites is a point of interest with a scene of its own (#280), not an expedition (isScenePoint). */
-const EXPEDITIONS = { orcadas: loadOrcadas, marambio: loadMarambio, fosiles: loadFossils, oceano: loadMarine, thwaites: loadThwaites } as const;
+/** The screens a map point opens. Thwaites and Vostok are points of interest with a scene of their own (#280, #281), not expeditions (isScenePoint). */
+const EXPEDITIONS = { orcadas: loadOrcadas, marambio: loadMarambio, fosiles: loadFossils, oceano: loadMarine, thwaites: loadThwaites, vostok: loadVostok } as const;
 type ExpeditionId = keyof typeof EXPEDITIONS;
 const isExpedition = (id: string): id is ExpeditionId => id in EXPEDITIONS;
 /** `?expedicion=fosiles` or `?expedicion=oceano` opens that expedition directly, to share it or review it. */
@@ -402,6 +404,8 @@ export function AntarcticaApp() {
             />
           ) : screen === 'thwaites' ? (
             <ThwaitesExpedition reduced={reduced} onLeave={() => leave(false)} />
+          ) : screen === 'vostok' ? (
+            <VostokExpedition reduced={reduced} onLeave={() => leave(false)} />
           ) : screen === 'oceano' ? (
             <MarineExpedition
               reduced={reduced}

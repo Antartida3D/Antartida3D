@@ -60,9 +60,10 @@ test('mocked response shows temperature with unit, model label, and attribution,
   await page.keyboard.press('Escape');
   await expect(erebus).toHaveCount(0);
 
-  const vostok = await openPointFromList(page, /Un lago bajo el hielo/, 'Un lago bajo el hielo');
-  await expect(vostok.locator('.sheet-temp')).toContainText(/°C/);
-  await expect(vostok.locator('.sheet-temp')).toContainText('Estimación de modelo');
+  // Vostok opens a scene of its own since #281: the second sheet is another point with a card.
+  const cores = await openPointFromList(page, /Testigos de hielo/, 'Testigos de hielo');
+  await expect(cores.locator('.sheet-temp')).toContainText(/°C/);
+  await expect(cores.locator('.sheet-temp')).toContainText('Estimación de modelo');
   expect(mock.getRequestCount()).toBe(1);
 });
 

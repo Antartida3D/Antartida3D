@@ -30,7 +30,7 @@ const CREVASSE_ICE = 0xc9e0ee;
 const GLACIAL_ICE = 0x9ccfe6;
 const GLACIAL_ICE_DEEP = 0x5f9fc6;
 const LAKE_WATER = 0x1d4f7a;
-const BEDROCK = 0x4a4e54;
+export const BEDROCK = 0x4a4e54;
 // Belgrano II: Bertrab granite, grey to pink (EIA of CONAE, Antarctic Treaty Secretariat).
 const GRANITE = 0x8f7b77;
 // South Pole: the colour of the elevated station is not in the sources; a neutral steel grey.
@@ -504,9 +504,9 @@ const THWAITES_CARD: Tri[] = (() => {
 // Lake Vostok
 // ---------------------------------------------------------------------------------------------
 
-const VOSTOK_X = 0.42;
-const VOSTOK_Z = 0.35;
-const VOSTOK_TOP = 0.4;
+export const VOSTOK_X = 0.42;
+export const VOSTOK_Z = 0.35;
+export const VOSTOK_TOP = 0.4;
 const VOSTOK_SAMPLES = 10;
 
 /**
@@ -522,11 +522,14 @@ function vostokLayers(u: number, v: number): [number, number][] {
 
 const vostokSurface = (u: number, v: number) => VOSTOK_TOP + 0.008 * Math.sin(u * 9 + v * 4) + 0.006 * Math.sin(v * 11 - u * 3);
 
-/** A cut face of the section from corner (u0, v0) to (u1, v1), clockwise seen from above: bands of the layers. */
-function vostokFace(u0: number, v0: number, u1: number, v1: number): Tri[] {
+/**
+ * A cut face of the section from corner (u0, v0) to (u1, v1), clockwise seen from above: bands of the
+ * layers, in `samples` steps. Positions are u * VOSTOK_X across and v * VOSTOK_Z deep.
+ */
+export function vostokFace(u0: number, v0: number, u1: number, v1: number, samples = VOSTOK_SAMPLES): Tri[] {
   const out: Tri[] = [];
-  const at = (k: number): [number, number] => [u0 + ((u1 - u0) * k) / VOSTOK_SAMPLES, v0 + ((v1 - v0) * k) / VOSTOK_SAMPLES];
-  for (let s = 0; s < VOSTOK_SAMPLES; s++) {
+  const at = (k: number): [number, number] => [u0 + ((u1 - u0) * k) / samples, v0 + ((v1 - v0) * k) / samples];
+  for (let s = 0; s < samples; s++) {
     const [ua, va] = at(s);
     const [ub, vb] = at(s + 1);
     const la: [number, number][] = [...vostokLayers(ua, va), [vostokSurface(ua, va), WHITE]];
@@ -546,6 +549,17 @@ function vostokFace(u0: number, v0: number, u1: number, v1: number): Tri[] {
   return out;
 }
 
+/** Vostok station on stilts at the south end of the lake, and its drill tower, on the snow at VOSTOK_TOP. */
+export const VOSTOK_STATION: Tri[] = [
+  ...[-0.28, -0.16, -0.04, 0.08].flatMap((x) => post(x, -0.18, VOSTOK_TOP + 0.05, BLACK, 0.016, VOSTOK_TOP)),
+  ...block(-0.1, VOSTOK_TOP + 0.075, -0.18, 0.44, 0.05, 0.09, STATION_PANEL, RED),
+  ...block(-0.1, VOSTOK_TOP + 0.08, -0.134, 0.38, 0.012, 0.004, BLACK),
+  ...prism(rect(0.27, -0.15, 0.08, 0.08), VOSTOK_TOP, VOSTOK_TOP + 0.04, ZINC),
+  ...prism(ngon(0.27, -0.15, 0.02, 4, Math.PI / 4), VOSTOK_TOP + 0.04, VOSTOK_TOP + 0.22, ZINC),
+  ...block(0.27, VOSTOK_TOP + 0.235, -0.15, 0.05, 0.03, 0.05, RED),
+  ...block(0.16, VOSTOK_TOP + 0.03, 0.12, 0.12, 0.05, 0.09, RED, WHITE),
+];
+
 /**
  * Lake Vostok as a section of the ice sheet: rock, the lake, deep blue ice, paler ice and the snow
  * surface with the station and a drill tower, sunk into the snow of the plateau.
@@ -558,14 +572,7 @@ const VOSTOK: Tri[] = [
   ...vostokFace(1, 1, 1, -1),
   ...vostokFace(1, -1, -1, -1),
   ...vostokFace(-1, -1, -1, 1),
-  // The station on stilts at the south end of the lake, and the drill tower.
-  ...[-0.28, -0.16, -0.04, 0.08].flatMap((x) => post(x, -0.18, VOSTOK_TOP + 0.05, BLACK, 0.016, VOSTOK_TOP)),
-  ...block(-0.1, VOSTOK_TOP + 0.075, -0.18, 0.44, 0.05, 0.09, STATION_PANEL, RED),
-  ...block(-0.1, VOSTOK_TOP + 0.08, -0.134, 0.38, 0.012, 0.004, BLACK),
-  ...prism(rect(0.27, -0.15, 0.08, 0.08), VOSTOK_TOP, VOSTOK_TOP + 0.04, ZINC),
-  ...prism(ngon(0.27, -0.15, 0.02, 4, Math.PI / 4), VOSTOK_TOP + 0.04, VOSTOK_TOP + 0.22, ZINC),
-  ...block(0.27, VOSTOK_TOP + 0.235, -0.15, 0.05, 0.03, 0.05, RED),
-  ...block(0.16, VOSTOK_TOP + 0.03, 0.12, 0.12, 0.05, 0.09, RED, WHITE),
+  ...VOSTOK_STATION,
 ];
 
 // ---------------------------------------------------------------------------------------------

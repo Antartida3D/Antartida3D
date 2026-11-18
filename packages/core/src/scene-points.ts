@@ -1,9 +1,10 @@
 import type { ScenePoint } from './content/scene-point.ts';
 import { THWAITES_SCENE } from './content/thwaites-scene.ts';
+import { VOSTOK_SCENE } from './content/vostok-scene.ts';
 
 
-/** The points of interest that open a scene of their own, like an expedition, but do not count in the log (#280). */
-export const SCENE_POINTS: Readonly<Record<string, ScenePoint>> = { thwaites: THWAITES_SCENE };
+/** The points of interest that open a scene of their own, like an expedition, but do not count in the log (#280, #281). */
+export const SCENE_POINTS: Readonly<Record<string, ScenePoint>> = { thwaites: THWAITES_SCENE, vostok: VOSTOK_SCENE };
 
 export const isScenePoint = (id: string): boolean => id in SCENE_POINTS;
 

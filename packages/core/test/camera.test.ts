@@ -64,6 +64,34 @@ describe('camera', () => {
     expect(wide.pos.z).toBeGreaterThan(wide.target.z);
   });
 
+  it('reserves top headroom on short landscape screens while keeping standard viewports unchanged (#273)', () => {
+    expect(homePose3D(1440 / 900, 1.08, 900)).toEqual(homePose3D(1440 / 900));
+    expect(homePose3D(390 / 844, 1.08, 844)).toEqual(homePose3D(390 / 844));
+    expect(homePose3D(1280 / 720, 1.08, 720)).toEqual(homePose3D(1280 / 720));
+
+    for (const [vw, vh] of [[844, 390], [667, 375]]) {
+      const pose = homePose3D(vw / vh, 1.08, vh);
+      const f = { x: pose.target.x - pose.pos.x, y: pose.target.y - pose.pos.y, z: pose.target.z - pose.pos.z };
+      const fLen = Math.hypot(f.x, f.y, f.z);
+      f.x /= fLen;
+      f.y /= fLen;
+      f.z /= fLen;
+      const u = { x: 0, y: -f.z, z: f.y };
+      const tanV = Math.tan((FOV * Math.PI) / 360);
+      const screenTop = (y: number) => {
+        const w = toWorld((150.4 + 851.8) / 2, y, 0);
+        const dx = w.x - pose.pos.x;
+        const dy = w.y - pose.pos.y;
+        const dz = w.z - pose.pos.z;
+        const ndcY = (dx * u.x + dy * u.y + dz * u.z) / ((dx * f.x + dy * f.y + dz * f.z) * tanV);
+        return ((1 - ndcY) * vh) / 2;
+      };
+      // North edge stays low enough for header.top + marker stick + fan lift; south edge stays on screen.
+      expect(screenTop(197.3)).toBeGreaterThanOrEqual(150);
+      expect(screenTop(783.4)).toBeLessThanOrEqual(vh - 18);
+    }
+  });
+
   it('maps the 3D overview to k = 1 and zooming in always moves the camera closer', () => {
     for (const s of [size, { vw: 390, vh: 844 }]) {
       const aspect = s.vw / s.vh;
@@ -188,7 +216,7 @@ describe('camera limits and the drawn world', () => {
    */
   function farthestGround(vw: number, vh: number) {
     const aspect = vw / vh;
-    const distance = homeDistance3D(aspect);
+    const distance = homeDistance3D(aspect, vh);
     const polar = (MAX_POLAR_DEG * Math.PI) / 180;
     const tanV = Math.tan((FOV * Math.PI) / 360);
     let fromPole = 0;
@@ -220,6 +248,7 @@ describe('camera limits and the drawn world', () => {
 
   it.each([
     ['a phone', 390, 844],
+    ['a landscape phone', 844, 390],
     ['a desktop', 1440, 900],
     ['an ultrawide screen', 2560, 1080],
   ])('never shows the paper beyond the world on %s', (_name, vw, vh) => {

@@ -185,7 +185,11 @@ export function MapView({
 }: MapViewProps) {
   const vpRef = useRef<HTMLDivElement>(null);
   const markersRef = useRef<Marker[]>([]);
-  const [size, setSize] = useState<Size>({ vw: 390, vh: 844 });
+  const [size, setSize] = useState<Size>(() =>
+    typeof window !== 'undefined' && window.innerWidth > 0 && window.innerHeight > 0
+      ? { vw: window.innerWidth, vh: window.innerHeight }
+      : { vw: 390, vh: 844 }
+  );
   const [view, setView] = useState<View>(HOME);
   const [zoom3D, setZoom3D] = useState<ZoomAvailability>({ canZoomIn: false, canZoomOut: false });
   const [anim, setAnim] = useState<Anim>('');

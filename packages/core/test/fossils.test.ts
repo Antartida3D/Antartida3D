@@ -91,6 +91,11 @@ describe('fossil expedition', () => {
     expect(FOSSIL_SOURCES.ics.url).toMatch(/^https:\/\/stratigraphy\.org\//);
   });
 
+  it('says the Ameghiniana paper links to its abstract: the full text needs a subscription (#300)', () => {
+    expect(FOSSIL_SOURCES.asteroids.url).toBe('https://doi.org/10.5710/AMGH.16.09.2024.3616');
+    expect(FOSSIL_SOURCES.asteroids.detail).toContain('el texto completo requiere suscripción');
+  });
+
   it('places every find inside one period, with sources, and lights it once its chapter is visited', () => {
     for (const f of FOSSIL_TIMELINE.finds) {
       expect(FOSSIL_TIMELINE.periods.some((p) => f.from <= p.from && f.to >= p.to), f.chapter).toBe(true);

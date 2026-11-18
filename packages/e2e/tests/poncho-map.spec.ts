@@ -98,15 +98,24 @@ test('the pin of a stop already told goes back into its scene', async ({ page })
   await page.getByRole('button', { name: /Comenzar/ }).click();
   const panel = page.locator('.poncho-panel');
   const bar = page.getByRole('group', { name: 'Controles del viaje' });
-  // Two stops told, and the trip goes on past the second.
-  for (let k = 0; k < 3; k++) {
+  // Two stops told: the next one is the third, not one of the stops at Esperanza.
+  for (let k = 0; k < 2; k++) {
     while (!(await panel.getByRole('button', { name: 'Seguir con Poncho' }).isVisible())) await panel.getByRole('button', { name: 'Siguiente' }).click();
     await panel.getByRole('button', { name: 'Seguir con Poncho' }).click();
     await expect(page.locator('.pdio')).toHaveCount(0);
-    if (k < 2) await bar.getByRole('button', { name: 'Próximo hito', exact: true }).click();
+    if (k < 1) await bar.getByRole('button', { name: 'Próximo hito', exact: true }).click();
   }
   // The pin may be out of the view of the map: it is a real button, pressed as a click on it.
   await page.getByRole('button', { name: `Hito: ${second.title}. Tocá para leerlo.` }).evaluate((el: HTMLElement) => el.click());
   await expect(page.locator('.pdio')).toHaveCount(1);
   await expect(panel.getByRole('heading', { name: second.title })).toBeVisible();
+  while (!(await panel.getByRole('button', { name: 'Seguir con Poncho' }).isVisible())) await panel.getByRole('button', { name: 'Siguiente' }).click();
+  await panel.getByRole('button', { name: 'Seguir con Poncho' }).click();
+  await expect(page.locator('.pdio')).toHaveCount(0);
+  // The first stop, at the departure, has its pin too: at Esperanza, where later stops stand, it is the one that shows while
+  // none of them is the next (#309).
+  const first = PONCHO_MILESTONES[0];
+  await page.getByRole('button', { name: `Hito: ${first.title}. Tocá para leerlo.` }).evaluate((el: HTMLElement) => el.click());
+  await expect(page.locator('.pdio')).toHaveCount(1);
+  await expect(panel.getByRole('heading', { name: first.title })).toBeVisible();
 });

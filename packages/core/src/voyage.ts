@@ -835,17 +835,20 @@ export function voyageStopsNear(kind: TransportKind, t: number): number[] {
 export const PIN_SAME_PLACE = 3;
 
 /**
- * Whether the pin of the stop `index` is drawn as read (grey): its card was opened, or (in a story told in order, #309) it
- * stands on the same place as a stop already read and is not the next one yet. So the last stop of Poncho, which ends at
- * Esperanza where the first one was, does not look unread there until the stop before it is passed.
+ * Whether the map shows the pin of the stop `index`, with `reached` the next stop of the trip. A trip from Ushuaia has no pin at
+ * its departure. A story told in order (Poncho, #309) has one there too, so the first stop can be gone back into from the map;
+ * and where several of its stops share a place (Esperanza: the first, the ship to Belgrano and the last one) a single pin
+ * shows: the next stop when it is one of them, otherwise the last one of them already passed (the first, at the start).
  */
-export function voyagePinRead(kind: TransportKind, index: number, opened: readonly string[], reached: number): boolean {
+export function voyagePinShown(kind: TransportKind, index: number, reached: number): boolean {
   const stops = voyageStops(kind);
-  const stop = stops[index];
-  if (!stop) return false;
-  if (opened.includes(stop.milestone.id)) return true;
-  if (!storyInOrder(kind) || index <= reached) return false;
-  return stops.some((other, i) => i !== index && opened.includes(other.milestone.id) && Math.hypot(other.pin.x - stop.pin.x, other.pin.y - stop.pin.y) < PIN_SAME_PLACE);
+  if (!stops[index]) return false;
+  if (!storyInOrder(kind)) return index > 0;
+  const here = stops[index].pin;
+  const group = stops.flatMap((stop, i) => (Math.hypot(stop.pin.x - here.x, stop.pin.y - here.y) < PIN_SAME_PLACE ? [i] : []));
+  if (group.includes(reached)) return index === reached;
+  const passed = group.filter((i) => i < reached);
+  return index === (passed.length > 0 ? passed[passed.length - 1] : group[0]);
 }
 
 /** Closes the open card. Once arrived, closing another card goes back to the one of the arrival. */

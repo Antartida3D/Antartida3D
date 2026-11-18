@@ -23,6 +23,9 @@
 8. `KindChip` marca qué es real y qué es ilustración también en la ficha de punto, en el mismo lugar bajo el encabezado.
 9. El texto del cuerpo usa `SheetText` (primer párrafo como bajada) y `Quoted` entiende `**negrita**` además de las citas textuales (`strongParts`, `richParts` en `packages/core/src/richText.ts`). Solo Ushuaia y Orcadas marcan negritas por ahora; cada responsable marca su expedición después.
 10. Toda expedición abre un modal previo con el mismo formato (`ExpeditionIntro`): pregunta, texto con citas `[N]`, la marca «Reconstrucción ilustrada», un modelo 3D que gira (el Hércules en Marambio, la ballena jorobada en Océano, el amonite en Fósiles, los pingüinos en Cerro Nevado, y lo que ya tenían Ushuaia y Orcadas) y las acciones «Volver al mapa» / «Comenzar expedición». El texto sale de lo que cada expedición ya cuenta en su primera parada (`expeditionIntro` en `core`): no se escribe texto nuevo.
+
+   > Marambio cambia por [DEC-282](DEC-282-vista-previa-marambio.md): muestra la maqueta de la base del mapa, quieta, en lugar del Hércules que gira.
+
 11. Solo se marca lo que no es real (simulación, reconstrucción, cálculo). El dato real va sin marca y con su cita: `KindChip` no dibuja nada para `real`.
 12. Un modal que tiene un botón para cerrarse no lleva además la cruz. Solo la lleva el panel de reclamos, que no tiene otro botón. La viñeta del atlas se quitó de las fichas, y el tipo de punto («Punto de interés», «Vida en el mar») pasó al encabezado, junto a «Cuaderno de campo». Se quitó la línea «Datos meteorológicos: Open-Meteo.com (CC BY 4.0)» a pedido del equipo; el origen sigue dicho en la línea de la temperatura («Estimación de modelo (Open-Meteo)»).
 13. Fuera de esta decisión: las fuentes de relieve de la leyenda siguen en texto libre, porque no tienen registro de fuente en `core` y pasarlas a `[N]` exigiría crear datos de fuente.

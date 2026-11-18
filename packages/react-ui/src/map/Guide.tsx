@@ -13,7 +13,7 @@ export function rich(text: string) {
 }
 
 function PinIcon({ kind }: { kind: 'a' | 'c' }) {
-  return <span className={`guide-pin ${kind}`} aria-hidden="true"><i /></span>;
+  return <span className={`guide-pin ${kind}`} aria-hidden="true"><i>{kind === 'c' ? Icon.info : null}</i></span>;
 }
 
 interface GuideProps {
@@ -36,7 +36,7 @@ export function Guide({ step, next, onNext, onClose, onFinish, onStart, fallback
   const total = guideTotal(next !== null);
   const last = step === total;
   const anchor: GuideAnchor | null =
-    step === 1 ? (next ? { selector: `.vp [data-key="${next.id}"]`, ring: 'round' } : null)
+    step === 1 ? (next ? { selector: `.vp [data-key="${next.id}"] .dot`, ring: 'round' } : null)
     : step === 2 ? { selector: '.reg-wrap', ring: 'box' }
     : { selector: '.leftcol .btn.resume', ring: 'box' };
 

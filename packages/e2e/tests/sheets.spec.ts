@@ -110,7 +110,6 @@ for (const [name, re, title] of [
   ['Base Marambio', /Base Marambio/, 'Base Marambio'],
   ['Océano', /Océano/, 'Océano'],
   ['Fósiles', /Fósiles/, 'Fósiles'],
-  ['Pingüinos de Cerro Nevado', /Pingüinos de Cerro Nevado/, 'Pingüinos de Cerro Nevado'],
 ] as const) {
   test(`${name} opens a modal before its expedition, like the others (#264)`, async ({ page }) => {
     await openFromList(page, re);

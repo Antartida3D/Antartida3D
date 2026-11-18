@@ -1,7 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { AVAILABLE_COUNT, LIST_BUTTON_LABEL } from '../../core/src/content/points.ts';
 import { clearStorage } from '../storage.ts';
-import { ORCADAS_GUIDING_QUESTION, ORCADAS_INTRO_DESC } from '../../core/src/content/orcadas.ts';
+import { ORCADAS_GUIDING_QUESTION, ORCADAS_INTRO_DESC, factById } from '../../core/src/content/orcadas.ts';
 import { answerFor } from '../../core/src/orcadas.ts';
 import { clickOrcadasMarker, openOrcadasFromMap } from './orcadas-helpers.ts';
 import { mockOpenMeteo } from './weather-helpers.ts';
@@ -831,7 +831,7 @@ test('Orcadas intro modal opens from marker and list, traps focus, returns focus
   // On the 2D map there is no WebGL: the turning model of the station is left out. On the 3D map it is there.
   await expect(intro.locator('.vpreview')).toHaveCount(MAP_2D_ENABLED ? 0 : 1);
 
-  await expect(intro.getByText('El registro mensual de temperatura empieza en abril de 1903 y sigue hasta hoy.')).toBeVisible();
+  await expect(intro.getByText(factById('obs-registro-1903')!.text)).toBeVisible();
   const readerBtn = intro.getByRole('button', { name: /^Fuente / }).first();
   await expect(readerBtn).toBeVisible();
   await readerBtn.click();

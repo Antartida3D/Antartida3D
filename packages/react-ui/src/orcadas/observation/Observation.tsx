@@ -418,7 +418,7 @@ export function Observation({
     <div className={`orc-obs${reduced ? ' is-reduced' : ''}`}>
       <div className="orc-obs-head">
         <KindChip kind="sim" />
-        <span className="orc-obs-meta">Clima de {monthName}</span>
+        <span className="orc-obs-meta">Un día posible de {monthName}</span>
       </div>
 
       {/* Main instrument: Temperature directly, no tab */}
@@ -430,7 +430,7 @@ export function Observation({
           </span>
         </div>
         <p className="orc-obs-hint">
-          Tocá o arrastrá en la lupa para alinear la guía con el menisco.
+          Tocá o arrastrá en la lupa hasta que la línea azul quede justo sobre la punta roja del mercurio (el menisco).
         </p>
       </div>
 
@@ -536,6 +536,14 @@ export function Observation({
                 Margen ±{decimalComma(TOLERANCE[activeOptional])} {optMeta.unit}
               </span>
             </div>
+            <p className="orc-obs-hint">
+              {activeOptional === 'pressure' &&
+                'La aguja negra marca la presión en hectopascales (hPa). Fijate en el visor de la derecha y mové la marca dorada hasta el mismo número.'}
+              {activeOptional === 'wind' &&
+                'La veleta marca de dónde viene el viento y las cazoletas giran según la fuerza. Mirá el contador en km/h y anotá la velocidad.'}
+              {activeOptional === 'clouds' &&
+                'En meteorología el cielo se divide en 8 partes llamadas octas. Tocá las partes que ves tapadas por nubes.'}
+            </p>
 
             {activeOptional === 'pressure' && (
               <Barometer

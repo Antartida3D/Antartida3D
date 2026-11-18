@@ -1,6 +1,7 @@
 import { project } from '../projection.ts';
 import type { Source } from './sea.ts';
 import { MARAMBIO_GUIDING_QUESTION } from './marambio.ts';
+import { ORCADAS_GUIDING_QUESTION } from './orcadas.ts';
 import { POINT_DETAILS } from './point-details.ts';
 import { FOSSIL_QUESTION } from './fossils.ts';
 
@@ -37,7 +38,7 @@ const POINTS: readonly MapPoint[] = [
   { id: 'oceano', tier: 'A', title: 'Océano', place: 'Mar de Weddell', x: 322, y: 322, q: '¿Qué pasa debajo del hielo marino del Mar de Weddell?' },
   { id: 'poncho', tier: 'A', title: 'Poncho', place: 'Península Antártica · Base Esperanza', x: ESPERANZA.x, y: ESPERANZA.y, q: '¿Qué historia puede contar un perro polar argentino de trineo?' },
   { id: 'campana', tier: 'A', title: 'Desde Ushuaia', place: 'Ushuaia', x: 31.4, y: 313.5, q: '¿Cómo se llega desde Ushuaia hasta la Antártida?' },
-  { id: 'orcadas', tier: 'A', title: 'Estación Orcadas', place: 'Islas Orcadas del Sur', x: 208, y: 205, q: '¿Cómo es pasar un invierno entero en Orcadas?' },
+  { id: 'orcadas', tier: 'A', title: 'Estación Orcadas', place: 'Islas Orcadas del Sur', x: 208, y: 205, q: ORCADAS_GUIDING_QUESTION },
   { id: 'polo', tier: 'C', title: 'El Polo Sur', place: 'Centro del continente', x: 500, y: 500, q: '¿Qué hay en el punto más austral del planeta?' },
   { id: 'testigos', tier: 'C', title: 'Testigos de hielo', place: 'Domo C', x: 674, y: 614, q: '¿Cómo puede el hielo guardar aire de otras épocas?' },
   { id: 'vostok', tier: 'C', title: 'Un lago bajo el hielo', place: 'Lago Vostok', x: 667, y: 548, q: '¿Puede haber agua líquida debajo de kilómetros de hielo?' },
@@ -49,7 +50,7 @@ const POINTS: readonly MapPoint[] = [
 ];
 
 /** Close-up camera distance of the points with a model (closeUp). Erebus is a whole summit, seen from farther. */
-const CLOSE_UP: Readonly<Record<string, number>> = { polo: 2.6, testigos: 2.6, vostok: 3.2, belgrano: 2.8, thwaites: 4.5, emperador: 2.2, erebus: 7 };
+const CLOSE_UP: Readonly<Record<string, number>> = { polo: 2.6, testigos: 2.6, vostok: 3.2, belgrano: 2.8, thwaites: 4.5, emperador: 2.2, cerronevado: 2.2, erebus: 7 };
 
 export const PTS: readonly MapPoint[] = POINTS.map((p) => ({ ...p, ...POINT_DETAILS[p.id], ...(CLOSE_UP[p.id] ? { closeUp: CLOSE_UP[p.id] } : {}) }));
 

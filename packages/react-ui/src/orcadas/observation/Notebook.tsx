@@ -2,10 +2,10 @@ import { formatTempC } from '../century/centuryData.ts';
 import { beaufort, compassPoint, type Reading, type ReadingKind } from '@antartida/core';
 
 export const NOTEBOOK_LABELS: Record<ReadingKind, { title: string; unit: string }> = {
-  temp: { title: 'Termómetro (abrigo)', unit: '°C' },
-  pressure: { title: 'Barómetro', unit: 'hPa' },
-  wind: { title: 'Anemómetro y veleta', unit: 'km/h' },
-  clouds: { title: 'Nubosidad', unit: 'octas' },
+  temp: { title: 'Temperatura (abrigo)', unit: '°C' },
+  pressure: { title: 'Presión (barómetro)', unit: 'hPa' },
+  wind: { title: 'Viento (anemómetro y veleta)', unit: 'km/h' },
+  clouds: { title: 'Nubes (nubosidad)', unit: 'octas' },
 };
 
 export function formatRecorded(kind: ReadingKind, val: number, reading: Reading): string {

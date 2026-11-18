@@ -231,14 +231,14 @@ export function CloudPicker({
             strokeWidth="1.5"
           />
           <text x="75" y="22" textAnchor="middle" className="orc-obs-svg-tag">
-            Espejo de octavas
+            Cielo en 8 partes (octas)
           </text>
 
           {/* Legend items */}
           <g transform="translate(14, 36)">
             <circle cx="10" cy="8" r="8" fill="#F7FAFB" stroke="var(--chart-ink)" strokeWidth="1.2" />
             <text x="26" y="12" className="orc-obs-svg-legend">
-              Octava con nubes
+              Parte con nubes
             </text>
 
             <circle cx="10" cy="30" r="8" fill="#B8D2E3" stroke="var(--chart-ink)" strokeWidth="1.2" />
@@ -248,7 +248,7 @@ export function CloudPicker({
 
             <circle cx="10" cy="52" r="6" fill="#C0862F" stroke="var(--chart-ink)" strokeWidth="1.2" />
             <text x="26" y="56" className="orc-obs-svg-legend">
-              Octava marcada
+              Parte marcada
             </text>
           </g>
 

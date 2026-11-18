@@ -114,6 +114,9 @@ export function Answer({
     };
   }, [series, threshold]);
 
+  const pct1 = seg1.years > 0 ? Math.round((seg1.asCold / seg1.years) * 100) : 0;
+  const pct2 = seg2.years > 0 ? Math.round((seg2.asCold / seg2.years) * 100) : 0;
+
   return (
     <div className="orc-chapter-content orc-answer">
       {/* Guiding Question as prominent heading / lead */}
@@ -292,10 +295,31 @@ export function Answer({
       {/* Answer sentence block computed only from answerFor */}
       <div className="orc-answer-sentence-block">
         <p className="orc-answer-sentence">
-          Entre {seg1.fromYear} y {seg1.toYear}, {seg1.asCold} de {seg1.years}{' '}
-          {pluralMonth} fueron tan fríos como {referenceText} o más. Desde {seg2.fromYear}, solo{' '}
-          {seg2.asCold} de {seg2.years}.
+          {seg1.asCold === 0 && seg2.asCold === 0 ? (
+            <>
+              Ningún {monthName} de toda la serie fue tan frío como {referenceText}: ni entre{' '}
+              {seg1.fromYear} y {seg1.toYear} ({seg1.asCold} de {seg1.years}) ni desde{' '}
+              {seg2.fromYear} ({seg2.asCold} de {seg2.years}).
+            </>
+          ) : pct2 < pct1 ? (
+            <>
+              Entre {seg1.fromYear} y {seg1.toYear}, {seg1.asCold} de {seg1.years} {pluralMonth} (
+              {pct1} %) fueron tan fríos como {referenceText} o más. Desde {seg2.fromYear}, esa
+              proporción bajó a {seg2.asCold} de {seg2.years} ({pct2} %).
+            </>
+          ) : (
+            <>
+              Entre {seg1.fromYear} y {seg1.toYear}, {seg1.asCold} de {seg1.years} {pluralMonth} (
+              {pct1} %) fueron tan fríos como {referenceText} o más; desde {seg2.fromYear}, fueron{' '}
+              {seg2.asCold} de {seg2.years} ({pct2} %).
+            </>
+          )}
           <Cite id={readerSource.id} />
+        </p>
+        <p className="vsmall">
+          Cada punto es el promedio real de {monthName} en un año. La línea punteada en 1950 separa
+          la primera etapa, sin un rumbo claro, de los años siguientes, en los que el calentamiento
+          se vuelve evidente.
         </p>
         {!hasUserTemp && (
           <SheetActions>
@@ -333,7 +357,7 @@ export function Answer({
         <MoreFold summary="Tu observación del día">
           <div className="orc-done-sim">
             <KindChip kind="sim" />
-            <span>El tiempo del día se sorteó dentro del clima real de {monthName}.</span>
+            <span>Estos valores son simulados a partir del clima real de {monthName} en Orcadas.</span>
           </div>
           <dl className="orc-done-readings" aria-label="Tu observación del día">
             {READING_KINDS.map((kind) => {

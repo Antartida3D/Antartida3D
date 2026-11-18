@@ -5,16 +5,19 @@ import { Icon } from '../ui.tsx';
 /** A press on a marker: `touch` tells a finger (or pen) from a mouse or the keyboard. */
 export type MarkerPick = (m: Marker, touch: boolean) => void;
 
-export function MarkerButton({ m, style, shown, onPick }: {
+export function MarkerButton({ m, style, shown, keyAttr, onPick }: {
   m: Marker;
   style: CSSProperties;
   /** Its label is in view because it was pressed once. */
   shown: boolean;
+  /** Set `data-key` directly on the button (2D layer, which has no outer wrapper div). */
+  keyAttr?: string;
   onPick: MarkerPick;
 }) {
   return (
     <button
       type="button"
+      data-key={keyAttr}
       className={m.cls + (shown ? ' shown' : '')}
       style={style}
       onClick={(e) => {
@@ -26,6 +29,7 @@ export function MarkerButton({ m, style, shown, onPick }: {
       <span className="dot">
         {m.kind === 'point' && m.pulse && <span className="pulse" />}
         {m.kind === 'point' && m.check && Icon.check}
+        {m.kind === 'point' && m.point.tier === 'C' && Icon.info}
         {m.kind === 'sea' && Icon.sea}
       </span>
       {m.kind === 'point' && m.label && (
@@ -53,7 +57,7 @@ export function Markers({ markers, className, shown, onPick }: {
         const { length, angle } = guideLine(m.dx, m.dy, 0);
         return <span key={'g:' + m.key} className="guide" aria-hidden="true" style={{ height: length, transform: `translate3d(${m.left}px, ${m.top}px, 0) rotate(${angle}rad)` }} />;
       })}
-      {markers.map((m) => <MarkerButton key={m.key} m={m} style={{ transform: `translate3d(${m.left}px, ${m.top}px, 0)` }} shown={m.key === shown} onPick={onPick} />)}
+      {markers.map((m) => <MarkerButton key={m.key} keyAttr={m.key} m={m} style={{ transform: `translate3d(${m.left}px, ${m.top}px, 0)` }} shown={m.key === shown} onPick={onPick} />)}
     </div>
   );
 }

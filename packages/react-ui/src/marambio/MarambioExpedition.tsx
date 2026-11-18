@@ -5,7 +5,6 @@ import {
   MONTH_NAMES,
   marambioBlizzard,
   marambioClimate,
-  MARAMBIO_OSM_SOURCE_ID,
   MARAMBIO_PHOTO_CREDIT,
   MARAMBIO_SPOTS,
   MARAMBIO_STORM_MONTH,
@@ -23,7 +22,6 @@ import { useIsDesktop } from '../hooks.ts';
 import { KindChip } from '../orcadas/KindChip.tsx';
 import { MonthStrip, type MonthStripSeason } from '../orcadas/MonthStrip.tsx';
 import { ExpeditionTop } from '../ExpeditionTop.tsx';
-import { SceneBadge } from '../SceneBadge.tsx';
 import { Quoted } from '../ui.tsx';
 import { Cite, Cites } from '../sheet/Cite.tsx';
 import { SheetActions } from '../sheet/SheetActions.tsx';
@@ -173,7 +171,6 @@ export function MarambioExpedition({
   const overlayRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLElement>(null);
   const rootRef = useRef<HTMLElement>(null);
-  const sourcesBtn = useRef<HTMLButtonElement>(null);
   const moved = useRef(false);
 
   const spot = MARAMBIO_SPOTS[index];
@@ -301,16 +298,12 @@ export function MarambioExpedition({
         storm={storm}
       />
 
-      <SceneBadge
-        help={marambioFacts('scene').map((f) => <p key={f.id}><Quoted text={f.text} /></p>)}
-        onSources={() => openSources(MARAMBIO_OSM_SOURCE_ID)}
-        extra={
-          // Blows a blizzard over the base and explains it (#263): its own row, over the label.
-          <button type="button" className="btn mar-storm-btn" aria-pressed={storm} onClick={toggleStorm}>
-            {storm ? 'Calmar la ventisca' : 'Ver una ventisca'}
-          </button>
-        }
-      />
+      {/* Blows a blizzard over the base and explains it (#263), at the bottom left of the scene. */}
+      <div className="orc-scene-badge">
+        <button type="button" className="btn mar-storm-btn" aria-pressed={storm} onClick={toggleStorm}>
+          {storm ? 'Calmar la ventisca' : 'Ver una ventisca'}
+        </button>
+      </div>
 
       <div className="orc-hotspots" ref={overlayRef} role="group" aria-label="Puntos de interés de la base">
         {MARAMBIO_SPOTS.map((s, i) => {
@@ -350,7 +343,6 @@ export function MarambioExpedition({
 
       <ExpeditionTop
         onMap={() => onLeave(false)}
-        actions={<button type="button" className="pill orc-top-btn" ref={sourcesBtn} aria-haspopup="dialog" onClick={() => openSources(null)}>Fuentes</button>}
         tools={<MonthStrip month={month} onMonth={setMonth} season={SEASON} />}
       />
 
@@ -364,7 +356,7 @@ export function MarambioExpedition({
         </BottomSheet>
       )}
 
-      {showSources && <SourcesView list={SOURCES} kinds highlight={highlight} onClose={closeSources} place={MARAMBIO_GUIDING_QUESTION} fallbackFocus={() => sourcesBtn.current} />}
+      {showSources && <SourcesView list={SOURCES} kinds highlight={highlight} onClose={closeSources} place={MARAMBIO_GUIDING_QUESTION} />}
       {photo && <PhotoDialog photo={photo} onClose={() => setPhoto(null)} />}
       {trip && <TripDialog onClose={() => setTrip(false)} onTravel={() => onTravelToOrcadas(reachedEnd.current)} />}
     </section>

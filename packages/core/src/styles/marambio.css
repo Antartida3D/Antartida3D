@@ -86,10 +86,10 @@
   margin: 4px 0 0;
   min-height: 0;
 }
-/* On a phone the location sits in the row of «Mapa» and «Fuentes» (#297): a long place wraps instead of covering them (#310). */
+/* On a phone the location sits in the row of «Mapa» (#297): a long place wraps instead of covering it (#310). */
 @media (max-width: 899px) and (min-height: 501px) {
   .scene-pt .scene-location {
-    max-width: calc(100% - 212px);
+    max-width: calc(100% - 132px);
   }
 }
 .scene-pt-no3d {
@@ -98,7 +98,7 @@
   color: var(--chart-muted);
 }
 
-/* The blizzard button beside the scene label (#263): a small paper button, pressed while it blows. */
+/* The blizzard button at the bottom left of the scene (#263): a small paper button, pressed while it blows. */
 .mar .mar-storm-btn {
   pointer-events: auto;
   min-height: 44px;

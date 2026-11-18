@@ -72,7 +72,6 @@ test('completes all chapters and stops of Orcadas with the keyboard only (deskto
   test.setTimeout(90_000);
 
   await openOrcadasFromMap(page);
-  await expect(page.getByText('Reconstrucción ilustrada').first()).toBeVisible();
   await expectFocused(page, ORCADAS_GUIDING_QUESTION);
 
   const overflow = await page.evaluate(
@@ -135,16 +134,19 @@ test('completes all chapters and stops of Orcadas with the keyboard only (deskto
   await expectFocused(page, 'La respuesta');
   await expect(page.getByRole('img', { name: /Gráfico de puntos de temperatura/ })).toBeVisible();
 
-  // Open Sources panel via keyboard and close with Escape
-  await page.getByRole('button', { name: 'Fuentes' }).focus();
+  // Open Sources panel via keyboard from a citation and close with Escape
+  const cite = page.locator('.orc-panel .vref').first();
+  await cite.focus();
+  const citeName = (await cite.getAttribute('aria-label')) ?? '';
   await page.keyboard.press('Enter');
   const sourcesDialog = page.getByRole('dialog', { name: 'Fuentes' });
   await expect(sourcesDialog).toBeVisible();
   await expect(sourcesDialog).toContainText('Consultado');
-  await expectFocused(page, 'Volver');
+  // The focus goes to the cited source, highlighted in the list.
+  await expect(sourcesDialog.locator('.sources-card[aria-current] a')).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(sourcesDialog).toHaveCount(0);
-  await expectFocused(page, 'Fuentes');
+  await expectFocused(page, citeName);
 
   await tabTo(page, /^Terminar expedición$/);
   await page.keyboard.press('Enter');
@@ -168,19 +170,18 @@ test('completes the full mobile tour without typing any numbers (390x844 and 360
 
   // Llegar: traverse all 4 stops with primary button
   await expect(page.locator('.orc-tour-count')).toHaveText('1 de 4');
-  // «Saber más» folds what the line leaves out, never the line again; with nothing left out it is not shown.
-  const tourLine = page.locator('.orc-tour-line');
+  // «Llegar» is short: none of its stops has a «Saber más» (#327).
   const tourMore = page.locator('.orc-tour-more');
-  await tourMore.locator('summary').click();
-  await expect(tourMore.locator('.orc-fact-card')).not.toHaveCount(0);
-  await expect(tourMore).not.toContainText((await tourLine.innerText()).trim());
+  await expect(tourMore).toBeHidden();
   await primary(page).click();
   await expect(page.locator('.orc-tour-count')).toHaveText('2 de 4');
   await expect(tourMore).toBeHidden();
   await primary(page).click();
   await expect(page.locator('.orc-tour-count')).toHaveText('3 de 4');
+  await expect(tourMore).toBeHidden();
   await primary(page).click();
   await expect(page.locator('.orc-tour-count')).toHaveText('4 de 4');
+  await expect(tourMore).toBeHidden();
   await expect(primary(page)).toHaveText('Hacer la observación');
   await primary(page).click();
 
@@ -507,7 +508,7 @@ test('B4: resetting panel scroll on chapter change', async ({ page }) => {
   await expect(nextHeading).toBeInViewport();
 });
 
-test('B7: opening Fuentes closes the hotspot dialog card and vice versa', async ({ page }) => {
+test('B7: opening the sources from a citation closes the hotspot dialog card and vice versa', async ({ page }) => {
   await openOrcadasFromMap(page);
 
   // Open a hotspot that is NOT a tour stop in Llegar
@@ -516,8 +517,8 @@ test('B7: opening Fuentes closes the hotspot dialog card and vice versa', async 
   const spotDialog = page.getByRole('dialog', { name: 'Abrigo meteorológico' });
   await expect(spotDialog).toBeVisible();
 
-  // Click "Fuentes": hotspot card is removed from DOM, sources panel is in DOM
-  await page.getByRole('button', { name: 'Fuentes' }).click();
+  // Click a citation of the card: hotspot card is removed from DOM, sources panel is in DOM
+  await spotDialog.locator('.vref').first().click();
   await expect(spotDialog).toHaveCount(0);
   const sourcesPanel = page.getByRole('dialog', { name: 'Fuentes' });
   await expect(sourcesPanel).toBeVisible();
@@ -594,7 +595,7 @@ test('D4/D5: clicking a source reference opens Sources highlighted and clicking 
 
 test('D5: each source link card in Sources panel has height >= 44 px', async ({ page }) => {
   await openOrcadasFromMap(page);
-  await page.getByRole('button', { name: 'Fuentes' }).click();
+  await page.locator('.orc-panel .vref').first().click();
 
   const sourcesDialog = page.getByRole('dialog', { name: 'Fuentes' });
   await expect(sourcesDialog).toBeVisible();

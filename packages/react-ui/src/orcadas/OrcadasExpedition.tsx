@@ -29,7 +29,6 @@ import {
 import { BottomSheet, type OpenSheetSize } from '../BottomSheet.tsx';
 import { useFocusReturn, useIsDesktop, useMediaQuery } from '../hooks.ts';
 import { ExpeditionTop } from '../ExpeditionTop.tsx';
-import { SceneBadge } from '../SceneBadge.tsx';
 import { Answer } from './Answer.tsx';
 import { SheetActions } from '../sheet/SheetActions.tsx';
 import { BackButton } from '../sheet/BackButton.tsx';
@@ -48,8 +47,6 @@ import { TourCard } from './TourCard.tsx';
 function chapterFocus(chapter: Chapter, tourIndex: number): HotspotId {
   return tourStop(chapter, tourIndex)?.spot ?? 'overview';
 }
-
-const SCENE_FACT = factsFor('scene')[0];
 
 function primaryButtonText(chapter: Chapter): string {
   switch (chapter) {
@@ -128,7 +125,6 @@ export function OrcadasExpedition({
   const panelRef = useRef<HTMLElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const sourcesBtnRef = useRef<HTMLButtonElement>(null);
   const hotspotsRef = useRef<HTMLDivElement>(null);
   const mobileCardRef = useRef<HTMLElement>(null);
   const primaryBtnRef = useRef<HTMLButtonElement>(null);
@@ -456,16 +452,6 @@ export function OrcadasExpedition({
           overlayRef={hotspotsRef}
         />
 
-        {/* Always-visible scene reconstruction label with help toggle */}
-        <SceneBadge
-          help={<><p>{SCENE_FACT?.text}</p><p>Armamos una maqueta con nueve elementos reales de la base —con las formas y colores de OpenStreetMap sobre fotos satelitales de 2019— y los pusimos en fila para que los puedas ver bien. Las alturas son aproximadas, agrandamos los animales, los instrumentos y la bandera para que no se pierdan, y tanto el terreno como la pingüinera y el helicóptero (que aparece de noviembre a marzo) son ilustrativos.</p></>}
-          onSources={() => {
-            if (openSpot) setOpenSpot(null);
-            setHighlightSource('osm-site');
-            if (!s.panel) dispatch({ type: 'togglePanel' });
-          }}
-        />
-
         {/* Interactive 3D-projected HTML hotspots */}
         <Hotspots
           chapter={s.chapter}
@@ -500,23 +486,6 @@ export function OrcadasExpedition({
           onMap={() => beginLeave(false)}
           chaptersLabel="Capítulos de la expedición"
           onChapter={(id) => dispatch({ type: 'goto', chapter: id })}
-          actions={
-            <button
-              type="button"
-              className="pill orc-top-btn"
-              ref={sourcesBtnRef}
-              onClick={() => {
-                if (openSpot) {
-                  setOpenSpot(null);
-                }
-                setHighlightSource(null);
-                dispatch({ type: 'togglePanel' });
-              }}
-              aria-expanded={s.panel}
-            >
-              Fuentes
-            </button>
-          }
           tools={
             <MonthStrip
               month={s.month}
@@ -579,7 +548,6 @@ export function OrcadasExpedition({
               dispatch({ type: 'closePanel' });
               setHighlightSource(null);
             }}
-            fallbackFocus={() => sourcesBtnRef.current}
           />
         )}
       </section>

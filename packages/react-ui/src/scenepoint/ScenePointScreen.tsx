@@ -6,7 +6,6 @@ import { useSceneFrame, type ViewShiftPx } from '../sceneFrame.tsx';
 import { KindChip } from '../orcadas/KindChip.tsx';
 import { Quoted } from '../ui.tsx';
 import { ExpeditionTop } from '../ExpeditionTop.tsx';
-import { SceneBadge } from '../SceneBadge.tsx';
 import { SceneLocation } from '../SceneLocation.tsx';
 import { Cites } from '../sheet/Cite.tsx';
 import { BackButton } from '../sheet/BackButton.tsx';
@@ -65,7 +64,6 @@ export function ScenePointScreen<S extends string>({
   const rootRef = useRef<HTMLElement>(null);
   const topRef = useRef<HTMLElement>(null);
   const panelRef = useRef<HTMLElement>(null);
-  const sourcesBtn = useRef<HTMLButtonElement>(null);
   const moved = useRef(false);
 
   const spots = point.spots;
@@ -135,7 +133,6 @@ export function ScenePointScreen<S extends string>({
       >
         {scene({ focus: spot.id, sidePanel: isDesktop, overlayRef, onNoWebGL, shift })}
 
-        <SceneBadge help={sceneFacts(point, 'scene').map((f) => <p key={f.id}>{f.text}</p>)} onSources={() => openSources(null)} />
         <SceneLocation place={mapPoint.place} detail={spot.label} />
 
         {!noWebGL && (
@@ -161,7 +158,6 @@ export function ScenePointScreen<S extends string>({
         <ExpeditionTop
           topRef={topRef}
           onMap={onLeave}
-          actions={<button type="button" className="pill orc-top-btn" ref={sourcesBtn} aria-haspopup="dialog" onClick={() => openSources(null)}>Fuentes</button>}
         />
 
         {isDesktop ? (
@@ -173,7 +169,7 @@ export function ScenePointScreen<S extends string>({
             {panelBody}
           </BottomSheet>
         )}
-        {showSources && <SourcesView list={point.cited} kinds highlight={highlight} onClose={closeSources} place={question} fallbackFocus={() => sourcesBtn.current} />}
+        {showSources && <SourcesView list={point.cited} kinds highlight={highlight} onClose={closeSources} place={question} />}
       </section>
     </SourcesContext.Provider>
   );

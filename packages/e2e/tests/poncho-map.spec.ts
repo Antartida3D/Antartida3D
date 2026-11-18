@@ -27,12 +27,8 @@ test('«Volver al mapa» leaves the diorama for the map and the trip resumes ins
   const diorama = page.locator('.pdio');
   await expect(diorama.getByRole('heading', { name: first.title })).toBeVisible();
 
-  // The button is the first thing the keyboard reaches and it does not hide the notice of illustration.
   const back = diorama.getByRole('button', { name: 'Volver al mapa' });
   await expect(back).toBeVisible();
-  const notice = diorama.locator('.orc-scene-badge');
-  const [a, b] = await Promise.all([back.boundingBox(), notice.boundingBox()]);
-  expect(a && b && a.y + a.height <= b.y + 1, 'the button sits above the notice').toBe(true);
 
   await back.click();
   await expect(page.locator('.pdio')).toHaveCount(0);

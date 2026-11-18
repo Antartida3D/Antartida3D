@@ -31,7 +31,7 @@
   height: 100%;
 }
 
-/* Always-visible reconstruction chip on the scene with help button */
+/* Bottom left of the scene: Marambio's blizzard button (#263). */
 .orc-scene-badge {
   position: absolute;
   left: 12px;
@@ -49,7 +49,7 @@
 .scene-location {
   position: absolute;
   z-index: 4;
-  bottom: var(--scene-location-bottom, 24px);
+  bottom: 24px;
   left: 24px;
   display: flex;
   align-items: center;
@@ -99,15 +99,6 @@
   margin-top: 4px;
 }
 
-/* The label of the scene holds the bottom left corner of a wide screen: the location sits above it. */
-@media (min-width: 900px) and (min-height: 501px) {
-  .marine-expedition,
-  .fossil-expedition,
-  .scene-pt {
-    --scene-location-bottom: 84px;
-  }
-}
-
 @media (max-width: 899px) and (min-height: 501px) {
   .scene-location {
     top: 8px;
@@ -140,75 +131,6 @@
     bottom: auto;
     left: auto;
   }
-}
-
-.orc-scene-badge-row {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.orc-scene-help-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width:44px;
-  height:44px;
-  border-radius: 50%;
-  border: 1.5px solid var(--chart-ink);
-  background: var(--chart-paper);
-  color: var(--chart-ink);
-  font-family: 'Atkinson Hyperlegible', system-ui, sans-serif;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  padding: 0;
-  line-height: 1;
-  pointer-events: auto;
-}
-
-.orc-scene-help-btn:focus-visible {
-  outline: 2px solid var(--deep);
-  outline-offset: 2px;
-}
-
-.orc-scene-help-popover {
-  pointer-events: auto;
-  margin-top: 6px;
-  max-width: 280px;
-
-  border: 1.5px solid var(--chart-ink);
-
-  padding: 8px 10px;
-  font-size: 12px;
-  line-height: 1.35;
-  color: var(--chart-ink);
-
-}
-
-.orc-scene-help-popover p {
-  margin: 0;
-}
-
-.orc-scene-help-popover p + p {
-  margin-top: 6px;
-}
-
-.orc-scene-sources-link {
-  appearance: none;
-  background: none;
-  border: none;
-  padding: 0;
-  font: inherit;
-  color: var(--deep);
-  text-decoration: underline;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.orc-scene-sources-link:hover,
-.orc-scene-sources-link:focus-visible {
-  color: var(--chart-ink);
 }
 
 /* KindChip: color + shape + border + text */
@@ -550,7 +472,7 @@
 }
 
 /* Chapter panel. On a portrait phone it is a bottom sheet (BottomSheet) with three sizes: peek
-   (chapter name and main button), small and tall. The scene label sits on top of it. */
+   (chapter name and main button), small and tall. */
 .orc {
   --orc-sheet: 45dvh;
 }
@@ -1366,11 +1288,6 @@
     display: flex;
     flex-direction: column-reverse;
     align-items: flex-start;
-  }
-
-  .orc-scene-badge .orc-scene-help-popover {
-    margin-top: 0;
-    margin-bottom: 6px;
   }
 
   /* Wide, the chip is the first thing after the actions, so the popover opens rightwards from it. */

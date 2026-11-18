@@ -16,7 +16,7 @@
 10. El encabezado de una expedición es `ExpeditionTop` (`packages/react-ui/src/ExpeditionTop.tsx`), no un `<header className="orc-top">` propio. Sin barra ni título; el selector de mes va en `tools`.
 11. Un botón que queda solo en una barra, un panel o un modal ocupa todo el ancho de su contenedor, en celular y en escritorio.
 12. El cartel de ubicación de una escena es `SceneLocation` y la nota manuscrita de una parada es `.scene-found`. Ninguna expedición define el suyo.
-13. La etiqueta de la escena («Reconstrucción ilustrada» con su «?») es `SceneBadge`, abajo a la izquierda en todas las expediciones. Ninguna dibuja la suya.
+13. Las expediciones no llevan etiqueta de escena («Reconstrucción ilustrada» con su «?») ni botón «Fuentes» en el encabezado: las fuentes se abren desde las citas `[N]` (DEC-327).
 14. La **foto de una expedición** se abre en `PhotoModal` (`packages/react-ui/src/sheet/PhotoModal.tsx`): un modal centrado con la foto grande, su texto y la cruz «Cerrar», el que hizo Rocío para Fósiles y Marambio. Es la única excepción a la regla 9 y vale para todas las expediciones ([DEC-309-2](../../../docs/decisiones/DEC-309-2-modal-de-fotos-centrado.md)). Su aspecto vive en `components.css` (`.photo-modal`), con los tokens `--modal-*`.
 
 ## Guardián

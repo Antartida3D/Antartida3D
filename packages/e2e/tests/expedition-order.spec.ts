@@ -41,6 +41,8 @@ async function completeFossilsFromList(page: Page) {
     await page.locator('.fossil-next').click();
   }
   await page.getByRole('button', { name: 'Terminar expedición' }).click();
+  // Back on the 3D map the loading screen covers it while it loads again (#327): the card is reachable once it goes.
+  await expect(page.locator('section.ld')).toHaveCount(0, { timeout: 20_000 });
   await expect(page.locator('.next-sheet')).toBeVisible();
 }
 
@@ -56,6 +58,8 @@ async function completeMarambioFromList(page: Page) {
   }
   await expect(primary).toHaveText('Terminar expedición');
   await primary.click();
+  // Back on the 3D map the loading screen covers it while it loads again (#327): the card is reachable once it goes.
+  await expect(page.locator('section.ld')).toHaveCount(0, { timeout: 20_000 });
   await expect(page.locator('.next-sheet')).toBeVisible();
 }
 

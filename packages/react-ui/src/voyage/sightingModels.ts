@@ -19,16 +19,12 @@ import { SEA_LION_POLY } from './poly/seaLionPoly.ts';
 import { CRABEATER_SEAL_POLY } from './poly/crabeaterSealPoly.ts';
 import { PEALES_DOLPHIN_POLY } from './poly/pealesDolphinPoly.ts';
 import { HOURGLASS_DOLPHIN_POLY } from './poly/hourglassDolphinPoly.ts';
-import { BLACK, ICE, ORANGE, WHITE } from './sightingColors.ts';
+import { BLACK, ICE, WHITE } from './sightingColors.ts';
 
 // The colors shared with the low-poly models live in sightingColors.ts (no import cycle).
 export { BLACK, CREAM, ICE, LAMP, NAVY_ROOF, ORANGE, RED, ROCK, SKY, WHITE, ZINC } from './sightingColors.ts';
 const SEA_GREY = 0x6f7f8c;
 const WHALE_GREY = 0x55606b;
-// Emperor penguin: the yellow of its ear patch and the pale yellow of its upper chest.
-const EMPEROR_YELLOW = 0xf2c14e;
-const EMPEROR_CHEST = 0xf6e7a8;
-const EMPEROR_BILL = 0xe59a6b;
 
 interface Model {
   body: readonly Box[];
@@ -131,38 +127,6 @@ const seal = (body: number, belly: number, ground: number): Model => ({
 });
 
 /**
- * An emperor penguin standing at (x, z), `k` times the full size. Taller and heavier than the
- * others, with its own marks: a yellow and orange patch behind each ear, a pale yellow upper
- * chest, a long thin bill with an orange streak, and dark feet.
- */
-export const emperorAt = (x: number, z: number, k: number): Box[] => {
-  const at = (cx: number, cy: number, cz: number, sx: number, sy: number, sz: number, color: number): Box =>
-    [x + cx * k, 0.04 + cy * k, z + cz * k, sx * k, sy * k, sz * k, color];
-  return [
-    at(0, 0.2, 0, 0.24, 0.34, 0.28, BLACK),
-    at(0, 0.5, 0, 0.21, 0.28, 0.24, BLACK),
-    at(0.01, 0.73, 0, 0.17, 0.18, 0.17, BLACK),
-    // White front that wraps round to the sides, pale yellow where it meets the neck.
-    at(0.06, 0.3, 0, 0.14, 0.46, 0.285, WHITE),
-    at(0.07, 0.57, 0, 0.12, 0.1, 0.2, EMPEROR_CHEST),
-    // Ear patches: yellow, turning orange towards the back of the head.
-    at(0.02, 0.7, 0.088, 0.09, 0.1, 0.01, EMPEROR_YELLOW),
-    at(0.02, 0.7, -0.088, 0.09, 0.1, 0.01, EMPEROR_YELLOW),
-    at(-0.03, 0.72, 0.089, 0.05, 0.06, 0.01, ORANGE),
-    at(-0.03, 0.72, -0.089, 0.05, 0.06, 0.01, ORANGE),
-    at(0.06, 0.77, 0.087, 0.025, 0.025, 0.01, WHITE),
-    at(0.06, 0.77, -0.087, 0.025, 0.025, 0.01, WHITE),
-    // Long bill, curved down, with the orange streak of the lower half.
-    at(0.14, 0.73, 0, 0.12, 0.035, 0.045, BLACK),
-    at(0.14, 0.712, 0, 0.1, 0.015, 0.05, EMPEROR_BILL),
-    at(0.05, 0.02, 0.07, 0.15, 0.04, 0.09, BLACK),
-    at(0.05, 0.02, -0.07, 0.15, 0.04, 0.09, BLACK),
-    at(0, 0.42, 0.155, 0.11, 0.38, 0.035, BLACK),
-    at(0, 0.42, -0.155, 0.11, 0.38, 0.035, BLACK),
-    at(-0.13, 0.06, 0, 0.09, 0.05, 0.09, BLACK),
-  ];
-};
-/**
  * Antarctic minke whale: slimmer than the humpback, pointed head, small fin far back. Its flippers are
  * grey with only a white leading edge: the conspicuous white band belongs to the other minkes
  * (NOAA Fisheries, «Minke Whale», consulted 2026-11-14).
@@ -259,21 +223,6 @@ const ICEBERG_PEAKS: Box[] = iceberg(8, 6, 190422, (u, v, noise) => {
   return h < 0.03 ? 0 : h;
 });
 
-/** Emperor penguins on a floe of sea ice: the point of the map is «Pingüino emperador». */
-const FLOE_PENGUINS: Box[] = [
-  [0, 0, 0, 1, 0.08, 0.7, ICE],
-  [0.05, 0.045, 0.02, 0.8, 0.03, 0.5, WHITE],
-  [-0.42, 0.01, 0.3, 0.26, 0.06, 0.2, ICE_SHADE],
-  ...emperorAt(-0.22, -0.1, 0.5), ...emperorAt(0.08, 0.12, 0.5), ...emperorAt(0.3, -0.12, 0.5),
-];
-
-/** One emperor penguin on a small floe, for the card of its point. */
-const EMPEROR: Box[] = [
-  [0, 0, 0, 0.7, 0.08, 0.56, ICE],
-  [0.03, 0.045, 0.01, 0.52, 0.03, 0.4, WHITE],
-  ...emperorAt(0, 0, 0.82),
-];
-
 /**
  * Models of the sea life and ice that live on the map outside the trip. Every model of the app is
  * built this way (see docs/diseno/estilo-voxel.md): boxes, flat colors, no textures.
@@ -281,8 +230,6 @@ const EMPEROR: Box[] = [
 export const SEA_MODELS = {
   humpback: WHALE,
   minke: MINKE,
-  penguins: FLOE_PENGUINS,
-  emperor: EMPEROR,
   seal: seal(SEA_GREY, 0xc9d0d4, ICE).body,
   'iceberg-lg': ICEBERG_TABULAR,
   'iceberg-sm': ICEBERG_PEAKS,

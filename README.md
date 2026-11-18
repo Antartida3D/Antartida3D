@@ -25,9 +25,25 @@ Las cinco personas del equipo cursan el 5.º año de la Licenciatura en Sistemas
 
 ## Problema
 
-Para el público no especializado puede ser difícil conectar la información científica antártica con los lugares, las evidencias y las personas que la producen. La información existe, pero está repartida en publicaciones, series de datos y archivos oficiales que piden conocimiento previo para leerlos.
+La información verificada sobre la Antártida es difícil de encontrar para el público general. Está repartida en publicaciones científicas, series de datos y archivos oficiales. Además, casi siempre pide conocimiento previo para entenderla.
 
-Es la hipótesis de partida de la [propuesta](docs/propuesta.pdf) (25 de octubre de 2026). El equipo la contrasta con potenciales usuarios durante el desarrollo.
+Lo vivimos en primera persona. Somos fueguinos: nacimos, crecimos o vivimos gran parte de nuestra vida en Tierra del Fuego. Nuestra provincia se llama Tierra del Fuego, Antártida e Islas del Atlántico Sur. Aun así, nunca tuvimos la oportunidad de aprender sobre la Antártida. Nos llamó la atención no saber casi nada de una parte de nuestra propia provincia.
+
+Por eso queremos difundir la ciencia que se hace en el territorio antártico argentino y darle visibilidad. La aplicación reúne información de calidad en un solo lugar y la presenta de forma didáctica, para que cualquier persona pueda aprender. Cada dato se apoya en fuentes verificadas, varias de primera mano. Un ejemplo es el archivo del geólogo Eduardo Olivero, abuelo de Rocío, integrante del equipo.
+
+La aplicación también cuenta historias reales y anécdotas que poca gente conoce. Por ejemplo, la vida de Poncho, un perro polar del Ejército Argentino, o el hallazgo del primer dinosaurio de la Antártida. Darles protagonismo a esas historias es otro de nuestros objetivos.
+
+## Destinatarios y sostenibilidad
+
+- **Educación:** en una primera etapa, la aplicación está pensada para las instituciones educativas.
+- **Turismo:** también puede ser una carta de presentación de Ushuaia y de la provincia, para informar a quienes la visitan.
+
+**Modelo de negocio (propuesta, todavía no está en la aplicación):**
+
+- Las empresas de turismo locales pueden pagar para aparecer en los puntos turísticos del mapa. Desde ahí, la persona puede contactarlas para pedir más información o una excursión.
+- Los guías de turismo pueden postularse para llevar a las personas a esos lugares.
+
+La publicidad va siempre separada y marcada como tal. Nunca se mezcla con el contenido científico ni con sus fuentes.
 
 ## Solución
 
@@ -251,7 +267,7 @@ La licencia **no** cubre lo siguiente:
 En cumplimiento con las bases de la hackatón, se declara el uso de herramientas de inteligencia artificial en el desarrollo de los prototipos:
 
 - **Secciones obligatorias del README (#6):**
-  > Revisión del README contra las bases y redacción de las secciones «Eje», «Problema», «Solución», «Tecnologías» y «Para el público» con asistencia de IA. El problema sale de la propuesta del equipo; la solución, las tecnologías y las fuentes resumen lo que ya está en el código y en `docs/`. Los integrantes y sus roles los aportó el equipo. No se agregaron datos ni fuentes nuevas.
+  > Revisión del README contra las bases y redacción de las secciones «Eje», «Problema», «Destinatarios y sostenibilidad», «Solución», «Tecnologías» y «Para el público» con asistencia de IA. El problema, los destinatarios y el modelo de negocio los dictó el equipo, y la IA solo los redactó; la solución, las tecnologías y las fuentes resumen lo que ya está en el código y en `docs/`. Los integrantes y sus roles los aportó el equipo. No se agregaron datos ni fuentes nuevas.
 - **Licencia del proyecto (#321):**
   > Comparación de licencias, lectura de las bases y redacción de la sección «Licencia», del registro de la decisión y del issue con asistencia de IA. El texto de la licencia es el oficial, sin cambios. La elección de la licencia fue del equipo.
 - **Botones de zoom en sus límites (#237):**

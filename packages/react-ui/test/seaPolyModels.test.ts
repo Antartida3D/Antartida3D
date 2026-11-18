@@ -19,7 +19,10 @@ import {
   SHIP_WAKE_POLY,
 } from '../src/voyage/seaImmersiveModels.ts';
 import { PENGUINS_ON_FLOE, SEA_POLY_MODELS, type SeaPolyModelId } from '../src/voyage/seaPolyModels.ts';
-import { SPLASH_POLY, SPOUT_POLY } from '../src/voyage/whalePolyModels.ts';
+import { ORCA_PARTS, SPLASH_POLY, SPOUT_POLY } from '../src/voyage/whalePolyModels.ts';
+
+/** WHITE of whalePolyModels.ts: the orca's belly and eye patch. */
+const WHITE = 0xf4f7f8;
 
 describe('general map low-poly sea fauna (penguins, seal & cetaceans)', () => {
   for (const id of ['penguins', 'seal', 'humpback', 'orca', 'minke'] as readonly SeaPolyModelId[]) {
@@ -69,6 +72,53 @@ describe('general map low-poly sea fauna (penguins, seal & cetaceans)', () => {
       expect(geometry.getAttribute('position').count).toBe(tris.length * 3);
       geometry.dispose();
     }
+  });
+
+  it('lays the orca eye patch flush on the head as a long teardrop on each side (#312)', () => {
+    // The white faces of the head, above the belly.
+    const patch = ORCA_PARTS.body.filter(([a, b, c, col]) =>
+      col === WHITE && Math.min(a[0], b[0], c[0]) > 0.28 && Math.max(a[0], b[0], c[0]) < 0.45 && Math.min(a[1], b[1], c[1]) > -0.06);
+    const skin = ORCA_PARTS.body.filter((t) => t[3] !== WHITE);
+    /** |z| of the skin on one side at (x, y): where a ray along z meets its faces. */
+    const skinZ = (x: number, y: number, side: number) => {
+      let z = -Infinity;
+      for (const [a, b, c] of skin) {
+        if (Math.sign(a[2] + b[2] + c[2]) !== side) continue;
+        const d = (b[1] - c[1]) * (a[0] - c[0]) + (c[0] - b[0]) * (a[1] - c[1]);
+        if (Math.abs(d) < 1e-12) continue;
+        const u = ((b[1] - c[1]) * (x - c[0]) + (c[0] - b[0]) * (y - c[1])) / d;
+        const v = ((c[1] - a[1]) * (x - c[0]) + (a[0] - c[0]) * (y - c[1])) / d;
+        if (u < -1e-9 || v < -1e-9 || u + v > 1 + 1e-9) continue;
+        z = Math.max(z, Math.abs(u * a[2] + v * b[2] + (1 - u - v) * c[2]));
+      }
+      return z;
+    };
+    for (const side of [1, -1]) {
+      const corners = patch.filter(([a, b, c]) => Math.sign(a[2] + b[2] + c[2]) === side).flatMap(([a, b, c]) => [a, b, c]);
+      expect(corners.length).toBeGreaterThanOrEqual(30);
+      // No relief and no box: every corner sits on the skin, lifted just enough not to flicker.
+      for (const [x, y, z] of corners) {
+        const gap = Math.abs(z) - skinZ(x, y, side);
+        expect(gap).toBeGreaterThan(0);
+        expect(gap).toBeLessThan(0.003);
+      }
+      const xs = corners.map(([x]) => x);
+      const ys = corners.map(([, y]) => y);
+      expect((Math.max(...xs) - Math.min(...xs)) / (Math.max(...ys) - Math.min(...ys))).toBeGreaterThanOrEqual(2.5);
+    }
+  });
+
+  it('gives the orca a dorsal fin that narrows and thins towards its tip (#312)', () => {
+    const fin = ORCA_PARTS.body.flatMap(([a, b, c]) => [a, b, c]).filter(([, y]) => y > 0.115);
+    const span = (lo: number, hi: number) => {
+      const ring = fin.filter(([, y]) => y >= lo && y <= hi);
+      return { chord: Math.max(...ring.map(([x]) => x)) - Math.min(...ring.map(([x]) => x)), thick: Math.max(...ring.map(([, , z]) => Math.abs(z))) };
+    };
+    expect(Math.max(...fin.map(([, y]) => y))).toBeCloseTo(0.36, 2);
+    const base = span(0.115, 0.125);
+    const tip = span(0.33, 0.37);
+    expect(tip.chord).toBeLessThan(base.chord / 3);
+    expect(tip.thick).toBeLessThan(base.thick / 2);
   });
 
   it('places 4 distinct-proportion penguins on the single floe', () => {

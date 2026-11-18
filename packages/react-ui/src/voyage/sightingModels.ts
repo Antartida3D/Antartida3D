@@ -5,6 +5,8 @@ import { HELICOPTER_BOXES, HELICOPTER_ROTOR_BOXES, HELICOPTER_ROTOR_ORIGIN, offs
 import { MALVINAS_FLAG_BOXES } from '../map3d/malvinasFlagModel.ts';
 import { CLAIM_FLAG_MODELS } from '../map3d/claimFlagModels.ts';
 import { PONCHO_MODELS } from './ponchoModels.ts';
+import { boxShade, buildPolyGeometry } from './lowPoly.ts';
+import { assembleCetacean, ORCA_PARTS } from './whalePolyModels.ts';
 
 // Approximate colors. The models are illustrations, not portraits: one unit is about the length of the model.
 export const BLACK = 0x1f2a36;
@@ -114,31 +116,6 @@ const WHALE: Box[] = [
   [0.22, -0.115, 0, 0.5, 0.03, 0.2, WHITE],
   [0.44, 0.02, 0.097, 0.03, 0.03, 0.01, BLACK],
   [0.44, 0.02, -0.097, 0.03, 0.03, 0.01, BLACK],
-];
-
-// Orca: black, white belly and eye patches, grey saddle, tall dorsal fin.
-const ORCA: Box[] = [
-  [0.04, 0, 0, 0.36, 0.22, 0.2, BLACK],
-  [0.28, -0.01, 0, 0.16, 0.2, 0.18, BLACK],
-  [0.41, -0.03, 0, 0.12, 0.15, 0.15, BLACK],
-  [0.5, -0.05, 0, 0.07, 0.09, 0.1, BLACK],
-  [-0.2, 0.01, 0, 0.18, 0.17, 0.15, BLACK],
-  [-0.36, 0.02, 0, 0.16, 0.11, 0.09, BLACK],
-  [-0.48, 0.03, 0, 0.1, 0.06, 0.05, BLACK],
-  [-0.56, 0.03, 0.09, 0.1, 0.03, 0.15, BLACK],
-  [-0.56, 0.03, -0.09, 0.1, 0.03, 0.15, BLACK],
-  [-0.55, 0.03, 0, 0.07, 0.03, 0.06, BLACK],
-  [0.04, 0.17, 0, 0.14, 0.12, 0.035, BLACK],
-  [0.02, 0.28, 0, 0.09, 0.12, 0.035, BLACK],
-  [0, 0.37, 0, 0.05, 0.08, 0.035, BLACK],
-  [-0.1, 0.112, 0, 0.14, 0.01, 0.14, 0x8e989f],
-  [0.2, -0.09, 0.12, 0.14, 0.03, 0.12, BLACK],
-  [0.2, -0.09, -0.12, 0.14, 0.03, 0.12, BLACK],
-  [0.2, -0.105, 0, 0.5, 0.03, 0.16, WHITE],
-  [0.4, 0.02, 0.077, 0.08, 0.04, 0.01, WHITE],
-  [0.4, 0.02, -0.077, 0.08, 0.04, 0.01, WHITE],
-  [-0.2, -0.04, 0.077, 0.14, 0.06, 0.01, WHITE],
-  [-0.2, -0.04, -0.077, 0.14, 0.06, 0.01, WHITE],
 ];
 
 /** A seal resting with its head up: on a rock in the Beagle Channel, on an ice floe in Antarctica. */
@@ -309,7 +286,6 @@ const MODELS: Record<string, Model> = {
   'delfin-austral': dolphin(0x3d4852, WHITE, 0xa9b3ba),
   'delfin-cruzado': dolphin(BLACK, WHITE, WHITE),
   jorobada: { body: WHALE },
-  orca: { body: ORCA },
   barbijo: { body: penguin('strap') },
   adelia: { body: penguin('ring') },
 };
@@ -507,7 +483,6 @@ const EMPEROR: Box[] = [
  */
 export const SEA_MODELS = {
   humpback: WHALE,
-  orca: ORCA,
   minke: MINKE,
   penguins: FLOE_PENGUINS,
   emperor: EMPEROR,
@@ -545,6 +520,8 @@ export interface SightingGeometry {
 }
 
 export function buildSightingGeometry(s: Sighting): SightingGeometry | null {
+  // The orca is the low-poly one of the open map and Océano, in one piece.
+  if (s.id === 'orca') return { body: buildPolyGeometry(assembleCetacean(ORCA_PARTS), boxShade) };
   const model = MODELS[s.id];
   if (!model) return null;
   const mirror = (boxes: readonly Box[]): Box[] => boxes.map(([x, y, z, ...rest]) => [x, y, -z, ...rest]);

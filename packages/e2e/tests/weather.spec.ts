@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { clearStorage } from '../storage.ts';
 import { mockOpenMeteo } from './weather-helpers.ts';
 import { LIST_BUTTON_LABEL } from '../../core/src/content/points.ts';
+import { SCENE_START_LABEL } from '../../core/src/scene-points.ts';
 
 let consoleErrors: string[] = [];
 let ignoreOpenMeteoAbortLog = false;
@@ -60,9 +61,12 @@ test('mocked response shows temperature with unit, model label, and attribution,
   await page.keyboard.press('Escape');
   await expect(erebus).toHaveCount(0);
 
-  // Vostok opens a scene of its own since #281: the second sheet is another point with a card.
-  const cores = await openPointFromList(page, /Testigos de hielo/, 'Testigos de hielo');
-  await expect(cores.locator('.sheet-temp')).toContainText(/°C/);
+  // Erebus is the last point with a card (#288): the second look is the scene of the ice cores, which shows the same line (#285).
+  await page.getByRole('button', { name: LIST_BUTTON_LABEL, exact: true }).click();
+  await page.getByRole('dialog', { name: 'Todos los puntos' }).getByRole('button', { name: /Testigos de hielo/ }).click();
+  await page.getByRole('button', { name: SCENE_START_LABEL }).click();
+  const cores = page.getByRole('region', { name: 'Testigos de hielo' });
+  await expect(cores.locator('.sheet-temp')).toContainText(/°C/, { timeout: 30_000 });
   await expect(cores.locator('.sheet-temp')).toContainText('Estimación de modelo');
   expect(mock.getRequestCount()).toBe(1);
 });

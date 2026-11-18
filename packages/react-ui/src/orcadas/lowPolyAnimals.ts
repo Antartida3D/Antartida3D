@@ -34,10 +34,6 @@ const {
 
 // Additional named palette constants (rule 30.5: never inline bare hex colors)
 const PENGUIN_FOOT = 0xd98a6c;
-const EMPEROR_BACK = 0x3b4956;
-const EMPEROR_YELLOW = 0xf4b634;
-const EMPEROR_CHEST = 0xf6e7a8;
-const EMPEROR_BILL = 0xd97d8a;
 const GUANO = 0xdcc2b4;
 const GUANO_LIGHT = 0xeee2d6;
 const GUANO_WARM = 0xc9a896;
@@ -293,7 +289,7 @@ export interface PenguinPolyParts {
   flipper: Tri[];
 }
 
-function buildWebbedFoot(side: 1 | -1, color = PENGUIN_FOOT): Tri[] {
+function buildWebbedFoot(side: 1 | -1): Tri[] {
   const zMid = side * 0.075;
   const ring: [number, number][] = [
     [-0.03, zMid - side * 0.024],
@@ -301,14 +297,14 @@ function buildWebbedFoot(side: 1 | -1, color = PENGUIN_FOOT): Tri[] {
     [0.145, zMid + side * 0.048],
     [-0.03, zMid + side * 0.024],
   ];
-  return prism(ring, 0, 0.032, color, color, true);
+  return prism(ring, 0, 0.032, PENGUIN_FOOT, PENGUIN_FOOT, true);
 }
 
 /**
  * Low-poly penguin split into animated parts (body, head, flipper) matching the exact pivots
  * and bounding envelopes of the block version. Budget: <= 300 tris total.
  */
-export function buildPenguinPolyParts(species: PenguinSpecies | 'emperor'): PenguinPolyParts {
+export function buildPenguinPolyParts(species: PenguinSpecies): PenguinPolyParts {
   // 10-sided sculpted spindle body (y = 0.04..0.55) with crisp white chest vs black back.
   // Phase places segment 0 centered on +x; segments 0, 1, 8, 9 are the front arc.
   const frontMask = (seg: number, band: number) => {
@@ -316,14 +312,7 @@ export function buildPenguinPolyParts(species: PenguinSpecies | 'emperor'): Peng
     if (band === 3 && species === 'adelie') return seg === 0 || seg === 9;
     return seg === 0 || seg === 1 || seg === 8 || seg === 9;
   };
-  const bodyColor = (seg: number, band: number) => {
-    if (species === 'emperor') {
-      if (frontMask(seg, band)) return band === 3 ? EMPEROR_CHEST : WHITE;
-      if (band === 3 && (seg === 2 || seg === 7)) return EMPEROR_YELLOW;
-      return EMPEROR_BACK;
-    }
-    return frontMask(seg, band) ? WHITE : BLACK;
-  };
+  const bodyColor = (seg: number, band: number) => (frontMask(seg, band) ? WHITE : BLACK);
   const bodyTorso = loftY(
     [
       { cx: -0.01, y: 0.04, cz: 0, rx: 0.115, rz: 0.112 },
@@ -340,20 +329,18 @@ export function buildPenguinPolyParts(species: PenguinSpecies | 'emperor'): Peng
   );
 
   // Stiff tapered tail reaching x = -0.23
-  const tailColor = species === 'emperor' ? EMPEROR_BACK : BLACK;
-  const footColor = species === 'emperor' ? BLACK : PENGUIN_FOOT;
   const tail = loftX(
     [
       { x: -0.23, cy: 0.038, cz: 0, ry: 0.012, rz: 0.03 },
       { x: -0.07, cy: 0.088, cz: 0, ry: 0.032, rz: 0.068 },
     ],
     4,
-    tailColor,
+    BLACK,
     true,
     false
   );
 
-  const body: Tri[] = [...bodyTorso, ...tail, ...buildWebbedFoot(1, footColor), ...buildWebbedFoot(-1, footColor)];
+  const body: Tri[] = [...bodyTorso, ...tail, ...buildWebbedFoot(1), ...buildWebbedFoot(-1)];
 
   // Head (relative to PENGUIN_NECK = [0, 0.53, 0])
   const headCrown = loftY(
@@ -366,9 +353,6 @@ export function buildPenguinPolyParts(species: PenguinSpecies | 'emperor'): Peng
     (seg, band) => {
       if (species === 'chinstrap' && band === 0 && (seg === 0 || seg === 1 || seg === 6 || seg === 7)) {
         return WHITE;
-      }
-      if (species === 'emperor' && band === 0 && (seg === 1 || seg === 2 || seg === 6 || seg === 7)) {
-        return EMPEROR_YELLOW;
       }
       return BLACK;
     },
@@ -412,34 +396,6 @@ export function buildPenguinPolyParts(species: PenguinSpecies | 'emperor'): Peng
         ],
         4,
         (_seg, band) => (band === 0 ? RED : BLACK),
-        false,
-        true,
-        Math.PI / 4
-      )
-    );
-  } else if (species === 'emperor') {
-    // Emperor: dark eyes and a sleek long bill with a rose-tinted base on the lower mandible
-    for (const side of [1, -1] as const) {
-      const eyeZ = side * 0.101;
-      const eyePts = Array.from({ length: 4 }, (_, i): Vec3 => {
-        const a = (i / 4) * Math.PI * 2;
-        return [0.065 + Math.cos(a) * 0.014, 0.095 + Math.sin(a) * 0.014, eyeZ];
-      });
-      const eyeApex: Vec3 = [0.065, 0.095, side * 0.107];
-      for (let i = 0; i < 4; i++) {
-        const j = (i + 1) % 4;
-        headFeatures.push(side > 0 ? [eyeApex, eyePts[i], eyePts[j], BLACK] : [eyeApex, eyePts[j], eyePts[i], BLACK]);
-      }
-    }
-    headFeatures.push(
-      ...loftX(
-        [
-          { x: 0.09, cy: 0.07, cz: 0, ry: 0.02, rz: 0.024 },
-          { x: 0.14, cy: 0.065, cz: 0, ry: 0.014, rz: 0.017 },
-          { x: 0.195, cy: 0.058, cz: 0, ry: 0.004, rz: 0.005 },
-        ],
-        4,
-        (seg, band) => (band === 0 && seg === 2 ? EMPEROR_BILL : BLACK),
         false,
         true,
         Math.PI / 4
@@ -514,7 +470,7 @@ export function buildPenguinPolyParts(species: PenguinSpecies | 'emperor'): Peng
       { cx: 0.0, y: 0.0, cz: -0.001, rx: 0.046, rz: 0.018 },
     ],
     4,
-    (seg) => (seg === 0 || seg === 3 ? WHITE : species === 'emperor' ? EMPEROR_BACK : BLACK),
+    (seg) => (seg === 0 || seg === 3 ? WHITE : BLACK),
     true,
     true,
     Math.PI / 4

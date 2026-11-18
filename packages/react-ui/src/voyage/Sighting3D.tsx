@@ -86,6 +86,9 @@ export function Sighting3D({ spot, turn, seen, open, wide, bus, reduced, overlay
         calculatePosition={sighting.place ? placeOnScreen : undefined}
         portal={overlay as RefObject<HTMLElement>}
         zIndexRange={open ? [6, 6] : [4, 4]}
+        // drei sets zIndexRange only when the button moves on screen: with a still camera, an open card
+        // kept the rings' z-index and other rings painted over it. The class lifts it at once.
+        wrapperClass={open ? 'vspot-wrap open' : 'vspot-wrap'}
       >
         <button
           type="button"

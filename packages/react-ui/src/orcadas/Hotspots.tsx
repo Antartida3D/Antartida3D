@@ -224,7 +224,7 @@ export const HOTSPOTS: readonly HotspotDef[] = [
     id: 'helipad',
     label: 'Helipuerto',
     shortLabel: 'Helipuerto',
-    subtitle: 'Por acá llegan la dotación, el combustible y los científicos cuando el hielo no deja pasar al buque',
+    subtitle: 'Llegan la dotación, el combustible y los científicos cuando el hielo no deja pasar al buque',
     worldPos: [
       helipadLayout.position[0],
       helipadLayout.position[1] + 2.0,

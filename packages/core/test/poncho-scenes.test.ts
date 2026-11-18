@@ -94,6 +94,13 @@ describe('the last stop of Poncho (#223)', () => {
     expect(apart).toBeGreaterThan(4 * 0.32);
   });
 
+  it('draws Poncho grown, bigger than the dogs of his team, in its three scenes (#309)', () => {
+    const ponchos = [...scene.elements, ...scene.then!.scene.elements].filter((e) => e.id === 'poncho');
+    expect(ponchos).toHaveLength(3);
+    for (const e of ponchos) expect(e.scale ?? 1).toBeGreaterThan(1.2);
+    for (const e of scene.elements.filter((x) => x.id === 'pack')) expect(e.scale ?? 1).toBe(1);
+  });
+
   it('shows the young team going off and Poncho walking away from it, alone, at its second sentence', () => {
     const second = scene.elements.filter((e) => (e.appearAt ?? 0) === 1);
     expect(second.filter((e) => e.id === 'poncho')).toHaveLength(1);

@@ -229,6 +229,12 @@ const NAVY = 'orangeNavy';
  * The scenes, by milestone id (content/poncho.ts): every stop of the trip has one, told in three stages (one per sentence).
  */
 /**
+ * Poncho at the last stop (#309): a grown dog, bigger than his size elsewhere, so that next to the people he does not read
+ * as a pup. An illustration: the book gives no measure of him.
+ */
+const PONCHO_GROWN = 1.3;
+
+/**
  * The icebreaker of «En rompehielos hacia Belgrano», taken again for the end of the last stop (issue #223): the same ship, gangway
  * and trail, but only a man and Poncho go aboard and are gone at the door (book p. 21: Poncho alone is taken to Ushuaia). Where it
  * lies is an illustration: the book does not say at which base he went aboard.
@@ -241,7 +247,7 @@ const FAREWELL_SHIP: SceneDef = {
     prop('cargoCrates', 3.5, 2.4, Math.PI, 1, { radius: 0.9 }),
     person(NAVY, -3.4, -0.4, 0, 'walk', 0, { path: 'board' }),
     // Old and slow behind the man, well apart from him on the gangway.
-    dog('poncho', -3.4, -0.4, 0, { path: 'board', lag: 3, old: true }),
+    dog('poncho', -3.4, -0.4, 0, { path: 'board', lag: 3, old: true, scale: PONCHO_GROWN }),
   ],
   paths: [
     {
@@ -546,7 +552,7 @@ export const PONCHO_SCENES: Readonly<Record<string, SceneDef>> = {
       dog('pack', -3.6, -1.2, 0, { until: 1, path: 'arrive', lead: 1.1, side: -0.28 }),
       dog('pack', -3.6, -1.2, 0, { until: 1, path: 'arrive', lead: 1.85, side: 0.28 }),
       dog('pack', -3.6, -1.2, 0, { until: 1, path: 'arrive', lead: 1.85, side: -0.28 }),
-      dog('poncho', -3.6, -1.2, 0, { until: 1, path: 'arrive', lead: 2.6 }),
+      dog('poncho', -3.6, -1.2, 0, { until: 1, path: 'arrive', lead: 2.75, scale: PONCHO_GROWN }),
       person(NAVY, -3.6, -1.2, 0, 'walk', 0, { until: 1, path: 'arrive', lead: -1.6 }),
       person(ORANGE, -3.6, -1.2, 0, 'walk', 1.7, { until: 1, path: 'arrive', lead: -1.1, side: 0.8 }),
       // 1: the young team goes off with the sled to -x, away from the huts of the base (on +x by the shore), and Poncho, old,
@@ -557,7 +563,7 @@ export const PONCHO_SCENES: Readonly<Record<string, SceneDef>> = {
       dog('pack', 1.2, -1.7, Math.PI, { appearAt: 1, path: 'leave', lead: 1.85, side: 0.28 }),
       dog('pack', 1.2, -1.7, Math.PI, { appearAt: 1, path: 'leave', lead: 1.85, side: -0.28 }),
       person(RED, 1.2, -1.7, Math.PI, 'walk', 0, { appearAt: 1, path: 'leave', lead: -1.6 }),
-      dog('poncho', 0.6, -0.2, 0, { appearAt: 1, path: 'apart', old: true }),
+      dog('poncho', 0.6, -0.2, 0, { appearAt: 1, path: 'apart', old: true, scale: PONCHO_GROWN }),
     ],
     paths: [
       { id: 'arrive', from: [-3.6, -1.2], to: [0.2, -0.9], delay: 0.3, duration: 9 },

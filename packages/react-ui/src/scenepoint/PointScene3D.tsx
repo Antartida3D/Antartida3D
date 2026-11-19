@@ -29,6 +29,8 @@ export interface PointScene3DProps<S extends string> {
   spots: readonly { id: S }[];
   views: Readonly<Record<S, SpotView>>;
   focus: S;
+  /** Counts presses of «Vista general» (#333): each one frames `focus` again. */
+  resetView?: number;
   reduced: boolean;
   /** The panel is a card on the right side (wide screens). */
   sidePanel: boolean;
@@ -146,9 +148,9 @@ function Stage({ build }: { build: () => Tri[] }) {
 /** On a portrait phone the view is narrow: the camera stands farther back to keep the scene in it. */
 const PORTRAIT_FARTHER = 1.6;
 
-type CameraProps<S extends string> = Pick<PointScene3DProps<S>, 'spots' | 'views' | 'focus' | 'reduced' | 'sidePanel' | 'overlayRef' | 'limits'>;
+type CameraProps<S extends string> = Pick<PointScene3DProps<S>, 'spots' | 'views' | 'focus' | 'resetView' | 'reduced' | 'sidePanel' | 'overlayRef' | 'limits'>;
 
-function CameraAndDots<S extends string>({ spots, views, focus, reduced, sidePanel, overlayRef, limits }: CameraProps<S>) {
+function CameraAndDots<S extends string>({ spots, views, focus, resetView, reduced, sidePanel, overlayRef, limits }: CameraProps<S>) {
   const controlsRef = useRef<CameraControls>(null);
   const camera = useThree((s) => s.camera);
   const size = useThree((s) => s.size);
@@ -185,7 +187,7 @@ function CameraAndDots<S extends string>({ spots, views, focus, reduced, sidePan
     void cc.setLookAt(...pos, ...target, !first && !reduced);
     cc.normalizeRotations();
     invalidate();
-  }, [focus, views, portrait, reduced, camera, invalidate]);
+  }, [focus, resetView, views, portrait, reduced, camera, invalidate]);
 
   useFrame(() => {
     const cc = controlsRef.current;
@@ -276,6 +278,7 @@ export function PointScene3D<S extends string>(props: PointScene3DProps<S>) {
             spots={props.spots}
             views={props.views}
             focus={props.focus}
+            resetView={props.resetView}
             reduced={props.reduced}
             sidePanel={props.sidePanel}
             overlayRef={props.overlayRef}

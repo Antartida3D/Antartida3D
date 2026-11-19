@@ -42,6 +42,7 @@ import { MonthStrip } from './MonthStrip.tsx';
 import { Observation } from './observation/Observation.tsx';
 import { StationScene } from './StationScene.tsx';
 import { TourCard } from './TourCard.tsx';
+import { SceneResetButton } from '../ui.tsx';
 
 /** Camera target: the active tour stop, or the entry view (the answer is read at sunset over the whole station). */
 function chapterFocus(chapter: Chapter, tourIndex: number): HotspotId {
@@ -116,6 +117,8 @@ export function OrcadasExpedition({
   const [highlightSource, setHighlightSource] = useState<string | null>(null);
   const [sheetSize, setSheetSize] = useState<OpenSheetSize>('small');
   const [panelHidden, setPanelHidden] = useState(false);
+  // «Vista general» (#333): while non-zero the camera shows the entry view; each press counts up.
+  const [wideView, setWideView] = useState(0);
 
   const isDesktop = useIsDesktop(900);
   const canHidePanel = useMediaQuery('(min-width: 900px) and (min-height: 501px)');
@@ -173,6 +176,7 @@ export function OrcadasExpedition({
   useEffect(() => {
     setOpenSpot(null);
     setFocus(chapterFocus(s.chapter, s.tourIndex));
+    setWideView(0);
     // A new stop has a line to read: a sheet folded down to its title comes back up.
     setSheetSize((size) => (size === 'peek' ? 'small' : size));
     setPanelHidden(false);
@@ -262,7 +266,7 @@ export function OrcadasExpedition({
   const atTourEnd = tourAtEnd(s);
   const defaultFocus = chapterFocus(s.chapter, s.tourIndex);
   // S4: open the screen door only while the temperature reading is active and unrecorded.
-  const screenOpen = s.chapter === 'observation' && !observationDone(s) && !openSpot;
+  const screenOpen = s.chapter === 'observation' && !observationDone(s) && !openSpot && !wideView;
 
   const tourCardElement = activeStop ? (
     <TourCard
@@ -442,7 +446,8 @@ export function OrcadasExpedition({
           seaIce={sceneSeaIce}
           buildings={sceneBuildings}
           animals={activeAnimals}
-          focus={leaving !== null ? 'overview' : focus}
+          focus={leaving !== null || wideView ? 'overview' : focus}
+          resetView={wideView}
           reduced={reduced}
           screenOpen={screenOpen}
           leaving={leaving !== null}
@@ -460,6 +465,7 @@ export function OrcadasExpedition({
           openCardSpot={openSpot}
           buildings={sceneBuildings}
           onSelectSpot={(id) => {
+            setWideView(0);
             if (s.panel) {
               dispatch({ type: 'closePanel' });
               setHighlightSource(null);
@@ -484,6 +490,7 @@ export function OrcadasExpedition({
         {/* Top Navigation Header */}
         <ExpeditionTop
           onMap={() => beginLeave(false)}
+          actions={leaving === null && <SceneResetButton onClick={() => setWideView((n) => n + 1)} />}
           chaptersLabel="Capítulos de la expedición"
           onChapter={(id) => dispatch({ type: 'goto', chapter: id })}
           tools={

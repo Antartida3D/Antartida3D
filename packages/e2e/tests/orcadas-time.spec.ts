@@ -105,7 +105,9 @@ test('MonthStrip: on every screen a chip in the row of «Mapa» opens the strip,
   // Selecting a month button changes month, closes popover and returns focus to chip
   await monthStrip.getByRole('button', { name: 'marzo' }).click();
   await expect(popover).toHaveCount(0);
-  await expect(chip.locator('.orc-month-chip-name')).toHaveText('Marzo');
+  // An upright phone shows the month abbreviated, beside «Mapa» and «Vista general» (#333).
+  const upright = await page.evaluate(() => matchMedia('(max-width: 899px) and (min-height: 501px)').matches);
+  await expect(chip.locator('.orc-month-chip-name')).toHaveText(upright ? 'Mar.' : 'Marzo');
   const focusedIsChipAfterSelect = await page.evaluate(() =>
     document.activeElement?.classList.contains('orc-month-chip')
   );

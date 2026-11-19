@@ -107,6 +107,7 @@ Es una página web: todo corre en el navegador. No hay servidor propio ni base d
 | Relieve | Bedmap3 (Antártida) e IBCSO v2 (mar y Tierra del Fuego), procesados a mallas propias. |
 | Construcción | Vite y pnpm (monorepo). |
 | Pruebas | Vitest (lógica) y Playwright (navegador, a 390 y 1440 px). |
+| Publicación | Vercel (plan Hobby), con Web Analytics de Vercel para contar visitas ([DEC-331](docs/decisiones/DEC-331-cache-y-web-analytics.md)). |
 
 ## Requisitos y uso
 
@@ -396,3 +397,5 @@ En cumplimiento con las bases de la hackatón, se declara el uso de herramientas
   > Actualización de las fechas en `AGENTS.md` y `ROADMAP.md` y registro de la decisión con asistencia de IA, a partir del pedido del equipo y del formulario de entrega.
 - **Guion del pitch (#101):**
   > Estructura, redacción y página del guion (`docs/entrega/guion-pitch.html`) con asistencia de IA, a partir de lo que dictó el equipo y de los criterios de evaluación de las bases. El equipo revisó y corrigió el texto. Las cifras de turismo salen de la presentación del equipo, con sus fuentes (INFUETUR e IAATO). No se agregaron datos nuevos a la aplicación.
+- **Caché de archivos y Web Analytics (#331):**
+  > Revisión de los límites del plan Hobby de Vercel, medición del sitio publicado, implementación y registro de la decisión con asistencia de IA, a pedido de quien lleva el issue. No se agregaron datos ni fuentes de contenido.

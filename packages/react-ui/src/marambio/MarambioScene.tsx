@@ -30,6 +30,8 @@ import { IRIZAR_DOT, IRIZAR_SHIP, poseForSpot, SCENE_DOTS, VIEW_BOUNDARY, VIEW_E
 
 export interface MarambioSceneProps {
   focus: MarambioSpotId | null;
+  /** Counts presses of «Vista general» (#333): each one frames `focus` again. */
+  resetView?: number;
   reduced: boolean;
   /** The phone sheet is at its tall size. */
   sheetTall: boolean;
@@ -210,7 +212,7 @@ function Irizar({ onSelect }: { onSelect: () => void }) {
 
 const DEG = Math.PI / 180;
 
-function CameraAndDots({ focus, reduced, sheetTall, sidePanel, overlayRef }: Omit<MarambioSceneProps, 'onIrizar'>) {
+function CameraAndDots({ focus, resetView, reduced, sheetTall, sidePanel, overlayRef }: Omit<MarambioSceneProps, 'onIrizar'>) {
   const controlsRef = useRef<CameraControls>(null);
   const camera = useThree((s) => s.camera);
   const size = useThree((s) => s.size);
@@ -260,7 +262,7 @@ function CameraAndDots({ focus, reduced, sheetTall, sidePanel, overlayRef }: Omi
     // spots from 200 to 262) would turn the long way round, over 240 degrees at once (#230).
     cc.normalizeRotations();
     invalidate();
-  }, [focus, portrait, sheetTall, sidePanel, reduced, camera, invalidate]);
+  }, [focus, resetView, portrait, sheetTall, sidePanel, reduced, camera, invalidate]);
 
   // Keyboard: arrows orbit, + and - zoom.
   useEffect(() => {

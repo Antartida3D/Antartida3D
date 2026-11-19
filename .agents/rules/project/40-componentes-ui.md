@@ -18,6 +18,7 @@
 12. El cartel de ubicación de una escena es `SceneLocation` y la nota manuscrita de una parada es `.scene-found`. Ninguna expedición define el suyo.
 13. Las expediciones no llevan etiqueta de escena («Reconstrucción ilustrada» con su «?») ni botón «Fuentes» en el encabezado: las fuentes se abren desde las citas `[N]` (DEC-327).
 14. La **foto de una expedición** se abre en `PhotoModal` (`packages/react-ui/src/sheet/PhotoModal.tsx`): un modal centrado con la foto grande, su texto y la cruz «Cerrar», el que hizo Rocío para Fósiles y Marambio. Es la única excepción a la regla 9 y vale para todas las expediciones ([DEC-309-2](../../../docs/decisiones/DEC-309-2-modal-de-fotos-centrado.md)). Su aspecto vive en `components.css` (`.photo-modal`), con los tokens `--modal-*`.
+15. La píldora «Vista general», que devuelve la cámara de una escena a su vista inicial, es `SceneResetButton` (`packages/react-ui/src/ui.tsx`, `.pill.scene-reset`, ícono y texto). Toda escena 3D donde tocar un punto mueve la cámara lo muestra (#333). La hoja de la pantalla solo lo ubica.
 
 ## Guardián
 Prueba de las reglas 1, 2, 3, 5 y 6.

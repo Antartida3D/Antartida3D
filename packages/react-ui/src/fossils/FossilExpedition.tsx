@@ -25,7 +25,7 @@ import { CanvasGuard } from '../CanvasGuard.tsx';
 import { useSceneFrame } from '../sceneFrame.tsx';
 import { ExpeditionTop } from '../ExpeditionTop.tsx';
 import { SceneLocation } from '../SceneLocation.tsx';
-import { Icon, Quoted } from '../ui.tsx';
+import { Quoted, SceneResetButton } from '../ui.tsx';
 import { Cites } from '../sheet/Cite.tsx';
 import { MoreFold } from '../sheet/MoreFold.tsx';
 import { PhotoModal } from '../sheet/PhotoModal.tsx';
@@ -188,14 +188,13 @@ export function FossilExpedition({ reduced, webgl, resume, onProgress, onLeave }
       {use3D ? <CanvasGuard onFail={() => setGraphicsLost(true)}><Suspense fallback={<div className="fossil-loading" role="status">Abriendo el cuaderno de campo…</div>}><Scene view={stop.view} state={state} reduced={reduced} reset={reset} shift={shift} /></Suspense></CanvasGuard> : <figure className="fossil-fallback"><img src={PHOTO_URL[fallbackId]} alt={fallback.alt} /><figcaption>{fallback.caption}<br />{fallback.credit}{fallback.note && <span>{fallback.note}</span>}<span>Recorrido en fotografías · todas las paradas e interacciones siguen disponibles.</span>{stop.id === 'animal' && state.reconstructed && <span>Reconstrucción ilustrativa: un dinosaurio herbívoro, de cuerpo bajo y protegido por placas óseas.</span>}</figcaption></figure>}
     </div>
     <SceneLocation place={place} detail={stop.chapter === 'past' ? 'Ambientes reconstruidos' : 'Antártida · cuaderno de expedición'} />
-    {use3D && <button type="button" className="fossil-reset" aria-label="Restablecer vista de la escena" onClick={() => setReset((v) => v + 1)}>{Icon.reset}</button>}
     {stop.id === 'spiral' && state.cleaned === FOSSIL_CLEAN_STEPS && <div className="scene-found" role="status">01 · La espiral apareció</div>}
     {stop.id === 'giants' && <div className="scene-found">01 · Amonite gigante<small>Forma y movimiento ilustrativos</small></div>}
     {stop.id === 'vega' && state.column && <div className="scene-found">02 · Una columna, de la cabeza a la cola</div>}
     {stop.id === 'swimmer' && <div className="scene-found">02 · Un reptil marino<small>Forma, color y nado ilustrativos</small></div>}
     {stop.id === 'tooth' && state.tooth && <div className="scene-found">03 · Una mandíbula. Un diente.</div>}
     {stop.id === 'slab' && state.measured && <div className="scene-found">04 · 17 mm, del centro a la punta</div>}
-    <ExpeditionTop topRef={top} onMap={() => onLeave(false)} chaptersLabel="Capítulos de Fósiles" onChapter={(id) => dispatch({ type: 'chapter', chapter: id })}
+    <ExpeditionTop topRef={top} onMap={() => onLeave(false)} actions={use3D && <SceneResetButton label="Centrar vista" onClick={() => setReset((v) => v + 1)} />} chaptersLabel="Capítulos de Fósiles" onChapter={(id) => dispatch({ type: 'chapter', chapter: id })}
       chapters={FOSSIL_CHAPTERS.map((c) => ({ id: c.id, label: c.label, current: c.id === stop.chapter, visited: visitedChapters.has(c.id) }))} />
     {desktop ? <section className="orc-panel fossil-panel" ref={panel} aria-labelledby="fossil-title">{content}</section> : <BottomSheet className="orc-panel fossil-panel" labelledBy="fossil-title" sheetRef={panel} floor="peek" size={sheetSize} onSize={setSheetSize}>{content}</BottomSheet>}
     {modal?.kind === 'sources' && <SourcesView list={SOURCES} highlight={modal.id} place={FOSSIL_QUESTION}

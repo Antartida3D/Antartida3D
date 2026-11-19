@@ -178,6 +178,8 @@ export interface StationSceneProps {
   buildings: readonly BuildingId[];
   animals: readonly string[];
   focus: HotspotId | null;
+  /** Counts presses of «Vista general» (#333): each one frames `focus` again. */
+  resetView?: number;
   reduced: boolean;
   screenOpen?: boolean;
   leaving?: boolean;
@@ -1802,6 +1804,7 @@ function StationCameraAndProjection({
   arrival,
   vehicleDone,
   focus,
+  resetView,
   reduced,
   panelExpanded,
   panelHidden,
@@ -1813,6 +1816,7 @@ function StationCameraAndProjection({
   arrival: ArrivalId;
   vehicleDone: boolean;
   focus: HotspotId | null;
+  resetView: number;
   reduced: boolean;
   panelExpanded?: boolean;
   panelHidden?: boolean;
@@ -2012,6 +2016,7 @@ function StationCameraAndProjection({
     arrival,
     vehicleDone,
     focus,
+    resetView,
     mobile,
     landscape,
     reduced,
@@ -2280,6 +2285,7 @@ export const StationScene = memo(function StationScene({
   buildings,
   animals,
   focus,
+  resetView = 0,
   reduced,
   screenOpen = false,
   leaving = false,
@@ -2476,6 +2482,7 @@ export const StationScene = memo(function StationScene({
             arrival={arrival}
             vehicleDone={vehicleDone}
             focus={screenOpen ? 'screen' : focus}
+            resetView={resetView}
             reduced={reduced}
             panelExpanded={panelExpanded}
             panelHidden={panelHidden}

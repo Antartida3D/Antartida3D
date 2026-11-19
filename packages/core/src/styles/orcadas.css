@@ -78,6 +78,12 @@
   color: var(--ocre);
 }
 
+/* «Vista general» (#333): a pill of the header row, after «Mapa». */
+.scene-reset svg {
+  width: 18px;
+  height: 18px;
+}
+
 /* The handwritten note a stop leaves over the scene when its interaction is done. */
 .scene-found {
   position: absolute;
@@ -113,6 +119,35 @@
 
   .scene-location small {
     font-size: 11px;
+  }
+
+  /* With «Vista general» in the row (#333) the label fits beside it: the place alone, smaller, in two lines at most. */
+  .orc:has(.scene-reset) .scene-location {
+    max-width: calc(100% - 267px);
+    /* As tall as «Mapa» and «Vista general» (.orc-top-btn). */
+    box-sizing: border-box;
+    min-height: 44px;
+    padding: 4px 8px;
+    gap: 4px;
+    font-size: 12px;
+    line-height: 1.15;
+  }
+
+  .orc:has(.scene-reset) .scene-location .vpinicon {
+    width: 12px;
+    height: 16px;
+  }
+
+  .orc:has(.scene-reset) .scene-location span {
+    min-width: 0;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .orc:has(.scene-reset) .scene-location small {
+    display: none;
   }
 
   .scene-found {

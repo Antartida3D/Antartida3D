@@ -1,3 +1,4 @@
+import { useMediaQuery } from '../hooks.ts';
 import { MoreFold } from '../sheet/MoreFold.tsx';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
@@ -109,7 +110,12 @@ export function MonthStrip({
 
   const normMonth = (((month - 1) % 12) + 12) % 12 + 1;
   const monthName = MONTH_NAMES[normMonth - 1] ?? 'enero';
-  const chipMonthLabel = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+  // An upright phone shares the header row with «Mapa» and «Vista general» (#333): the chip shows «Nov.».
+  const compact = useMediaQuery('(max-width: 899px) and (min-height: 501px)');
+  const short = MONTH_SHORT[normMonth - 1] ?? 'ENE';
+  const chipMonthLabel = compact
+    ? `${short.charAt(0)}${short.slice(1).toLowerCase()}.`
+    : monthName.charAt(0).toUpperCase() + monthName.slice(1);
 
   const wrapRef = useRef<HTMLElement>(null);
   const chipRef = useRef<HTMLButtonElement>(null);

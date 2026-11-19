@@ -4,7 +4,7 @@ import { BottomSheet, type OpenSheetSize } from '../BottomSheet.tsx';
 import { useIsDesktop } from '../hooks.ts';
 import { useSceneFrame, type ViewShiftPx } from '../sceneFrame.tsx';
 import { KindChip } from '../orcadas/KindChip.tsx';
-import { Quoted } from '../ui.tsx';
+import { Quoted, SceneResetButton } from '../ui.tsx';
 import { ExpeditionTop } from '../ExpeditionTop.tsx';
 import { SceneLocation } from '../SceneLocation.tsx';
 import { Cites } from '../sheet/Cite.tsx';
@@ -18,6 +18,8 @@ import { TemperatureLine } from '../map/TemperatureLine.tsx';
 /** What the screen hands its 3D scene. */
 export interface SceneSlotProps<S extends string> {
   focus: S;
+  /** Counts presses of «Vista general» (#333): each one frames `focus` again. */
+  resetView: number;
   sidePanel: boolean;
   overlayRef: RefObject<HTMLDivElement | null>;
   onNoWebGL: () => void;
@@ -60,6 +62,9 @@ export function ScenePointScreen<S extends string>({
   const [highlight, setHighlight] = useState<string | null>(null);
   const [sheetSize, setSheetSize] = useState<OpenSheetSize>('small');
   const [noWebGL, setNoWebGL] = useState(false);
+  // «Vista general» (#333): while non-zero the camera shows the first spot's view, the one
+  // the scene opens with; each press counts up.
+  const [wideView, setWideView] = useState(0);
   const overlayRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLElement>(null);
   const topRef = useRef<HTMLElement>(null);
@@ -79,6 +84,7 @@ export function ScenePointScreen<S extends string>({
   const unfold = () => setSheetSize((size) => (size === 'peek' ? 'small' : size));
   const go = (next: number) => {
     moved.current = true;
+    setWideView(0);
     setIndex(next);
     unfold();
   };
@@ -131,7 +137,7 @@ export function ScenePointScreen<S extends string>({
         className={`orc mar scene-pt${!isDesktop && sheetSize === 'tall' ? ' is-panel-expanded' : ''}${!isDesktop && sheetSize === 'peek' ? ' is-panel-peek' : ''}`}
         aria-label={point.title}
       >
-        {scene({ focus: spot.id, sidePanel: isDesktop, overlayRef, onNoWebGL, shift })}
+        {scene({ focus: wideView ? spots[0].id : spot.id, resetView: wideView, sidePanel: isDesktop, overlayRef, onNoWebGL, shift })}
 
         <SceneLocation place={mapPoint.place} detail={spot.label} />
 
@@ -158,6 +164,7 @@ export function ScenePointScreen<S extends string>({
         <ExpeditionTop
           topRef={topRef}
           onMap={onLeave}
+          actions={!noWebGL && <SceneResetButton onClick={() => setWideView((n) => n + 1)} />}
         />
 
         {isDesktop ? (

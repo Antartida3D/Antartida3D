@@ -22,7 +22,7 @@ import { useIsDesktop } from '../hooks.ts';
 import { KindChip } from '../orcadas/KindChip.tsx';
 import { MonthStrip, type MonthStripSeason } from '../orcadas/MonthStrip.tsx';
 import { ExpeditionTop } from '../ExpeditionTop.tsx';
-import { Quoted } from '../ui.tsx';
+import { Quoted, SceneResetButton } from '../ui.tsx';
 import { Cite, Cites } from '../sheet/Cite.tsx';
 import { SheetActions } from '../sheet/SheetActions.tsx';
 import { BackButton } from '../sheet/BackButton.tsx';
@@ -168,6 +168,8 @@ export function MarambioExpedition({
   const [storm, setStorm] = useState(false);
   const [highlight, setHighlight] = useState<string | null>(null);
   const [sheetSize, setSheetSize] = useState<OpenSheetSize>('small');
+  // «Vista general» (#333): while non-zero the camera shows the whole base; each press counts up.
+  const [wideView, setWideView] = useState(0);
   const overlayRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLElement>(null);
   const rootRef = useRef<HTMLElement>(null);
@@ -188,6 +190,7 @@ export function MarambioExpedition({
   const go = (next: number) => {
     moved.current = true;
     setStorm(false);
+    setWideView(0);
     setIndex(next);
     // A sheet folded down to its title opens again on the new point.
     setSheetSize((size) => (size === 'peek' ? 'small' : size));
@@ -288,7 +291,8 @@ export function MarambioExpedition({
       }}
     >
       <MarambioScene
-        focus={spot.id}
+        focus={wideView ? null : spot.id}
+        resetView={wideView}
         reduced={reduced}
         sheetTall={!isDesktop && sheetSize === 'tall'}
         sidePanel={isDesktop}
@@ -343,6 +347,7 @@ export function MarambioExpedition({
 
       <ExpeditionTop
         onMap={() => onLeave(false)}
+        actions={<SceneResetButton onClick={() => setWideView((n) => n + 1)} />}
         tools={<MonthStrip month={month} onMonth={setMonth} season={SEASON} />}
       />
 

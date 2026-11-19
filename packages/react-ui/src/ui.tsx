@@ -106,3 +106,13 @@ export const Icon = {
     </svg>
   ),
 };
+
+/** Header pill (ExpeditionTop `actions`) that brings the camera of a scene back to the view it opened with (#333). */
+export function SceneResetButton({ onClick, label = 'Vista general' }: { onClick: () => void; label?: string }) {
+  return (
+    <button type="button" className="pill orc-top-btn scene-reset" onClick={onClick}>
+      {Icon.reset}
+      <span>{label}</span>
+    </button>
+  );
+}
